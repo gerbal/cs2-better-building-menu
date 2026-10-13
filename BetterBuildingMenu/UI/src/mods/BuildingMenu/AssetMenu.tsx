@@ -1,9 +1,9 @@
-import { useValue } from "cs2/api";
 import classNames from "classnames";
-import type { CSSProperties } from "react";
+import { useCallback, useRef, useState, type CSSProperties } from "react";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ControlPane } from "mods/ControlPane/ControlPane";
+import { ControlPopover } from "mods/ControlPopover/ControlPopover";
 import { TabRow } from "mods/TabRow/TabRow";
 import { useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 import { TopEdge } from "mods/TopEdge/TopEdge";
@@ -11,13 +11,11 @@ import { TopRow } from "mods/TopRow/TopRow";
 import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { AssetMenuTuning$ } from "mods/bindings";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, drawnBodyHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
+import { useLookRoot } from "mods/useLookRoot";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuBoxHeight, drawnBodyHeight, POPOVER_GAP, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
 import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
-import { boxPlacement, topRowRightInset } from "domain/widthSteps";
-import { surfaceAlphaStyle } from "domain/looks";
-import { useInterfaceTransparency } from "domain/interfaceTransparencySetting";
-import looks from "looks/looks.module.scss";
+import { controlLeftRem, type ControlKind, type OpenPopover } from "domain/topRow";
+import { boxPlacement, popoverRightLimit, topRowRightInset } from "domain/widthSteps";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 import { gameClasses } from "mods/gameModules";
@@ -42,12 +40,24 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const { step, drawnStep, menuWidth, paneShown, snaps, screen } = useAssetMenuLayout();
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
-  const transparency = useInterfaceTransparency();
-  const tuning = useValue(AssetMenuTuning$);
+  const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
   const shownWidth = widthDrag.liveWidth ?? menuWidth;
   // Where the box draws, from vanilla's slot. See docs/design-notes.md, "The box at its Width step, and the control pane".
   const placement = boxPlacement(shownWidth, screen);
+
+  // One popover at a time, opened under its control's drawn left edge. See docs/design-notes.md, "The top row".
+  const root = useRef<HTMLDivElement>(null);
+  const [popover, setPopover] = useState<OpenPopover | null>(null);
+  const togglePopover = useCallback((kind: ControlKind, cell: HTMLElement | null) => {
+    const left = controlLeftRem(
+      cell?.getBoundingClientRect?.().left,
+      root.current?.getBoundingClientRect?.().left,
+      typeof window === "undefined" ? 0 : window.innerHeight
+    );
+    setPopover((current) => (current?.kind === kind ? null : { kind, left }));
+  }, []);
+  const closePopover = useCallback(() => setPopover(null), []);
 
   // The one patch on vanilla's own layout, the toolbar sunk beneath the box and the pane, lives
   // with its reason in vanillaLayout.ts.
@@ -65,12 +75,19 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
         {/* The box carries the look: its tokens, the game's interface style followed, and its
             panels' alphas under the game's transparency. See docs/design-notes.md, "The looks' tokens". */}
         <div
-          className={classNames(styles.toolContainer, looks.standard, tuning.interfaceStyles && looks.followStyle)}
-          style={{ width: shownWidth + "rem", ...surfaceAlphaStyle(transparency) } as CSSProperties}
+          ref={root}
+          className={classNames(styles.toolContainer, look.className)}
+          style={{ width: `${shownWidth}rem`, ...look.style } as CSSProperties}
         >
-          {/* The search field, the hosted tab-bar buttons and close, along the box's top edge. See
-              docs/design-notes.md, "The top row". */}
-          <TopRow width={shownWidth} rightInset={topRowRightInset(placement, shownWidth, screen.aspect)} onClose={onClose} />
+          {/* The search field, the controls, the hosted tab-bar buttons and close, along the box's
+              top edge. See docs/design-notes.md, "The top row". */}
+          <TopRow
+            width={shownWidth}
+            rightInset={topRowRightInset(placement, shownWidth, screen.aspect)}
+            open={popover?.kind ?? null}
+            onToggle={togglePopover}
+            onClose={onClose}
+          />
           <div
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}
             style={{ height: `${drawnBodyHeight(catalogHeight)}rem` }}
@@ -98,6 +115,13 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
               onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)}
             />
           )}
+          {/* The open control's popover, above the box, inside its root so it takes the look. */}
+          <ControlPopover
+            open={popover}
+            limit={popoverRightLimit(placement, shownWidth, screen.aspect)}
+            bottom={assetMenuBoxHeight(catalogHeight) + POPOVER_GAP}
+            onClose={closePopover}
+          />
           {/* Last, so it paints over the top row's upper edge, under the popovers. See
               docs/design-notes.md, "The top edge". */}
           <TopEdge active={isResizing} onBeginResize={(event) => beginResize(event, TOP_EDGE_HEIGHT)} />

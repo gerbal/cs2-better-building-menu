@@ -11,6 +11,7 @@ import {
   drawnStep,
   drawnStepWidth,
   nearestSnapStep,
+  popoverRightLimit,
   sanitizeWidthStep,
   snapTargets,
   toolOptionsEdge,
@@ -313,5 +314,17 @@ describe("the top row's right end", () => {
 
     // Steps 4 and 5 end at 1,676 and 1,871; the row stops at 1,496, 10 rem short of the chirper at 1,506.
     assert.deepEqual(insets, [4, 4, 4, 180, 375]);
+  });
+});
+
+describe("a popover's right limit", () => {
+  it("is the box's right edge, or 6 rem short of the chirper where the box runs over it", () => {
+    const limits = [1, 2, 3, 4, 5].map((step) => {
+      const width = drawnStepWidth(step, screen());
+      return popoverRightLimit(boxPlacement(width, screen()), width, SIXTEEN_NINE);
+    });
+
+    // In the box: steps 4 and 5 start at 396, so x 1,500 is 1,104 in.
+    assert.deepEqual(limits, [706, 893, 1091, 1104, 1104]);
   });
 });

@@ -101,3 +101,21 @@ $tab-segment-margin: 4rem;
 // The box less its body, in every look: the top row's band and the tab row's. The stored height is
 // the body's, so the box is it and this.
 $box-chrome: $top-band + $tab-row-gap-above + $tab-row-height + $tab-row-pad-below;
+
+// The controls strip after the field: a word or a glyph, a value in a slot of fixed width, a caret.
+$controls-gap: 6rem;
+$control-padding: 7rem;
+$control-padding-folded: 5rem;
+$control-word-gap: 4rem;
+$control-glyph: 12rem;
+$control-caret: 8rem;
+$control-caret-gap: 3rem;
+$control-divider: 1rem;
+
+// A control's popover: this wide, this far above the box, rows this tall inside this padding.
+$popover-width: 240rem;
+$popover-gap: 2.25rem;
+$popover-row: 24rem;
+$popover-padding: 4rem;
+// FILTER's list scrolls past this height.
+$popover-filter-height: 300rem;

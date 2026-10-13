@@ -108,6 +108,12 @@
   "Tooltip.LABEL[BetterBuildingMenu.ClearSearch]": "Clear search",
   "Tooltip.LABEL[BetterBuildingMenu.SearchMenu]": "Search {0}",
   "Tooltip.LABEL[BetterBuildingMenu.AllMatchesLocked]": "All matches locked",
+  "Tooltip.LABEL[BetterBuildingMenu.ControlSort]": "Sort",
+  "Tooltip.LABEL[BetterBuildingMenu.ControlFilter]": "Filter",
+  "Tooltip.LABEL[BetterBuildingMenu.ControlGroup]": "Group",
+  "Tooltip.LABEL[BetterBuildingMenu.ControlView]": "View",
+  "Tooltip.LABEL[BetterBuildingMenu.FilterNone]": "None",
+  "Tooltip.LABEL[BetterBuildingMenu.FiltersOn]": "{0} on",
   "Tooltip.LABEL[BetterBuildingMenu.Level]": "Level",
   "Tooltip.LABEL[BetterBuildingMenu.Lot]": "Lot",
   "Tooltip.LABEL[BetterBuildingMenu.Parking]": "Parking",
@@ -156,8 +162,8 @@
   "Tooltip.LABEL[BetterBuildingMenu.ViewGrid]": "Grid",
   "Tooltip.LABEL[BetterBuildingMenu.ViewList]": "List",
   "Tooltip.LABEL[BetterBuildingMenu.ViewTable]": "Table",
-  "Tooltip.LABEL[BetterBuildingMenu.GroupBy_none]": "None",
-  "Tooltip.LABEL[BetterBuildingMenu.GroupBy_menuCategory]": "Category",
+  "Tooltip.LABEL[BetterBuildingMenu.GroupBy_none]": "No groups",
+  "Tooltip.LABEL[BetterBuildingMenu.GroupBy_menuCategory]": "By tab",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_category]": "Asset type",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_subCategory]": "Type",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_role]": "Role",
@@ -246,6 +252,5 @@
   "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureLongTermStorage]": "stores long term",
   "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureIndustrialWaste]": "industrial waste only",
   "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureThroughTerrain]": "reaches through terrain",
-  "Tooltip.LABEL[BetterBuildingMenu.ZoneFeatureIgnoresLandValue]": "ignores land value",
-  "Tooltip.LABEL[BetterBuildingMenu.ReverseSortButton]": "Reverse sort"
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneFeatureIgnoresLandValue]": "ignores land value"
 }

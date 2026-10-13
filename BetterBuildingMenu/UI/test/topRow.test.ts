@@ -1,6 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cutToWidth, enterTarget, planField, searchPlaceholder } from "../src/domain/topRow.ts";
+import {
+  CONTROLS_MARK,
+  POPOVER_MARK,
+  controlLeftRem,
+  cutToWidth,
+  enterTarget,
+  fieldNeeds,
+  isWithin,
+  planControls,
+  planField,
+  popoverLeft,
+  searchPlaceholder,
+  type ControlCell,
+  type ControlKind,
+} from "../src/domain/topRow.ts";
 import { textWidth } from "../src/domain/tabRow.ts";
 
 const FONT = 11;
@@ -72,5 +86,99 @@ describe("the field's plan", () => {
 
     assert.ok(plan.target !== null && plan.target.endsWith("…"), String(plan.target));
     assert.equal(planField(rest).target, null);
+  });
+});
+
+describe("the controls' plan", () => {
+  /** Four controls as a menu has them at rest: its sorts and groupings, no filter on, the view. */
+  const cells = (over: Partial<Record<ControlKind, Partial<ControlCell>>> = {}): ControlCell[] => [
+    { kind: "sort", word: "Sort", value: "Default", values: ["Default", "Name", "Cost", "Upkeep"], changed: false, ...over.sort },
+    { kind: "filter", word: "Filter", value: "None", values: ["None", "99 on"], changed: false, ...over.filter },
+    { kind: "group", word: "Group", value: "By tab", values: ["By tab", "No groups", "Asset type"], changed: false, ...over.group },
+    { kind: "view", word: "View", value: "Cards", values: ["Cards", "List", "Grid", "Table"], changed: false, ...over.view },
+  ];
+  // The first step's row less close: 698 inside the box, less 24 and its 4.
+  const ROW = 670;
+
+  it("shows the words at 100% text, with the field well past its floor", () => {
+    const plan = planControls({ row: ROW, scale: 1, cells: cells(), fieldNeeds: 0 });
+
+    assert.equal(plan.form, "words");
+    assert.ok(plan.field >= 220, `the field keeps ${plan.field}`);
+  });
+
+  it("folds to a glyph and the value from 110%, at every text size the game offers, and keeps the field its floor", () => {
+    for (const scale of [1.1, 1.2, 1.3, 1.4, 1.5]) {
+      const plan = planControls({ row: ROW, scale, cells: cells(), fieldNeeds: 0 });
+
+      assert.equal(plan.form, "glyphs", String(scale));
+      assert.ok(plan.field >= 150, `${scale}: the field keeps ${plan.field}`);
+    }
+  });
+
+  it("sizes each value's slot to the widest it can show, so a pick never moves the strip", () => {
+    const atRest = planControls({ row: ROW, scale: 1, cells: cells(), fieldNeeds: 0 });
+    const picked = planControls({ row: ROW, scale: 1, cells: cells({ sort: { value: "Upkeep", changed: true }, group: { value: "Asset type" } }), fieldNeeds: 0 });
+
+    assert.deepEqual(picked.slots, atRest.slots);
+    assert.equal(picked.field, atRest.field);
+  });
+
+  it("folds at 100% only to keep the field its floor, even with a menu's long sorts", () => {
+    const water = cells({ sort: { values: ["Default", "Water capacity", "Sewage capacity", "Households"] } });
+    const narrow = planControls({ row: 520, scale: 1, cells: water, fieldNeeds: 0 });
+
+    assert.equal(planControls({ row: ROW, scale: 1, cells: water, fieldNeeds: 0 }).form, "words");
+    assert.equal(narrow.form, "glyphs");
+    assert.ok(narrow.field >= 150, `the field keeps ${narrow.field}`);
+  });
+
+  it("folds while a typed query's Enter target would not fit whole beside the words", () => {
+    const needs = fieldNeeds("four lane", "Four-Lane Road with Parking Lots", 1);
+
+    assert.equal(planControls({ row: ROW, scale: 1, cells: cells(), fieldNeeds: 0 }).form, "words");
+    assert.equal(planControls({ row: ROW, scale: 1, cells: cells(), fieldNeeds: needs }).form, "glyphs");
+  });
+
+  it("asks nothing past the field's floor without a query and a target", () => {
+    assert.equal(fieldNeeds("", "Four-Lane Road 2", 1), 0);
+    assert.equal(fieldNeeds("four", null, 1), 0);
+  });
+});
+
+describe("a press inside a popover or the controls", () => {
+  const node = (attributes: Record<string, string>, parentElement: unknown = null) => ({
+    getAttribute: (name: string) => attributes[name] ?? null,
+    parentElement,
+  });
+
+  it("is placed by a marked ancestor", () => {
+    const row = node({}, node({}, node({ [POPOVER_MARK]: "true" })));
+
+    assert.equal(isWithin(row, POPOVER_MARK), true);
+    assert.equal(isWithin(row, CONTROLS_MARK), false);
+  });
+
+  it("is outside both for the map, the page or nothing", () => {
+    assert.equal(isWithin(node({}, node({})), POPOVER_MARK), false);
+    assert.equal(isWithin(null, CONTROLS_MARK), false);
+  });
+});
+
+describe("a popover's place", () => {
+  it("sits under its control, pulled left to end at the limit", () => {
+    assert.equal(popoverLeft(320, 706), 320);
+    assert.equal(popoverLeft(600, 706), 466);
+  });
+
+  it("ends at the limit when its control could not be measured, and never starts left of the box", () => {
+    assert.equal(popoverLeft(null, 706), 466);
+    assert.equal(popoverLeft(null, 200), 0);
+  });
+
+  it("reads a control's left edge in the box from the drawn pixels", () => {
+    // At 720p a rem is two thirds of a pixel.
+    assert.equal(controlLeftRem(500, 300, 720), 300);
+    assert.equal(controlLeftRem(undefined, 300, 720), null);
   });
 });

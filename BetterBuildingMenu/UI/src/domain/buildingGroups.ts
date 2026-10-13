@@ -18,8 +18,9 @@ export interface GroupDimension {
 
 /** What the picker calls each dimension, and how many heading levels it yields. */
 const GROUP_DIMENSION_PRESENTATION: Readonly<Record<GroupDimensionId, Omit<GroupDimension, "id">>> = {
-  // Depth 2: the category, then the tier within it — see C#'s CategoryTierLabel.
-  menuCategory: { label: "Category", depth: 2 },
+  // Depth 2: the menu's tab, then the tier within it — see C#'s CategoryTierLabel. Named for the
+  // tab the player sees, as the top row's Group says it.
+  menuCategory: { label: "By tab", depth: 2 },
   // Ours, not the game's: Buildings, Networks, Service Buildings. Named "Asset
   // type" so it does not compete with the game's own word for a different idea.
   category: { label: "Asset type", depth: 2 },
@@ -39,9 +40,8 @@ const GROUP_DIMENSION_PRESENTATION: Readonly<Record<GroupDimensionId, Omit<Group
   density: { label: "Density", depth: 1 },
   footprint: { label: "Footprint", depth: 1 },
   cost: { label: "Cost", depth: 1 },
-  // "None", not "Nothing": vanilla's vocabulary for an absent selection, and
-  // this dropdown is chrome, so it speaks the game's language.
-  none: { label: "None", depth: 0 },
+  // "No groups": beside Sort's and Filter's values, a bare "None" reads as no grouping chosen.
+  none: { label: "No groups", depth: 0 },
 };
 
 /**

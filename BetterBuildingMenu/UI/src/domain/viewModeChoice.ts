@@ -12,6 +12,27 @@ export function isViewModeKind(value: unknown): value is ViewModeKind {
   return typeof value === "string" && (VIEW_MODE_KINDS as readonly string[]).includes(value);
 }
 
+/** A view the lists offer: its kind, its string's key and its English. */
+export interface ViewModeOption {
+  id: ViewModeKind;
+  localizationKey: string;
+  fallback: string;
+}
+
+/**
+ * Where the menu opens with no view picked, and what a reset goes back to: one constant, so the
+ * catalog and the lists cannot disagree about which that is.
+ */
+export const DEFAULT_VIEW_MODE: ViewModeKind = "cards";
+
+/** The views in the order the lists draw them: most picture to most data, the default first. */
+export const VIEW_MODES: readonly ViewModeOption[] = [
+  { id: "cards", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewCards]", fallback: "Cards" },
+  { id: "list", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewList]", fallback: "List" },
+  { id: "grid", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewGrid]", fallback: "Grid" },
+  { id: "table", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewTable]", fallback: "Table" },
+];
+
 export function chooseViewMode(
   sessionPick: string,
   stored: string | null | undefined,

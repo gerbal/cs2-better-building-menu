@@ -4,7 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { getAssetMenuView, resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { chooseViewMode } from "../../src/domain/viewModeChoice";
-import { DEFAULT_VIEW_MODE } from "../../src/mods/GroupedResults/ViewModeBar";
+import { DEFAULT_VIEW_MODE } from "../../src/domain/viewModeChoice";
 import { StoredViewWatcher } from "../../src/mods/StoredViewWatcher/StoredViewWatcher";
 
 const stored = (view: string) => setBinding("BetterBuildingMenu", "AssetMenuViewMode", view);

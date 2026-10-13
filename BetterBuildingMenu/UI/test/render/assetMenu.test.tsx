@@ -15,6 +15,8 @@ const remOf = (style: string, property: string): number =>
 const widthOf = (html: string, className: string): number => remOf(styleOf(html, className), "width");
 const leftOf = (html: string, className: string): number => remOf(styleOf(html, className), "left");
 const render = () => renderHtml(<AssetMenu onClose={() => {}} />);
+// The pane's root, whatever look classes follow its own.
+const PANE = /class="pane[ "]/;
 
 /** The box's classes and inline style, read off the markup one property at a time. */
 const boxOf = (html: string): { classes: string[]; style: Record<string, string> } => {
@@ -42,7 +44,7 @@ describe("the asset menu's row", () => {
     assert.equal(widthOf(html, "assetMenuRow"), 706);
     assert.equal(leftOf(html, "assetMenuRow"), 0);
     assert.equal(widthOf(html, "toolContainer"), 706);
-    assert.doesNotMatch(html, /class="pane"/);
+    assert.doesNotMatch(html, PANE);
   });
 
   it("draws step 3 beside the pane as 0.2.4's row, reaching left of vanilla's slot to the tool options' edge", () => {
@@ -53,7 +55,7 @@ describe("the asset menu's row", () => {
     assert.equal(widthOf(html, "toolContainer"), 1091);
     // x 396, the tool options' edge, less vanilla's 607.
     assert.equal(leftOf(html, "assetMenuRow"), -211);
-    assert.match(html, /class="pane"/);
+    assert.match(html, PANE);
   });
 
   it("draws step 3 short of the chirper when the pane is hidden", () => {
@@ -255,7 +257,8 @@ describe("the asset menu's tab row", () => {
     const html = render();
 
     assert.ok(html.indexOf('class="band"') > html.indexOf('class="content'), "under the list");
-    assert.ok(html.indexOf('class="band"') < html.indexOf('class="pane"'), "inside the box, before the pane beside it");
+    assert.ok(html.search(PANE) >= 0, "the pane is drawn");
+    assert.ok(html.indexOf('class="band"') < html.search(PANE), "inside the box, before the pane beside it");
   });
 
   it("gives the body the stored height: the box is the body and 63.75, vanilla's 208 at the default", () => {
@@ -329,5 +332,77 @@ describe("a drag on the asset menu's top edge", () => {
 
     // The default height is 144.25: ten pixels up is ten rem taller.
     assert.deepEqual(triggers.filter((call) => call.name === "SetAssetMenuHeight").map((call) => call.args[0]), [154.25]);
+  });
+});
+
+describe("the asset menu's controls", () => {
+  type Press = (event: { target: unknown }) => void;
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let listeners: Press[] = [];
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    listeners = [];
+    saved = globals.document;
+    globals.document = {
+      addEventListener: (type: string, listener: Press) => {
+        if (type === "mousedown") listeners.push(listener);
+      },
+      removeEventListener: (_type: string, listener: Press) => {
+        listeners = listeners.filter((other) => other !== listener);
+      },
+      querySelector: () => null,
+    };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved;
+  });
+
+  const mount = () => act(() => {
+    root = create(<AssetMenu onClose={() => {}} />);
+  });
+  const control = (word: string) =>
+    root!.root.find((node) => String(node.props["aria-label"] ?? "").startsWith(`${word} · `) && typeof node.props.onSelect === "function");
+  const popovers = () => root!.root.findAll((node) => node.type === "div" && node.props["data-bbm-popover"] === "true");
+
+  it("holds Sort, Filter, Group and View on the top row at rest, each a word and a value, with the pane off or on", () => {
+    for (const shown of [false, true]) {
+      setBinding("BetterBuildingMenu", "ControlPaneShown", shown);
+      const html = renderHtml(<AssetMenu onClose={() => {}} />);
+      const strip = html.slice(html.indexOf('data-bbm-controls="true"'));
+
+      for (const word of ["Sort", "Filter", "Group", "View"]) {
+        assert.match(strip, new RegExp(`<span class="word">${word}</span><span class="value[^"]*"[^>]*>[^<]+</span>`), `${word}, pane ${shown}`);
+      }
+    }
+  });
+
+  it("opens one popover at a time from its control, and a second press closes it", () => {
+    mount();
+    act(() => control("Sort").props.onSelect());
+    assert.equal(popovers().length, 1);
+
+    act(() => control("Group").props.onSelect());
+    assert.equal(popovers().length, 1, "switching, not stacking");
+    assert.ok(popovers()[0].findAll((node) => node.props["aria-label"] === "By tab").length > 0, "the Group list");
+
+    act(() => control("Group").props.onSelect());
+    assert.equal(popovers().length, 0);
+  });
+
+  it("closes an open popover on a press outside it and the controls", () => {
+    mount();
+    act(() => control("Sort").props.onSelect());
+    act(() => [...listeners].forEach((listener) => listener({ target: { getAttribute: () => null, parentElement: null } })));
+
+    assert.equal(popovers().length, 0);
   });
 });

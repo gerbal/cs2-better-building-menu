@@ -35,8 +35,7 @@ import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMe
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
-import { chooseViewMode } from "domain/viewModeChoice";
+import { chooseViewMode, DEFAULT_VIEW_MODE } from "domain/viewModeChoice";
 import {
   type GroupDimensionId,
 } from "domain/buildingGroups";

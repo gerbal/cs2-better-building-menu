@@ -395,6 +395,23 @@ export const TOP_ROW_TEXT = sheetRem("topRowText");
 export const CLOSE_SIZE = sheetRem("closeSize");
 export const CLOSE_GAP = sheetRem("closeGap");
 
+/** The field's floor, which the controls fold to keep: a budget, never a CSS min-width. */
+export const FIELD_MIN_WIDTH = sheetRem("fieldMinWidth");
+
+/** The controls strip's numbers, which its sheet draws and its plan budgets: see _assetMenuGeometry.scss. */
+export const CONTROLS_GAP = sheetRem("controlsGap");
+export const CONTROL_PADDING = sheetRem("controlPadding");
+export const CONTROL_PADDING_FOLDED = sheetRem("controlPaddingFolded");
+export const CONTROL_WORD_GAP = sheetRem("controlWordGap");
+export const CONTROL_GLYPH = sheetRem("controlGlyph");
+export const CONTROL_CARET = sheetRem("controlCaret");
+export const CONTROL_CARET_GAP = sheetRem("controlCaretGap");
+export const CONTROL_DIVIDER = sheetRem("controlDivider");
+
+/** A popover's width, and its gap above the box. */
+export const POPOVER_WIDTH = sheetRem("popoverWidth");
+export const POPOVER_GAP = sheetRem("popoverGap");
+
 /** The box's height: the stored body height and the chrome, the same in every look. */
 export function assetMenuBoxHeight(storedHeight: number): number {
   return clampAssetMenuHeight(storedHeight) + ASSET_MENU_BOX_CHROME;

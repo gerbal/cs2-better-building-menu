@@ -7,7 +7,9 @@ import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
 import { TopRow } from "../../src/mods/TopRow/TopRow";
 
 const set = (name: string, value: unknown) => setBinding("BetterBuildingMenu", name, value);
-const row = (withClose = true) => <TopRow width={706} rightInset={4} onClose={withClose ? () => {} : undefined} />;
+const row = (withClose = true) => (
+  <TopRow width={706} rightInset={4} open={null} onToggle={() => undefined} onClose={withClose ? () => {} : undefined} />
+);
 const render = (withClose = true) => renderHtml(row(withClose));
 
 /** Roads with "four" typed, and the page that answers it. */
@@ -152,5 +154,57 @@ describe("the top row", () => {
     }
 
     assert.deepEqual(warnings.filter((warning) => /cannot be given refs/.test(warning)), []);
+  });
+});
+
+describe("the top row's controls", () => {
+  beforeEach(() => {
+    resetBindings();
+    resetTranslations();
+  });
+
+  it("draw Sort, Filter, Group and View, each a word and its value, at 100% text", () => {
+    const html = render();
+
+    for (const word of ["Sort", "Filter", "Group", "View"]) {
+      assert.match(html, new RegExp(`<span class="word">${word}</span><span class="value[^"]*" style="width:[0-9.]+rem">[^<]+</span>`), word);
+    }
+    assert.doesNotMatch(html, /class="controlGlyph"/);
+  });
+
+  it("fold each to a glyph and its value from 110% text", () => {
+    setBinding("options", "textScale", 1.1);
+    const html = render();
+
+    assert.equal(count(html, /class="controlGlyph"/), 4);
+    assert.doesNotMatch(html, /class="word"/);
+  });
+
+  it("mark a sort or a filter set away from how the menu opens, with the dot", () => {
+    set("BuildingCatalogSortColumn", "Default");
+    assert.equal(count(render(), /class="dot"/), 0);
+
+    set("BuildingCatalogSortColumn", "ConstructionCost");
+    set("AssetMenuFacets", { groups: [{ id: "role", label: "Role", options: [{ id: "Hospital", label: "Hospital", selected: true }] }], hasSelection: true });
+    const html = render();
+
+    assert.equal(count(html, /class="dot"/), 2);
+    assert.match(html, /<span class="value set" style="width:[0-9.]+rem">1 on<\/span>/);
+  });
+
+  it("ask to open a control's popover on a press, and draw the open one as open", () => {
+    const asked: string[] = [];
+    let root: ReturnType<typeof create> | undefined;
+    act(() => {
+      root = create(<TopRow width={706} rightInset={4} open="group" onToggle={(kind) => asked.push(kind)} onClose={() => {}} />);
+    });
+    const control = (word: string) =>
+      root!.root.find((node) => String(node.props["aria-label"] ?? "").startsWith(`${word} · `) && typeof node.props.onSelect === "function");
+
+    act(() => control("Filter").props.onSelect());
+
+    assert.deepEqual(asked, ["filter"]);
+    assert.ok(String(control("Group").props.className).split(" ").includes("open"));
+    act(() => root!.unmount());
   });
 });

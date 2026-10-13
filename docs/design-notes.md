@@ -395,8 +395,8 @@ The upgrades panel keeps the stored height as its cap. The settings migration's 
 ## The top row
 
 Along the box's top edge, in a band of the look's head material: a 2 rem pad, the 28 rem row, a 4
-rem gap above the body. The row holds the search field, whatever other mods add to the game's tab
-bar, and close. It runs from 4 rem inside the box's left edge to 4 rem inside its right, and where
+rem gap above the body. The row holds the search field, Sort, Filter, Group and View, whatever other
+mods add to the game's tab bar, and close. It runs from 4 rem inside the box's left edge to 4 rem inside its right, and where
 the box runs over the chirper it stops 10 rem short of the chirper (x 1,496 on 16:9), so no
 control sits over it (`topRowRightInset`).
 
@@ -417,6 +417,41 @@ control sits over it (`topRowRightInset`).
   with the game's gradient. In the game's default style it draws the look's own dark panel; under
   Bright blue and Dark grey-orange, which the look follows, it draws the style's panel colour,
   without the gradient.
+- **The controls.** One strip after the field: each a word ("Sort", "Filter", "Group", "View") and
+  its value, then a caret, 1 rem dividers between. From 110% text a 12 rem glyph takes the word's
+  place, and at 100% too where the words would leave the field under its 150 rem floor, or while a
+  typed query's Enter target would not fit whole beside them; a planner decides it, on the same
+  estimate as the field (`planControls`). Each value sits in a slot as wide as the widest value the
+  control can show in this menu (the menu's own sorts and groupings, which a numeric sort such as
+  "Households" or "Sewage capacity" makes wider than "Default"), so a pick never moves the strip;
+  the field gives up that room between menus. A sort set away from Default, or any filter on, turns
+  its value white with a 4 rem dot. Group and View carry no dot: C# publishes the grouping in force,
+  never whether the player chose it, and the view is one pick for every menu, so a dot there could
+  not tell a pick from a default. A cell's label is the game's Tooltip ("Group · By tab"). Each
+  cell is the game's icon button with its hover and press.
+- **The popovers.** A press on a control opens its popover, and a second press closes it; a press
+  on another control switches; only one is open. A popover is 240 wide, a child of the box so it
+  takes the look, opening upward from 2.25 rem above the box, anchored by a fixed bottom offset as
+  the pane's own menus are (a surface hung from `bottom: 100%` is untried on this engine). Its left
+  edge sits under its control's, as drawn at the press, pulled left to end at the box's right edge
+  or 6 rem short of the chirper (`popoverRightLimit`); a control that cannot be measured
+  right-aligns it there. It sits over the top edge's strip and the top row (z-index 50 over 45 and
+  40). A press anywhere else closes it: a capture-phase `mousedown` on the document, since the
+  game's input sends mouse events and no pointer events, which a press inside the popover or on the
+  controls never triggers (`isWithin`, by the marks `data-bbm-popover` and `data-bbm-controls`).
+  Filter's and View's cells open no list yet.
+- **The SORT and GROUP lists.** SORT lists Default and the sorts that can move this menu's rows,
+  the current one lit with its direction (▲ or ▼), which picking it again flips; GROUP lists the
+  groupings the menu offers, its own lit. A pick closes either. A sort keeps the list's scroll
+  position: scrolling the list to its top on a sort arrives with the list's anchor rule, in a later
+  increment. **This changes 0.2.x:** the pane's separate reverse-sort button is gone, since the lit
+  row flips the direction; and the first two groupings are named "By tab" and "No groups", in the
+  strip, the popover and the pane alike, where the pane said "Category" and "None".
+- **The pane** draws the same lists: its Group by and Sort by rows are summaries that open them over
+  the pane, the sort's summary naming its direction. Its root carries the look's class
+  (`useLookRoot`), since custom properties reach only a root's own children, and the pane sits
+  beside the box, not inside it. **This changes 0.2.x:** the pane's lists draw their rows in the
+  look's ink, 24 rem tall, the lit one in the game's selected colour with white text.
 
 ## The top edge
 

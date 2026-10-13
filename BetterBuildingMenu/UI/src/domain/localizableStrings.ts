@@ -45,9 +45,9 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },
-  { key: key("GroupBy_none"), english: "None", source: "buildingGroups", plumbed: true },
+  { key: key("GroupBy_none"), english: "No groups", source: "buildingGroups", plumbed: true },
   // The game's own categories — the dimension the tab row shows.
-  { key: key("GroupBy_menuCategory"), english: "Category", source: "buildingGroups", plumbed: true },
+  { key: key("GroupBy_menuCategory"), english: "By tab", source: "buildingGroups", plumbed: true },
   // Ours: Buildings, Networks, Service Buildings. Not "Category", which is the
   // game's word for a different idea.
   { key: key("GroupBy_category"), english: "Asset type", source: "buildingGroups", plumbed: true },

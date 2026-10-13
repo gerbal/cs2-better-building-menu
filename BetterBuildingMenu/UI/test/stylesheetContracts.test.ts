@@ -200,6 +200,26 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(edge.cursor, "url(cursor://vertical-can-resize)");
   });
 
+  it("keeps the controls on one line: the strip and its cells never wrap or shrink, a value never widens its cell", () => {
+    const strip = declarationsOf(TOP_ROW, ".strip");
+
+    assert.equal(strip.flex, "0 0 auto");
+    assert.equal(strip["flex-wrap"], "nowrap");
+    assert.equal(declarationsOf(TOP_ROW, ".cellBox").flex, "0 0 auto");
+    assert.equal(declarationsOf(TOP_ROW, ".value").overflow, "hidden");
+    assert.equal(declarationsOf(TOP_ROW, ".dot").position, "absolute");
+  });
+
+  it("draws the popovers over the top edge's strip, from a bottom offset", () => {
+    const popover = declarationsOf("mods/ControlPopover/controlPopover.module.scss", ".popover");
+
+    assert.equal(popover.position, "absolute");
+    assert.ok(Number(popover["z-index"]) > Number(declarationsOf(TOP_EDGE, ".topEdge")["z-index"]), "over the top edge");
+    // Anchored by a fixed bottom offset, inline, as the pane's own menus are on this engine.
+    assert.equal(popover.top, undefined);
+    assert.equal(popover.bottom, undefined);
+  });
+
   it("draws the box's surfaces in the look's material: the bands its head, the body its list under its blur", () => {
     // One material for the whole box: the game's translucent list between the look's bands shows a seam.
     assert.equal(declarationsOf(TOP_ROW, ".topBand")["background-color"], "var(--bbm-head)");

@@ -6,6 +6,8 @@ import { setBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { getAssetMenuView, resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { GROUP_DIMENSIONS } from "../../src/domain/buildingGroups";
 import { ControlPane } from "../../src/mods/ControlPane/ControlPane";
+import { GroupList } from "../../src/mods/Pickers/GroupList";
+import { SortList } from "../../src/mods/Pickers/SortList";
 
 const facets = (selected: boolean) => ({
   groups: [{ id: "role", label: "Role", options: [{ id: "Hospital", label: "Hospital", selected }] }],
@@ -44,7 +46,7 @@ describe("the control pane", () => {
     const html = render();
 
     assert.equal(count(html, /class="pickerSummary"/), 2, "a group picker and a sort picker");
-    assert.match(html, /class="pickerLabel">Category</);
+    assert.match(html, /class="pickerLabel">By tab</);
     assert.match(html, /Sort by/);
     for (const mode of ["Grid", "List", "Cards", "Table"]) {
       assert.match(html, new RegExp(`title="${mode}"`), `view mode ${mode}`);
@@ -93,6 +95,35 @@ describe("the control pane", () => {
     for (const gone of [/aria-label="Lock/, /aria-label="Close/, /aria-label="Expand/, /aria-label="Collapse/]) {
       assert.doesNotMatch(html, gone);
     }
+  });
+
+  it("opens the same Group and Sort lists the top row's popovers show", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(<ControlPane />);
+    });
+    const summary = (label: string) =>
+      root!.root.find((node) => String(node.props["aria-label"] ?? "").startsWith(`${label} · `) && typeof node.props.onSelect === "function");
+
+    act(() => summary("Group by").props.onSelect());
+    assert.equal(root!.root.findAllByType(GroupList).length, 1);
+    act(() => summary("Sort by").props.onSelect());
+    assert.equal(root!.root.findAllByType(SortList).length, 1);
+    act(() => root!.unmount());
+  });
+
+  it("carries the look on its own root, so the lists' tokens resolve beside the box", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(<ControlPane />);
+    });
+    const pane = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("pane"));
+
+    assert.deepEqual(String(pane.props.className).split(" ").sort(), ["followStyle", "pane", "standard"]);
+    assert.equal(pane.props.style["--bbm-a-head"], "0.96");
+    assert.equal(pane.props.style["--bbm-a-body"], "0.92");
+    assert.equal(pane.props.style["--bbm-a-popBg"], "0.97");
+    act(() => root!.unmount());
   });
 });
 

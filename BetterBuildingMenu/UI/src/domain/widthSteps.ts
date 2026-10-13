@@ -144,6 +144,11 @@ export function topRowRightInset(placement: BoxPlacement, width: number, aspect:
   return Math.max(TOP_ROW_INSET, placement.left + width - end);
 }
 
+/** Where a popover may end, in the box: its right edge, or 6 rem short of the chirper where the box runs over it. */
+export function popoverRightLimit(placement: BoxPlacement, width: number, aspect: number): number {
+  return Math.min(width, screenWidth(aspect) - CHIRPER_CLEARANCE_OFFSET - placement.left);
+}
+
 /** The steps the right edge snaps to, narrowest first: beside the shown pane, only those that fit. */
 export function snapTargets(screen: WidthStepScreen): WidthSnap[] {
   const widths = widthStepWidths(screen.aspect);

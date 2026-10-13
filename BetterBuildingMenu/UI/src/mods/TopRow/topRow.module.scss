@@ -1,3 +1,4 @@
+@use "../../base.scss" as _base;
 @use "../../assetMenuGeometry" as *;
 
 // The top row's band: a pad over the row, the row, a gap under it, in the look's head material. Over
@@ -144,4 +145,114 @@
   mask-size: contain;
   mask-position: 50% 50%;
   mask-repeat: no-repeat;
+}
+
+// Sort, Filter, Group and View: one quiet strip after the field, never wrapping or shrinking; each
+// value sits in a slot of fixed width, inline, so a pick never moves it.
+.strip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: $top-row-height;
+  margin-left: $controls-gap;
+  border-radius: 4rem;
+  background-color: var(--bbm-ctlStrip);
+}
+
+.divider {
+  flex: 0 0 auto;
+  width: $control-divider;
+  height: 14rem;
+  background-color: var(--bbm-divider);
+}
+
+.cellBox {
+  flex: 0 0 auto;
+  height: $top-row-height;
+}
+
+// The game's icon Button, with the game's hover and press. Its one class pins a square size and
+// paints a fill: two classes outrank it whichever sheet loads last.
+.strip .cell {
+  @include _base.transparentButton(false, true);
+
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  width: auto !important;
+  height: $top-row-height;
+  padding: 0 $control-padding;
+  border-radius: 4rem;
+  // The strip under it is the ground.
+  background-color: transparent;
+  font-size: calc(#{$top-row-text} * var(--fontScale));
+  white-space: nowrap;
+}
+
+// From 110% text: a glyph in the word's place, and less padding.
+.strip .folded {
+  padding: 0 $control-padding-folded;
+}
+
+// Its popover is open.
+.strip .open,
+.strip .open:hover {
+  background-color: var(--bbm-ctlOpen);
+}
+
+.word {
+  flex: 0 0 auto;
+  margin-right: $control-word-gap;
+  color: var(--bbm-tWord);
+}
+
+// A sibling of the value, never inside its text: a mask inside a run of text draws nothing. Three
+// classes, over the size the button gives every picture inside it.
+.strip .cell .controlGlyph {
+  flex: 0 0 auto;
+  width: $control-glyph;
+  height: $control-glyph;
+  margin-right: $control-word-gap;
+  background-color: var(--bbm-tWord);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}
+
+// As wide as the widest value the control can show here; one the estimate gets wrong is cut inside it.
+.value {
+  flex: 0 0 auto;
+  overflow: hidden;
+  color: var(--bbm-tState);
+}
+
+// Set away from how the menu opens.
+.set {
+  color: var(--bbm-tStateSet);
+}
+
+.strip .cell .caret {
+  flex: 0 0 auto;
+  width: $control-caret;
+  height: $control-caret;
+  margin-left: $control-caret-gap;
+  background-color: var(--bbm-tWord);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}
+
+// Over the cell's top right, beside a value that is set, taking no width.
+.dot {
+  position: absolute;
+  top: 5rem;
+  right: 3rem;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 2rem;
+  background-color: var(--bbm-dot);
 }

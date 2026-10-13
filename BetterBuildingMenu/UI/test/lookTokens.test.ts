@@ -119,7 +119,14 @@ describe("the looks' tokens", () => {
     // Cohtml has no :not(), :has(), :is() or :nth-child(an+b), no outline and no currentColor, and
     // a token goes to one longhand, never the background shorthand Cohtml may not resolve.
     const found: string[] = [];
-    for (const sheet of [LOOKS, "mods/TopRow/topRow.module.scss", "mods/BuildingMenu/assetMenu.module.scss"]) {
+    const readers = [
+      LOOKS,
+      "mods/TopRow/topRow.module.scss",
+      "mods/BuildingMenu/assetMenu.module.scss",
+      "mods/ControlPopover/controlPopover.module.scss",
+      "mods/Pickers/pickerList.module.scss",
+    ];
+    for (const sheet of readers) {
       assert.ok(TOKEN_SHEETS.includes(sheet), `${sheet} reads the tokens`);
     }
 

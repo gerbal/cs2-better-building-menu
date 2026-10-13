@@ -2,14 +2,8 @@ import { trigger, useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import type { SortColumn } from "domain/buildingCatalogContracts";
+import { memo, useState, type ReactNode } from "react";
 import type { Command } from "domain/command";
-import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
-import {
-  groupDimensionsFor,
-  groupDimensionLabel,
-  type GroupDimensionId,
-} from "domain/buildingGroups";
 import { ChipRow } from "mods/ChipRow/ChipRow";
 import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
@@ -26,79 +20,71 @@ import {
   toggleAssetPack,
 } from "domain/assetPackSelection";
 import { countActiveMetricRanges, metricRangesFromState } from "domain/buildingCatalogRanges";
-import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
-import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
+import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import { setAssetMenuView } from "domain/assetMenuViewStore";
-import { chooseViewMode } from "domain/viewModeChoice";
-import { useAssetMenuView } from "mods/useAssetMenuView";
-import { memo, useState } from "react";
+import { DEFAULT_VIEW_MODE } from "domain/viewModeChoice";
+import { GroupList, useGroupOptions } from "mods/Pickers/GroupList";
+import { SortList, useSortOptions } from "mods/Pickers/SortList";
+import { useViewOptions } from "mods/Pickers/ViewList";
+import { useLookRoot } from "mods/useLookRoot";
 import {
-  BuildingCatalog$,
-  BuildingCatalogGroupBy$,
-  BuildingCatalogMetricRanges$,
-  BuildingCatalogSortColumn$,
-  BuildingCatalogSortDescending$,
   AssetMenuFacets$,
-  AssetMenuGroupDimensions$,
-  AssetMenuViewMode$,
+  BuildingCatalogMetricRanges$,
   CurrentSearch$,
   SelectedAssetPacks$,
   VanillaSelected$,
   send,
-  sendSort,
 } from "mods/bindings";
 import styles from "./controlPane.module.scss";
 
+/** A labelled row whose summary opens a list upward over the pane: the list the top row's popover shows. */
+const PickerSummary = ({ label, value, children }: { label: string; value: string; children: (close: () => void) => ReactNode }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className={styles.row}>
+      <span className={styles.rowLabel}>{label}</span>
+      <div className={styles.rowValue}>
+        <div className={styles.picker}>
+          <Button
+            className={styles.pickerSummary}
+            variant="icon"
+            onSelect={() => setOpen((shown) => !shown)}
+            aria-expanded={open}
+            aria-label={`${label} · ${value}`}
+          >
+            <span className={styles.pickerLabel}>{value}</span>
+            {/* U+25BC, not the small U+25BE: the game's font stack has no small
+                triangles, so the one mark saying this control opens would be the
+                one glyph that would not render. */}
+            <span className={styles.caret} aria-hidden="true">▼</span>
+          </Button>
+          {open && <div className={styles.pickerOptions}>{children(() => setOpen(false))}</div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /**
- * The asset menu control plane: a column to the right of the build menu,
- * mirroring vanilla's tool-options column, holding everything that acts on the
- * catalog — what narrows it, how it is grouped and ordered, what shape it draws.
+ * The asset menu control plane, an option: a column to the right of the build menu, mirroring
+ * vanilla's tool-options column, holding everything that acts on the catalog — what narrows it,
+ * how it is grouped and ordered, what shape it draws. Its Group and Sort lists are the top row's,
+ * so the two homes cannot disagree. It carries the look on its own root.
  */
 export const ControlPane = memo(function ControlPane() {
   const { translate } = useLocalization();
-  const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
-  const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  // Only for which sort fields can act on these results; see BuildingCatalogPage.
-  const catalogPage = useValue(BuildingCatalog$);
-  // The dimension ids that can act on the current menu. C# judges it over the
-  // whole menu set; an empty list means it has not said yet.
-  const offeredDimensions = useValue(AssetMenuGroupDimensions$) ?? [];
-  // The fields that can actually reorder these results. The picker drops the
-  // rest rather than offering a control that cannot act.
-  const reorderableSortColumns = catalogPage?.reorderableSortColumns ?? [];
+  const look = useLookRoot();
+  const sort = useSortOptions();
+  const group = useGroupOptions();
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const selectedAssetPacks = useValue(SelectedAssetPacks$) ?? [];
   const vanillaSelected = useValue(VanillaSelected$) ?? false;
 
-  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
-  const [sortPickerOpen, setSortPickerOpen] = useState(false);
-
-  const viewModeChoice = chooseViewMode(
-    useAssetMenuView((view) => view.viewMode),
-    useValue(AssetMenuViewMode$),
-    DEFAULT_VIEW_MODE
-  );
-  // The store first, so the pick redraws now; then C#, which keeps it for the
-  // next session. Only from a click: an effect that sent on a binding change
-  // would answer C#'s own echo.
-  const pickViewMode = (next: CatalogViewMode): void => {
-    setAssetMenuView({ viewMode: next });
-    send({ method: "SetAssetMenuViewMode", args: [next] });
-  };
-  // Resolved on the C# side: the player's choice, or the menu's default.
-  const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
-
-  const sortPresentation = getAssetMenuSortPresentation(
-    { column: sortColumn, descending },
-    reorderableSortColumns
-  );
+  const view = useViewOptions();
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
-
-  const groupByLabel =
-    translate(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy))
-    ?? groupDimensionLabel(groupBy);
 
   const fire = send;
 
@@ -146,10 +132,8 @@ export const ControlPane = memo(function ControlPane() {
 
   const clearLabel = label("Tooltip.LABEL[BetterBuildingMenu.ClearFilters]", "Clear filters");
 
-  const setSort = (column: SortColumn) => sendSort({ column: sortColumn, descending }, column);
-
   return (
-    <div className={styles.pane}>
+    <div className={classNames(styles.pane, look.className)} style={look.style}>
       {/* Identity first — which menu, which category — above the controls that
           act on it. Here it costs the asset menu no row and is on screen at every
           height the asset menu rests at. */}
@@ -223,114 +207,14 @@ export const ControlPane = memo(function ControlPane() {
       )}
 
       {/* The two controls that reorder rows, in the order they apply: the
-          grouping key first, then the sort within each group. */}
-      {(
-        <>
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>
-              {label("Tooltip.LABEL[BetterBuildingMenu.GroupBy]", "Group by")}
-            </span>
-            <div className={styles.rowValue}>
-              <div className={styles.picker}>
-                <Button
-                  className={styles.pickerSummary}
-                  variant="icon"
-                  onSelect={() => setGroupPickerOpen((open) => !open)}
-                  aria-expanded={groupPickerOpen}
-                  title={groupByLabel}
-                >
-                  <span className={styles.pickerLabel}>{groupByLabel}</span>
-                  {/* U+25BC, not the small U+25BE: the game's font stack has no
-                      small triangles, so the one mark saying this control opens
-                      would be the one glyph that would not render. */}
-                  <span className={styles.caret} aria-hidden="true">▼</span>
-                </Button>
-                {groupPickerOpen && (
-                  <div className={styles.pickerOptions}>
-                    {groupDimensionsFor(offeredDimensions).map((dimension) => {
-                      const optionLabel = translate(
-                        `Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`,
-                        dimension.label
-                      ) ?? dimension.label;
-
-                      return (
-                        <Button
-                          key={dimension.id}
-                          className={classNames(
-                            styles.pickerOption,
-                            dimension.id === groupBy && styles.pickerOptionSelected
-                          )}
-                          variant="icon"
-                          onSelect={() => {
-                            send({ method: "SetBuildingCatalogGroupBy", args: [dimension.id] });
-                            setGroupPickerOpen(false);
-                          }}
-                          aria-label={optionLabel}
-                        >
-                          <span>{optionLabel}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>
-              {label("Tooltip.LABEL[BetterBuildingMenu.SortBy]", "Sort by")}
-            </span>
-            <div className={styles.rowValue}>
-              <div className={styles.picker}>
-                <Button
-                  className={styles.pickerSummary}
-                  variant="icon"
-                  onSelect={() => setSortPickerOpen((open) => !open)}
-                  aria-expanded={sortPickerOpen}
-                  title={sortPresentation.compact.label}
-                >
-                  <span className={styles.pickerLabel}>{sortPresentation.compact.label}</span>
-                  <span className={styles.caret} aria-hidden="true">▼</span>
-                </Button>
-                {sortPickerOpen && (
-                  <div className={styles.pickerOptions}>
-                    {sortPresentation.expanded.map((option) => (
-                      <Button
-                        key={option.key}
-                        className={classNames(
-                          styles.pickerOption,
-                          option.selected && styles.pickerOptionSelected
-                        )}
-                        variant="icon"
-                        onSelect={() => {
-                          setSort(option.key);
-                          setSortPickerOpen(false);
-                        }}
-                        aria-label={option.label}
-                      >
-                        <span>{option.label}</span>
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {/* Its own button, deliberately: inside the summary above, a
-                  click on it bubbles and opens the picker instead of
-                  reversing the order. */}
-              <Button
-                className={styles.direction}
-                variant="icon"
-                onSelect={() => setSort(sortColumn)}
-                aria-label={label("Tooltip.LABEL[BetterBuildingMenu.ReverseSortButton]", "Reverse sort")}
-                title={label("Tooltip.LABEL[BetterBuildingMenu.ReverseSortButton]", "Reverse sort")}
-              >
-                <span aria-hidden="true">{sortPresentation.compact.indicator}</span>
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+          grouping key first, then the sort within each group, its direction
+          beside its name. */}
+      <PickerSummary label={label("Tooltip.LABEL[BetterBuildingMenu.GroupBy]", "Group by")} value={group.current}>
+        {(close) => <GroupList onPicked={close} />}
+      </PickerSummary>
+      <PickerSummary label={label("Tooltip.LABEL[BetterBuildingMenu.SortBy]", "Sort by")} value={`${sort.current} ${sort.indicator}`}>
+        {(close) => <SortList onPicked={close} />}
+      </PickerSummary>
 
       {/* The only View control in the mod, so the concept has one home
           whichever menu is open rather than a copy inside each content area. */}
@@ -339,7 +223,7 @@ export const ControlPane = memo(function ControlPane() {
           {label("Tooltip.LABEL[BetterBuildingMenu.ViewMode]", "View")}
         </span>
         <div className={styles.rowValue}>
-          <ViewModeBar value={viewModeChoice} onChange={pickViewMode} />
+          <ViewModeBar value={view.options.find((option) => option.selected)?.id ?? DEFAULT_VIEW_MODE} onChange={view.pick} />
         </div>
       </div>
 

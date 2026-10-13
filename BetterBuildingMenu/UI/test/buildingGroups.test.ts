@@ -29,8 +29,8 @@ describe("Group dimensions", () => {
 
   it("puts None last, because it is how grouping is turned off", () => {
     assert.equal(GROUP_DIMENSIONS[GROUP_DIMENSIONS.length - 1].id, "none");
-    assert.equal(groupDimensionLabel("none"), "None");
-    assert.equal(groupDimensionLabel("menuCategory"), "Category");
+    assert.equal(groupDimensionLabel("none"), "No groups");
+    assert.equal(groupDimensionLabel("menuCategory"), "By tab");
   });
 
   it("names the education menu loosely, like C#", () => {

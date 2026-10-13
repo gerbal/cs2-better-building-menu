@@ -1,0 +1,59 @@
+@use "../../base.scss" as _base;
+@use "../../assetMenuGeometry" as *;
+
+// The rows the popovers and the control pane list: one per choice, 24 tall, the lit one in the
+// selected colour no interface style changes. See docs/design-notes.md, "The top row".
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+// The game's icon Button, with the game's press. Its one class pins a square size and paints a
+// fill: two classes outrank it whichever sheet loads last.
+.list .row {
+  @include _base.transparentButton(false, true);
+
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  // The icon variant pins a square width, and these carry words.
+  width: auto !important;
+  height: $popover-row;
+  padding: 0 8rem;
+  border-radius: 3rem;
+  background-color: transparent;
+  color: var(--bbm-tState);
+  font-size: calc(#{$top-row-text} * var(--fontScale));
+  white-space: nowrap;
+}
+
+.list .row:hover {
+  background-color: var(--bbm-ctlOpen);
+}
+
+.list .lit,
+.list .lit:hover {
+  background-color: var(--bbm-popOn);
+  color: var(--bbm-armText);
+}
+
+// Offered, but not what draws here.
+.list .dim {
+  color: var(--bbm-tDim);
+}
+
+.name {
+  flex: 1 1 auto;
+}
+
+.note {
+  flex: 0 0 auto;
+  margin-left: 8rem;
+  color: var(--bbm-tDim);
+}
+
+.lit .note {
+  color: var(--bbm-armText);
+}

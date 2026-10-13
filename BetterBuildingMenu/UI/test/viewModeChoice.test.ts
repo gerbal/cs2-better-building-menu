@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { VIEW_MODE_KINDS, chooseViewMode, sessionPickAfterStored } from "../src/domain/viewModeChoice.ts";
-import { DEFAULT_VIEW_MODE, VIEW_MODES } from "../src/mods/GroupedResults/ViewModeBar.tsx";
+import { DEFAULT_VIEW_MODE, VIEW_MODES, VIEW_MODE_KINDS, chooseViewMode, sessionPickAfterStored } from "../src/domain/viewModeChoice.ts";
 
 describe("which view the build menu draws", () => {
   it("draws the session's pick over the stored view", () => {
