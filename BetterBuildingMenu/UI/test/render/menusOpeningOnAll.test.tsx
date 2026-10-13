@@ -29,8 +29,21 @@ describe("the small menus the watcher tells C#", () => {
     assert.deepEqual(told(), []);
 
     act(() => setBinding("BetterBuildingMenu", "MenuShares", shares(7)));
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuHeight", 300));
+    // The shares again, the same rows counted once more: the set is the same, so nothing goes.
+    act(() => setBinding("BetterBuildingMenu", "MenuShares", shares(7)));
     act(() => setBinding("BetterBuildingMenu", "MenuShares", shares(40)));
+
+    assert.deepEqual(told(), ["Garbage Management", ""]);
+  });
+
+  it("tells C# its set again after a remount, since C# keeps the last one it was told", () => {
+    setBinding("BetterBuildingMenu", "MenuShares", shares(7));
+    act(() => { root = create(<VanillaMenuWatcher />); });
+    act(() => root!.unmount());
+
+    // The menu stopped being small while the watcher was away.
+    setBinding("BetterBuildingMenu", "MenuShares", shares(40));
+    act(() => { root = create(<VanillaMenuWatcher />); });
 
     assert.deepEqual(told(), ["Garbage Management", ""]);
   });

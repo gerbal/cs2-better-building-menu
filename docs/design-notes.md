@@ -1328,8 +1328,9 @@ height (`menusOpeningOnAll`), so neither the text scale, the Width nor a drag ch
 opens on. Which body a menu draws is the UI's rule, so the UI names the small menus
 (`SetMenusOpeningOnAll`, one name a line), from the menu watcher, which is mounted before any menu
 opens; it names only the menus C# has counted, so a small menu opens on its tab the first time a
-session opens it, and on All from then on. The Cards from width knob's cards do not open on All: the
-rule reads the stored picks, not the knob.
+session opens it, and on All from then on; the watcher tells C# the set again whenever it changes and
+when it mounts again, as C# keeps the last set it was told. A menu in the Cards from width knob's cards
+opens on All only where it is small: the rule reads the stored picks, not the knob.
 
 **This changes 0.2.x:** 0.2.4 opened every menu on All; a menu now opens on its tab, but a menu in Cards
 opens on All, as an upgrader in Cards had it, and so does a small menu.

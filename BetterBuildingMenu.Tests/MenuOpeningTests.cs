@@ -63,6 +63,18 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ASmallMenuOpensOnItsTabUntilTheUiNamesItThenOnAll()
+		{
+			// The UI names a small menu once C# has counted it: the first open asks with the empty set,
+			// the next with its name.
+			var first = OpensOnAll.For("Roads", OpensOnAll.Parse(string.Empty), MenuPicks.None, BodyViews.Auto);
+			var next = OpensOnAll.For("Roads", OpensOnAll.Parse("Roads"), MenuPicks.None, BodyViews.Auto);
+
+			Assert.Equal(new MenuOpening("RoadsMediumRoads", -1, 3), Opening(Roads, In("Roads"), armed: 3, RoadTabs, onAll: first));
+			Assert.Equal(new MenuOpening(string.Empty, -1, 3), Opening(Roads, In("Roads"), armed: 3, RoadTabs, onAll: next));
+		}
+
+		[Fact]
 		public void AGatheredNetworkOpensOnTheTabRoadsGivesIt()
 		{
 			Assert.Equal(new MenuOpening("Tracks", -1, 5), Opening(Roads, In("Roads"), armed: 5, RoadTabs));

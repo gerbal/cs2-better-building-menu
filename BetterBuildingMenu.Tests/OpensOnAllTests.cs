@@ -24,7 +24,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void ASmallMenuOpensOnItsTabUntilTheUiHasNamedIt()
+		public void TheSystemNamesNoMenuUntilTheUiSendsItsSet()
 		{
 			// The UI names a menu only once C# has counted it, so the set is empty until then.
 			var system = ModSource.Text("Systems/BuildingMenuUISystem.cs");

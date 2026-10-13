@@ -52,8 +52,9 @@ export const VanillaMenuWatcher = () => {
   const findItPanelShown = useValue(FindItPanelShown$) === true;
 
   // The small menus, which open on All: told to C# here, where the watcher is mounted before any menu
-  // opens, since the asset menu mounts only once one has. Again whenever the set changes, and never
-  // before C# has counted a menu. See domain/opensOnAll.ts.
+  // opens, since the asset menu mounts only once one has. Again whenever the set changes, and on a
+  // remount, as C# keeps the last set it was told; never before C# has counted a menu. See
+  // domain/opensOnAll.ts.
   const shares = useValue(MenuShares$);
   const views = useValue(AssetMenuViews$);
   const defaultView = useValue(AssetMenuDefaultView$);
@@ -64,13 +65,14 @@ export const VanillaMenuWatcher = () => {
     () => menusOpeningOnAll({ shares: shares ?? [], views: views ?? [], defaultView, tuning: { ...SHIPPED_TUNING, ...tuning }, tileSize, atLargeText }).join("\n"),
     [shares, views, defaultView, tuning, tileSize, atLargeText]
   );
-  const toldSmall = useRef("");
+  const counted = (shares ?? []).length > 0;
+  const toldSmall = useRef<string | null>(null);
 
   useEffect(() => {
-    if (small === toldSmall.current) return;
+    if (!counted || small === toldSmall.current) return;
     toldSmall.current = small;
     send(setMenusOpeningOnAllCommand(small));
-  }, [small]);
+  }, [counted, small]);
 
   /**
    * Escape, BBM's half: from the search field the open list, then the query, then the menu; from
