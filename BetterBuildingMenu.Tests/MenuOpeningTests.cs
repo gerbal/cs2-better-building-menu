@@ -119,6 +119,25 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void AnEducationMenuThatDrawsOneTabOpensOnAllWhateverItsLevels()
+		{
+			// The toolbar's row can leave Education one tab: its levels draw no chips, so no level opens.
+			var schoolsOnly = Schools.Where(entry => entry.UiCategory == "Education").ToArray();
+
+			Assert.Equal(MenuOpening.All, Opening(schoolsOnly, In(Education), armed: 0, EducationTabs, education: true));
+			Assert.Equal(new MenuOpening(string.Empty, -1, 12), Opening(schoolsOnly, In(Education), armed: 12, EducationTabs, education: true));
+		}
+
+		[Fact]
+		public void FiltersThatEmptyEveryTabOpenTheMenusFirstTab()
+		{
+			// Only what can be built, in a menu where nothing can: the first tab opens, its list empty.
+			var allLocked = Roads.Select(entry => entry with { IsLocked = true }).ToArray();
+
+			Assert.Equal(new MenuOpening("RoadsSmallRoads", -1, 0), Opening(allLocked, In("Roads", Unlocked), armed: 0, RoadTabs));
+		}
+
+		[Fact]
 		public void AMenuThatDrawsFewerThanTwoTabsOpensOnAll()
 		{
 			// One tab draws no tab cells, so the menu opens on All, the armed row anchored.
@@ -179,10 +198,22 @@ namespace BetterBuildingMenu.Tests
 			// The rule opens on a tab or a level only where the row draws one: two tabs, two levels.
 			var view = ModSource.Text("Services/CatalogView.cs");
 
-			Assert.Contains("MenuCategoryCounts.Count > 1 ? MenuCategoryCounts", ModSource.Member(view, "public MenuOpening Opening(int armed)"));
-			Assert.Contains("private bool DrawsLevels => TierBracket.Tiers.Length > 1;", view);
+			var opening = ModSource.Member(view, "public MenuOpening Opening(int armed)");
+			var row = ModSource.Text("UI/src/domain/tabRow.ts");
+
+			Assert.Contains("var tabs = DrawsTabs ? MenuCategoryCounts : Array.Empty<MenuCategoryCount>();", opening);
+			Assert.Contains("if (DrawsLevels && TierBracket.Tiers.FirstOrDefault(", opening);
+			Assert.Contains("private bool DrawsTabs => MenuCategoryCounts.Count > 1;", view);
+			Assert.Contains("private bool DrawsLevels => DrawsTabs && TierBracket.Tiers.Length > 1;", view);
+			Assert.Contains("DrawsLevels && string.Equals(tab, TierBracket.ParentCategory, StringComparison.Ordinal)", view);
+
+			// The UI draws levels in categoryItems alone, and calls it only where the tab row draws its tabs.
 			Assert.Contains("presentCategories(categories, counts).length >= 2", ModSource.Text("UI/src/domain/vanillaMenuCategories.ts"));
-			Assert.Contains("category.id === input.bracket.parentCategory && tiers.length > 1", ModSource.Text("UI/src/domain/tabRow.ts"));
+			Assert.Contains("category.id === input.bracket.parentCategory && tiers.length > 1", ModSource.Member(row, "function categoryItems("));
+			Assert.Contains(
+				"if (scoped && shouldShowCategoryStrip(input.categories, input.counts, input.menu)) { items.push(...presentCategories(input.categories, input.counts).flatMap((category) => categoryItems(input, category))); }",
+				ModSource.Member(row, "export function tabRow("));
+			Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(row, @"\bcategoryItems\(").Count);
 		}
 	}
 }

@@ -184,8 +184,8 @@ namespace BetterBuildingMenu.Systems
 			// The tab and the row the open rule picks, over the menu as it opens. See CatalogView.Opening.
 			var armed = ArmedEntryId();
 			_assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed));
-			// The player is now looking at everything this menu holds, which is
-			// what vanilla treats as having seen it.
+			// Vanilla drops a category's highlight as its selection moves off it; the asset menu never
+			// moves that selection, so an open clears the menu's highlights, whichever tab it opens on.
 			ClearVanillaMenuHighlights(menuName);
 			PublishScope();
 

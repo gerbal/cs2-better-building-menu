@@ -119,8 +119,7 @@ namespace BetterBuildingMenu.Services
 		public MenuOpening Opening(int armed)
 		{
 			// One tab draws no tab cells: the row draws All and the strip, vanilla's one tab being the whole menu.
-			// The same two-tab rule as the UI's shouldShowCategoryStrip.
-			var tabs = MenuCategoryCounts.Count > 1 ? MenuCategoryCounts : Array.Empty<MenuCategoryCount>();
+			var tabs = DrawsTabs ? MenuCategoryCounts : Array.Empty<MenuCategoryCount>();
 			var held = armed > 0 ? PresentSet.FirstOrDefault(entry => entry.Id == armed) : null;
 
 			if (held is not null)
@@ -143,9 +142,12 @@ namespace BetterBuildingMenu.Services
 			return opened is null ? MenuOpening.All : new MenuOpening(opened.Id, -1, 0);
 		}
 
-		/// <summary>Whether Education's levels draw as chips beside their tab: two or more, as the row draws them.</summary>
-		/// <remarks>The same two-level rule as the UI's tab row (tabRow.ts, categoryItems).</remarks>
-		private bool DrawsLevels => TierBracket.Tiers.Length > 1;
+		/// <summary>Whether the row draws the menu's tabs: two or more, as the UI's shouldShowCategoryStrip draws them.</summary>
+		private bool DrawsTabs => MenuCategoryCounts.Count > 1;
+
+		/// <summary>Whether Education's levels draw as chips beside their tab: two or more, inside a drawn tab row.</summary>
+		/// <remarks>The same rule as the UI's tab row, whose categoryItems alone draws levels (tabRow.ts).</remarks>
+		private bool DrawsLevels => DrawsTabs && TierBracket.Tiers.Length > 1;
 
 		/// <summary>The level an armed school opens on, where its tab draws its levels; -1 anywhere else.</summary>
 		private int LevelOf(BuildingCatalogEntry entry, string tab) =>
