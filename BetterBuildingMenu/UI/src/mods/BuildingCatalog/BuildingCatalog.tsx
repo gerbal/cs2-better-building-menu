@@ -27,7 +27,7 @@ import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
-import { isSearchField } from "mods/BuildingMenu/searchField";
+import { isSearchField } from "mods/TopRow/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
@@ -235,7 +235,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   // Enter arms the backend's best match by id, wherever its row is, so a search
   // can be finished without leaving the keyboard. One listener for every view, on
-  // the document because the search field is the header's; the ref keeps it
+  // the document because the search field is the top row's; the ref keeps it
   // reading this render. An Enter pressed before the page catches up with the box
   // is held for it.
   const pendingEnter = useRef<string | null>(null);

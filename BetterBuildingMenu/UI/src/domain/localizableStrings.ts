@@ -41,7 +41,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("WorkersUnit"), english: "jobs", source: "BuildingHoverCard", plumbed: true },
   // Vanilla's menus close from an X in the top-right corner; the asset menu stands
   // in for one, so it offers the same way out.
-  { key: key("CloseMenu"), english: "Close", source: "BuildingMenuHeader", plumbed: true },
+  { key: key("CloseMenu"), english: "Close", source: "TopRow", plumbed: true },
   { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },

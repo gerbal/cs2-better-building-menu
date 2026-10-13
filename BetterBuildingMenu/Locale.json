@@ -106,6 +106,8 @@
   "Tooltip.LABEL[BetterBuildingMenu.MetricRangeInvalid]": "Not a number — this bound is ignored",
   "Tooltip.LABEL[BetterBuildingMenu.MetricRangeSwapped]": "Bounds reversed — showing lowest to highest",
   "Tooltip.LABEL[BetterBuildingMenu.ClearSearch]": "Clear search",
+  "Tooltip.LABEL[BetterBuildingMenu.SearchMenu]": "Search {0}",
+  "Tooltip.LABEL[BetterBuildingMenu.AllMatchesLocked]": "All matches locked",
   "Tooltip.LABEL[BetterBuildingMenu.Level]": "Level",
   "Tooltip.LABEL[BetterBuildingMenu.Lot]": "Lot",
   "Tooltip.LABEL[BetterBuildingMenu.Parking]": "Parking",

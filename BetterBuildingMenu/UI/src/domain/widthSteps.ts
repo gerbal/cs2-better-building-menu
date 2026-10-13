@@ -4,7 +4,7 @@
  * sharedContracts.generated.ts; where the box sits is the UI's. See docs/design-notes.md,
  * "The Width steps".
  */
-import { CONTROL_PANE_TOTAL, VANILLA_TOOL_COLUMN_WIDTH, dragDistanceRem } from "./assetMenuLayout";
+import { CONTROL_PANE_TOTAL, TOP_ROW_INSET, VANILLA_TOOL_COLUMN_WIDTH, dragDistanceRem } from "./assetMenuLayout";
 import {
   LAYOUT_HEIGHT,
   SOCIAL_COLUMN_RIGHT_OFFSET,
@@ -120,6 +120,19 @@ export function boxPlacement(width: number, screen: WidthStepScreen): BoxPlaceme
   const left = Math.max(toolOptionsEdge(screen.textScale), Math.min(vanilla, growsTo - width));
 
   return { left, offset: left - vanilla };
+}
+
+/** How much further short of the chirper the top row stops than the box: its controls stay off the chirper's edge. */
+const TOP_ROW_CHIRPER_GAP = 4;
+
+/**
+ * How far in from the box's right edge the top row ends: its inner edge, 4 rem in, or where the
+ * box runs over the chirper, 10 rem short of the chirper, so no control sits over it.
+ */
+export function topRowRightInset(placement: BoxPlacement, width: number, aspect: number): number {
+  const end = screenWidth(aspect) - CHIRPER_CLEARANCE_OFFSET - TOP_ROW_CHIRPER_GAP;
+
+  return Math.max(TOP_ROW_INSET, placement.left + width - end);
 }
 
 /** The steps the right edge snaps to, narrowest first: beside the shown pane, only those that fit. */

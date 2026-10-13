@@ -1,0 +1,145 @@
+@use "../../assetMenuGeometry" as *;
+
+// The top row's band: a pad over the row, the row, a gap under it, in the look's head material. Over
+// the body (z-index 40), so nothing of the body paints over the row. Its ink is the look's light ink,
+// which no interface style follows: the head stays dark in every style. See docs/design-notes.md,
+// "The top row".
+.topBand {
+  position: relative;
+  z-index: 40;
+  flex: 0 0 auto;
+  padding-top: $top-band-pad;
+  padding-left: $top-row-inset;
+  padding-bottom: $top-band-gap;
+  background-color: var(--bbm-head);
+  border-top-left-radius: var(--bbm-boxRadius);
+  border-top-right-radius: var(--bbm-boxRadius);
+}
+
+// One row of a fixed height. Its right end is inline: the box's inner edge, or short of the chirper.
+.topRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: $top-row-height;
+}
+
+// The search field, the one outlined control: it takes what the controls and close leave.
+.field {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: $field-gap;
+  height: $top-row-height;
+  padding: 0 $field-padding;
+  border-radius: 4rem;
+  background-color: var(--bbm-fieldBg);
+  box-shadow: var(--bbm-fieldRing);
+}
+
+.glyph {
+  flex: 0 0 auto;
+  width: $field-glyph;
+  height: $field-glyph;
+  background-color: var(--bbm-tWord);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}
+
+// While the page answers an older query.
+.spinning {
+  animation: rotation 0.4s infinite linear;
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+// The game's text box, drawn bare inside the field.
+.input {
+  flex: 1 1 0;
+  height: $top-row-height;
+  padding: 0;
+  border-width: 0;
+  background-color: transparent;
+  color: var(--bbm-tQuery);
+  font-size: calc(#{$top-row-text} * var(--fontScale));
+  line-height: $top-row-height;
+}
+
+// What Enter arms, at the field's right: the mark, then the name.
+.target {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 3rem;
+}
+
+// A sibling of the name, never inside it: a mask inside a run of text draws nothing.
+.enterMark {
+  flex: 0 0 auto;
+  width: calc(#{$top-row-text} * var(--fontScale));
+  height: calc(#{$top-row-text} * var(--fontScale));
+  background-color: var(--bbm-entMark);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}
+
+.targetName {
+  color: var(--bbm-tWord);
+  font-size: calc(#{$top-row-text} * var(--fontScale));
+  white-space: nowrap;
+}
+
+// The one target under 24 rem.
+.clear {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $field-clear;
+  height: $field-clear;
+  padding: 0;
+}
+
+.clearGlyph {
+  width: 12rem;
+  height: 12rem;
+  background-color: var(--bbm-tWord);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}
+
+// Vanilla's own close, bare and round: the theme paints its hover and press.
+.menuClose {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $close-size;
+  height: $close-size;
+  padding: 0;
+  margin-left: $close-gap;
+}
+
+// The look's strongest light ink, the query's: the list's name ink follows the style and turns
+// dark under Bright blue, on a head that stays dark.
+.menuCloseGlyph {
+  width: $close-size;
+  height: $close-size;
+  background-color: var(--bbm-tQuery);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}

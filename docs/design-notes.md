@@ -176,12 +176,13 @@ with the pane hidden, so nothing reaches past the room's edge.
 - The grab strips draw as the game's one panel resizer does: nothing until the mouse
   is on them, then a white fill (10 %, 15 % while dragging, whether or not the mouse
   is still on them). Their pills are the scrollbar thumb's at rest and brighten in
-  white as it does, at once, never in the accent. The top strip keeps the header's
-  dark paint, which is the header's own.
+  white as it does, at once, never in the accent. The upgrades panel's top strip
+  keeps the dark paint of the header under it.
 - At rest the width pill looks like a scrollbar thumb; the white fill under the
   mouse is what marks it as a handle. The owner chose that over a dark band, which
   the game draws nowhere.
-- The close × is a 24 rem white icon on the round highlight theme the game's close buttons use.
+- The close × is a 24 rem glyph in the look's light ink on the round highlight theme the game's
+  close buttons use (see "The top row").
 - The filter rail's count badge is the game's number badge (`_numberBadge.scss`): light bold text on
   the accent with a soft shadow, sized by the text scale.
 
@@ -287,8 +288,8 @@ which that library hands the game's development tree for its nodes. Its SVGs sta
 A look is one class of `--bbm-*` custom properties on the build menu's root (`looks/looks.module.scss`,
 built from the maps in `looks/_looks.scss`). The menu's sheets read the tokens, not the game's own
 colours, so a look change is a class change and nothing remounts. Standard is the first look; the
-tab row and its readout are the first sheets to read it, and the other sheets move to it as their
-increment restyles them. The per-look geometry table waits for the increments that add the other
+tab row and its readout, the top row and the box's body read it, and the other sheets move to it as
+their increment restyles them. The per-look geometry table waits for the increments that add the other
 looks; only Standard's tokens are written here.
 
 - **One kind of value per key.** Each key holds a colour, a gradient, a shadow, a length or a filter
@@ -304,8 +305,8 @@ looks; only Standard's tokens are written here.
   `--panelColorNormal`, its plates from `--menuPanel1-3`, the ink on them from `--menuText1Normal`
   and `--menuText2Normal`, the head and the popovers from `--panelColorDark`, the accents from
   `--accentColor*`. Ink pairs with the surface under it: Bright blue turns the list light and its
-  ink dark, while the head, and the tab row and readout on it, stay dark under every style and keep
-  the look's light ink. The armed fill and the lit tab's gradient are game tokens no style changes
+  ink dark, while the head, and the tab row, its readout and the top row on it, stay dark under
+  every style and keep the look's light ink. The armed fill and the lit tab's gradient are game tokens no style changes
   (`--selectedColor`, `--gradientHighlight*`). The map leaves the entity ring to the look, and its
   selector names the two style classes without `body`, which the game puts them on. Plates under
   each interface style are settled with the restyle of the list.
@@ -380,10 +381,48 @@ is the body's, as Standard draws it; 63.75 is the top row's band (a 2 rem pad, t
 rem gap) and the tab row's (29.75). The default body, 144.25, makes the box 208, the game's own
 menu's height. The body draws at the box less the chrome the box draws (`drawnBodyHeight`), never
 below the drag's floor of 108, so a look that spends its chrome differently changes its body,
-never the box. Until the top row replaces the 14 rem strip and the 45 rem header, that chrome is
-88.75 and the body draws 25 rem short of the stored height. The upgrades panel keeps the stored
-height as its cap. The settings migration's version 3 moves version 2's default, 149, to 144.25
+never the box. With the top row's band and the tab row's, that chrome is the 63.75, so the body is
+the stored height exactly, over the whole drag: the top edge follows the pointer from the floor up.
+The upgrades panel keeps the stored height as its cap. The settings migration's version 3 moves version 2's default, 149, to 144.25
 (see "The settings migration").
+
+## The top row
+
+Along the box's top edge, in a band of the look's head material: a 2 rem pad, the 28 rem row, a 4
+rem gap above the body. The row holds the search field, whatever other mods add to the game's tab
+bar, and close. It runs from 4 rem inside the box's left edge to 4 rem inside its right, and where
+the box runs over the chirper it stops 10 rem short of the chirper (x 1,496 on 16:9), so no
+control sits over it (`topRowRightInset`).
+
+- **The field** takes what the row leaves. It is the game's `TextInput`, drawn bare inside a field
+  of the look's `fieldBg` and `fieldRing`. Its placeholder names the menu ("Search Roads &
+  Networks"), then the menu's first word, then the word alone, whichever fits; in a language with
+  no string of ours, the game's own word for a search field. While a query is typed it names, at
+  its right, the building Enter will arm, once the page answers the query: the mark and the name
+  ("↵ Four-Lane Road 2"), or "All matches locked". The target is cut, to one "…", only when the
+  query leaves it no room. Widths are the tab row's estimate, 0.55 em a character, erring wide.
+- **Close** is vanilla's round X, 24 rem, 4 rem after what comes before it, its glyph in the look's
+  `tQuery`, the light ink the query is typed in. The band is the style's dark panel under every
+  interface style, so its ink is one no style follows: the list's name ink, `tName`, follows the
+  style and turns dark under Bright blue.
+- **One material.** The top row's band and the tab row's are the look's `head`, and the body is its
+  `body` under its blur, so the box reads as one panel; the views inside the body keep their own
+  colours until they are rebuilt. **This changes 0.2.x:** the body drew the game's panel colour
+  with the game's gradient. In the game's default style it draws the look's own dark panel; under
+  Bright blue and Dark grey-orange, which the look follows, it draws the style's panel colour,
+  without the gradient.
+
+## The top edge
+
+The height drag starts on a strip over the box's top edge, from 6 rem above it to 2 rem into its
+top pad, the box's full width. It is an overlay, the box's last child, with a z-index above the top
+row's band (45 over 40) and below the popovers' (50), so an open popover paints over its upper part
+and the top row's controls, which start below the pad, keep their own presses. The game's input
+delivers mouse events and no pointer events, so the strip and the drag listen for the mouse. A
+press raises the drag's full-screen blocker, which carries the drag and its cursor. At rest the
+strip draws nothing; under the mouse, a 75 × 4 pill on the edge and the game's resize cursor; its
+label is the game's Tooltip. The drag measures rem against the strip's own 8 rem. The upgrades
+panel keeps its strip as its first row.
 
 ## The release marker and the settings version
 

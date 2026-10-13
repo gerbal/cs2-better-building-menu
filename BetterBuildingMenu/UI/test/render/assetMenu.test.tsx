@@ -256,7 +256,28 @@ describe("the asset menu's tab row", () => {
     assert.ok(html.indexOf('class="band"') < html.indexOf('class="pane"'), "inside the box, before the pane beside it");
   });
 
-  it("gives the list the box less the tab row's band, so the box keeps vanilla's 208", () => {
-    assert.match(render(), /class="content [^"]*" style="height:119\.25rem"/);
+  it("gives the body the stored height: the box is the body and 63.75, vanilla's 208 at the default", () => {
+    assert.match(render(), /class="content [^"]*" style="height:144\.25rem"/);
+  });
+});
+
+describe("the asset menu's top row and top edge", () => {
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+  });
+
+  it("draws the top row first and the top edge last, so the edge paints over the row's top", () => {
+    const html = render();
+    const box = html.slice(html.indexOf('class="toolContainer'));
+
+    assert.ok(box.indexOf('class="topBand"') >= 0 && box.indexOf('class="topBand"') < box.indexOf('class="content'), "the top row before the body");
+    assert.ok(box.lastIndexOf('class="topEdge"') > box.lastIndexOf('class="band"'), "the edge after the tab row");
+  });
+
+  it("ends the top row 10 rem short of the chirper where the box runs over it", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5);
+
+    assert.match(render(), /class="topRow" style="margin-right:375rem"/);
   });
 });

@@ -2,9 +2,9 @@
 // renders it into the same toolMainColumn slot as the asset menu, with the
 // same toolPanel class on the root.
 
-// The frame is the build menu's, rule for rule: assetMenu's .topBar
-// for the header and its .content for the body. Vanilla draws this slot as a
-// Panel, so without these the rows sit on bare black.
+// The frame is the game's own panel, its dark header over a body with the
+// gradient, until the picker takes the build menu's look with its own restyle.
+// Vanilla draws this slot as a Panel, so without these the rows sit on bare black.
 // Click-through itself, solid in its children. The game's tool column lays
 // this root out as tall as the column, from the top of the screen down to the
 // toolbar, with the drawn panel at its foot; a root that took the pointer

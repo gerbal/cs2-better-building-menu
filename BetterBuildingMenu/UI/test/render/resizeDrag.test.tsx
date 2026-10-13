@@ -8,6 +8,7 @@ import {
   ASSET_MENU_MIN_HEIGHT,
   clampAssetMenuHeight,
   draggedAssetMenuHeight,
+  TOP_EDGE_HEIGHT,
 } from "../../src/domain/assetMenuLayout";
 import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 
@@ -91,6 +92,16 @@ describe("dragging the asset menu's height", () => {
     assert.deepEqual(heights(), [expected(490), expected(460)]);
     assert.equal(names().at(-1), "CommitAssetMenuHeight");
   });
+
+  it("measures a press on the top edge against the edge's own height", () => {
+    release();
+    // The edge is drawn 8px tall here, so a pixel is a rem against its 8 rem.
+    act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 8 }) } }, TOP_EDGE_HEIGHT));
+    move(490);
+    nextFrame();
+
+    assert.equal(heights().at(-1), expected(490));
+  });
 });
 
 describe("the asset menu's height between drags", () => {
@@ -168,7 +179,9 @@ describe("the resize strip", () => {
 
   it("says what it is for, and shows the grip pressed while a drag is on", () => {
     const idle = strip(false).root;
-    assert.equal(idle.findByProps({ className: "resizeHandle" }).props.title, "Drag to resize");
+    // The game draws no title attribute, so the hint goes through its Tooltip.
+    assert.equal(idle.findByProps({ className: "resizeHandle" }).props.title, undefined);
+    assert.deepEqual(idle.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize"]);
     assert.equal(idle.findAll((node) => node.props.className === "resizeGrip").length, 1);
 
     assert.equal(strip(true).root.findAll((node) => node.props.className === "resizeGrip resizeGripActive").length, 1);

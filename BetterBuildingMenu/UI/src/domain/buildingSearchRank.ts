@@ -26,6 +26,11 @@ export function getSearchScopeNotice(state: {
   return { elsewhere: state.elsewhere, canWiden: true };
 }
 
+/** Whether the page answers the query in the box: it trails the box by a debounce. */
+export function pageAnswers(page: { searchText?: string | null } | null | undefined, query: string): boolean {
+  return (page?.searchText ?? "").trim() === query.trim();
+}
+
 /** Arm this prefab, wait for the page that answers this search, or do nothing. */
 export type EnterDecision = { arm: number } | { wait: string } | null;
 
@@ -44,7 +49,7 @@ export function enterDecision(
     return null;
   }
 
-  if ((page.searchText ?? "").trim() !== query) {
+  if (!pageAnswers(page, query)) {
     return { wait: query };
   }
 

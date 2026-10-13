@@ -2,12 +2,11 @@ import { forwardRef, type ReactNode } from "react";
 // getModule under the harness: stylesheet modules answer with a class proxy,
 // vanilla components with a plain element; anything else is undefined. The
 // game's TextInput takes a ref, and so does this one.
-const TextInput = forwardRef<HTMLInputElement, { value?: string; className?: string; children?: ReactNode }>(function TextInput(
-  { value, className },
-  ref
-) {
-  return <input ref={ref} className={className} defaultValue={value} />;
-});
+const TextInput = forwardRef<HTMLInputElement, { value?: string; className?: string; placeholder?: string | null; children?: ReactNode }>(
+  function TextInput({ value, className, placeholder }, ref) {
+    return <input ref={ref} className={className} defaultValue={value} placeholder={placeholder ?? undefined} />;
+  }
+);
 const registry: Record<string, Record<string, unknown>> = {
   "game-ui/common/input/text/text-input.tsx": { TextInput },
 };

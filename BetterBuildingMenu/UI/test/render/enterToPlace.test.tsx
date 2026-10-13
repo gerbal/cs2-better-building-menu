@@ -5,7 +5,7 @@ import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
-import { searchFieldClass } from "../../src/mods/BuildingMenu/searchField";
+import { searchFieldClass } from "../../src/mods/TopRow/searchField";
 
 // Mounted, not rendered to markup: the Enter listener is an effect. Node has no
 // document, so the few globals the catalog's effects reach for are faked here.

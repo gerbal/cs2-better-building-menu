@@ -49,8 +49,31 @@ $width-handle-width: 8rem;
 // pane, and no further.
 $width-handle-reach: $pane-gap;
 
-// The header above the list: one row, of a fixed height, so the box keeps its own.
-$header-height: 45rem;
+// The top row's band above the body: a pad, the row, a gap. With the tab row's band under the body,
+// the box less its body in every look.
+$top-band-pad: 2rem;
+$top-row-height: 28rem;
+$top-band-gap: 4rem;
+$top-band: $top-band-pad + $top-row-height + $top-band-gap;
+// The top row sits this far inside the box's side edges.
+$top-row-inset: 4rem;
+
+// The search field takes what the row leaves, down to a floor the controls fold to keep: no CSS
+// min-width, which in Cohtml stops a flex item growing.
+$field-min-width: 150rem;
+$field-padding: 6rem;
+$field-gap: 4rem;
+$field-glyph: 13rem;
+$field-clear: 22rem;
+// The top row's text at 100%: the query, the Enter target, the controls' words and values.
+$top-row-text: 11rem;
+// Close, after the controls.
+$close-size: 24rem;
+$close-gap: 4rem;
+
+// The top edge's strip: over the box's top edge, from this far above it to this far inside.
+$top-edge-above: 6rem;
+$top-edge-inside: 2rem;
 
 // The tab row along the box's bottom edge: a gap under the list, the row, a pad above the bar.
 $tab-row-gap-above: 1.5rem;
@@ -70,6 +93,6 @@ $tab-name-gap: 4rem;
 // Each side of Education's plate, between it and the cells beside it.
 $tab-segment-margin: 4rem;
 
-// The box less its body, in every look: the top row's band (2 + 28 + 4) and the tab row's
-// (1.5 + 26 + 2.25). The stored height is the body's, so the box is it and this.
-$box-chrome: 63.75rem;
+// The box less its body, in every look: the top row's band and the tab row's. The stored height is
+// the body's, so the box is it and this.
+$box-chrome: $top-band + $tab-row-gap-above + $tab-row-height + $tab-row-pad-below;

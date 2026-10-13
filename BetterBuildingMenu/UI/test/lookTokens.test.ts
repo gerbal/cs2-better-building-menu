@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { declarationsOf, everyDeclaration } from "./harness/compiledCss.ts";
+import { declarationsOf, everyDeclaration, moduleSheets } from "./harness/compiledCss.ts";
 
 /**
  * The looks' tokens as the bundle gets them: every interface style declares the keys the look
@@ -12,8 +12,9 @@ const FOLLOW = [
   ":global(.style--bright-blue) .standard.followStyle",
   ":global(.style--dark-grey-orange) .standard.followStyle",
 ];
-/** The sheets that declare or read the tokens; each sheet that starts reading them joins this list. */
-const TOKEN_SHEETS = [LOOKS, "mods/TabRow/tabRow.module.scss"];
+/** The sheets that declare or read the tokens: each sheet that starts reading them joins. */
+const TOKEN_SHEETS = moduleSheets().filter((sheet) =>
+  everyDeclaration(sheet).some(({ prop, value }) => prop.startsWith("--bbm-") || value.includes("var(--bbm-")));
 
 /** A rule's --bbm-* tokens by key, without the panel alphas the root overrides. */
 function tokens(selector: string): Record<string, string> {
@@ -87,6 +88,21 @@ describe("the looks' tokens", () => {
     }
   });
 
+  it("keep the top row's ink light under every style, since its band stays dark", () => {
+    // The head is the style's dark panel, so no ink on it may be the style's own, which Bright blue
+    // turns dark for its light list.
+    const inks = everyDeclaration("mods/TopRow/topRow.module.scss")
+      .filter(({ prop }) => prop === "color" || prop === "background-color")
+      .map(({ value }) => /^var\(--bbm-(\w+)\)$/.exec(value)?.[1])
+      .filter((key): key is string => key !== undefined);
+
+    assert.ok(inks.length >= 4, `the top row reads ${inks.length} inks`);
+    for (const selector of FOLLOW) {
+      const map = tokens(selector);
+      for (const ink of inks) assert.ok(!styleInk(map[ink]), `${selector}: --bbm-${ink} is ${map[ink]}`);
+    }
+  });
+
   it("take each panel's alpha from the root, and the game's own panels under a style", () => {
     const own = tokens(STANDARD);
 
@@ -103,6 +119,9 @@ describe("the looks' tokens", () => {
     // Cohtml has no :not(), :has(), :is() or :nth-child(an+b), no outline and no currentColor, and
     // a token goes to one longhand, never the background shorthand Cohtml may not resolve.
     const found: string[] = [];
+    for (const sheet of [LOOKS, "mods/TopRow/topRow.module.scss", "mods/BuildingMenu/assetMenu.module.scss"]) {
+      assert.ok(TOKEN_SHEETS.includes(sheet), `${sheet} reads the tokens`);
+    }
 
     for (const sheet of TOKEN_SHEETS) {
       for (const { selectors, prop, value } of everyDeclaration(sheet)) {

@@ -12,6 +12,7 @@ import {
   sanitizeWidthStep,
   snapTargets,
   toolOptionsEdge,
+  topRowRightInset,
   vanillaBoxLeft,
   widthStepWidths,
   type WidthStepScreen,
@@ -231,5 +232,17 @@ describe("the right edge's drag", () => {
 
   it("answers the first step when there is nothing to snap to", () => {
     assert.equal(nearestSnapStep(900, []), 1);
+  });
+});
+
+describe("the top row's right end", () => {
+  it("is the box's inner edge, or 10 rem short of the chirper where the box runs over it", () => {
+    const insets = [1, 2, 3, 4, 5].map((step) => {
+      const width = drawnStepWidth(step, screen());
+      return topRowRightInset(boxPlacement(width, screen()), width, SIXTEEN_NINE);
+    });
+
+    // Steps 4 and 5 end at 1,676 and 1,871; the row stops at 1,496, 10 rem short of the chirper at 1,506.
+    assert.deepEqual(insets, [4, 4, 4, 180, 375]);
   });
 });

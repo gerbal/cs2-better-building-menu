@@ -1,11 +1,11 @@
 @use "../../assetMenuGeometry" as *;
 
-// The height drag, shared by the build menu and the extension picker: one
-// edge to learn, and one setting behind both.
+// The height drag: its blocker serves the build menu and the extension picker,
+// with one setting behind both; its strip is the picker's.
 
-// The panel's top edge, as the first row rather than an overlay: the tab strip
-// paints over an overlay whatever z-index it carries, so it is neither visible
-// nor clickable. Drawn, because it is the only way to change the height.
+// The upgrades panel's top edge, as its first row. The build menu's is an overlay, TopEdge, which
+// draws and takes presses as the box's last child above its top row. Drawn, because it is the
+// panel's only way to change the height.
 .resizeHandle {
   flex: 0 0 auto;
   display: flex;

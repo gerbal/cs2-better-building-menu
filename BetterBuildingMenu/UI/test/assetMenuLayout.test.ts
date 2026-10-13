@@ -28,6 +28,7 @@ import {
   ASSET_MENU_BOX_CHROME,
   assetMenuBoxHeight,
   TOP_CHROME_HEIGHT,
+  TOP_EDGE_HEIGHT,
 } from "../src/domain/assetMenuLayout.ts";
 
 // 0.2.4's row at step 3, the box and the pane beside it: what the table's arithmetic was tuned at.
@@ -253,6 +254,13 @@ describe("sizes the stylesheets draw", () => {
     assert.equal(ASSET_MENU_RESIZE_HANDLE_HEIGHT, rem(strip.height));
   });
 
+  it("a top-edge drag measures against the edge's real height", () => {
+    const edge = declarationsOf("mods/TopEdge/topEdge.module.scss", ".topEdge");
+
+    assert.equal(TOP_EDGE_HEIGHT, 8);
+    assert.equal(TOP_EDGE_HEIGHT, rem(edge.height));
+  });
+
   it("a width drag measures against the strip's real width, and the strip lies inside the build menu", () => {
     const strip = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthHandle");
 
@@ -380,9 +388,11 @@ describe("the list under the tab row", () => {
   });
 
   it("draws above the body the chrome the stylesheets draw", () => {
-    const header = rem(declarationsOf("mods/BuildingMenu/buildingMenuHeader.module.scss", ".headerRow").height);
+    const band = declarationsOf("mods/TopRow/topRow.module.scss", ".topBand");
+    const row = declarationsOf("mods/TopRow/topRow.module.scss", ".topRow");
 
-    assert.equal(TOP_CHROME_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT + header);
+    assert.equal(TOP_CHROME_HEIGHT, rem(band["padding-top"]) + rem(row.height) + rem(band["padding-bottom"]));
+    assert.equal(TOP_CHROME_HEIGHT + TAB_ROW_BAND, ASSET_MENU_BOX_CHROME);
   });
 
   it("is a dragged height and 63.75, in every look", () => {
@@ -394,5 +404,11 @@ describe("the list under the tab row", () => {
   it("never draws below the drag's floor", () => {
     assert.equal(drawnBodyHeight(ASSET_MENU_MIN_HEIGHT), ASSET_MENU_MIN_HEIGHT);
     assert.equal(drawnBodyHeight(Number.NaN), drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT));
+  });
+
+  it("follows the stored height over the whole drag, so the top edge follows the pointer from the floor up", () => {
+    for (const stored of [ASSET_MENU_MIN_HEIGHT, 120, 137.75, ASSET_MENU_DEFAULT_HEIGHT, 300, ASSET_MENU_MAX_HEIGHT]) {
+      assert.equal(drawnBodyHeight(stored), stored, String(stored));
+    }
   });
 });

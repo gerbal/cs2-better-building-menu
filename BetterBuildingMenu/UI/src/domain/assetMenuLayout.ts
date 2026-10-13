@@ -378,8 +378,21 @@ export const TAB_SEGMENT_MARGIN = sheetRem("tabSegmentMargin");
 /** The box less its body in every look, so the box is the stored height and this: see _assetMenuGeometry.scss. */
 export const ASSET_MENU_BOX_CHROME = sheetRem("boxChrome");
 
-/** What the box draws above its body: the top strip and the header, until the top row takes their place. */
-export const TOP_CHROME_HEIGHT = ASSET_MENU_RESIZE_HANDLE_HEIGHT + sheetRem("headerHeight");
+/** What the box draws above its body: the top row's band. */
+export const TOP_CHROME_HEIGHT = sheetRem("topBand");
+
+/** The top edge's strip, which a height drag measures rem against. */
+export const TOP_EDGE_HEIGHT = sheetRem("topEdgeHeight");
+
+/** The top row's numbers, which its sheet draws and its plan budgets: see _assetMenuGeometry.scss. */
+export const TOP_ROW_INSET = sheetRem("topRowInset");
+export const FIELD_PADDING = sheetRem("fieldPadding");
+export const FIELD_GAP = sheetRem("fieldGap");
+export const FIELD_GLYPH = sheetRem("fieldGlyph");
+export const FIELD_CLEAR = sheetRem("fieldClear");
+export const TOP_ROW_TEXT = sheetRem("topRowText");
+export const CLOSE_SIZE = sheetRem("closeSize");
+export const CLOSE_GAP = sheetRem("closeGap");
 
 /** The box's height: the stored body height and the chrome, the same in every look. */
 export function assetMenuBoxHeight(storedHeight: number): number {

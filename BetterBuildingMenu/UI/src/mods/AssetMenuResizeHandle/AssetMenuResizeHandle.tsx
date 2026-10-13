@@ -1,5 +1,6 @@
 import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
+import { Tooltip } from "cs2/ui";
 import classNames from "classnames";
 import { useEffect, useRef, useState } from "react";
 
@@ -18,7 +19,8 @@ export interface AssetMenuHeight {
   /** In rem, already clamped to the range the layout can hold. */
   height: number;
   isResizing: boolean;
-  beginResize: (event: any) => void;
+  /** Starts a drag from a press on an element `heightRem` tall, which the press measures rem against. */
+  beginResize: (event: any, heightRem?: number) => void;
   /**
    * Covers the screen for the length of a drag so the panel keeps the mouse
    * when it leaves the strip. Null between drags; render it beside the panel.
@@ -70,14 +72,14 @@ export function useAssetMenuHeight(): AssetMenuHeight {
     send({ method: "CommitAssetMenuHeight", args: [] });
   }, []);
 
-  function beginResize(event: any): void {
+  function beginResize(event: any, heightRem: number = ASSET_MENU_RESIZE_HANDLE_HEIGHT): void {
     if (!isPrimaryPress(event)) return;
     event.preventDefault?.();
     event.stopPropagation?.();
     // Rem follows the resolution and the pointer reports pixels, so the ratio is
     // measured off the strip just pressed: drawn, and a known rem tall.
     const pressed = event.currentTarget as Element | null | undefined;
-    const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().height, ASSET_MENU_RESIZE_HANDLE_HEIGHT);
+    const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().height, heightRem);
     resizeState.current = { active: true, startY: event.clientY, startHeight: height, pxPerRem };
     setIsResizing(true);
   }
@@ -121,17 +123,20 @@ export interface AssetMenuResizeHandleProps {
   onBeginResize: (event: any) => void;
 }
 
-/** The strip on a panel's top edge that starts the drag. First child of the panel, never an overlay. */
-export const AssetMenuResizeHandle = ({ active, onBeginResize }: AssetMenuResizeHandleProps) => {
+/** The height strips' hint, the build menu's top edge's and the upgrades panel's. */
+export function useHeightHint(): string {
   const { translate } = useLocalization();
+  return translate("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize";
+}
 
-  return (
-    <div
-      className={classNames(styles.resizeHandle, active && styles.resizeHandleActive)}
-      onMouseDown={onBeginResize}
-      title={translate("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
-    >
+/**
+ * The upgrades panel's top strip, its first row, that starts the drag. Its hint is the game's
+ * Tooltip: the game draws no title attribute. The build menu's edge is TopEdge.
+ */
+export const AssetMenuResizeHandle = ({ active, onBeginResize }: AssetMenuResizeHandleProps) => (
+  <Tooltip tooltip={useHeightHint()}>
+    <div className={classNames(styles.resizeHandle, active && styles.resizeHandleActive)} onMouseDown={onBeginResize}>
       <div className={classNames(styles.resizeGrip, active && styles.resizeGripActive)} />
     </div>
-  );
-};
+  </Tooltip>
+);

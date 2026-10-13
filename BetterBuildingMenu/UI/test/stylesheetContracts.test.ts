@@ -12,7 +12,8 @@ import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, select
 const CATALOG = "mods/BuildingCatalog/buildingCatalog.module.scss";
 const PANE = "mods/ControlPane/controlPane.module.scss";
 const ASSET_MENU = "mods/BuildingMenu/assetMenu.module.scss";
-const HEADER = "mods/BuildingMenu/buildingMenuHeader.module.scss";
+const TOP_ROW = "mods/TopRow/topRow.module.scss";
+const TOP_EDGE = "mods/TopEdge/topEdge.module.scss";
 const GROUPS = "mods/GroupedResults/groupedResults.module.scss";
 const CARD = "mods/BuildingHoverCard/buildingHoverCard.module.scss";
 const PICKER = "mods/ExtensionMenu/extensionMenu.module.scss";
@@ -143,9 +144,7 @@ describe("Asset menu stylesheet contracts", () => {
     // own module rather than in either panel's.
     const strip = resize(".resizeHandle");
 
-    // NOT absolute. As an overlay on the panel edge it is invisible AND
-    // unclickable — the tab strip paints over it whatever z-index it carries.
-    // In the flow above the strip it cannot be occluded by it.
+    // Not absolute: the upgrades panel's top edge is its first row, in the flow above its header.
     assert.notEqual(strip.position, "absolute");
     // Taller than the mark it draws, so the edge is grabbable without aiming.
     // The strip is drawn at the height a drag measures against.
@@ -174,17 +173,41 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(grip.width, "75rem");
   });
 
-  it("keeps the header one row high and the tab row one line", () => {
-    // The box keeps vanilla's height whatever a menu holds, so nothing in it may wrap or grow.
-    // The tabs live in the tab row, which cuts at the box's edge rather than wrap.
-    const header = declarationsOf(HEADER, ".headerRow");
+  it("keeps the top row one row high and the tab row one line", () => {
+    // The box keeps its height whatever a menu holds, so nothing in its chrome may wrap or grow.
+    const band = declarationsOf(TOP_ROW, ".topBand");
+    const row = declarationsOf(TOP_ROW, ".topRow");
     const tabs = declarationsOf(TAB_ROW, ".tabRow");
 
-    assert.equal(header.height, "45rem");
-    assert.equal(header["min-height"], undefined);
+    assert.equal(band["padding-top"], "2rem");
+    assert.equal(band["padding-bottom"], "4rem");
+    assert.equal(row.height, "28rem");
+    assert.equal(row["min-height"], undefined);
+    assert.equal(row["flex-wrap"], undefined);
     assert.equal(tabs["flex-wrap"], "nowrap");
     assert.equal(tabs.height, "26rem");
     assert.equal(tabs.overflow, "hidden");
+  });
+
+  it("lays the top edge over the box's top edge, above the top row", () => {
+    // The box's last child, 6 rem above the box and 2 inside it, over the top row's band.
+    const edge = declarationsOf(TOP_EDGE, ".topEdge");
+
+    assert.equal(edge.position, "absolute");
+    assert.equal(edge.top, "-6rem");
+    assert.equal(edge.height, "8rem");
+    assert.ok(Number(edge["z-index"]) > Number(declarationsOf(TOP_ROW, ".topBand")["z-index"]), "over the top row's band");
+    assert.equal(edge.cursor, "url(cursor://vertical-can-resize)");
+  });
+
+  it("draws the box's surfaces in the look's material: the bands its head, the body its list under its blur", () => {
+    // One material for the whole box: the game's translucent list between the look's bands shows a seam.
+    assert.equal(declarationsOf(TOP_ROW, ".topBand")["background-color"], "var(--bbm-head)");
+    assert.equal(declarationsOf(TAB_ROW, ".band")["background-color"], "var(--bbm-head)");
+    const body = declarationsOf(ASSET_MENU, ".content");
+    assert.equal(body["background-color"], "var(--bbm-body)");
+    assert.equal(body["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(body["background-image"], undefined);
   });
 
   it("sizes a tab cell itself, over the game's Button and its square", () => {
@@ -441,12 +464,12 @@ describe("hover card figures line up", () => {
   });
 });
 
-describe("the extension picker wears the same panel frame as the build menu", () => {
+describe("the extension picker wears the game's panel frame", () => {
   // The picker's rows sit in the slot where vanilla draws a framed Panel. The
-  // frame is three surfaces, the build menu's own: the resize strip with the
-  // top corners rounded, a dark header square beneath it, and a normal body
-  // with the gradient.
-  it("gives the header the top bar's surface, square under the resize strip", () => {
+  // frame is three of the game's surfaces: the resize strip with the top
+  // corners rounded, a dark header square beneath it, and a normal body with
+  // the gradient.
+  it("gives the header the game's dark surface, square under the resize strip", () => {
     const header = picker(".header");
     assert.equal(header["background-color"], "var(--panelColorDark)");
     assert.equal(header["backdrop-filter"], "var(--panelBlur)");
@@ -466,15 +489,14 @@ describe("the extension picker wears the same panel frame as the build menu", ()
     assert.equal(picker(".content")["overflow-y"], "auto");
   });
 
-  it("gives the body the content surface", () => {
-    // The build menu's own body, surface for surface. The picker has no tab row under its body,
-    // so the body rounds the frame's bottom corners itself.
+  it("keeps the game's own body surface until it takes the look", () => {
+    // The build menu's body is the look's; the picker takes the look with its own restyle. It has
+    // no tab row under its body, so the body rounds the frame's bottom corners itself.
     const body = picker(".content");
-    const buildMenuBody = declarationsOf(ASSET_MENU, ".content");
-    for (const property of ["background-color", "backdrop-filter", "background-image"]) {
-      assert.ok(body[property], `the picker's body has no ${property}`);
-      assert.equal(body[property], buildMenuBody[property], property);
-    }
+
+    assert.equal(body["background-color"], "var(--panelColorNormal)");
+    assert.equal(body["backdrop-filter"], "var(--panelBlur)");
+    assert.match(body["background-image"] ?? "", /linear-gradient/);
     assert.equal(body["border-bottom-left-radius"], "var(--panelRadius)");
     assert.equal(body["border-bottom-right-radius"], "var(--panelRadius)");
   });

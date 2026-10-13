@@ -46,17 +46,18 @@
   animation: entryTranslate 0.2s ease-in-out;
 }
 
-// The height drag on the top edge is AssetMenuResizeHandle's, shared with the
-// extension picker.
+// The height drag on the box's top edge is TopEdge's, the box's last child; the upgrades panel keeps
+// AssetMenuResizeHandle's strip.
 
 .content {
   // Square: the tab row's band below owns the box's bottom rounding, and a curved list above its
   // square top would notch the seam between them.
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  background-color: var(--panelColorNormal);
-  backdrop-filter: var(--panelBlur);
-  background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
+  // The look's list material under its blur, as the top row's band and the tab row's take its head:
+  // one material for the whole box. See docs/design-notes.md, "The top row".
+  background-color: var(--bbm-body);
+  backdrop-filter: var(--bbm-bodyBlur);
   color: rgba(255, 255, 255, 1);
   display: flex;
   flex-direction: column;
@@ -77,24 +78,4 @@
   // these bounds reach only the legacy FindIt panel. Kept as a backstop
   // against any future path putting the asset menu off screen.
   max-height: 100%;
-}
-
-.topBar {
-  background-color: var(--panelColorDark);
-  backdrop-filter: var(--panelBlur);
-  color: var(--accentColorNormal);
-  // Square: the resize strip above owns the asset menu's top rounding, and two
-  // curved edges would stack one above the other.
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  // Not hidden: the chip row lives here, and its section picker and the filter
-  // rail's popovers hang below the bar — clipped, they are present, correctly
-  // positioned and invisible. Only the top corners round, so the radius holds.
-  overflow: visible;
-
-  // The comparison that decides whether a popover is visible happens between
-  // this element and .content, because those are the siblings: a z-index on a
-  // nested descendant does not reorder its ancestor against that sibling.
-  position: relative;
-  z-index: 40;
 }
