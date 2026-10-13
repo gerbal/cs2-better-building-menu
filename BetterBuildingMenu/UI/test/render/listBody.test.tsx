@@ -14,10 +14,10 @@ const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
 });
 const rows = (n: number, over: (id: number) => Partial<BuildingCatalogEntry> = () => ({})) =>
   Array.from({ length: n }, (_, at) => entry(at + 1, over(at + 1)));
-const body = (entries: BuildingCatalogEntry[], options: { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[] } = {}) =>
-  <ListBody entries={entries} grid={grid(options.over)} sections={options.sections} enterId={options.enterId ?? null} onPlace={() => undefined} footer={<div className="loadMoreRow" />} />;
-const render = (entries: BuildingCatalogEntry[], options: { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[] } = {}) =>
-  renderHtml(body(entries, options));
+type Options = { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[]; searching?: boolean };
+const body = (entries: BuildingCatalogEntry[], options: Options = {}) =>
+  <ListBody entries={entries} grid={grid(options.over)} sections={options.sections} searching={options.searching ?? false} enterId={options.enterId ?? null} onPlace={() => undefined} footer={<div className="loadMoreRow" />} />;
+const render = (entries: BuildingCatalogEntry[], options: Options = {}) => renderHtml(body(entries, options));
 const group = (start: number, label: string, count: number, labelId = ""): CatalogSection =>
   ({ id: `group:${start}`, kind: "group", label, labelId, start, count, collapsed: false });
 const locked = (start: number, count: number, collapsed = false): CatalogSection =>
@@ -217,6 +217,18 @@ describe("the list", () => {
     // The milestone's ink, as a locked plate's "MS n" says it, on the label plate, which a pointer lights.
     assert.equal(declarationsOf(LABELS, ".lockedLabel .labelText").color, "var(--bbm-bodyMilestone)");
     assert.equal(declarationsOf(LABELS, ".lockedLabel:hover")["background-color"], "var(--bbm-plateHover)");
+  });
+
+  it("puts a search's fifth result under the first at the third step, nearest the field, and along the row by the knob", () => {
+    const step3 = { over: { boxWidth: 1091 }, searching: true };
+
+    assert.match(render(rows(30), step3), /left:0rem;top:29\.25rem;width:177\.5rem[^>]*data-catalog-entry="5"/);
+    assert.match(render(rows(30), { over: { boxWidth: 1091 } }), /left:718rem;top:0rem[^>]*data-catalog-entry="5"/);
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, searchFlow: "rowOrder" });
+    assert.match(render(rows(30), step3), /left:718rem;top:0rem[^>]*data-catalog-entry="5"/);
+    // A value outside the knob's list reads as shipped.
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, searchFlow: "sideways" });
+    assert.match(render(rows(30), step3), /left:0rem;top:29\.25rem;width:177\.5rem[^>]*data-catalog-entry="5"/);
   });
 
   it("draws a small menu's big plates with the picture as tall as the plate allows, the name over the numbers", () => {

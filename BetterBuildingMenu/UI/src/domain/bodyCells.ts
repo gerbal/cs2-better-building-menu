@@ -2,8 +2,9 @@
  * The cells a body places, in order: its buildings, and the label plates over them, each in its slot.
  * A label sits in the slot before its section's first row, once the window has reached that row, and
  * takes one slot in line with the buildings or, under the Block labels knob's own line, a fresh line of
- * its own. The sections come counted over the whole result, so this needs the window alone. Pure. See
- * docs/design-notes.md, "Label plates".
+ * its own. The sections come counted over the whole result, so this needs the window alone. A typed
+ * search's results, which draw no label, can fill nearest the field instead (`NearField`). Pure. See
+ * docs/design-notes.md, "Label plates" and "The bodies".
  */
 import type { BuildingCatalogEntry, CatalogSection } from "./buildingCatalog";
 
@@ -24,7 +25,7 @@ export type BodyCell =
 
 export interface BodyCells {
   cells: BodyCell[];
-  /** How many slots the cells take, empty ones an own-line label leaves included. */
+  /** How many slots the cells take: the furthest one used and every one before it, empty ones included. */
   slots: number;
 }
 
@@ -56,31 +57,66 @@ export function bodyOrder(entries: readonly BuildingCatalogEntry[], sections: re
   return out;
 }
 
-/** The order placed in slots: a label one slot in line, or a fresh line of its own and the whole of it. */
+/** A search's flow at a wider step: the first step's columns and the lines a screen shows. */
+export interface NearField {
+  firstCols: number;
+  lines: number;
+}
+
+/**
+ * Where a search's result sits nearest the field: a screen at a time, the first step's columns down the
+ * screen first, as at the first step, then the columns a wider step adds; never along the whole row.
+ */
+export function nearFieldSlot(index: number, cols: number, flow: NearField): number {
+  const lines = Math.max(1, flow.lines);
+  const screen = cols * lines;
+  const band = Math.floor(index / screen);
+  const at = index % screen;
+  const first = flow.firstCols * lines;
+  const added = cols - flow.firstCols;
+  const [line, col] = at < first
+    ? [Math.floor(at / flow.firstCols), at % flow.firstCols]
+    : [Math.floor((at - first) / added), flow.firstCols + ((at - first) % added)];
+
+  return (band * lines + line) * cols + col;
+}
+
+/**
+ * The order placed in slots: a label one slot in line, or a fresh line of its own and the whole of it;
+ * the buildings in the next slots, or, given a flow, nearest the field where the box has more columns
+ * than the first step and no label is drawn.
+ */
 export function bodyCells(
   entries: readonly BuildingCatalogEntry[],
   sections: readonly CatalogSection[],
   cols: number,
   blockLabels: BlockLabels,
   offset = 0,
+  flow?: NearField,
 ): BodyCells {
   const across = Math.max(1, cols);
+  const near = flow !== undefined && sections.length === 0 && flow.firstCols > 0 && flow.firstCols < across ? flow : null;
   const cells: BodyCell[] = [];
   let slot = 0;
+  let end = 0;
 
   for (const next of bodyOrder(entries, sections, offset)) {
     if (next.kind === "item") {
-      cells.push({ ...next, slot });
+      const placed = near === null ? slot : nearFieldSlot(next.index, across, near);
+      cells.push({ ...next, slot: placed });
       slot += 1;
+      end = Math.max(end, placed + 1);
     } else if (blockLabels === "ownLine") {
       slot += (across - (slot % across)) % across;
       cells.push({ ...next, slot, span: across });
       slot += across;
+      end = slot;
     } else {
       cells.push({ ...next, slot, span: 1 });
       slot += 1;
+      end = slot;
     }
   }
 
-  return { cells, slots: slot };
+  return { cells, slots: end };
 }

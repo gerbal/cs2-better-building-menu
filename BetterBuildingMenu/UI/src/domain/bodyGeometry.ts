@@ -45,6 +45,9 @@ const NUMBER_PITCH = 12;
  */
 const GROWN_SPARE = 10;
 
+/** The body's room at the first Width step, the game's own box less its side margins. */
+const FIRST_STEP_ROOM = WIDTH_STEP_VANILLA - 2 * BODY_SIDE_MARGIN;
+
 export interface BodyGrid {
   /** The list's form, or the tiles. */
   form: ListForm | "tile";
@@ -67,6 +70,8 @@ export interface BodyGrid {
    * list forms, whose stylesheet sets it.
    */
   picture: number;
+  /** How many columns the same form has at the first Width step, which a search's results fill first. */
+  firstCols: number;
 }
 
 export interface BodyGridInput {
@@ -148,6 +153,7 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
       nameLines: 1,
       nameLine: Math.max(0, height - (lines * pitch - SLOT_GAP)),
       picture: side - 4,
+      firstCols: across(FIRST_STEP_ROOM, side),
     };
   }
 
@@ -157,7 +163,8 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
   const cellWidth = (room - (cols - 1) * SLOT_GAP) / cols;
   const plateHeight = form === "plate2" ? input.plateHeight : form === "plate1" ? PLATE1_HEIGHT : PLATE_WHOLE_HEIGHT;
   const lines = wholeLines(height, plateHeight + SLOT_GAP, SLOT_GAP, input.pixelRem);
-  const grown = grownLines(input, lines, across(WIDTH_STEP_VANILLA - 2 * BODY_SIDE_MARGIN, least), cols);
+  const firstCols = across(FIRST_STEP_ROOM, least);
+  const grown = grownLines(input, lines, firstCols, cols);
   // Grown lines share the body less a device pixel: the scroller reads its height in whole pixels, up
   // to one short, and lines that filled it exactly would scroll by that sliver.
   const cellHeight = grown === null ? plateHeight : (height - (input.pixelRem ?? 0) - (grown - 1) * SLOT_GAP) / grown;
@@ -178,6 +185,7 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
     nameLines: input.nameLines === 1 || input.nameLines === 2 ? input.nameLines : big ? 2 : ownLines,
     nameLine: 0,
     picture: big ? Math.min(BIG_PICTURE_MAX, cellHeight - 4) : 0,
+    firstCols,
   };
 }
 

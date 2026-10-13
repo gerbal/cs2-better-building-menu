@@ -51,6 +51,19 @@ describe("the cells a body places", () => {
     assert.deepEqual(layout(cells), ["L5@0x1", "1@1", "2@2", "L8@3x1", "3@4", "4@5"]);
   });
 
+  it("fills a search's results nearest the field: the first step's columns down a screen, then the columns a wider step adds", () => {
+    // Six columns where the first step has four, two lines a screen: twelve a screen.
+    const { cells, slots } = bodyCells(rows(14), [], 6, "inline", 0, { firstCols: 4, lines: 2 });
+
+    assert.deepEqual(layout(cells), ["1@0", "2@1", "3@2", "4@3", "5@6", "6@7", "7@8", "8@9", "9@4", "10@5", "11@10", "12@11", "13@12", "14@13"]);
+    assert.equal(slots, 14);
+  });
+
+  it("runs the results along the rows where the box has no more columns than the first step, or labels are drawn", () => {
+    assert.deepEqual(layout(bodyCells(rows(5), [], 4, "inline", 0, { firstCols: 4, lines: 2 }).cells), ["1@0", "2@1", "3@2", "4@3", "5@4"]);
+    assert.deepEqual(layout(bodyCells(rows(3), [section(0, 3)], 6, "inline", 0, { firstCols: 4, lines: 2 }).cells), ["L0@0x1", "1@1", "2@2", "3@3"]);
+  });
+
   it("starts an own-line label on a fresh line and gives it the whole line, so no line holds two blocks", () => {
     const { cells, slots } = bodyCells(rows(5), [section(0, 3), section(3, 2)], 4, "ownLine");
 

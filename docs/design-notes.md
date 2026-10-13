@@ -1060,6 +1060,15 @@ the lines are the body's height.
 - **The tiles:** Tile size square, ten across the game's own box from 16 rem in at 64, two lines: 20.
   13 / 16 / 19 / 22 across at the wider steps; 68 gives 9 × 2, and 72 one line of 9.
 
+**A search at a wider step** fills nearest the field: a screen at a time, its results take the first
+Width step's columns down the screen first, as at the first step, then the columns the wider step adds
+(`nearFieldSlot`); they never run along the whole row, where the fifth result would sit a box's width
+from the field. A result past the first screen fills the next screen's lines the same way. The flow
+starts once the page answers the query, so the last query's rows never reflow for a frame; it moves
+where a result draws, never the order the keys walk or Enter's target (see "The search field's keys").
+The list only, where no label is drawn, which a search never has; the cards pack their own rows. The
+Search flow on wide boxes knob runs them along each row, to compare.
+
 **Small menus grow.** A menu whose whole row count (its share's rows) fits the first Width step's
 columns in one line fewer than the list shows grows its list: its plates take as many lines as its rows
 fill there, two at least, and share the body's height less a device pixel, so the scroller, which
@@ -1254,7 +1263,7 @@ document, since the app container stops keydown from bubbling, and read the key 
 field's.
 
 - **Up and Down** move Enter's target, the building the field names after "↵", a row a press through
-  the rows that can be placed, in the order the list draws them, past locked rows and built uniques,
+  the rows that can be placed, in the result's order, past locked rows and built uniques,
   stopping at the list's ends. The move is C#'s, as the target is (see "Search and sort over the whole
   result"): the query carries `EnterStep`, how many such rows past the best match the target sits;
   the engine walks the whole result from the best match and serves the step it takes, which the state

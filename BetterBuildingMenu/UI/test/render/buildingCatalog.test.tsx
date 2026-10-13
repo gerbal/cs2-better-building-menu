@@ -187,6 +187,19 @@ describe("the catalog container", () => {
     assert.match(render(), /data-bbm-view="cards"/);
   });
 
+  it("fills a search's results nearest the field at a wider step once the page answers the query, not before", () => {
+    showBody("list");
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    setBinding("BetterBuildingMenu", "CurrentSearch", "four");
+    const rows = Array.from({ length: 30 }, (_, at) => entry(at + 1));
+    // The box is a letter ahead of the page: the last query's rows keep their order along the row.
+    page({ items: rows, totalCount: 30, searchText: "" });
+    assert.match(render(), /left:718rem;top:0rem[^>]*data-catalog-entry="5"/);
+
+    page({ items: rows, totalCount: 30, searchText: "four" });
+    assert.match(render(), /left:0rem;top:29\.25rem[^>]*data-catalog-entry="5"/);
+  });
+
   it("draws no control chrome of its own", () => {
     // Sort, Filter, Group and View live on the top row and in the control pane.
     showBody("tiles");

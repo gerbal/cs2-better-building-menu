@@ -200,6 +200,14 @@ describe("the shortest body", () => {
   });
 });
 
+describe("the first step's columns", () => {
+  it("are the list's four at 100% text and three above it at every step, and the tiles' ten", () => {
+    assert.deepEqual(STEPS.map((boxWidth) => bodyGrid(input({ boxWidth })).firstCols), [4, 4, 4, 4, 4]);
+    assert.equal(bodyGrid(input({ boxWidth: STEPS[2], textScale: 1.3 })).firstCols, 3);
+    assert.equal(bodyGrid(input({ boxWidth: STEPS[2], body: "tiles" })).firstCols, 10);
+  });
+});
+
 describe("a small menu's list", () => {
   const grown = (over: Partial<BodyGridInput>) => bodyGrid(input({ smallMenusGrow: true, ...over }));
 

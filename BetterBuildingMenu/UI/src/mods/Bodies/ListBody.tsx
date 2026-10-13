@@ -20,7 +20,7 @@ import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "m
 import { LabelPlate } from "./LabelPlate";
 import styles from "./listBody.module.scss";
 import { UniqueMark } from "./UniqueMark";
-import { useBodyCells } from "./useBodyCells";
+import { useBodyCells, useNearField } from "./useBodyCells";
 import { useNumberSeparators, useStateWords, type StateWords } from "./useBodyWords";
 
 interface PlateProps {
@@ -117,6 +117,11 @@ export interface ListBodyProps {
   sections?: readonly CatalogSection[];
   /** Where the window starts in the result's order, which the sections' starts count from. */
   offset?: number;
+  /**
+   * Whether the page answers a typed query: its results fill nearest the field at a wider step, by
+   * the Search flow knob.
+   */
+  searching?: boolean;
   /** Enter's target, while the page answers the query in the box; null otherwise. */
   enterId: number | null;
   onPlace: (entry: BuildingCatalogEntry) => void;
@@ -129,7 +134,7 @@ export interface ListBodyProps {
  * plates over its groups and its locked rows in slots of their own. The game's Scrollable draws the track
  * at the box's right edge, inside its margin. See docs/design-notes.md, "The bodies".
  */
-export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SECTIONS, offset = 0, enterId, onPlace, footer }: ListBodyProps) {
+export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SECTIONS, offset = 0, searching = false, enterId, onPlace, footer }: ListBodyProps) {
   const separators = useNumberSeparators();
   const stateWords = useStateWords();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
@@ -137,7 +142,8 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
-  const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
+  const flow = useNearField(searching, grid.firstCols, grid.lines);
+  const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, flow);
 
   return (
     <div className={styles.body} data-bbm-view="list">
