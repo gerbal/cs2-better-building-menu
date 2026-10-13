@@ -99,12 +99,14 @@ namespace BetterBuildingMenu.Systems
 		/// Returns early when nothing changed. A change drops the open's anchor, so only the group
 		/// list's pick sends it; a menu open brings the menu's own back through OpenMenu. While a query
 		/// is typed the groups wait and the list lights None, so a pick then is ignored rather than kept
-		/// as the menu's own.
+		/// as the menu's own. The binding took the pick before this ran and no refresh follows, so the
+		/// page's None goes back to it.
 		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy)
 		{
 			if (!string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText))
 			{
+				_BuildingCatalogGroupBy.Value = BuildingCatalogGrouping.None;
 				return;
 			}
 
