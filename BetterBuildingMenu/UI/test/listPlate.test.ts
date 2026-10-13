@@ -21,17 +21,35 @@ const row = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry => 
 } as BuildingCatalogEntry);
 
 describe("a list plate's numbers", () => {
-  it("say the cost over the capacity", () => {
+  it("say the cost over the capacity, its digits by the person glyph, as the readout names the kind", () => {
     const numbers = plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0);
 
     assert.ok(numbers.first.includes(groupDigits(85000, FALLBACK_SEPARATORS)), numbers.first);
-    assert.equal(numbers.second, "400 patients");
+    assert.equal(numbers.second, "400");
+    assert.equal(numbers.glyph, "person");
     assert.equal(numbers.locked, false);
+  });
+
+  it("say the view's key number second: a road's speed by a gauge, workers by a case", () => {
+    const road = row({ speedLimit: 100, capacity: null, costIsPerDistance: true });
+
+    assert.deepEqual(
+      [plateNumbers(road, null, FALLBACK_SEPARATORS, "Locked", 0, "speed").second, plateNumbers(road, null, FALLBACK_SEPARATORS, "Locked", 0, "speed").glyph],
+      ["100", "gauge"],
+    );
+    assert.deepEqual(
+      [plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0, "workers").second, plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0, "workers").glyph],
+      ["20", "case"],
+    );
+    assert.equal(plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0, "").second, null);
   });
 
   it("say the value sorted by under a sort by a number, so the order reads down the column", () => {
     assert.ok((plateNumbers(row(), "upkeep", FALLBACK_SEPARATORS, "Locked", 0).second ?? "").includes(groupDigits(1200, FALLBACK_SEPARATORS)));
     assert.match(plateNumbers(row(), "workers", FALLBACK_SEPARATORS, "Locked", 0).second ?? "", /^20/);
+    // With its unit, which Sort names, and no glyph.
+    assert.equal(plateNumbers(row(), "capacity", FALLBACK_SEPARATORS, "Locked", 0).second, "400 patients");
+    assert.equal(plateNumbers(row(), "capacity", FALLBACK_SEPARATORS, "Locked", 0).glyph, null);
   });
 
   it("keep the capacity under a sort by cost, which the first already says", () => {
@@ -73,10 +91,10 @@ describe("a list plate's numbers", () => {
 describe("the one number, where there is room for one", () => {
   it("is the cost, or why a locked building waits, under no sort by a value", () => {
     assert.deepEqual(oneNumber(plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0), null), {
-      first: plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0).first, second: null, locked: false,
+      first: plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0).first, second: null, glyph: null, locked: false,
     });
     assert.deepEqual(oneNumber(plateNumbers(row({ isLocked: true, unlockMilestone: 7 }), "cost", FALLBACK_SEPARATORS, "Locked", 0), "cost"), {
-      first: "MS 7", second: null, locked: true,
+      first: "MS 7", second: null, glyph: null, locked: true,
     });
   });
 
@@ -84,7 +102,7 @@ describe("the one number, where there is room for one", () => {
     const locked = row({ isLocked: true, unlockMilestone: 7 });
 
     assert.deepEqual(oneNumber(plateNumbers(locked, "workers", FALLBACK_SEPARATORS, "Locked", 0), "workers"), {
-      first: plateNumbers(locked, "workers", FALLBACK_SEPARATORS, "Locked", 0).second, second: null, locked: false,
+      first: plateNumbers(locked, "workers", FALLBACK_SEPARATORS, "Locked", 0).second, second: null, glyph: null, locked: false,
     });
     assert.equal(oneNumber(plateNumbers(row({ workers: null }), "workers", FALLBACK_SEPARATORS, "Locked", 0), "workers").first, "");
   });

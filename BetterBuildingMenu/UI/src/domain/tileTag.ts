@@ -4,10 +4,11 @@
  * A money figure too wide for the tag is said in thousands or millions, shortened a step at a time,
  * rather than cut. Pure. See docs/design-notes.md, "The bodies".
  */
-import { compactMoneyForms, type NumberSeparators } from "./assetMenuMetricFormat";
+import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { oneNumber, plateNumbers, sortsByValue } from "./listPlate";
+import { keepsUnit } from "./rowNumbers";
 import { sortedMetricValue } from "./sortedMetric";
 import { textWidth } from "./textWidth";
 
@@ -52,20 +53,27 @@ export function tileTag(
     return { text, locked };
   }
 
-  // Money has a short form.
+  // Money has a short form; a network's cost is said per cell.
   const money = bySort ? (sortedMetric === "upkeep" ? sortedMetricValue(entry, "upkeep") : null) : locked ? null : entry.constructionCost;
+  const perCell = !bySort && entry.costIsPerDistance;
 
   // The most exact short form that fits; where none does, the narrowest, which the stylesheet cuts least.
   if (typeof money === "number" && Number.isFinite(money) && money !== 0) {
-    const forms = compactMoneyForms(money, bySort ? "upkeep" : "cost", separators, entry.costIsPerDistance);
+    const forms = perCell ? compactCostPerCellForms(money, separators) : compactMoneyForms(money, bySort ? "upkeep" : "cost", separators, entry.costIsPerDistance);
     const fits = forms.find((form) => tagFits(form, tileWidth, textScale));
     const narrowest = forms.reduce((least, form) => (textWidth(form, 1, "wider") < textWidth(least, 1, "wider") ? form : least));
 
     return { text: fits ?? narrowest, locked };
   }
 
-  // A sorted value keeps its whole number and drops its unit, which the Sort control names: a cut word
-  // reads as noise. Anything else is cut by the stylesheet, with an ellipsis.
+  // A unit that scales with its size stays, its number shortened: two such figures bare side by side
+  // read as one scale. Any other sorted value keeps its whole number and drops its unit, which the Sort
+  // control names: a cut word reads as noise. Anything else is cut by the stylesheet, with an ellipsis.
+  if (bySort && keepsUnit(entry, sortedMetric)) {
+    const forms = compactUnitForms(text, separators);
+    return { text: forms.find((form) => tagFits(form, tileWidth, textScale)) ?? forms[forms.length - 1], locked };
+  }
+
   return { text: bySort ? leadingNumber(text) ?? text : text, locked };
 }
 

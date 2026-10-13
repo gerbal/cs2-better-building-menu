@@ -291,6 +291,26 @@ export const PER_DISTANCE_SUFFIX = "/km";
 export const PER_MILE_SUFFIX = "/mi";
 
 /**
+ * The cells a kilometre of network holds. A network is priced by the cell and the index carries a
+ * kilometre's worth, as PrefabFacts multiplies it; a body's row says the cell's, which leaves a road's
+ * name its room and needs no unit system: a cell is a cell in miles too.
+ */
+export const NET_CELLS_PER_KILOMETRE = 125;
+const PER_CELL_SUFFIX = "/c";
+
+/** A network's construction cost per cell, from its per-kilometre figure, in the game's money template. */
+export function formatCostPerCell(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+
+  return applyMoneyTemplate(money.plain, groupDigits(Math.round(perKilometre / NET_CELLS_PER_KILOMETRE), separators)) + PER_CELL_SUFFIX;
+}
+
+/** A network's cost per cell in its short forms, as compactMoneyForms says a total, each keeping its cell: a rate read bare reads as a total. */
+export function compactCostPerCellForms(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
+  return compactMoneyForms(perKilometre / NET_CELLS_PER_KILOMETRE, "cost", separators).map((form) => form + PER_CELL_SUFFIX);
+}
+
+/**
  * A per-kilometre rate becomes a per-MILE rate, so the figure has to move with
  * the unit or a road's cost is understated by more than a third. Money is
  * rounded because it is whole everywhere else on the card.
@@ -359,6 +379,9 @@ export function formatBuildingMetric(
   }
 }
 
+/** The space a template puts before a rate's unit, " /km", which a short form closes. */
+const RATE_UNIT_SPACE = /\s+\//gu;
+
 /** The units a money figure is said in, each a thousand of the one before. */
 const COMPACT_UNITS: readonly { unit: number; suffix: string }[] = [
   { unit: 1, suffix: "" },
@@ -380,9 +403,10 @@ function fixedDigits(value: number, decimals: number, separators: NumberSeparato
 /**
  * A money figure's short forms, the most exact first, for a place too narrow for every digit: in
  * thousands or millions to one decimal, to none, then in the next unit up to the fewest decimals
- * that are not zero; each in the game's template ("¢16.5k/km"), then each without its rate or
- * month, which that place says otherwise. Rounded rather than cut, since a cut figure reads as
- * another number.
+ * that are not zero; each in the game's template ("¢16.5k/km"). A monthly bill's then come without
+ * the month, which that place says otherwise; a rate's never come without its unit, since a rate
+ * read bare reads as a total, and close the space the game's template puts before it. Rounded rather
+ * than cut, since a cut figure reads as another number.
  */
 export function compactMoneyForms(
   value: number,
@@ -408,13 +432,34 @@ export function compactMoneyForms(
     if (decimals !== undefined) add(at(own + 1, decimals) + COMPACT_UNITS[own + 1].suffix);
   }
 
-  const templates = [moneyTemplate(metric, separators, perDistance), moneyTemplate("cost", separators, false)];
+  const templates = perDistance ? [moneyTemplate(metric, separators, true)] : [moneyTemplate(metric, separators, false), moneyTemplate("cost", separators, false)];
   const forms: string[] = [];
   for (const template of templates) {
     for (const figure of figures) {
-      const form = applyMoneyTemplate(template, figure);
+      const applied = applyMoneyTemplate(template, figure);
+      const form = perDistance ? applied.replace(RATE_UNIT_SPACE, "/") : applied;
       if (!forms.includes(form)) forms.push(form);
     }
+  }
+  return forms;
+}
+
+/**
+ * A figure with a unit's shorter forms, for a place too narrow for every digit: to one decimal, then to
+ * none, its unit kept, since a unit that scales with its size (kW or MW, t or kt) read bare beside
+ * another reads as one scale. The figure as it is where its number has no decimals to give.
+ */
+export function compactUnitForms(text: string, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
+  const group = separators.group.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const decimal = separators.decimal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`^(\\d[\\d${group}]*)${decimal}(\\d+)(.*)$`, "u").exec(text);
+  if (!match) return [text];
+
+  const value = Number(`${match[1].split(separators.group).join("")}.${match[2]}`);
+  const forms = [text];
+  for (const decimals of [1, 0]) {
+    const form = fixedDigits(value, decimals, separators) + match[3];
+    if (!forms.includes(form)) forms.push(form);
   }
   return forms;
 }
@@ -556,15 +601,21 @@ export function formatSpeedLimit(
   }
 
   // The game ships no speed template in either system — no VALUE_KMH and no
-  // VALUE_MPH — so both suffixes are ours. The conversion reuses the mile
-  // divisor above so the two never disagree.
-  if (separators.unitSystem === UnitSystem.Freedom) {
-    const mph = Math.round(value / KILOMETRES_PER_MILE);
+  // VALUE_MPH — so both suffixes are ours.
+  return `${speedNumber(value, separators)} ${speedUnit(separators)}`;
+}
 
-    return `${formatBuildingMetric(mph, "capacity", separators)} mph`;
-  }
+/** A speed limit's digits in the player's unit, without it: whole mph under Freedom, else whole km/h. */
+export function speedNumber(value: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  // The conversion reuses the mile divisor above so the two never disagree.
+  const speed = separators.unitSystem === UnitSystem.Freedom ? value / KILOMETRES_PER_MILE : value;
 
-  return `${formatBuildingMetric(Math.round(value), "capacity", separators)} km/h`;
+  return formatBuildingMetric(Math.round(speed), "capacity", separators);
+}
+
+/** The unit a speed limit is said in: "mph" under Freedom, else "km/h". */
+function speedUnit(separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  return separators.unitSystem === UnitSystem.Freedom ? "mph" : "km/h";
 }
 
 /**

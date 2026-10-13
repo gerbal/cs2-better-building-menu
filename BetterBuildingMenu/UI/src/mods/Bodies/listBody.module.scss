@@ -114,6 +114,10 @@
   color: var(--bbm-tLocked);
 }
 
+.built .unitGlyph {
+  background-color: var(--bbm-tLocked);
+}
+
 .armed .name {
   color: var(--bbm-armText);
 }
@@ -129,8 +133,9 @@
   white-space: nowrap;
 }
 
-// The mark and the first number, side by side.
-.firstLine {
+// The mark and the first number, side by side; the key number and its glyph, side by side.
+.firstLine,
+.secondLine {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -155,16 +160,21 @@
   color: var(--bbm-armNum);
 }
 
-// A sibling of the number, never inside a run of text: a mask there draws nothing.
+// A sibling of the number, in the number's ink.
+.unitGlyph {
+  @include _base.mask-glyph(9rem);
+  background-color: var(--bbm-tNum2);
+}
+
+.armed .unitGlyph {
+  background-color: var(--bbm-armNum);
+}
+
+// A sibling of the number. On the plate, which an interface style can turn light: a body ink that
+// follows it.
 .enterMark {
-  flex: 0 0 auto;
-  width: calc(10rem * var(--fontScale));
-  height: calc(10rem * var(--fontScale));
-  // On the plate, which an interface style can turn light: a body ink that follows it.
+  @include _base.mask-glyph(10rem);
   background-color: var(--bbm-bodyEntMark);
-  mask-size: contain;
-  mask-position: 50% 50%;
-  mask-repeat: no-repeat;
 }
 
 .armed .enterMark {

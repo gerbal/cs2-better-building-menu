@@ -180,3 +180,15 @@ $mark-inset: 0.147;
   border-bottom-color: $color;
   border-left-color: $color;
 }
+
+/// A glyph drawn as a mask, $size square at 100% text and growing with it, in
+/// a box of its own beside the text: a mask inside a run of text draws nothing.
+/// The glyph's ink is its background colour, which the includer sets.
+@mixin mask-glyph($size) {
+  flex: 0 0 auto;
+  width: calc(#{$size} * var(--fontScale));
+  height: calc(#{$size} * var(--fontScale));
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}

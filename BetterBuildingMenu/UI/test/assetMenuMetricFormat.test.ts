@@ -6,7 +6,10 @@ import {
   getNumberSeparators,
   formatBuildingMetric,
   formatCapacity,
+  compactCostPerCellForms,
   compactMoneyForms,
+  compactUnitForms,
+  formatCostPerCell,
   applyMoneyTemplate,
   FALLBACK_MONEY,
   FALLBACK_SEPARATORS,
@@ -474,6 +477,31 @@ describe("a telecom facility's capacity is a data rate", () => {
   });
 });
 
+describe("a network's cost per cell", () => {
+  it("is its per-kilometre figure over the 125 cells of a kilometre, whole, in the game's money template", () => {
+    assert.equal(formatCostPerCell(5_500), "¢44/c");
+    assert.equal(formatCostPerCell(26_500), "¢212/c");
+    assert.equal(formatCostPerCell(125_000), `¢${groupDigits(1_000)}/c`);
+  });
+
+  it("shortens like a total and keeps its cell, which is a rate's unit", () => {
+    assert.deepEqual(compactCostPerCellForms(12_500_000), ["¢100k/c", "¢0.1M/c"]);
+    assert.deepEqual(compactCostPerCellForms(1_250_000), ["¢10k/c", "¢0.01M/c"]);
+  });
+});
+
+describe("a figure with a unit, shortened", () => {
+  it("drops its decimals a step at a time and keeps its unit", () => {
+    assert.deepEqual(compactUnitForms("1,234.57 MW", { ...FALLBACK_SEPARATORS, group: "," }), ["1,234.57 MW", "1,234.6 MW", "1,235 MW"]);
+    assert.deepEqual(compactUnitForms("2.45 t"), ["2.45 t", "2.5 t", "2 t"]);
+  });
+
+  it("reads the player's own marks, and leaves a figure with no decimals as it is", () => {
+    assert.deepEqual(compactUnitForms("1.234,5 kW", { ...FALLBACK_SEPARATORS, group: ".", decimal: "," }), ["1.234,5 kW", "1.235 kW"]);
+    assert.deepEqual(compactUnitForms("450 kW"), ["450 kW"]);
+  });
+});
+
 describe("compact money", () => {
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
   const first = (...args: Parameters<typeof compactMoneyForms>) => compactMoneyForms(...args)[0];
@@ -495,10 +523,19 @@ describe("compact money", () => {
     assert.equal(first(10_000, "cost", imperial, true), applyMoneyTemplate(FALLBACK_MONEY.perMile, "16.1k"));
   });
 
-  it("shortens a figure step by step: one decimal, none, the next unit up, then each without the rate", () => {
-    assert.deepEqual(compactMoneyForms(16_500, "cost", FALLBACK_SEPARATORS, true), [
-      "¢16.5k/km", "¢17k/km", "¢0.02M/km", "¢16.5k", "¢17k", "¢0.02M",
-    ]);
+  it("shortens a rate step by step: one decimal, none, the next unit up, each keeping its unit", () => {
+    // A rate read bare reads as a total.
+    assert.deepEqual(compactMoneyForms(16_500, "cost", FALLBACK_SEPARATORS, true), ["¢16.5k/km", "¢17k/km", "¢0.02M/km"]);
+  });
+
+  it("closes the space the game's template puts before a rate's unit", () => {
+    const game = { ...FALLBACK_SEPARATORS, money: { ...FALLBACK_MONEY, perKilometre: "{SIGN}¢{VALUE} /km", perKilometrePerMonth: "{SIGN}¢{VALUE} /km/mo" } };
+
+    assert.deepEqual(compactMoneyForms(16_500, "cost", game, true), ["¢16.5k/km", "¢17k/km", "¢0.02M/km"]);
+    assert.deepEqual(compactMoneyForms(1_250, "upkeep", game, true), ["¢1.3k/km/mo", "¢1k/km/mo"]);
+  });
+
+  it("shortens a monthly bill step by step, then each without the month, which Sort names", () => {
     // Not "¢0M": the next unit up is left out where two decimals still say nothing.
     assert.deepEqual(compactMoneyForms(1_250, "upkeep"), [
       applyMoneyTemplate(FALLBACK_MONEY.perMonth, "1.3k"), applyMoneyTemplate(FALLBACK_MONEY.perMonth, "1k"), "¢1.3k", "¢1k",
@@ -508,6 +545,6 @@ describe("compact money", () => {
   it("never says a thousand thousands, and says a whole figure in the next unit up", () => {
     // 999.6k to no decimal is 1000k: the next unit says it.
     assert.deepEqual(compactMoneyForms(999_600, "cost"), ["¢999.6k", "¢1M"]);
-    assert.deepEqual(compactMoneyForms(950, "cost", FALLBACK_SEPARATORS, true), ["¢950/km", "¢1k/km", "¢950", "¢1k"]);
+    assert.deepEqual(compactMoneyForms(950, "cost", FALLBACK_SEPARATORS, true), ["¢950/km", "¢1k/km"]);
   });
 });

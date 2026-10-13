@@ -51,7 +51,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, visibleCount, offset, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, sections, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
+  const { items, totalCount, visibleCount, offset, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, sections, facts, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
   // Where the body draws each building, and so how many one screen holds, which C#'s window reaches past:
   // the slots of the list and the tiles, or the cards the packer places in a screen's rows.
   const grid = useBodyGrid(body, items, sections, offset);
@@ -255,7 +255,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
             ? <CardsBody layout={cards} enterId={enterId} onPlace={activate} footer={catalogFooter} />
             : grid !== null && grid.form === "tile"
               ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
-              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} searching={searching} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
+              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} searching={searching} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
     </div>
   );
 });

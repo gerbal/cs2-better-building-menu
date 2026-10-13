@@ -55,11 +55,11 @@ describe("the tiles", () => {
     assert.match(render([entry(1, { constructionCost: 48_000 })]), /<span class="tag"[^>]*>¢48[^<]*000<\/span>/);
   });
 
-  it("shorten a road's rate on the tag at 130% and 150% text rather than cut it", () => {
+  it("say a road's cost per cell on the tag, whole at 130% and 150% text", () => {
     setBinding("options", "textScale", 1.3);
-    assert.match(render([entry(1, { constructionCost: 5_500, costIsPerDistance: true })]), /<span class="tag"[^>]*>¢6k\/km<\/span>/);
+    assert.match(render([entry(1, { constructionCost: 5_500, costIsPerDistance: true })]), /<span class="tag"[^>]*>¢44\/c<\/span>/);
     setBinding("options", "textScale", 1.5);
-    assert.match(render([entry(1, { constructionCost: 16_500, costIsPerDistance: true })]), /<span class="tag"[^>]*>¢16\.5k<\/span>/);
+    assert.match(render([entry(1, { constructionCost: 16_500, costIsPerDistance: true })]), /<span class="tag"[^>]*>¢132\/c<\/span>/);
   });
 
   it("bound the tag to the tile on a larger Tile size too", () => {

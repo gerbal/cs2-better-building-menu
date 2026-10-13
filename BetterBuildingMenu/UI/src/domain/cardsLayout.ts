@@ -4,12 +4,12 @@
  * body can trust, so each card is placed from the widths its words draw at. Pure. See
  * docs/design-notes.md, "The cards".
  */
-import { formatBuildingMetric, formatCapacity, formatLotDimensions, hasFootprint, METRIC_NO_DATA, type NumberSeparators } from "./assetMenuMetricFormat";
+import type { NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import { SLOT_GAP, wholeLines } from "./bodyGeometry";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
-import { sortedMetricValue } from "./sortedMetric";
+import { capacityText, costText, lotText, sortedText } from "./rowNumbers";
 import { fontSizeRatio } from "./textScale";
 import { listLabel } from "./tileLabel";
 import { textWidth } from "./textWidth";
@@ -87,11 +87,6 @@ export interface CardText {
   sorted: string | null;
 }
 
-const known = (text: string): string | null => (text === "" || text === METRIC_NO_DATA ? null : text);
-
-const capacityOf = (entry: BuildingCatalogEntry, value: number | null | undefined, separators: NumberSeparators): string | null =>
-  typeof value === "number" && value !== 0 ? known(formatCapacity(value, entry.category, entry.subCategory, entry.buildingType, separators)) : null;
-
 /**
  * A card's words: the whole name (cut only past the list's cap on a name), the lot, the cost and the
  * capacity, each where the building has it; a locked card keeps its cost, its milestone beside the
@@ -104,11 +99,8 @@ export function cardText(
   lockedWord: string,
   achievedMilestone: number,
 ): CardText {
-  const facts = [
-    hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : null,
-    known(formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)),
-    capacityOf(entry, entry.capacity, separators),
-  ].filter((fact): fact is string => fact !== null);
+  const facts = [lotText(entry), costText(entry, separators), capacityText(entry, entry.capacity, separators)]
+    .filter((fact): fact is string => fact !== null);
 
   return {
     name: listLabel(entry.name || entry.prefabName),
@@ -116,24 +108,6 @@ export function cardText(
     locked: isEntryLocked(entry) ? lockedFact(entry, lockedWord, achievedMilestone) : null,
     sorted: sortedText(entry, sortedMetric, separators),
   };
-}
-
-function sortedText(entry: BuildingCatalogEntry, sortedMetric: AssetMenuMetric | null, separators: NumberSeparators): string | null {
-  if (sortedMetric === null) {
-    return null;
-  }
-
-  if (sortedMetric === "lot") {
-    return hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : null;
-  }
-
-  const value = sortedMetricValue(entry, sortedMetric);
-
-  if (value === null) {
-    return null;
-  }
-
-  return sortedMetric === "capacity" ? capacityOf(entry, value, separators) : known(formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance));
 }
 
 /** A card's width: its picture and padding, its name or its facts line, whichever is longer, and the sorted value's column. */

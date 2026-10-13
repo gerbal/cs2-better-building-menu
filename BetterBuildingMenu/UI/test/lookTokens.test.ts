@@ -120,6 +120,15 @@ describe("the looks' tokens", () => {
     }
   });
 
+  it("draw a list plate's unit glyph in its number's ink, dim on a built plate and the armed ink on the armed", () => {
+    const list = "mods/Bodies/listBody.module.scss";
+    const ink = (selector: string, prop: string) => declarationsOf(list, selector)[prop];
+
+    assert.equal(ink(".unitGlyph", "background-color"), ink(".second", "color"));
+    assert.equal(ink(".built .unitGlyph", "background-color"), ink(".built .second", "color"));
+    assert.equal(ink(".armed .unitGlyph", "background-color"), ink(".armed .second", "color"));
+  });
+
   it("draw the label plates in body inks on a plate that follows the style, Locked in the milestone's ink", () => {
     const labels = "mods/Bodies/labelPlate.module.scss";
 

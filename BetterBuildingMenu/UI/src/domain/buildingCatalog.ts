@@ -1,3 +1,5 @@
+import type { KeyKind } from "./rowNumbers";
+
 /** One lot shape, in cells. */
 export interface LotFootprint {
   width: number;
@@ -153,7 +155,7 @@ export interface SharedValue {
 /** What the page says of its whole view: the values said once, and the kind each row's second number shows, "" for none. */
 export interface ViewFacts {
   sharedValues: SharedValue[];
-  keyKind: "speed" | "capacity" | "workers" | "lot" | "";
+  keyKind: KeyKind;
 }
 
 export interface BuildingCatalogPage {

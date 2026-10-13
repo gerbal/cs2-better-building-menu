@@ -1,24 +1,24 @@
 /**
- * What a list plate's number column says: the cost over a second number, or, for a locked building,
+ * What a list plate's number column says: the cost over the key number, or, for a locked building,
  * the milestone it waits on (or the locked word) in the cost's place; where there is room for one
  * number, which of them. Pure, so the rules are tests. See docs/design-notes.md, "The bodies".
  */
-import { formatBuildingMetric, formatCapacity, METRIC_NO_DATA, type NumberSeparators } from "./assetMenuMetricFormat";
+import type { NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
-import { sortedMetricValue } from "./sortedMetric";
+import { costText, keyFigure, sortedText, type KeyKind, type UnitGlyph } from "./rowNumbers";
 
 export interface PlateNumbers {
   /** The cost, or for a locked building "MS n" or the locked word; "" when it has neither. */
   first: string;
-  /** The sorted value under a numeric sort, else the capacity; null when there is none. */
+  /** The sorted value under a numeric sort, else the key number; null when there is none. */
   second: string | null;
+  /** The glyph beside the second, for the unit the readout names; null for a figure that says its own. */
+  glyph: UnitGlyph | null;
   /** Whether the first says why the building is locked, in the locked ink. */
   locked: boolean;
 }
-
-const known = (text: string): string | null => (text === "" || text === METRIC_NO_DATA ? null : text);
 
 /** Whether a sort orders by a value of its own to say: a number, but not the cost, said already, nor the lot. */
 export function sortsByValue(sortedMetric: AssetMenuMetric | null): sortedMetric is AssetMenuMetric {
@@ -26,8 +26,8 @@ export function sortsByValue(sortedMetric: AssetMenuMetric | null): sortedMetric
 }
 
 /**
- * The plate's numbers. Under a sort by a number the second is the value sorted by, so the order
- * reads down the column; otherwise the capacity, where the building has one that is not zero.
+ * The plate's numbers. Under a sort by a number the second is the value sorted by, with its unit, so
+ * the order reads down the column; otherwise the view's key number, by its glyph.
  */
 export function plateNumbers(
   entry: BuildingCatalogEntry,
@@ -35,27 +35,17 @@ export function plateNumbers(
   separators: NumberSeparators,
   lockedWord: string,
   achievedMilestone: number,
+  keyKind: KeyKind = "capacity",
 ): PlateNumbers {
   const locked = isEntryLocked(entry);
-  const cost = known(formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)) ?? "";
-  const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : cost;
+  const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : costText(entry, separators) ?? "";
 
   if (sortsByValue(sortedMetric)) {
-    const value = sortedMetricValue(entry, sortedMetric);
-    const second = value === null
-      ? null
-      : sortedMetric === "capacity"
-        ? known(formatCapacity(value, entry.category, entry.subCategory, entry.buildingType, separators))
-        : known(formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance));
-
-    return { first, second, locked };
+    return { first, second: sortedText(entry, sortedMetric, separators), glyph: null, locked };
   }
 
-  const capacity = typeof entry.capacity === "number" && entry.capacity !== 0
-    ? known(formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators))
-    : null;
-
-  return { first, second: capacity, locked };
+  const key = keyFigure(entry, keyKind, separators);
+  return { first, second: key?.text ?? null, glyph: key?.glyph ?? null, locked };
 }
 
 /**
@@ -64,6 +54,6 @@ export function plateNumbers(
  */
 export function oneNumber(numbers: PlateNumbers, sortedMetric: AssetMenuMetric | null): PlateNumbers {
   return sortsByValue(sortedMetric)
-    ? { first: numbers.second ?? "", second: null, locked: false }
-    : { first: numbers.first, second: null, locked: numbers.locked };
+    ? { first: numbers.second ?? "", second: null, glyph: null, locked: false }
+    : { first: numbers.first, second: null, glyph: null, locked: numbers.locked };
 }

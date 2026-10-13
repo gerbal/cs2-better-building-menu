@@ -1,6 +1,6 @@
 import { useValue } from "cs2/api";
 import { useCallback, useEffect, useRef, type RefObject } from "react";
-import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
+import type { BuildingCatalogEntry, CatalogSection, ViewFacts } from "domain/buildingCatalog";
 import { NO_SECTIONS } from "domain/bodyCells";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
 import { getAssetMenuListStart } from "domain/assetMenuViewStore";
@@ -43,8 +43,13 @@ export interface CatalogWindow {
   listStart: number | null;
   /** The labels over the whole result; see BuildingCatalogPage. */
   sections: readonly CatalogSection[];
+  /** The view's facts over the whole result; see BuildingCatalogPage. */
+  facts: ViewFacts;
   loadMore(): void;
 }
+
+/** A page with no facts says nothing once and shows the capacity second. */
+const NO_FACTS: ViewFacts = { sharedValues: [], keyKind: "capacity" };
 
 /**
  * The catalog's window over the result set, and the frame loop that grows it
@@ -72,6 +77,7 @@ export function useCatalogWindow(
   const anchorIndex = page?.anchorIndex ?? -1;
   const listStart = page?.listStart ?? null;
   const sections = page?.sections ?? NO_SECTIONS;
+  const facts = page?.facts ?? NO_FACTS;
 
   /**
    * Asks the backend for the next chunk, by the limit wanted rather than "one
@@ -148,5 +154,5 @@ export function useCatalogWindow(
     };
   }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, visibleCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, enterStep, anchorId, anchorIndex, listStart, sections, loadMore };
+  return { items, totalCount, visibleCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, enterStep, anchorId, anchorIndex, listStart, sections, facts, loadMore };
 }

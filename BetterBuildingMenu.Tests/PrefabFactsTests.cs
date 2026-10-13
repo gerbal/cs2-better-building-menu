@@ -968,5 +968,14 @@ namespace BetterBuildingMenu.Tests
 			Assert.Null(PrefabFacts.ResourceName(Game.Economy.Resource.NoResource));
 			Assert.Null(PrefabFacts.ResourceName(Game.Economy.Resource.Coal | Game.Economy.Resource.Oil));
 		}
+
+		[Fact]
+		public void TheUiSaysANetworksCostPerCellByTheCellsAKilometreHolds()
+		{
+			// The index carries a kilometre's worth; a body's row divides it back into the cell's.
+			Assert.Contains(
+				$"export const NET_CELLS_PER_KILOMETRE = {PrefabFacts.NetCellsPerKilometre};",
+				ModSource.Text("UI/src/domain/assetMenuMetricFormat.ts"));
+		}
 	}
 }

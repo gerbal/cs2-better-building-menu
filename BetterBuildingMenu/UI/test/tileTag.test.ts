@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FALLBACK_SEPARATORS, formatBuildingMetric, formatCapacity, groupDigits } from "../src/domain/assetMenuMetricFormat";
+import { FALLBACK_MONEY, FALLBACK_SEPARATORS, formatBuildingMetric, formatCapacity, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
 import { tagFits, tileTag } from "../src/domain/tileTag";
 
@@ -39,26 +39,44 @@ describe("a tile's tag", () => {
     }
   });
 
-  it("says a road's rate in thousands at 110% text, a rate still", () => {
-    const text = tag(row({ constructionCost: 4_800, costIsPerDistance: true }), 1.1).text;
-
-    assert.ok(!tagFits(formatBuildingMetric(4_800, "cost", FALLBACK_SEPARATORS, true), 64, 1.1));
-    assert.equal(text, "¢4.8k/km");
-    assert.ok(tagFits(text, 64, 1.1));
+  it("says a road's cost per cell, which fits the smallest tile at every text scale", () => {
+    for (const scale of [1, 1.3, 1.5]) {
+      assert.equal(tag(row({ constructionCost: 5_500, costIsPerDistance: true }), scale).text, "¢44/c", `${scale}`);
+      assert.equal(tag(row({ constructionCost: 23_000, costIsPerDistance: true }), scale).text, "¢184/c", `${scale}`);
+    }
   });
 
-  it("shortens a road's rate before the tag would cut it: no decimal at 130% text, no rate at 150%", () => {
-    const road = (cost: number) => row({ constructionCost: cost, costIsPerDistance: true });
+  it("shortens a cost per cell too wide for the tag, keeping its cell, and drops the cell only last", () => {
+    // No real road costs this much a cell: a mod's might.
+    const text = tag(row({ constructionCost: 12_500_000, costIsPerDistance: true }), 1.3).text;
 
-    assert.equal(tag(road(5_500), 1.3).text, "¢6k/km");
-    assert.equal(tag(road(16_500), 1.5).text, "¢16.5k");
-    assert.equal(tag(road(14_500), 1.5).text, "¢14.5k");
+    assert.equal(text, "¢100k/c");
+    assert.ok(tagFits(text, 64, 1.3));
+  });
+
+  it("never drops a rate's unit at 130% and 150% text, and closes the space the game's template puts before it", () => {
+    const game = { ...FALLBACK_SEPARATORS, money: { ...FALLBACK_MONEY, perKilometre: "{SIGN}¢{VALUE} /km", perKilometrePerMonth: "{SIGN}¢{VALUE} /km/mo" } };
+    const gameTag = (entry: BuildingCatalogEntry, scale: number, sorted: Parameters<typeof tileTag>[1] = null) =>
+      tileTag(entry, sorted, game, "Locked", 0, 64, scale).text;
+
+    for (const scale of [1.3, 1.5]) {
+      for (const cost of [950, 5_500, 16_500, 1_250_000, 12_500_000]) {
+        assert.match(gameTag(row({ constructionCost: cost, costIsPerDistance: true }), scale), /^¢[^ ]+\/c$/, `${cost} at ${scale}`);
+      }
+      // A road's upkeep sorted by is a rate per kilometre still.
+      for (const upkeep of [950, 16_500, 125_000]) {
+        assert.match(gameTag(row({ upkeep, costIsPerDistance: true }), scale, "upkeep"), /^¢[^ ]+\/km\/mo$/, `${upkeep} at ${scale}`);
+      }
+    }
   });
 
   it("fits the tag at 130% and 150% text with every cost, a building's or a road's, so none is cut", () => {
+    // A dearer road keeps its cell where the tag cuts it: see the test above.
+    const costs = { building: [950, 5_500, 16_500, 125_000, 999_600, 1_250_000, 12_500_000, 125_000_000], road: [950, 5_500, 16_500, 125_000, 999_600, 1_250_000] };
+
     for (const scale of [1.3, 1.5]) {
       for (const perDistance of [false, true]) {
-        for (const cost of [950, 5_500, 16_500, 125_000, 999_600, 1_250_000, 12_500_000, 125_000_000]) {
+        for (const cost of perDistance ? costs.road : costs.building) {
           const text = tag(row({ constructionCost: cost, costIsPerDistance: perDistance }), scale).text;
 
           assert.ok(tagFits(text, 64, scale), `${cost}${perDistance ? "/km" : ""} at ${scale}: ${text}`);
@@ -105,6 +123,16 @@ describe("a tile's tag", () => {
 
     assert.match(whole, /[A-Za-z]/);
     assert.equal(tag(plant, 1, "capacity").text, whole);
+  });
+
+  it("keeps a scaled unit and shortens the number instead, so two plants never read bare side by side", () => {
+    const plant = (capacity: number) => row({ subCategory: "ServiceBuildings_Electricity", buildingType: "PowerPlant", capacity });
+    // A plant's figure too wide for the tag, read bare beside a smaller plant's, would read as one scale.
+    const whole = formatCapacity(2_456_789, "ServiceBuildings", "ServiceBuildings_Electricity", "PowerPlant", FALLBACK_SEPARATORS);
+
+    assert.ok(!tagFits(whole, 64, 1.3), whole);
+    assert.equal(tag(plant(2_456_789), 1.3, "capacity").text, "246 MW");
+    assert.equal(tag(plant(4_500), 1.3, "capacity").text, "450 kW");
   });
 
   it("says nothing for a building with no cost", () => {

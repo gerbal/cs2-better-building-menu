@@ -52,10 +52,18 @@ describe("the list", () => {
     assert.match(html, /<p class="name" data-bbm-name="31" cohinline="">Two-Lane One-Way Half Road Left<\/p>/);
   });
 
-  it("says the cost over the capacity, right of the name", () => {
-    const html = render(rows(1, () => ({ constructionCost: 1000, capacity: 20 })));
+  it("says the cost over the capacity, right of the name, its digits beside the glyph for its unit", () => {
+    const html = render(rows(1, () => ({ constructionCost: 1000, capacity: 20, buildingType: "School" })));
 
-    assert.match(html, /<span class="first">¢1[^<]*000<\/span><\/span><span class="second">20[^<]*<\/span>/);
+    // The glyph a sibling of the number, in a box of its own: a mask inside a run of text draws nothing.
+    assert.match(html, /<span class="first">¢1[^<]*000<\/span><\/span><span class="secondLine"><img class="unitGlyph" style="mask-image:url\(person\.svg\)"[^>]*><span class="second">20<\/span><\/span>/);
+  });
+
+  it("says the view's key number second: a road's speed by the gauge", () => {
+    const road = rows(1, () => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: 100 } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={road} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+
+    assert.match(html, /<img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="second">100<\/span>/);
   });
 
   it("fills the armed building, and only it", () => {
@@ -149,7 +157,7 @@ describe("the list", () => {
   it("keeps the cost over the capacity on a whole-name plate at large text", () => {
     const html = render(rows(1, () => ({ constructionCost: 85000, capacity: 400 })), { over: { textScale: 1.5, atLargeText: "wholeNames" } });
 
-    assert.match(html, /<span class="first">¢85[^<]*000<\/span><\/span><span class="second">400[^<]*<\/span>/);
+    assert.match(html, /<span class="first">¢85[^<]*000<\/span><\/span><span class="secondLine">[^]*?<span class="second">400<\/span>/);
   });
 
   it("ends the feed inside the scroll, below the slots", () => {

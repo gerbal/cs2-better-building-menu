@@ -19,6 +19,7 @@ const ENTRY_CS = read("../../Domain/BuildingCatalogEntry.cs");
 const ENTRY_TS = read("../src/domain/buildingCatalog.ts");
 const PAGE_CS = read("../../Domain/BuildingCatalogPage.cs");
 const FACTS_CS = read("../../Domain/ViewFacts.cs");
+const ROW_NUMBERS_TS = read("../src/domain/rowNumbers.ts");
 
 /** The JSON names a C# writer emits, in the order it emits them. */
 function writtenNames(source = ENTRY_CS): string[] {
@@ -110,16 +111,19 @@ describe("the page's view facts' two halves agree", () => {
   });
 
   it("names the same kinds on both sides", () => {
-    // C#'s kind constants against the string unions the UI's SharedValue.kind and ViewFacts.keyKind declare.
+    // C#'s kind constants against the string unions the UI declares: SharedValue.kind, and KeyKind, which ViewFacts.keyKind is.
     const constants = [...FACTS_CS.matchAll(/public const string \w+ = "(\w*)";/g)].map(([, kind]) => kind);
+    const kinds = (declared: string) => [...declared.matchAll(/"(\w*)"/g)].map(([, kind]) => kind);
     const union = (name: string, field: string) => {
       const body = ENTRY_TS.slice(ENTRY_TS.indexOf(`export interface ${name} {`));
-      const declared = new RegExp(`^\\s{2}${field}: ([^;]+);`, "m").exec(body.slice(0, body.indexOf("\n}")))?.[1] ?? "";
-      return [...declared.matchAll(/"(\w*)"/g)].map(([, kind]) => kind);
+      return kinds(new RegExp(`^\\s{2}${field}: ([^;]+);`, "m").exec(body.slice(0, body.indexOf("\n}")))?.[1] ?? "");
     };
+    const keyKinds = kinds(/^export type KeyKind = ([^;]+);/m.exec(ROW_NUMBERS_TS)?.[1] ?? "");
 
     assert.ok(constants.length >= 6, "expected ViewFacts.cs' kind constants");
-    assert.deepEqual([...new Set([...union("SharedValue", "kind"), ...union("ViewFacts", "keyKind")])].sort(), [...constants].sort());
+    assert.match(ENTRY_TS, /^\s{2}keyKind: KeyKind;/m, "ViewFacts.keyKind is not KeyKind");
+    assert.ok(keyKinds.length >= 5, "expected KeyKind's union in rowNumbers.ts");
+    assert.deepEqual([...new Set([...union("SharedValue", "kind"), ...keyKinds])].sort(), [...constants].sort());
   });
 
   it("carries the facts on the page under the name the UI reads", () => {
