@@ -45,6 +45,23 @@ namespace BetterBuildingMenu.Systems
 			Mod.Settings.ApplyAndSave();
 		}
 
+		/// <summary>VIEW's Look: every menu's look, saved once a click changes it; a look not finished reads as Standard.</summary>
+		/// <remarks>See docs/design-notes.md, "The looks".</remarks>
+		private void SetAssetMenuLook(string picked)
+		{
+			// As the Width step: publish the kept look over what the UI sent, then save only a change.
+			var look = Looks.Sanitize(picked);
+			_AssetMenuLook.Value = look;
+
+			if (string.Equals(Mod.Settings.MenuLook, look, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			Mod.Settings.MenuLook = look;
+			Mod.Settings.ApplyAndSave();
+		}
+
 		private void OpenModOptions()
 		{
 			// VIEW's More options: the mod's own page, on its one tab. Closing Options lands on the

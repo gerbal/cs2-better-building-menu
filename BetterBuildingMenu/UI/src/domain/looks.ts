@@ -1,9 +1,49 @@
 /**
- * What a look needs from the game at run time: each panel's alpha under the player's interface
- * transparency. The tokens themselves are looks/_looks.scss. See docs/design-notes.md, "The looks'
- * tokens".
+ * The looks: which are finished, and what each needs from the game at run time, each panel's alpha
+ * under the player's interface transparency. The tokens themselves are looks/_looks.scss. See
+ * docs/design-notes.md, "The looks" and "The looks' tokens".
  */
 import type { CSSProperties } from "react";
+
+/** A look's id, as the settings store it. */
+export type LookId = "standard" | "glass" | "plates" | "line" | "cards";
+
+/** A finished look: the Look row and VIEW offer it, and a menu draws it. */
+export interface Look {
+  id: LookId;
+  released: true;
+  /** Its name's key, and the English the key falls back to. */
+  nameKey: string;
+  name: string;
+}
+
+/** A look not yet finished: named so the settings keep its id, never drawn. */
+export interface UnfinishedLook {
+  id: LookId;
+  released: false;
+}
+
+/** Every look the settings name, in the Look row's order; a look joins the row once its checks pass. C# keeps the same. */
+export const LOOKS: readonly (Look | UnfinishedLook)[] = [
+  { id: "standard", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookStandard]", name: "Standard" },
+  { id: "glass", released: false },
+  { id: "plates", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookPlates]", name: "Plates" },
+  { id: "line", released: false },
+  { id: "cards", released: false },
+];
+
+const isReleased = (look: Look | UnfinishedLook): look is Look => look.released;
+
+/** The finished looks, in the row's order. */
+export function releasedLooks(): Look[] {
+  return LOOKS.filter(isReleased);
+}
+
+/** The look a stored id draws: a finished look as itself, anything else as Standard, as C# reads it. */
+export function lookOf(id: string | null | undefined): Look {
+  const looks = releasedLooks();
+  return looks.find((look) => look.id === id) ?? looks[0];
+}
 
 /** Standard's own alpha for each panel, as drawn at the game's default transparency; _looks.scss declares the same. */
 export const STANDARD_SURFACE_ALPHAS = { head: 0.96, body: 0.92, popBg: 0.97 } as const;

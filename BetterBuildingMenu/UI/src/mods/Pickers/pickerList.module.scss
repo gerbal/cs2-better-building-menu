@@ -91,10 +91,22 @@
   white-space: nowrap;
 }
 
-// "Width, every menu": 4 to the VIEW list's left, from inside its popover's padding, opening the way
-// its VIEW list does. Each way states one offset, so neither has to unset the other's.
+// "Look, every menu" and "Width, every menu": 4 to the VIEW list's left, from inside its popover's
+// padding, opening the way its VIEW list does. Each way states one offset, so neither has to unset the
+// other's.
+.lookList,
 .widthList {
   left: -($popover-width + 4rem + $popover-padding);
+}
+
+// Upward: its bottom 4 below the Look row's, which sits two rows (Width, More options) above the list's
+// bottom.
+.lookList.up {
+  bottom: 2 * $popover-row - 4rem;
+}
+
+.lookList.down {
+  top: -$popover-padding;
 }
 
 // Upward: its bottom 4 below the Width row's, which sits one row (More options) above the list's

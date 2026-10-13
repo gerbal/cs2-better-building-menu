@@ -439,6 +439,15 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(declarationsOf(PICKER_LIST, ".widthList").bottom, undefined);
   });
 
+  it("opens Look, every menu each way by one fixed offset, its bottom 4 below the Look row's, two rows above the list's bottom", () => {
+    const up = declarationsOf(PICKER_LIST, ".lookList.up");
+    const down = declarationsOf(PICKER_LIST, ".lookList.down");
+
+    assert.equal(up.bottom, "44rem");
+    assert.ok(up.top === undefined && down.top && down.bottom === undefined);
+    assert.equal(declarationsOf(PICKER_LIST, ".lookList").left, declarationsOf(PICKER_LIST, ".widthList").left);
+  });
+
   it("opens the pane's menus upward, away from the bottom bar", () => {
     // The pane is bottom-aligned against the bottom bar, so a menu growing
     // downward opens off the screen.

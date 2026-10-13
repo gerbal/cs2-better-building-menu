@@ -36,6 +36,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>Pointing at a building shows a small card beside the pointer.</summary>
 		public const string HoverCard = HoverCards.Pointer;
 
+		/// <summary>Every menu drawn in Standard, the look BBM recommends.</summary>
+		public const string MenuLook = Looks.Standard;
+
 		/// <summary>Every stored setting back to how it ships.</summary>
 		/// <remarks>
 		/// Not the settings version, which records the migration, nor the legacy width and view, which
@@ -48,6 +51,7 @@ namespace BetterBuildingMenu.Domain
 			values.DefaultView = DefaultView;
 			values.AtLargeText = AtLargeText;
 			values.HoverCard = HoverCard;
+			values.MenuLook = MenuLook;
 			values.MenuGroups = NoPicks;
 			values.MenuViews = NoPicks;
 			values.Upgrader = false;

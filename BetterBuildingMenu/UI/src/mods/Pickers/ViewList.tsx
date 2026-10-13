@@ -4,9 +4,10 @@ import classNames from "classnames";
 import { useState } from "react";
 
 import { ICONS_NAMED, VIEW_ROWS, type BodyKind } from "domain/bodyChoice";
+import { lookOf, releasedLooks } from "domain/looks";
 import { WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
 import { coversTheChirper, WIDTH_STEP_NUMBERS } from "domain/widthSteps";
-import { AssetMenuTuning$, send } from "mods/bindings";
+import { AssetMenuLook$, AssetMenuTuning$, send } from "mods/bindings";
 import popover from "mods/ControlPopover/controlPopover.module.scss";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useMenuBody } from "mods/useMenuBody";
@@ -60,6 +61,30 @@ export function useViewOptions(): { current: string; changed: boolean; options: 
 }
 
 /**
+ * "Look, every menu", to the VIEW list's left: the finished looks, the one in force lit. A click stores a
+ * look for every menu and keeps both lists open, so looks compare on the player's own city. It opens the
+ * way its VIEW list does.
+ */
+const LookList = ({ opensDown }: { opensDown: boolean }) => {
+  const { translate } = useLocalization();
+  const current = lookOf(useValue(AssetMenuLook$)).id;
+
+  return (
+    <div className={classNames(popover.popover, styles.list, styles.lookList, opensDown ? styles.down : styles.up)}>
+      <div className={styles.header}>{translate("Tooltip.LABEL[BetterBuildingMenu.LookEveryMenu]", "Look, every menu") ?? "Look, every menu"}</div>
+      {releasedLooks().map((look) => (
+        <PickerRow
+          key={look.id}
+          label={translate(look.nameKey, look.name) ?? look.name}
+          lit={look.id === current}
+          onSelect={() => send({ method: "SetAssetMenuLook", args: [look.id] })}
+        />
+      ))}
+    </div>
+  );
+};
+
+/**
  * "Width, every menu", to the VIEW list's left: the five steps, the stored one lit, beside the pane
  * the ones that do not fit dimmed (a stored one among them draws as the widest that fits). A click
  * stores a step and keeps both lists open. It opens the way its VIEW list does.
@@ -93,15 +118,19 @@ const WidthList = ({ opensDown }: { opensDown: boolean }) => {
 
 /**
  * VIEW's list, in a popover or the control pane: Default view and the bodies, the menu's own pick lit,
- * a pick closing it; then the doors to what applies to every menu, Width with its sub-list beside it
- * and More options…, which opens the mod's page. `opensDown` when its popover hangs from under the top row.
+ * a pick closing it; then the doors to what applies to every menu, Look and Width, each with its list
+ * beside it, one at a time, and More options…, which opens the mod's page. `opensDown` when its popover
+ * hangs from under the top row.
  */
 export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void; opensDown?: boolean }) => {
   const { translate } = useLocalization();
   const label = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
   const view = useViewOptions();
   const { step } = useAssetMenuLayout();
-  const [widthOpen, setWidthOpen] = useState(false);
+  const look = lookOf(useValue(AssetMenuLook$));
+  const [beside, setBeside] = useState<"look" | "width" | null>(null);
+  const everyMenu = `${label("Tooltip.LABEL[BetterBuildingMenu.EveryMenu]", "every menu")} ›`;
+  const toggle = (list: "look" | "width") => setBeside((shown) => (shown === list ? null : list));
 
   return (
     <div className={classNames(styles.list, styles.viewList)}>
@@ -118,9 +147,14 @@ export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void
       ))}
       {view.offered && <div className={styles.divider} />}
       <PickerRow
+        label={label("Tooltip.LABEL[BetterBuildingMenu.ViewLook]", "Look · {0}").replace("{0}", label(look.nameKey, look.name))}
+        note={everyMenu}
+        onSelect={() => toggle("look")}
+      />
+      <PickerRow
         label={label("Tooltip.LABEL[BetterBuildingMenu.ViewWidth]", "Width · {0}").replace("{0}", String(step))}
-        note={`${label("Tooltip.LABEL[BetterBuildingMenu.EveryMenu]", "every menu")} ›`}
-        onSelect={() => setWidthOpen((shown) => !shown)}
+        note={everyMenu}
+        onSelect={() => toggle("width")}
       />
       <PickerRow
         label={label("Tooltip.LABEL[BetterBuildingMenu.MoreOptions]", "More options…")}
@@ -129,7 +163,8 @@ export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void
           onPicked();
         }}
       />
-      {widthOpen && <WidthList opensDown={opensDown} />}
+      {beside === "look" && <LookList opensDown={opensDown} />}
+      {beside === "width" && <WidthList opensDown={opensDown} />}
     </div>
   );
 };

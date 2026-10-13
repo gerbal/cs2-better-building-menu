@@ -76,6 +76,8 @@ export const AssetMenuViews$ = bindValue<MenuPick[]>(mod.id, "AssetMenuViews", [
 export const AssetMenuDefaultView$ = bindValue<string>(mod.id, "AssetMenuDefaultView", "auto");
 /** Above 100% text: "moreBuildings", the list keeps more with names shortened, or "wholeNames". */
 export const AssetMenuAtLargeText$ = bindValue<string>(mod.id, "AssetMenuAtLargeText", "moreBuildings");
+/** How every menu is drawn: "standard" until C# answers, else a finished look's id. VIEW's Look writes it. */
+export const AssetMenuLook$ = bindValue<string>(mod.id, "AssetMenuLook", "standard");
 /** The hover card's form: "pointer", beside the pointer, until C# answers; "slot", the game's detail slot; or "status", the readout. */
 export const AssetMenuHoverCard$ = bindValue<string>(mod.id, "AssetMenuHoverCard", "pointer");
 /** What the look's Auto rule reads of every menu, counted over the whole menu once per index generation. */

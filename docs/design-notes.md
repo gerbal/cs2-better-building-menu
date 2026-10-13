@@ -335,6 +335,18 @@ A development branch's tab takes the category's glyph rather than a photograph: 
 refuses a `thumbnail://` render and Asset Icon Library's PNG building renders (`coui://ail/...png`),
 which that library hands the game's development tree for its nodes. Its SVGs stay glyphs.
 
+## The looks
+
+One look draws every menu: the Look row (Options › UI/UX, its first row) and VIEW's "Look, every menu"
+set the one setting, `MenuLook`. Five looks are named (`standard`, `glass`, `plates`, `line`, `cards`),
+and only the finished ones are offered: `Looks.Shipped` in C#, the `released` entries of `LOOKS` in
+`domain/looks.ts`, which a test holds equal. C# reads the setting through `Looks.Sanitize` on every load
+and at every pick, so an unknown id, or one whose look is not finished, draws Standard, the look BBM
+recommends; a change to Standard reaches everyone who never picked another. VIEW's list sends
+`SetAssetMenuLook`, which saves only a pick that changes the look, and stays open, so the looks compare
+on the player's own city; only one of Look's and Width's lists shows beside it at a time. No migration
+moves the setting: every player starts on Standard.
+
 ## The looks' tokens
 
 A look is one class of `--bbm-*` custom properties on the build menu's root (`looks/looks.module.scss`,

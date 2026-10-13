@@ -101,6 +101,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<string> _AssetMenuAtLargeText = null!;
 		// What shows when the pointer rests on a building: the UI draws the form.
 		private ValueBindingHelper<string> _AssetMenuHoverCard = null!;
+		// How every menu is drawn: the finished look, read from Options and written by VIEW's Look.
+		private ValueBindingHelper<string> _AssetMenuLook = null!;
 		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
 		private ValueBindingHelper<TuningValues> _AssetMenuTuning = null!;
 		// The Said once at share as Options last applied it: a change redraws the open menu, as only C# counts it.
@@ -221,6 +223,8 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuDefaultView = CreateBinding("AssetMenuDefaultView", BodyViews.SanitizeDefault(Mod.Settings.DefaultView));
 			_AssetMenuAtLargeText = CreateBinding("AssetMenuAtLargeText", LargeText.Sanitize(Mod.Settings.AtLargeText));
 			_AssetMenuHoverCard = CreateBinding("AssetMenuHoverCard", HoverCards.Sanitize(Mod.Settings.HoverCard));
+			// Read/write like the Width step: VIEW's Look sends the pick, which saves once.
+			_AssetMenuLook = CreateBinding("AssetMenuLook", "SetAssetMenuLook", Looks.Sanitize(Mod.Settings.MenuLook), SetAssetMenuLook);
 			// The open menu's own VIEW, from the VIEW list; "" goes back to Default view.
 			CreateTrigger<string>("SetAssetMenuView", SetAssetMenuView);
 			_AssetMenuTuning = CreateBinding("AssetMenuTuning", CurrentTuning());
@@ -409,6 +413,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);
 			_AssetMenuAtLargeText.Value = LargeText.Sanitize(Mod.Settings.AtLargeText);
 			_AssetMenuHoverCard.Value = HoverCards.Sanitize(Mod.Settings.HoverCard);
+			_AssetMenuLook.Value = Looks.Sanitize(Mod.Settings.MenuLook);
 			_AssetMenuTuning.Value = CurrentTuning();
 			if (!string.Equals(_publishedMenuViews, Mod.Settings.MenuViews, StringComparison.Ordinal))
 			{

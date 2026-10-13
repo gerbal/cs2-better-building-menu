@@ -25,6 +25,8 @@ namespace BetterBuildingMenu.Domain
 
 		string HoverCard { get; set; }
 
+		string MenuLook { get; set; }
+
 		string MenuGroups { get; set; }
 
 		string MenuViews { get; set; }

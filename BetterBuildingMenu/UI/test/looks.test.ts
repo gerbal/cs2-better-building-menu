@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { STANDARD_SURFACE_ALPHAS, panelOpacities, surfaceAlphas, surfaceAlphaStyle } from "../src/domain/looks.ts";
+import { LOOKS, STANDARD_SURFACE_ALPHAS, lookOf, panelOpacities, releasedLooks, surfaceAlphas, surfaceAlphaStyle } from "../src/domain/looks.ts";
 import { declarationsOf } from "./harness/compiledCss.ts";
 
 const close = (actual: number, expected: number) =>
@@ -50,5 +50,18 @@ describe("a look's panels under the game's transparency", () => {
     for (const [surface, alpha] of Object.entries(STANDARD_SURFACE_ALPHAS)) {
       assert.equal(Number(standard[`--bbm-a-${surface}`]), alpha, surface);
     }
+  });
+});
+
+describe("the looks", () => {
+  it("are the five the settings name, of which the Look row offers the finished ones, Standard first", () => {
+    assert.deepEqual(LOOKS.map((look) => look.id), ["standard", "glass", "plates", "line", "cards"]);
+    assert.deepEqual(releasedLooks().map((look) => look.id), ["standard", "plates"]);
+  });
+
+  it("draw a finished look as itself, and anything else, an unfinished look included, as Standard", () => {
+    assert.equal(lookOf("plates").id, "plates");
+    assert.equal(lookOf("standard").id, "standard");
+    for (const other of ["glass", "cards", "Plates", "", undefined]) assert.equal(lookOf(other).id, "standard", String(other));
   });
 });

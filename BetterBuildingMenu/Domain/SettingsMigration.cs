@@ -23,8 +23,8 @@ namespace BetterBuildingMenu.Domain
 	/// Pure, over <see cref="ISettingsValues"/>, so tests never build the settings class. Only a
 	/// value that was an earlier release's default moves, and a new player's control pane goes off.
 	/// A per-load sanitiser also brings a Width step outside its range to the first, and reads a
-	/// Default view or At large text the row does not offer as shipped, but only in a file at this
-	/// version or earlier: a later release's file is left whole. See docs/design-notes.md, "The
+	/// Default view, At large text, Hover card or Look the row does not offer as shipped, but only in a
+	/// file at this version or earlier: a later release's file is left whole. See docs/design-notes.md, "The
 	/// settings migration".
 	/// </remarks>
 	public static class SettingsMigration
@@ -100,6 +100,7 @@ namespace BetterBuildingMenu.Domain
 				Set(nameof(ISettingsValues.DefaultView), values.DefaultView, BodyViews.SanitizeDefault(values.DefaultView), value => values.DefaultView = value, changes);
 				Set(nameof(ISettingsValues.AtLargeText), values.AtLargeText, LargeText.Sanitize(values.AtLargeText), value => values.AtLargeText = value, changes);
 				Set(nameof(ISettingsValues.HoverCard), values.HoverCard, HoverCards.Sanitize(values.HoverCard), value => values.HoverCard = value, changes);
+				Set(nameof(ISettingsValues.MenuLook), values.MenuLook, Looks.Sanitize(values.MenuLook), value => values.MenuLook = value, changes);
 			}
 
 			if (from < target)

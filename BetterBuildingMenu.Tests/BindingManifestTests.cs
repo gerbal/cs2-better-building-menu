@@ -111,6 +111,16 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheLookIsNamedOnBothSides()
+		{
+			foreach (var name in new[] { "AssetMenuLook", "SetAssetMenuLook" })
+			{
+				Assert.Contains(name, CSharpNames());
+				Assert.Contains(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
 		public void TheAllCountIsNamedOnBothSides()
 		{
 			Assert.Contains("AssetMenuAllCount", CSharpNames());

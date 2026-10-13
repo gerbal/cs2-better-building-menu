@@ -134,6 +134,7 @@ namespace BetterBuildingMenu.Tests
 
 		public static IEnumerable<object[]> Dropdowns() => new[]
 		{
+			new object[] { nameof(BetterBuildingMenuSettings.MenuLook), Looks.Shipped, OptionRows.LookLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.DefaultView), BodyViews.DefaultViews, OptionRows.DefaultViewLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.AtLargeText), LargeText.Values, OptionRows.AtLargeTextLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.HoverCard), HoverCards.Values, OptionRows.HoverCardLabelIds },
@@ -163,7 +164,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void DefaultViewSitsAfterWidthAtLargeTextAfterTileSizeAndHoverCardAfterIt()
+		public void LookLeadsAndDefaultViewSitsAfterWidthAtLargeTextAfterTileSizeAndHoverCardAfterIt()
 		{
 			var order = typeof(BetterBuildingMenuSettings)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -174,6 +175,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(
 				new[]
 				{
+					nameof(BetterBuildingMenuSettings.MenuLook),
 					nameof(BetterBuildingMenuSettings.AssetMenuWidthStep),
 					nameof(BetterBuildingMenuSettings.DefaultView),
 					nameof(BetterBuildingMenuSettings.AssetMenuTileSize),
@@ -186,10 +188,11 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheUiDrawsTheShippedTileSizeAndAtLargeTextUntilCSharpAnswers()
+		public void TheUiDrawsTheShippedLookTileSizeAndAtLargeTextUntilCSharpAnswers()
 		{
 			var bindings = ModSource.Text("UI/src/mods/bindings.ts");
 
+			Assert.Contains($"bindValue<string>(mod.id, \"AssetMenuLook\", \"{SettingsDefaults.MenuLook}\")", bindings);
 			Assert.Contains($"bindValue<number>(mod.id, \"AssetMenuTileSize\", {SettingsDefaults.TileSize})", bindings);
 			Assert.Contains($"bindValue<string>(mod.id, \"AssetMenuAtLargeText\", \"{SettingsDefaults.AtLargeText}\")", bindings);
 			Assert.Contains($"bindValue<string>(mod.id, \"AssetMenuHoverCard\", \"{SettingsDefaults.HoverCard}\")", bindings);
@@ -198,6 +201,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheRowsSayWhatTheyDoInOnScreenWords()
 		{
+			Assert.Equal("Look", ModSource.English("Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.MenuLook]"));
 			Assert.Equal("Default view", ModSource.English("Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DefaultView]"));
 			Assert.Equal("At large text", ModSource.English("Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AtLargeText]"));
 			Assert.Equal("Hover card", ModSource.English("Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HoverCard]"));

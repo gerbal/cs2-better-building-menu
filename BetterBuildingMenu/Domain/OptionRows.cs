@@ -9,6 +9,13 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The locale id of the line every other row reads while Replace is off.</summary>
 		public const string OffWhileReplaceOffId = "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.OffWhileReplaceOff]";
 
+		/// <summary>The Look row's labels, one per value of <see cref="Looks.Shipped"/>.</summary>
+		public static readonly IReadOnlyList<string> LookLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.LookStandard]",
+			"Options.LABEL[BetterBuildingMenu.LookPlates]",
+		};
+
 		/// <summary>The Width row's labels, one per step from the first: the game's size, then the two that cover the chirper.</summary>
 		public static readonly IReadOnlyList<string> WidthStepLabelIds = new[]
 		{

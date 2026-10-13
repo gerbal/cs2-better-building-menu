@@ -30,6 +30,8 @@ namespace BetterBuildingMenu.Tests
 
 		public string HoverCard { get; set; } = SettingsDefaults.HoverCard;
 
+		public string MenuLook { get; set; } = SettingsDefaults.MenuLook;
+
 		public string MenuGroups { get; set; } = SettingsDefaults.NoPicks;
 
 		public string MenuViews { get; set; } = SettingsDefaults.NoPicks;
@@ -215,7 +217,7 @@ namespace BetterBuildingMenu.Tests
 
 		/// <summary>A player's own height and width, other choices, and a key no release declares.</summary>
 		public static readonly string PlayerChoices = SettingsFile.Text(
-			"{\"AssetMenuHeight\": 300, \"AssetMenuCatalogWidth\": 1200, \"AssetMenuTileSize\": 120, \"AutoWidenSearch\": false, \"MenuLook\": \"neon\"}");
+			"{\"AssetMenuHeight\": 300, \"AssetMenuCatalogWidth\": 1200, \"AssetMenuTileSize\": 120, \"AutoWidenSearch\": false, \"MenuTheme\": \"neon\"}");
 
 		/// <summary>0.2.4 with the pane hidden and the width dragged to the end of the room.</summary>
 		public static readonly string FullWidthPaneHidden = SettingsFile.Text("{\"AssetMenuCatalogWidth\": 1476, \"ControlPaneShown\": false}");

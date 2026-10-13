@@ -267,11 +267,11 @@ describe("a control's popover", () => {
     assert.equal(closed, 1);
   });
 
-  it("lists Default view and the bodies, the menu's own pick lit, then Width and More options, and closes on a body", () => {
+  it("lists Default view and the bodies, the menu's own pick lit, then Look, Width and More options, and closes on a body", () => {
     set("AssetMenu", "Roads");
     mount({ kind: "view", left: 0 });
 
-    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Default view · List", "List", "Icons", "Tiles", "Cards", "Width · 1", "More options…"]);
+    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Default view · List", "List", "Icons", "Tiles", "Cards", "Look · Standard", "Width · 1", "More options…"]);
     assert.equal(rows().find((node) => node.props["aria-current"] === "true")!.props["aria-label"], "Default view · List");
     pick("Tiles");
 
@@ -294,7 +294,7 @@ describe("a control's popover", () => {
     set("AssetMenu", "");
     mount({ kind: "view", left: 0 });
 
-    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Width · 1", "More options…"]);
+    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Look · Standard", "Width · 1", "More options…"]);
     assert.equal(root!.root.findAll((node) => node.type === "div" && node.props.className === "divider").length, 0);
   });
 
@@ -309,6 +309,30 @@ describe("a control's popover", () => {
     pick("Default view · Tiles");
 
     assert.deepEqual(sent("SetAssetMenuView"), [[""]]);
+  });
+
+  it("offers Look, every menu beside the list, the look in force lit, kept open on a pick, one beside list at a time", () => {
+    set("AssetMenu", "Roads");
+    set("AssetMenuLook", "plates");
+    mount({ kind: "view", left: 0 });
+    const lookList = () => root!.root.findAll((node) => node.type === "div" && classes(node).includes("lookList"));
+    const widthList = () => root!.root.findAll((node) => node.type === "div" && classes(node).includes("widthList"));
+
+    assert.equal(root!.root.findAllByType(PickerRow).find((row) => row.props.label === "Look · Plates")!.props.note, "every menu ›");
+    pick("Look · Plates");
+
+    const looks = lookList()[0].findAllByType(PickerRow);
+    assert.equal(lookList()[0].findAll((node) => node.type === "div" && node.props.className === "header")[0].children[0], "Look, every menu");
+    assert.deepEqual(looks.map((row) => [row.props.label, row.props.lit]), [["Standard", false], ["Plates", true]]);
+    act(() => looks[0].props.onSelect());
+
+    assert.deepEqual(sent("SetAssetMenuLook"), [["standard"]]);
+    assert.equal(closed, 0);
+    assert.equal(lookList().length, 1, "both lists stay open");
+
+    pick("Width · 1");
+    assert.equal(lookList().length, 0, "Width's list takes its place");
+    assert.equal(widthList().length, 1);
   });
 
   it("opens Width, every menu beside the list and keeps both open on a step; More options asks for the mod's page and closes", () => {

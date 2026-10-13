@@ -102,6 +102,17 @@ namespace BetterBuildingMenu
 		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AutoWidenSearchDescription))]
 		public bool AutoWidenSearch { get; set; }
 
+		/// <summary>How the build menu is drawn, in every menu: one of the finished looks.</summary>
+		/// <remarks>
+		/// A string, so a look a later release retires reads as Standard. VIEW's Look writes the same value.
+		/// See <see cref="Domain.Looks"/>.
+		/// </remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(LookItems))]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(MenuLookDescription))]
+		public string MenuLook { get; set; } = Domain.SettingsDefaults.MenuLook;
+
 		/// <summary>
 		/// Which of the build menu's five widths it draws at, from 1, the game's own, to 5.
 		/// </summary>
@@ -384,6 +395,8 @@ namespace BetterBuildingMenu
 
 		private LocalizedString HoverCardDescription() => RowDescription(nameof(HoverCard));
 
+		private LocalizedString MenuLookDescription() => RowDescription(nameof(MenuLook));
+
 		/// <summary>The Width row's choices: the five steps, by their labels.</summary>
 		/// <remarks>Static, so a test reads it without building the settings class.</remarks>
 		private static DropdownItem<int>[] WidthStepItems() =>
@@ -397,6 +410,9 @@ namespace BetterBuildingMenu
 
 		/// <summary>The At large text row's two choices, by their labels.</summary>
 		private static DropdownItem<string>[] AtLargeTextItems() => StringItems(Domain.LargeText.Values, Domain.OptionRows.AtLargeTextLabelIds);
+
+		/// <summary>The Look row's choices: the finished looks, by their labels.</summary>
+		private static DropdownItem<string>[] LookItems() => StringItems(Domain.Looks.Shipped, Domain.OptionRows.LookLabelIds);
 
 		/// <summary>The Hover card row's three choices, by their labels.</summary>
 		private static DropdownItem<string>[] HoverCardItems() => StringItems(Domain.HoverCards.Values, Domain.OptionRows.HoverCardLabelIds);
