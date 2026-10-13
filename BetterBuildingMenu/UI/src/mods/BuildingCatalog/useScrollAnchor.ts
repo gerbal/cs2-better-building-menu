@@ -11,7 +11,7 @@ import {
 import type { AnchorGeometry } from "domain/catalogWindow";
 import { getAssetMenuAnchor, getAssetMenuListStart, setAssetMenuAnchor, setAssetMenuListStart } from "domain/assetMenuViewStore";
 import { planListScroll, type ListScroll, type StartMove } from "domain/listScroll";
-import { findScrollContainer, lastCatalogRow } from "./catalogDom";
+import { findScrollContainer, lastCatalogRow, pxPerRem } from "./catalogDom";
 
 /** What a page says about where its list starts; see BuildingCatalogPage. */
 export interface ListStartPage {
@@ -33,8 +33,9 @@ const IN_PLACE_READINGS = 2;
 /**
  * One frame of a move: true when the list reads where the move puts it, or else a set towards it. A
  * row that has not rendered, or rects still at Cohtml's pre-layout zeroes, are worth another frame.
+ * `edge` is the room line 1 keeps above it, in pixels (see `bodyLines`).
  */
-function moveList(root: HTMLElement | null, move: Move): boolean {
+function moveList(root: HTMLElement | null, move: Move, edge: number): boolean {
   const row = root ? lastCatalogRow(root, move.kind === "top" ? undefined : move.id) : null;
 
   if (!root || !row) {
@@ -75,12 +76,12 @@ function moveList(root: HTMLElement | null, move: Move): boolean {
     return false;
   }
 
-  if (isOnLineOne(geometry)) {
+  if (isOnLineOne(geometry, edge)) {
     return true;
   }
 
   const before = scroller.scrollTop;
-  scroller.scrollTop = lineOneScrollTop(before, geometry.rowTop, geometry.containerTop);
+  scroller.scrollTop = lineOneScrollTop(before, geometry.rowTop, geometry.containerTop, edge);
 
   // In the list's last screen the row cannot reach line 1: in view, where the scroll stops, is in place.
   return scroller.scrollTop === before && isAnchorOnScreen(geometry);
@@ -88,13 +89,17 @@ function moveList(root: HTMLElement | null, move: Move): boolean {
 
 /**
  * Puts the list in place when a page lands, over as many frames as it takes: at a new start (an
- * open, a tab pick, a sort) the anchored row on line 1, or the list at its top; on a remount, the
- * kept row back in view, once. A retry loop, not one measurement: Cohtml lays out asynchronously and
- * the window is still arriving from C#. See docs/design-notes.md, "Opening on the building's tab".
+ * open, a tab pick, a sort) the anchored row on line 1, `lineEdgeRem` below the list's top, or the
+ * list at its top; on a remount, the kept row back in view, once. A retry loop, not one measurement:
+ * Cohtml lays out asynchronously and the window is still arriving from C#. See docs/design-notes.md,
+ * "Opening on the building's tab".
  */
-export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, page: ListStartPage): void {
+export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, page: ListStartPage, lineEdgeRem: number): void {
   // Per mount: a remount brings its row back once, and a start in this mount puts that aside.
   const settled = useRef(false);
+  // Read each frame, so a body that changes its lines mid-move does not restart the move.
+  const edge = useRef(lineEdgeRem);
+  edge.current = lineEdgeRem;
   // A start's move from its first page until it ends, so a page landing mid-move carries it on.
   const underWay = useRef<StartMove | null>(null);
   const { listStart, anchorId, anchorIndex, itemCount } = page;
@@ -147,7 +152,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
         return;
       }
 
-      inPlace = moveList(rootRef.current, move) ? inPlace + 1 : 0;
+      inPlace = moveList(rootRef.current, move, edge.current * pxPerRem()) ? inPlace + 1 : 0;
 
       if (inPlace >= IN_PLACE_READINGS) {
         finish();

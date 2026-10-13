@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 import { CATALOG_ANCHOR_MAX_FRAMES, isAnchorMeasurable, isScrollContainer, revealScrollTop } from "domain/catalogWindow";
-import { findScrollContainer, lastCatalogRow } from "./catalogDom";
+import { findScrollContainer, lastCatalogRow, pxPerRem } from "./catalogDom";
 
 /**
  * When Up or Down moves Enter's target, its row comes wholly on screen, the list moving as little as it
@@ -9,12 +9,15 @@ import { findScrollContainer, lastCatalogRow } from "./catalogDom";
  * move and never a repeat the keys dropped; a fresh query's best match is the first row under Match,
  * where its start puts the list. A row past the window is armed by id all the same, and the list
  * stays. Its own frame loop, as Cohtml lays out a frame late, and it ends with one set on the first
- * measurable frame: plates are placed by slot, so a late wrap moves no row.
+ * measurable frame: plates are placed by slot, so a late wrap moves no row. The row reaches
+ * `lineEdgeRem` past its plate, where its picture overhangs it (see `bodyLines`).
  * See docs/design-notes.md, "The search field's keys".
  */
-export function useRevealEnterTarget(rootRef: RefObject<HTMLElement>, targetId: number | null, step: number): void {
+export function useRevealEnterTarget(rootRef: RefObject<HTMLElement>, targetId: number | null, step: number, lineEdgeRem: number): void {
   // The step the last render saw: a change is a move, back to the best match's 0 as much as away.
   const lastStep = useRef(0);
+  const edge = useRef(lineEdgeRem);
+  edge.current = lineEdgeRem;
 
   useEffect(() => {
     const moved = step !== lastStep.current;
@@ -47,7 +50,7 @@ export function useRevealEnterTarget(rootRef: RefObject<HTMLElement>, targetId: 
         const geometry = { containerTop: box.top, containerHeight: scroller.clientHeight, rowTop: rowRect.top, rowHeight: rowRect.height };
 
         if (isAnchorMeasurable(geometry)) {
-          scroller.scrollTop = revealScrollTop(scroller.scrollTop, rowRect.top, rowRect.height, box.top, scroller.clientHeight);
+          scroller.scrollTop = revealScrollTop(scroller.scrollTop, rowRect.top, rowRect.height, box.top, scroller.clientHeight, edge.current * pxPerRem());
           return;
         }
       }

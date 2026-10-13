@@ -100,51 +100,56 @@ export function anchorScrollTop(
 }
 
 /**
- * Where to scroll so a row sits on the list's first line, as an open puts the armed building.
- * Never negative, for the reason anchorScrollTop is not.
+ * Where to scroll so a row sits on the list's first line, as an open puts the armed building: `edge`
+ * below the list's top, the room the body's lines keep for a picture that overhangs its plate (see
+ * `bodyLines`). Never negative, for the reason anchorScrollTop is not.
  */
-export function lineOneScrollTop(currentScrollTop: number, rowTop: number, containerTop: number): number {
+export function lineOneScrollTop(currentScrollTop: number, rowTop: number, containerTop: number, edge: number): number {
   if (![currentScrollTop, rowTop, containerTop].every(Number.isFinite)) {
     return currentScrollTop;
   }
 
-  return Math.max(0, currentScrollTop + rowTop - containerTop);
+  return Math.max(0, currentScrollTop + rowTop - containerTop - edge);
 }
 
 /**
  * The scroll a screen down, or up, from here, held inside the list's ends: an engine need not clamp a
  * scroll set past them. With a line pitch, the screen is the whole lines that fit it, counted as the
- * body counts them (`wholeLines`, the gap in the height's unit), so a page lands lines on the top edge
- * as it found them; a pitch of 0 pages the screen. The gap has no default, so no caller pages a line
- * short.
+ * body counts them (`wholeLines`, the gap and the edge in the height's unit), so a page lands lines on
+ * the top edge as it found them; a pitch of 0 pages the screen. The gap and the edge have no default,
+ * so no caller pages a line short or a line long.
  */
-export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch: number, lineGap: number, pixel: number): number {
-  const page = linePitch > 0 ? wholeLines(clientHeight, linePitch, lineGap, pixel) * linePitch : clientHeight;
+export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch: number, lineGap: number, pixel: number, edge: number): number {
+  const page = linePitch > 0 ? wholeLines(clientHeight, linePitch, lineGap, pixel, edge) * linePitch : clientHeight;
 
   return Math.max(0, Math.min(scrollHeight - clientHeight, scrollTop + direction * page));
 }
 
 /**
  * Where to scroll so a row is wholly on screen, moving as little as it takes: up to its top, or down
- * until its bottom meets the list's foot; where it already is, nowhere. Never negative.
+ * until its bottom meets the list's foot; where it already is, nowhere. A row reaches `edge` past its
+ * plate above and below, where a picture overhangs it (see `bodyLines`). Never negative.
  */
-export function revealScrollTop(scrollTop: number, rowTop: number, rowHeight: number, containerTop: number, containerHeight: number): number {
+export function revealScrollTop(scrollTop: number, rowTop: number, rowHeight: number, containerTop: number, containerHeight: number, edge: number): number {
   if (![scrollTop, rowTop, rowHeight, containerTop, containerHeight].every(Number.isFinite)) {
     return scrollTop;
   }
 
-  if (rowTop < containerTop) {
-    return Math.max(0, scrollTop + rowTop - containerTop);
+  if (rowTop - edge < containerTop) {
+    return Math.max(0, scrollTop + rowTop - edge - containerTop);
   }
 
-  const overrun = rowTop + rowHeight - (containerTop + containerHeight);
+  const overrun = rowTop + rowHeight + edge - (containerTop + containerHeight);
 
   return overrun > 0 ? scrollTop + overrun : scrollTop;
 }
 
-/** Whether a row sits on the first line, to a pixel: Cohtml rounds line boxes to whole device pixels. */
-export function isOnLineOne({ containerTop, rowTop }: AnchorGeometry): boolean {
-  return Math.abs(rowTop - containerTop) <= 1;
+/**
+ * Whether a row sits on the first line, `edge` below the list's top (see `lineOneScrollTop`), to a
+ * pixel: Cohtml rounds line boxes to whole device pixels.
+ */
+export function isOnLineOne({ containerTop, rowTop }: AnchorGeometry, edge: number): boolean {
+  return Math.abs(rowTop - containerTop - edge) <= 1;
 }
 
 /**

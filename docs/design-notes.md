@@ -1063,8 +1063,15 @@ the lines are the body's height.
 - **The list at 100% text:** plates at least 171 rem wide, four across the game's own 706, 27.25 tall
   (the List plate height knob), five lines: 20 a screen. At the five 16:9 Width steps, 4 / 5 / 6 / 7 /
   8 across.
-- **The list above 100% text,** by At large text: More buildings, one-line plates 22.375 tall and at
-  least 228 wide, 3 × 6 = 18; Whole names, two-line plates 34.56 tall, 3 × 4 = 12.
+- **The list above 100% text,** by At large text: More buildings, one-line plates 22 tall and at
+  least 228 wide, 3 × 6 = 18; Whole names, two-line plates 34.56 tall, 3 × 4 = 12. A one-line plate's
+  picture keeps 24 rem, the size the live check counts a building by, and overhangs its plate by a
+  rem above and below, into the gaps, the plate not clipping it: six plates a picture's height apart,
+  the first a rem down, hold six whole pictures in the game's own 144.25. The body's lines count that
+  rem at both ends (`wholeLines`' edge, `bodyLines`), as do PageUp and PageDown, the anchored row put
+  on line 1 a rem down, and Enter's target brought on screen. A grown one-line plate holds its picture
+  and starts at the top; a growth that would leave it shorter than its picture keeps the form's own
+  plates.
 - **The tiles:** Tile size square, ten across the game's own box from 16 rem in at 64, two lines: 20.
   13 / 16 / 19 / 22 across at the wider steps; 68 gives 9 × 2, and 72 one line of 9.
 
@@ -1489,7 +1496,8 @@ field's.
 - **PageUp and PageDown** scroll the list a screen of the body's whole lines, counted as the body
   counts them (`wholeLines`: the last line needs no gap below it, and a device pixel of shortfall is forgiven, since
   the scroller reports its height in whole pixels), so lines land on the top edge as
-  they were (the cards' whole rows and the gap between them, `bodyLines`), held inside its ends
+  they were (the cards' whole rows and the gap between them, `bodyLines`; a one-line plate's lines
+  inside the rem its picture overhangs into at both ends, see "Slots"), held inside its ends
   (`pageScrollTop`); a page that reaches the end lets the window load more, as scrolling there does.
 
 **This changes 0.2.x:** in the search field Up and Down now move Enter's target and no longer move the

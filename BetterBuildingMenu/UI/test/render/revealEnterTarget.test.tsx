@@ -23,8 +23,8 @@ function fakeList(targetLine: number, clientHeight = 144, id = 7) {
   return { ref: { current: root } as unknown as RefObject<HTMLElement>, scroller, shape };
 }
 
-const Probe = ({ list, target, step }: { list: RefObject<HTMLElement>; target: number | null; step: number }) => {
-  useRevealEnterTarget(list, target, step);
+const Probe = ({ list, target, step, edge = 0 }: { list: RefObject<HTMLElement>; target: number | null; step: number; edge?: number }) => {
+  useRevealEnterTarget(list, target, step, edge);
   return null;
 };
 
@@ -58,6 +58,23 @@ describe("Enter's target brought on screen", () => {
 
     // Line 8's bottom is 8 × 29.25 + 27 = 261 below the top; the screen shows 144 of it.
     assert.equal(list.scroller.scrollTop, 117);
+  });
+
+  it("brings a one-line plate's picture whole on screen, its overhang below the plate counted", () => {
+    const savedWindow = globals.window;
+    // 1,080 pixels tall: a rem is a pixel, and the picture overhangs its plate by one.
+    globals.window = { innerHeight: 1080 };
+    const list = fakeList(8);
+
+    try {
+      act(() => { root = create(<Probe list={list.ref} target={7} step={3} edge={1} />); });
+      flush();
+    } finally {
+      globals.window = savedWindow;
+    }
+
+    // Line 8's picture ends 8 × 29.25 + 27 + 1 = 262 below the top; the screen shows 144 of it.
+    assert.equal(list.scroller.scrollTop, 118);
   });
 
   it("leaves the list alone for the best match itself, which a typed search puts on top", () => {

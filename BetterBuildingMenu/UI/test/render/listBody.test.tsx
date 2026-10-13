@@ -197,10 +197,18 @@ describe("the list", () => {
     const more = render(rows(1), { over: { textScale: 1.3 } });
     const whole = render(rows(1), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
 
-    assert.match(more, /class="plate largeText"[^>]*style="left:0rem;top:0rem;width:228\.6666/);
+    assert.match(more, /class="plate largeText"[^>]*style="left:0rem;top:1rem;width:228\.6666/);
     assert.match(more, /class="planned name"/);
     assert.match(whole, /height:34\.56rem/);
     assert.match(whole, /class="planned name"/);
+  });
+
+  it("draws a one-line plate's 24 rem picture whole, over its 22 rem plate, which does not clip it", () => {
+    const html = render(rows(7), { over: { textScale: 1.3 } });
+
+    assert.match(html, /class="plate largeText" style="left:0rem;top:1rem;width:228\.6666[^"]*;height:22rem"/);
+    assert.match(html, /class="plate largeText" style="left:0rem;top:25rem;[^"]*"[^>]*data-catalog-entry="4"/);
+    assert.equal(declarationsOf("mods/Bodies/listBody.module.scss", ".largeText").overflow, "visible");
   });
 
   it("never draws a third name line at 130% under Whole names: two lines, whole device pixels each, fit the plate", () => {

@@ -1,4 +1,5 @@
 import { isScrollContainer } from "domain/catalogWindow";
+import { LAYOUT_HEIGHT } from "domain/sharedContracts.generated";
 
 /** The three fields the walk reads; an HTMLElement satisfies it. */
 export interface ScrollBox {
@@ -43,6 +44,11 @@ export function lastCatalogRow(root: ParentNode, entryId?: number): HTMLElement 
   // Node has no HTMLElement to instanceof-check against, and the callers only
   // read getBoundingClientRect and querySelector off it.
   return row as HTMLElement | null;
+}
+
+/** A rem in the pixels the list measures in: the layout is LAYOUT_HEIGHT rem tall; 0 where the screen is unknown. */
+export function pxPerRem(): number {
+  return typeof window === "undefined" || !(window.innerHeight > 0) ? 0 : window.innerHeight / LAYOUT_HEIGHT;
 }
 
 /** The element that scrolls the list, walked up to from its last row (see lastCatalogRow); null while no row draws or the list fits. */

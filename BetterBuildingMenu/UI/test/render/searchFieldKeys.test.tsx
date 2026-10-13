@@ -4,6 +4,8 @@ import type { RefObject } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { fakeField, fakeSearchField, keysPage, type KeysPage } from "../harness/fakeKeys";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { bodyGrid, bodyLines, deviceRem, SLOT_GAP } from "../../src/domain/bodyGeometry";
+import { ASSET_MENU_DEFAULT_HEIGHT } from "../../src/domain/sharedContracts.generated";
 import { useSearchFieldKeys } from "../../src/mods/BuildingCatalog/useSearchFieldKeys";
 
 const globals = globalThis as unknown as Record<string, unknown>;
@@ -38,8 +40,9 @@ function press(key: string, keyCode: number, target: unknown = fakeSearchField()
 
 const moves = () => triggers.filter((call) => call.name === "MoveEnterTarget").map((call) => call.args[0]);
 
-const Probe = ({ list, canMove, answered = "rail\n0", pitch = 0, gap }: { list: RefObject<HTMLElement>; canMove: boolean; answered?: string; pitch?: number; gap?: number }) => {
-  useSearchFieldKeys(list, canMove, answered, pitch, gap);
+type ProbeProps = { list: RefObject<HTMLElement>; canMove: boolean; answered?: string; pitch?: number; gap?: number; edge?: number };
+const Probe = ({ list, canMove, answered = "rail\n0", pitch = 0, gap = SLOT_GAP, edge = 0 }: ProbeProps) => {
+  useSearchFieldKeys(list, canMove, answered, { pitch, gap, edge });
   return null;
 };
 
@@ -176,6 +179,32 @@ describe("the search field's keys", () => {
 
     // Three 46 rem rows 3.125 apart fill the body: the page lands the fourth row on the top edge.
     assert.equal(down, 147.375);
+  });
+
+  it("pages a one-line plate's six whole lines at the default height, their pictures' overhang counted", () => {
+    const savedWindow = globals.window;
+    // 1,080 pixels tall: a rem is a pixel, and the scroller reads the game's own 144.25 rem body as 144.
+    globals.window = { innerHeight: 1080 };
+    const grid = bodyGrid({ body: "list", boxWidth: 706, bodyHeight: ASSET_MENU_DEFAULT_HEIGHT, pixelRem: deviceRem(1080), textScale: 1.3, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0 });
+    const { pitch, gap, edge } = bodyLines(grid, null);
+    const list = fakeList(50);
+    list.scroller.clientHeight = 144;
+    act(() => {
+      root = create(<Probe list={list.ref} canMove pitch={pitch} gap={gap} edge={edge} />);
+    });
+
+    press("PageDown", 34);
+    const down = list.scroller.scrollTop;
+    // A body dragged to 166 pixels still holds six: a seventh line and its picture's rem below need 170.
+    list.scroller.clientHeight = 166;
+    press("PageDown", 34);
+    const tall = list.scroller.scrollTop - down;
+    globals.window = savedWindow;
+
+    // The page lands line 7 where line 1 was, its picture's top a rem under the screen's top.
+    assert.equal(down, 6 * 24);
+    assert.equal(tall, 6 * 24);
+    assert.deepEqual([grid.lines, edge], [6, 1]);
   });
 
   it("moves nothing while there is no target to move", () => {

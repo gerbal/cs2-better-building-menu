@@ -135,18 +135,18 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     armById(entry.id);
   }, [armById]);
 
-  useScrollAnchor(rootRef, anchorKey, { listStart, anchorId, anchorIndex, itemCount: items.length });
+  // A page steps by the body's whole lines: the slots', or the cards' rows; line 1 sits their edge down.
+  const lines = bodyLines(grid, cards?.geometry ?? null);
+  useScrollAnchor(rootRef, anchorKey, { listStart, anchorId, anchorIndex, itemCount: items.length }, lines.edge);
 
   // Up, Down, PageUp and PageDown while the search field has the keys; Up and Down only once the
   // field names a target, the page answering the query in it. A move is answered by a new step or
   // by a page for a new query.
   const answering = pageAnswers({ searchText: pageSearch }, currentSearch ?? "");
-  // A page steps by the body's whole lines: the slots', or the cards' rows.
-  const lines = bodyLines(grid, cards?.geometry ?? null);
-  useSearchFieldKeys(rootRef, bestMatchId !== null && answering, `${pageSearch}\n${enterStep}`, lines.pitch, lines.gap);
+  useSearchFieldKeys(rootRef, bestMatchId !== null && answering, `${pageSearch}\n${enterStep}`, lines);
   // Enter's target, marked on its row while the page answers the query, and brought on screen when the keys move it.
   const enterId = answering && (currentSearch ?? "").trim() !== "" ? bestMatchId : null;
-  useRevealEnterTarget(rootRef, enterId, enterStep);
+  useRevealEnterTarget(rootRef, enterId, enterStep, lines.edge);
 
   // Enter arms the backend's best match by id, wherever its row is, so a search
   // can be finished without leaving the keyboard. One listener for every view, on

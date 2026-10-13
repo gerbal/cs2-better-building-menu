@@ -46,7 +46,12 @@
   }
 }
 
-// Above 100% text the picture keeps 24 rem, as the plates' own height shrinks.
+// Above 100% text the picture keeps 24 rem, as the plates' own height shrinks: a one-line plate's
+// overhangs it by a rem above and below, into the gaps, so the plate does not clip it.
+.largeText {
+  overflow: visible;
+}
+
 .largeText .artwork {
   @include _base.artwork-box(24rem);
 

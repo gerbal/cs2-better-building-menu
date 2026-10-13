@@ -23,8 +23,12 @@ export const PLATE_MIN_WIDTH = 171;
 /** The narrowest a large-text plate may be: three across the game's own 706. */
 export const LARGE_PLATE_MIN_WIDTH = 228;
 
-/** A one-line plate's height above 100% text: six lines and five gaps make the game's own body. */
-export const PLATE1_HEIGHT = 22.375;
+/**
+ * A one-line plate's height above 100% text, and the room its 24 rem picture overhangs it by above and
+ * below: six plates a picture apart, the first a rem down, hold six whole pictures in the game's own body.
+ */
+export const PLATE1_HEIGHT = 22;
+const PLATE1_OVERHANG = 1;
 
 /** A whole-name plate's height above 100% text: four lines and three gaps make the game's own body. */
 export const PLATE_WHOLE_HEIGHT = 34.56;
@@ -121,10 +125,10 @@ const across = (room: number, least: number): number => Math.max(1, Math.floor((
  * The one line count, so paging steps by the lines the body draws. A height in pixels takes its gap
  * in pixels too. The game's scroller reports its height in whole device pixels, up to one short of
  * the height drawn, so `tolerance` (a device pixel, in the height's unit) is the shortfall a line
- * forgives before it drops.
+ * forgives before it drops. `edge` is the room the first line keeps above it and the last below it.
  */
-export function wholeLines(height: number, pitch: number, gap: number = SLOT_GAP, tolerance: number = 0): number {
-  return Math.max(1, Math.floor((height + gap + tolerance) / pitch));
+export function wholeLines(height: number, pitch: number, gap: number = SLOT_GAP, tolerance: number = 0, edge: number = 0): number {
+  return Math.max(1, Math.floor((height - 2 * edge + gap + tolerance) / pitch));
 }
 
 /** A device pixel in rem at this screen height: the layout is LAYOUT_HEIGHT rem tall; 0 where the screen is unknown. */
@@ -165,12 +169,18 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
   const cols = across(room, least);
   const cellWidth = (room - (cols - 1) * SLOT_GAP) / cols;
   const plateHeight = form === "plate2" ? input.plateHeight : form === "plate1" ? PLATE1_HEIGHT : PLATE_WHOLE_HEIGHT;
-  const lines = wholeLines(height, plateHeight + SLOT_GAP, SLOT_GAP, input.pixelRem);
+  // A one-line plate's picture overhangs it, so its first and last lines keep that room to the body's edges.
+  const overhang = form === "plate1" ? PLATE1_OVERHANG : 0;
+  const lines = wholeLines(height, plateHeight + SLOT_GAP, SLOT_GAP, input.pixelRem, overhang);
   const firstCols = across(FIRST_STEP_ROOM, least);
-  const grown = grownLines(input, lines, firstCols, cols);
   // Grown lines share the body less a device pixel: the scroller reads its height in whole pixels, up
   // to one short, and lines that filled it exactly would scroll by that sliver.
-  const cellHeight = grown === null ? plateHeight : (height - (input.pixelRem ?? 0) - (grown - 1) * SLOT_GAP) / grown;
+  const shared = (count: number) => (height - (input.pixelRem ?? 0) - (count - 1) * SLOT_GAP) / count;
+  const growth = grownLines(input, lines, firstCols, cols);
+  // A one-line plate grown shorter than its picture would draw it past the body's edges: the form's own
+  // plates keep the room for it instead.
+  const grown = growth !== null && overhang > 0 && shared(growth) < plateHeight + 2 * overhang ? null : growth;
+  const cellHeight = grown === null ? plateHeight : shared(grown);
   const big = grown !== null && cellHeight >= bigPlateMin(input.textScale);
   // A grown plate tall enough for two name lines takes them, whatever its form's own.
   const ownLines = form === "plate1" && !(grown !== null && cellHeight >= twoNameLines(input.textScale)) ? 1 : 2;
@@ -184,7 +194,8 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
     pitchX: cellWidth + SLOT_GAP,
     pitchY: cellHeight + SLOT_GAP,
     x0: 0,
-    y0: 0,
+    // A grown plate is tall enough for its picture: only the plate the form sizes needs the room.
+    y0: grown === null ? overhang : 0,
     nameLines: input.nameLines === 1 || input.nameLines === 2 ? input.nameLines : big ? 2 : ownLines,
     nameLine: 0,
     picture: big ? Math.min(BIG_PICTURE_MAX, cellHeight - 4) : 0,
@@ -243,15 +254,17 @@ export function labelPlace(grid: BodyGrid, slot: number, span: number): { left: 
 
 /**
  * The lines a page of the body steps by, so a page lands them on the top edge as it found them: the
- * slots' pitch and gap, or the cards' rows and the gap between them; none where neither is drawn.
+ * slots' pitch and gap, or the cards' rows and the gap between them; none where neither is drawn. The
+ * edge is the room the slots keep above the first line and below the last, which a one-line plate's
+ * picture overhangs into: line 1 sits that far down, and a screen holds the lines that fit inside it.
  */
-export function bodyLines(grid: BodyGrid | null, cards: { pitchY: number; rowGap: number } | null): { pitch: number; gap: number } {
-  if (grid !== null) return { pitch: grid.pitchY, gap: SLOT_GAP };
-  if (cards !== null) return { pitch: cards.pitchY, gap: cards.rowGap };
-  return { pitch: 0, gap: SLOT_GAP };
+export function bodyLines(grid: BodyGrid | null, cards: { pitchY: number; rowGap: number } | null): { pitch: number; gap: number; edge: number } {
+  if (grid !== null) return { pitch: grid.pitchY, gap: SLOT_GAP, edge: grid.y0 };
+  if (cards !== null) return { pitch: cards.pitchY, gap: cards.rowGap, edge: 0 };
+  return { pitch: 0, gap: SLOT_GAP, edge: 0 };
 }
 
-/** The slots' height for this many buildings: the scroller's whole content. */
+/** The slots' height for this many buildings: the scroller's whole content, the first slot's top room again below the last. */
 export function slotsHeight(grid: BodyGrid, count: number): number {
-  return count <= 0 ? 0 : grid.y0 + Math.ceil(count / grid.cols) * grid.pitchY - SLOT_GAP;
+  return count <= 0 ? 0 : 2 * grid.y0 + Math.ceil(count / grid.cols) * grid.pitchY - SLOT_GAP;
 }

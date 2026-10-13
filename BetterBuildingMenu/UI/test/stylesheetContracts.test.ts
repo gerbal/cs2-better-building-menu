@@ -314,6 +314,16 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(shown.width, shown.height);
   });
 
+  it("lets a one-line plate's picture overhang it, with nothing between the plate and the body clipping it", () => {
+    // The plate's own face clips; a one-line plate's does not. The slots' room holds the overhang, so
+    // only the body clips, past it.
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"], ["slots"], ["plate", "largeText"]], "overflow"), "visible");
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"], ["slots"], ["plate"]], "overflow"), "hidden");
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"]], "overflow"), undefined);
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"], ["slots"]], "overflow"), undefined);
+    assert.equal(resolvedOn(LIST_BODY, [["plate", "largeText"], ["artwork"]], "overflow"), undefined);
+  });
+
   it("squares the list's bottom corners, which the tab row's band rounds", () => {
     // The band under the list is the box's bottom edge, so it carries the rounding. A rounded
     // list above the band's square top would notch the seam between them.

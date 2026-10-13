@@ -47,8 +47,8 @@ describe("the cards' geometry", () => {
   it("pages by whole rows: from the top of the game's own body a page moves three rows of 46", () => {
     const lines = bodyLines(null, cardGeometry(46, 144.25, 1));
 
-    assert.deepEqual(lines, { pitch: 49.125, gap: 3.125 });
-    assert.equal(pageScrollTop(0, 144.25, 1000, 1, lines.pitch, lines.gap, 1), 147.375);
+    assert.deepEqual(lines, { pitch: 49.125, gap: 3.125, edge: 0 });
+    assert.equal(pageScrollTop(0, 144.25, 1000, 1, lines.pitch, lines.gap, 1, lines.edge), 147.375);
     // The list and the tiles page by their slots, a slot's gap apart; with no body, a screen.
     assert.equal(bodyLines(null, null).pitch, 0);
     assert.equal(SLOT_GAP, bodyLines(null, null).gap);

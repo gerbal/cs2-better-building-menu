@@ -23,17 +23,18 @@ const TOP = 50;
 
 /**
  * A list as the hook measures it, in CSS pixels: rows of 20 in a 100-tall scroller that clamps its
- * scroll as an engine does, under a root that finds rows by entry id. Row N is entry N.
+ * scroll as an engine does, under a root that finds rows by entry id. Row N is entry N. `edge` is the
+ * room the slots keep above the first row and below the last.
  */
-function fakeList(count: number) {
+function fakeList(count: number, edge = 0) {
   let scrolled = 0;
   // How far a late re-layout has pushed every row down, as Cohtml re-wrapping the cards above them does.
   let pushed = 0;
-  const end = () => count * ROW + pushed - VIEWPORT;
+  const end = () => count * ROW + 2 * edge + pushed - VIEWPORT;
   const scroller = {
     clientHeight: VIEWPORT,
     get scrollHeight() {
-      return count * ROW + pushed;
+      return count * ROW + 2 * edge + pushed;
     },
     get scrollTop() {
       return scrolled;
@@ -47,7 +48,7 @@ function fakeList(count: number) {
   const rows = Array.from({ length: count }, (_, at) => ({
     id: at + 1,
     parentElement: scroller,
-    getBoundingClientRect: () => ({ top: TOP + at * ROW + pushed - scrolled, height: ROW }),
+    getBoundingClientRect: () => ({ top: TOP + edge + at * ROW + pushed - scrolled, height: ROW }),
   }));
   const root = {
     scrollHeight: VIEWPORT,
@@ -64,7 +65,7 @@ function fakeList(count: number) {
     ref: { current: root } as unknown as RefObject<HTMLElement>,
     scroller,
     /** Where a row's top sits below the top of the list's viewport: 0 is line 1. */
-    offsetOf: (id: number) => (id - 1) * ROW + pushed - scrolled,
+    offsetOf: (id: number) => edge + (id - 1) * ROW + pushed - scrolled,
     /** A late re-layout: every row drops a line, with no scroll set. */
     rewrap: () => {
       pushed += ROW;
@@ -72,15 +73,15 @@ function fakeList(count: number) {
   };
 }
 
-const Probe = ({ list, page }: { list: RefObject<HTMLElement>; page: ListStartPage }) => {
-  useScrollAnchor(list, KEY, page);
+const Probe = ({ list, page, edge = 0 }: { list: RefObject<HTMLElement>; page: ListStartPage; edge?: number }) => {
+  useScrollAnchor(list, KEY, page, edge);
   return null;
 };
 
 /** Both hooks, in the catalog's order: the load-more poll's frames run before the move's. */
 const CatalogProbe = ({ list }: { list: RefObject<HTMLElement> }) => {
   const { anchorId, anchorIndex, listStart, items } = useCatalogWindow(list, { viewMode: "cards", groupBy: "none" });
-  useScrollAnchor(list, KEY, { listStart, anchorId, anchorIndex, itemCount: items.length });
+  useScrollAnchor(list, KEY, { listStart, anchorId, anchorIndex, itemCount: items.length }, 0);
   return null;
 };
 
@@ -141,6 +142,26 @@ describe("where the list goes when a page lands", () => {
 
     assert.equal(list.offsetOf(150), 0);
     assert.equal(getAssetMenuListStart(), 1);
+    assert.equal(getAssetMenuAnchor(KEY), 150);
+  });
+
+  it("puts a one-line plate's row on line 1 a rem down, so its picture's top draws whole", () => {
+    const savedWindow = globals.window;
+    // 2,160 pixels tall: a rem is two pixels, and the picture overhangs its plate by a rem above it.
+    globals.window = { innerHeight: 2160 };
+    const list = fakeList(250, 2);
+
+    try {
+      act(() => {
+        root = create(<Probe list={list.ref} page={{ listStart: 1, anchorId: 150, anchorIndex: 149, itemCount: 250 }} edge={1} />);
+      });
+      flush();
+    } finally {
+      globals.window = savedWindow;
+    }
+
+    // The plate two pixels below the screen's top: its picture starts at the top, none of it above.
+    assert.equal(list.offsetOf(150), 2);
     assert.equal(getAssetMenuAnchor(KEY), 150);
   });
 

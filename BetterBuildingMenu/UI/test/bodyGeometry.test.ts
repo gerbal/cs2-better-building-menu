@@ -72,11 +72,47 @@ describe("the list above 100% text", () => {
     assert.deepEqual([grid.cols, grid.lines, grid.nameLines], [3, 4, 2]);
   });
 
-  it("fills the game's own body with both forms' lines", () => {
+  it("fills the game's own body with both forms' lines, each picture whole inside it", () => {
     for (const atLargeText of ["moreBuildings", "wholeNames"]) {
       const grid = bodyGrid(input({ textScale: 1.3, atLargeText }));
-      assert.ok(Math.abs(grid.lines * grid.pitchY - 2 - ASSET_MENU_DEFAULT_HEIGHT) < 0.02, atLargeText);
+      const height = slotsHeight(grid, screenSlots(grid));
+      assert.ok(height <= ASSET_MENU_DEFAULT_HEIGHT && height > ASSET_MENU_DEFAULT_HEIGHT - 0.5, `${atLargeText}: ${height}`);
     }
+  });
+
+  it("draws the one-line plate's 24 rem picture whole: six plates of 22, the picture over each a rem above and below", () => {
+    const grid = bodyGrid(input({ textScale: 1.3 }));
+    const picture = 24;
+    const overhang = (picture - grid.cellHeight) / 2;
+    const lastPicture = slotPosition(grid, 15).top + grid.cellHeight + overhang;
+
+    assert.deepEqual([grid.cellHeight, grid.y0, grid.pitchY, grid.lines], [22, 1, 24, 6]);
+    // The first line's picture starts at the body's top, and the last line's ends inside its foot.
+    assert.equal(slotPosition(grid, 0).top - overhang, 0);
+    assert.ok(lastPicture <= ASSET_MENU_DEFAULT_HEIGHT, `${lastPicture}`);
+    assert.equal(slotsHeight(grid, 18), lastPicture);
+  });
+
+  it("keeps a grown one-line plate's picture inside it, from the body's top", () => {
+    assert.equal(bodyGrid(input({ textScale: 1.3, menuRows: 7, smallMenusGrow: true })).y0, 0);
+  });
+
+  it("keeps the grown one-line plates' and the big form's geometry, from the body's top to its foot", () => {
+    const oneLine = bodyGrid(input({ textScale: 1.3, menuRows: 7, smallMenusGrow: true }));
+    const big = bodyGrid(input({ menuRows: 7, smallMenusGrow: true }));
+
+    assert.deepEqual([oneLine.form, oneLine.lines, oneLine.cellHeight, oneLine.pitchY, oneLine.y0], ["plate1", 3, 46.75, 48.75, 0]);
+    assert.deepEqual([big.form, big.lines, big.cellHeight, big.pitchY, big.y0, big.picture], ["big", 2, 71.125, 73.125, 0, 66]);
+    assert.equal(slotsHeight(oneLine, 7), ASSET_MENU_DEFAULT_HEIGHT);
+    assert.equal(slotsHeight(big, 7), ASSET_MENU_DEFAULT_HEIGHT);
+  });
+
+  it("draws the form's own one-line plates where a menu's labels would grow it to plates shorter than their picture", () => {
+    // Fifteen rows and a label's slot: six lines, as many as the form's own, of plates under 24.
+    const grid = bodyGrid(input({ textScale: 1.3, menuRows: 15, drawnSlots: 16, smallMenusGrow: true }));
+
+    assert.deepEqual([grid.form, grid.lines, grid.cellHeight, grid.y0], ["plate1", 6, 22, 1]);
+    assert.ok(slotsHeight(grid, 16) <= 144, `${slotsHeight(grid, 16)}`);
   });
 
   it("keeps the two-line plate at 100%, whatever At large text says", () => {
