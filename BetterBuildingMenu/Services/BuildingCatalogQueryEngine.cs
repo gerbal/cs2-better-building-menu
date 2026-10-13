@@ -100,7 +100,7 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 			// Both halves, because the window has a ceiling as well as an end. At MaxLimit
 			// growing it is a guaranteed no-op, and a Load more button that stays lit and does
-			// nothing is worse than none; the count beside it still names what is left.
+			// nothing is worse than none; the readout states the window.
 			var hasMore = offset + items.Length < totalCount
 				&& limit < BuildingCatalogQuery.MaxLimit;
 

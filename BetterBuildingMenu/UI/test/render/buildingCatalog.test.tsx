@@ -56,7 +56,7 @@ describe("the catalog container", () => {
   }
 
   it("groups the digits of the cap line's count like every other number in the asset menu", () => {
-    // Built by hand, the count read "Showing 2000 of 4206" beside cells that
+    // Built by hand, the count reads "Showing 2000 of 4206" beside cells that
     // group theirs. toLocaleString would group it under node and not in Cohtml.
     setAssetMenuView({ viewMode: "table" });
     page({ hasMore: false, capped: true, totalCount: 4206 });
