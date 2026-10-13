@@ -4,7 +4,7 @@
  * "–" there, so a blank number cell only ever means the readout's value. Pure. See
  * docs/design-notes.md, "Numbers said once".
  */
-import { formatBuildingMetric, formatLotDimensions, formatSpeedLimit, groupDigits, speedNumber, type NumberSeparators } from "./assetMenuMetricFormat";
+import { costPerCell, FALLBACK_SEPARATORS, formatBuildingMetric, formatLotDimensions, formatSpeedLimit, groupDigits, speedNumber, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { ListForm } from "./bodyGeometry";
 import type { DrawnBody } from "./bodyChoice";
@@ -58,8 +58,12 @@ export function statedValues(facts: ViewFacts, shown: readonly ShownKind[]): rea
   return facts.sharedValues.filter((value) => shown.includes(value.kind));
 }
 
-/** Whether a row holds a value of this kind that the readout said, so its cell is left blank. */
-export function holdsBack(entry: BuildingCatalogEntry, said: readonly SharedValue[], kind: ShownKind | KeyKind): boolean {
+/**
+ * Whether a row holds a value of this kind that the readout said, so its cell is left blank: one that
+ * prints as the said value does, a network's cost to the whole coin a cell, a capacity as `separators`
+ * print it, as C# counts them alike.
+ */
+export function holdsBack(entry: BuildingCatalogEntry, said: readonly SharedValue[], kind: ShownKind | KeyKind, separators: NumberSeparators = FALLBACK_SEPARATORS): boolean {
   const value = said.find((candidate) => candidate.kind === kind);
   if (value === undefined) return false;
 
@@ -68,13 +72,15 @@ export function holdsBack(entry: BuildingCatalogEntry, said: readonly SharedValu
       // Half up where C# rounds half to even: a row between the two prints its speed, which stays true.
       return typeof entry.speedLimit === "number" && Math.round(entry.speedLimit) === value.value;
     case "capacity":
-      return entry.capacity === value.value && (value.unit === undefined || value.unit === (entry.buildingType ?? ""));
+      return typeof entry.capacity === "number" && (value.unit === undefined || value.unit === (entry.buildingType ?? ""))
+        && (entry.capacity === value.value || capacityText(entry, entry.capacity, separators) === capacityText(entry, value.value, separators));
     case "workers":
       return entry.workers === value.value;
     case "lot":
       return entry.lotWidth === value.value && entry.lotDepth === value.depth;
     default:
-      return entry.constructionCost === value.value && (value.perCell === undefined || value.perCell === entry.costIsPerDistance);
+      if (typeof entry.constructionCost !== "number" || (value.perCell !== undefined && value.perCell !== entry.costIsPerDistance)) return false;
+      return entry.costIsPerDistance ? costPerCell(entry.constructionCost) === costPerCell(value.value) : entry.constructionCost === value.value;
   }
 }
 
@@ -100,15 +106,15 @@ export function missingFigure(entry: BuildingCatalogEntry, said: readonly Shared
 }
 
 /** A row of the window that holds the value, whose own unit and glyph say it; null where none does. */
-const holder = (value: SharedValue, entries: readonly BuildingCatalogEntry[]): BuildingCatalogEntry | null =>
-  entries.find((entry) => holdsBack(entry, [value], value.kind)) ?? null;
+const holder = (value: SharedValue, entries: readonly BuildingCatalogEntry[], separators: NumberSeparators): BuildingCatalogEntry | null =>
+  entries.find((entry) => holdsBack(entry, [value], value.kind, separators)) ?? null;
 
 /**
  * A row that says the value as its rows do: one of the window that holds it, else one built from what C#
  * sends of it, its basis and the role its unit follows, so a legend no loaded row holds says the same unit.
  */
-const sayer = (value: SharedValue, entries: readonly BuildingCatalogEntry[]): BuildingCatalogEntry =>
-  holder(value, entries) ?? ({
+const sayer = (value: SharedValue, entries: readonly BuildingCatalogEntry[], separators: NumberSeparators): BuildingCatalogEntry =>
+  holder(value, entries, separators) ?? ({
     name: "",
     category: "",
     subCategory: "",
@@ -120,7 +126,7 @@ const sayer = (value: SharedValue, entries: readonly BuildingCatalogEntry[]): Bu
 
 /** A value as the readout says it: with its unit, or its digits alone, which the glyph and the rows' own say. */
 function valueText(value: SharedValue, entries: readonly BuildingCatalogEntry[], separators: NumberSeparators, words: LegendWords, bare: boolean): string {
-  const row = sayer(value, entries);
+  const row = sayer(value, entries, separators);
 
   switch (value.kind) {
     case "speed":
@@ -149,7 +155,7 @@ function glyphOf(kind: ShownKind, value: SharedValue | null, entries: readonly B
     case "lot":
       return "grid";
     case "capacity": {
-      const row = value === null ? entries.find((entry) => typeof entry.capacity === "number" && entry.capacity > 0) ?? null : sayer(value, entries);
+      const row = value === null ? entries.find((entry) => typeof entry.capacity === "number" && entry.capacity > 0) ?? null : sayer(value, entries, separators);
       return row === null ? "person" : keyFigure(row, "capacity", separators)?.glyph ?? null;
     }
     default:

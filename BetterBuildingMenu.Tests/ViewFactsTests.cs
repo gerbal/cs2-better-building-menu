@@ -185,6 +185,65 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void NetworksWhoseCostsPrintAsOneFigureACellShareOneValue()
+		{
+			// ¢44/c, ¢44/c and ¢44/c from three per-kilometre figures, and ¢45/c, ¢72/c and ¢96/c: three of six,
+			// half the view, said at the 50 knob as the one figure they print.
+			var costs = new[] { 5500d, 5560, 5480, 5625, 9000, 12000 };
+			var roads = MediumRoads.Take(6).Select((road, at) => road with { ConstructionCost = costs[at] }).ToArray();
+
+			var cost = Assert.Single(BuildingCatalogQueryEngine.Query(roads, new BuildingCatalogQuery(UiMenu: "Roads", SaidOnceAt: 50)).Facts.SharedValues, value => value.Kind == ViewFacts.Cost);
+
+			Assert.Equal((5500d, true), (cost.Value, cost.PerCell));
+		}
+
+		[Fact]
+		public void ACellsCostRoundsHalfUpAsTheUiPrintsIt()
+		{
+			// 5,562.5 a kilometre is 44.5 a cell: the UI prints ¢45/c (Math.round), and so the value is 45 a cell.
+			// The UI's own test rounds the same figure the same way.
+			var roads = MediumRoads.Take(3).Select(road => road with { ConstructionCost = 5562.5 }).ToArray();
+
+			var cost = Assert.Single(BuildingCatalogQueryEngine.Query(roads, new BuildingCatalogQuery(UiMenu: "Roads")).Facts.SharedValues, value => value.Kind == ViewFacts.Cost);
+
+			Assert.Equal(45d * 125, cost.Value);
+		}
+
+		/// <summary>
+		/// Capacities that print alike in the game's metric units, and ones that do not: the same table as the
+		/// UI's said-once test, which prints each pair.
+		/// </summary>
+		public static TheoryData<string, double, double, bool> CapacitiesAsPrinted => new()
+		{
+			{ "PowerPlant", 245_000, 245_040, true },
+			{ "PowerPlant", 245_000, 245_100, false },
+			{ "PowerPlant", 5_000, 5_000.4, true },
+			{ "PowerPlant", 5_000, 5_004, false },
+			{ "Battery", 100_000, 100_400, true },
+			{ "Battery", 100_000, 101_000, false },
+			{ "TelecomFacility", 12, 12.04, true },
+			{ "TelecomFacility", 12, 12.1, false },
+			{ "GarbageFacility", 250_000, 250_004, true },
+			{ "GarbageFacility", 250_000, 250_010, false },
+			{ "WaterPumpingStation", 30_000, 30_000.4, true },
+			{ "WaterPumpingStation", 30_000, 30_001, false },
+			{ "School", 400, 400.04, true },
+			{ "School", 400, 401, false },
+		};
+
+		[Theory]
+		[MemberData(nameof(CapacitiesAsPrinted))]
+		public void CapacitiesThatPrintAlikeAreOneValue(string role, double one, double other, bool alike)
+		{
+			// Two rows at one figure and one at the other: three that print alike are said once, two are not.
+			var schools = new[] { School(1, one), School(2, one), School(3, other) }.Select(school => school with { BuildingType = role }).ToArray();
+
+			var facts = BuildingCatalogQueryEngine.Query(schools, new BuildingCatalogQuery(UiMenu: "Education")).Facts;
+
+			Assert.Equal(alike, facts.SharedValues.Any(value => value.Kind == ViewFacts.Capacity));
+		}
+
+		[Fact]
 		public void TheRowsAreReadInOnePass()
 		{
 			var rows = new CountingRows(MediumRoads);

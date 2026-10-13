@@ -1324,7 +1324,11 @@ filters, or a search's result, since the UI only ever sees a window of it:
   once at in Options redraws the open menu at once. A value carries what its unit follows, as the
   rows print it: whether it is a network's figure, which they print per cell, and the role a
   capacity's unit follows. A network and a building at one figure, or two capacities in different
-  units, are two values, and a legend no loaded row holds still says the rows' unit.
+  units, are two values, and a legend no loaded row holds still says the rows' unit. Values that print
+  alike are one: a network's cost by the whole coin a cell (half up, as the row prints it), a capacity
+  to the places it prints in the game's metric units. A row leaves its cell blank where its figure
+  prints as the said one in the player's units (`holdsBack`), so a cell never prints the value the
+  readout says beside it.
 
 **One reading of each figure.** A body reads every figure it draws of a row through `rowNumbers`: the
 cost, the capacity, the lot, the value sorted by, and the key number. A list plate's second number is

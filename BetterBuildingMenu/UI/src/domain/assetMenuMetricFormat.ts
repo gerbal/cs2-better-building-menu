@@ -298,11 +298,16 @@ export const PER_MILE_SUFFIX = "/mi";
 export const NET_CELLS_PER_KILOMETRE = 125;
 const PER_CELL_SUFFIX = "/c";
 
+/** A network's construction cost per cell, from its per-kilometre figure, to the whole coin, half up. */
+export function costPerCell(perKilometre: number): number {
+  return Math.round(perKilometre / NET_CELLS_PER_KILOMETRE);
+}
+
 /** A network's construction cost per cell, from its per-kilometre figure, in the game's money template. */
 export function formatCostPerCell(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
   const money = separators.money ?? FALLBACK_MONEY;
 
-  return applyMoneyTemplate(money.plain, groupDigits(Math.round(perKilometre / NET_CELLS_PER_KILOMETRE), separators)) + PER_CELL_SUFFIX;
+  return applyMoneyTemplate(money.plain, groupDigits(costPerCell(perKilometre), separators)) + PER_CELL_SUFFIX;
 }
 
 /**

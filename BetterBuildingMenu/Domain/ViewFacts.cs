@@ -123,17 +123,47 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>
 		/// A row's value of a kind as the rows print it: a speed in whole km/h, a lot as its two sides, a cost
-		/// with its basis (a network's per cell), a capacity with the role its unit follows. Rows that print one
-		/// figure in two units hold two values.
+		/// with its basis (a network's per cell, to the whole coin), a capacity with the role its unit follows,
+		/// to the places it prints. Values that print alike are one value; rows that print one figure in two
+		/// units hold two.
 		/// </summary>
 		private static Figure ValueOf(BuildingCatalogEntry row, string kind) => kind switch
 		{
 			Speed => new Figure(Math.Round(row.SpeedLimit ?? 0), 0, false, string.Empty),
-			Capacity => new Figure(row.Capacity ?? 0, 0, false, row.BuildingType ?? string.Empty),
+			Capacity => new Figure(PrintedCapacity(row.Capacity ?? 0, row.BuildingType), 0, false, row.BuildingType ?? string.Empty),
 			Workers => new Figure(row.Workers ?? 0, 0, false, string.Empty),
 			Lot => new Figure(row.LotWidth, row.LotDepth, false, string.Empty),
-			_ => new Figure(row.ConstructionCost ?? 0, 0, row.CostIsPerDistance, string.Empty),
+			_ => new Figure(row.CostIsPerDistance ? PrintedPerCell(row.ConstructionCost ?? 0) : row.ConstructionCost ?? 0, 0, row.CostIsPerDistance, string.Empty),
 		};
+
+		/// <summary>
+		/// A network's per-kilometre cost at the whole coin a cell costs, half up as the UI rounds it, kept per
+		/// kilometre: the UI divides it back into the same cell's figure.
+		/// </summary>
+		private static double PrintedPerCell(double perKilometre) =>
+			Math.Round(perKilometre / PrefabFacts.NetCellsPerKilometre, MidpointRounding.AwayFromZero) * PrefabFacts.NetCellsPerKilometre;
+
+		/// <summary>
+		/// A capacity at the places the UI prints it in the game's metric units: a plant's power in kW to one
+		/// place or in MW to two, a battery's energy in MWh to one, a data rate to one, a garbage weight in kg
+		/// to one or in t or kt to two, a water or sewage volume whole, any other count to one.
+		/// </summary>
+		private static double PrintedCapacity(double value, string? role) => role switch
+		{
+			"PowerPlant" => value < 10_000 ? Rounded(value, 10, 1) : Rounded(value, 10_000, 2),
+			"Battery" => Rounded(value, 10_000, 1),
+			"TelecomFacility" => Rounded(value, 1, 1),
+			"GarbageFacility" => value < 100 ? Rounded(value, 1, 1) : value < 1_000_000 ? Rounded(value, 1_000, 2) : Rounded(value, 1_000_000, 2),
+			"WaterPumpingStation" or "SewageOutlet" or "WastewaterTreatmentPlant" => Rounded(value, 1, 0),
+			_ => Rounded(value, 1, 1),
+		};
+
+		/// <summary>A value in units of <paramref name="unit"/>, to <paramref name="places"/> places, half up, back in its own.</summary>
+		private static double Rounded(double value, double unit, int places)
+		{
+			var scale = Math.Pow(10, places);
+			return Math.Round(value / unit * scale, MidpointRounding.AwayFromZero) / scale * unit;
+		}
 
 		/// <summary>A value as the rows print it: the figure, a lot's depth, its basis and its unit's role.</summary>
 		private readonly record struct Figure(double Value, int Depth, bool PerCell, string Unit);

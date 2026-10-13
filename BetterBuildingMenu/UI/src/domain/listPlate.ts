@@ -47,7 +47,7 @@ export function plateNumbers(
     return { first, second: sortedText(entry, sortedMetric, separators), glyph: null, locked };
   }
 
-  const key = holdsBack(entry, said, keyKind) ? null : keyFigure(entry, keyKind, separators) ?? missingFigure(entry, said, keyKind);
+  const key = holdsBack(entry, said, keyKind, separators) ? null : keyFigure(entry, keyKind, separators) ?? missingFigure(entry, said, keyKind);
   return { first, second: key?.text ?? null, glyph: key?.glyph ?? null, locked };
 }
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FALLBACK_SEPARATORS, formatCapacity, formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
+import { FALLBACK_SEPARATORS, formatCapacity, formatCostPerCell, formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry, SharedValue } from "../src/domain/buildingCatalog";
 import { oneLineNumber, plateNumbers } from "../src/domain/listPlate";
 import { holdsBack, legendParts, shownKinds, statedValues, type LegendWords } from "../src/domain/saidOnce";
@@ -124,6 +124,40 @@ describe("the readout's legend", () => {
     assert.ok(!holdsBack(row({ costIsPerDistance: false }), [roadCost], "cost"));
     assert.ok(!holdsBack(row({ capacity: 300, buildingType: "Hospital" }), [{ kind: "capacity", value: 300, depth: 0, perCell: false, unit: "School" }], "capacity"));
     assert.ok(holdsBack(row({ capacity: 300, buildingType: "School" }), [{ kind: "capacity", value: 300, depth: 0, perCell: false, unit: "School" }], "capacity"));
+  });
+
+  it("leaves blank a network whose cost prints as the said figure a cell, rounded half up as C# counts it", () => {
+    const roadCost: SharedValue = { kind: "cost", value: 5_500, depth: 0, perCell: true, unit: "" };
+
+    // ¢44/c from 5,560 and 5,480 a kilometre: the same figure beside "¢44/c unless shown" is the said one.
+    assert.ok(holdsBack(row({ constructionCost: 5_560 }), [roadCost], "cost"));
+    assert.ok(holdsBack(row({ constructionCost: 5_480 }), [roadCost], "cost"));
+    assert.ok(!holdsBack(row({ constructionCost: 5_625 }), [roadCost], "cost"));
+    // 5,562.5 a kilometre is ¢45/c, as C#'s ViewFactsTests count it: the value it sends is 45 cells' worth.
+    assert.equal(formatCostPerCell(5_562.5), "¢45/c");
+    assert.ok(holdsBack(row({ constructionCost: 5_562.5 }), [{ ...roadCost, value: 45 * 125 }], "cost"));
+    // A building's cost is whole: only the same figure is the said one.
+    assert.ok(!holdsBack(row({ constructionCost: 5_560, costIsPerDistance: false }), [{ ...roadCost, perCell: false }], "cost"));
+  });
+
+  it("leaves blank a capacity that prints as the said one: the same table as C#'s ViewFactsTests", () => {
+    const table = [
+      ["PowerPlant", 245_000, 245_040, true], ["PowerPlant", 245_000, 245_100, false],
+      ["PowerPlant", 5_000, 5_000.4, true], ["PowerPlant", 5_000, 5_004, false],
+      ["Battery", 100_000, 100_400, true], ["Battery", 100_000, 101_000, false],
+      ["TelecomFacility", 12, 12.04, true], ["TelecomFacility", 12, 12.1, false],
+      ["GarbageFacility", 250_000, 250_004, true], ["GarbageFacility", 250_000, 250_010, false],
+      ["WaterPumpingStation", 30_000, 30_000.4, true], ["WaterPumpingStation", 30_000, 30_001, false],
+      ["School", 400, 400.04, true], ["School", 400, 401, false],
+    ] as const;
+
+    for (const [role, one, other, alike] of table) {
+      const said: SharedValue = { kind: "capacity", value: one, depth: 0, perCell: false, unit: role };
+      const printed = (value: number) => formatCapacity(value, "Services", "Services", role);
+
+      assert.equal(printed(one) === printed(other), alike, `${role} ${one} ${other}: ${printed(one)} ${printed(other)}`);
+      assert.equal(holdsBack(row({ capacity: other, buildingType: role, category: "Services", subCategory: "Services" }), [said], "capacity"), alike, `${role} ${one} ${other}`);
+    }
   });
 
   it("names the key kind by its glyph where nothing is said once, and nothing where the body shows no key number", () => {
