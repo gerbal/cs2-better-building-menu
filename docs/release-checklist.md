@@ -71,11 +71,12 @@ On a developed save:
    - at a wider Width a menu with a few tabs names each one, and the mark under the menu sits under
      its toolbar button;
    - Roads and a service menu draw the list, 20 plates in the game's own size, each with its picture,
-     name and cost; Zones draws the tiles, 20 pictures with their cost; a wider Width adds columns;
+     name and cost; Zones draws the tiles, 20 pictures, with no cost, as zones have none; a wider
+     Width adds columns;
    - type in Roads: the list ranks every tab's matches as one, the best first, and Sort reads Match;
      clear it: the tab and the sort come back;
    - a locked building says MS n while the city has not reached it, else Locked; a unique and an
-     already-built building keep their marks; at a small Tile size a long cost shows as k or m, and
+     already-built building keep their marks; at a small Tile size a long cost shows as k or M, and
      under a sort by a number the tile's tag shows that number;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a

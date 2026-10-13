@@ -48,7 +48,8 @@ export function sortedMetricFor(column: SortColumn | null | undefined): AssetMen
 
 /**
  * The entry's value for a metric. `lot` has no single number — it is width and
- * depth together — so it returns null and the caller formats the pair. Parking reads the bay count, which is what the sort orders on.
+ * depth together — so it returns null and the caller formats the pair. Parking
+ * reads the bay count, which is what the sort orders on.
  */
 export function sortedMetricValue(
   entry: SortedMetricEntry | null | undefined,
