@@ -5,6 +5,8 @@ using Game.Modding;
 using Game.Settings;
 using Game.UI;
 using Game.UI.Localization;
+using Game.UI.Widgets;
+using System.Linq;
 
 namespace BetterBuildingMenu
 {
@@ -29,9 +31,9 @@ namespace BetterBuildingMenu
 		/// dragging the asset menu's top edge. The box is this and 63.75 for its top row and tab row.
 		/// </summary>
 		/// <remarks>
-		/// Hidden like the width: it is a direct-manipulation value, and a slider in the options
-		/// screen would be a second way to say the same thing. See
-		/// <see cref="Domain.AssetMenuHeight"/> for the range.
+		/// Hidden: it is a direct-manipulation value, and a slider in the options screen
+		/// would be a second way to say the same thing. See <see cref="Domain.AssetMenuHeight"/>
+		/// for the range.
 		/// </remarks>
 		[SettingsUIHidden]
 		public float AssetMenuHeight { get; set; } = Domain.AssetMenuHeight.Default;
@@ -47,15 +49,6 @@ namespace BetterBuildingMenu
 		[SettingsUIHidden]
 		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;
 
-		/// <summary>Whether the control pane beside the build menu is shown, toggled from the menu's header.</summary>
-		/// <remarks>
-		/// Starts shown, 0.2.4's default, so a file without the key reads shown, as 0.2.4 reads it. A new
-		/// player's off comes from the defaults and the settings migration. See docs/design-notes.md,
-		/// "The settings migration".
-		/// </remarks>
-		[SettingsUIHidden]
-		public bool ControlPaneShown { get; set; } = Domain.SettingsDefaults.ControlPaneShownWhenMissing;
-
 		/// <summary>
 		/// The settings file's format version: 0 in a file no release has stepped, stored at
 		/// load by <see cref="Domain.SettingsMigration"/> once it has run.
@@ -67,17 +60,6 @@ namespace BetterBuildingMenu
 		/// </remarks>
 		[SettingsUIHidden]
 		public int SettingsVersion { get; set; }
-
-		/// <summary>
-		/// Which of the build menu's five widths it draws at, from 1, the game's own, to 5.
-		/// </summary>
-		/// <remarks>
-		/// Hidden: the build menu's right edge sets it. A number rather than a width, because the
-		/// widths follow the screen. See
-		/// <see cref="Domain.WidthSteps"/>.
-		/// </remarks>
-		[SettingsUIHidden]
-		public int AssetMenuWidthStep { get; set; } = Domain.WidthSteps.DefaultStep;
 
 		/// <summary>
 		/// Whether the settings migration found that this player ran a release from before the
@@ -109,6 +91,19 @@ namespace BetterBuildingMenu
 		public bool AutoWidenSearch { get; set; }
 
 		/// <summary>
+		/// Which of the build menu's five widths it draws at, from 1, the game's own, to 5.
+		/// </summary>
+		/// <remarks>
+		/// A number rather than a width, because the widths follow the screen. The menu's right edge
+		/// writes the same value. See <see cref="Domain.WidthSteps"/>.
+		/// </remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(WidthStepItems))]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AssetMenuWidthStepDescription))]
+		public int AssetMenuWidthStep { get; set; } = Domain.WidthSteps.DefaultStep;
+
+		/// <summary>
 		/// Grid tile width, in the units the tile label budget also uses: the single number the
 		/// tile and its label both size themselves from.
 		/// </summary>
@@ -119,6 +114,17 @@ namespace BetterBuildingMenu
 		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
 		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AssetMenuTileSizeDescription))]
 		public int AssetMenuTileSize { get; set; } = Domain.SettingsDefaults.TileSize;
+
+		/// <summary>Whether the control pane beside the build menu shows Sort, Filter, Group and View again.</summary>
+		/// <remarks>
+		/// Starts shown, 0.2.4's default, so a file without the key reads shown, as 0.2.4 reads it. A new
+		/// player's off comes from the defaults and the settings migration. See docs/design-notes.md,
+		/// "The settings migration".
+		/// </remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(ControlPaneShownDescription))]
+		public bool ControlPaneShown { get; set; } = Domain.SettingsDefaults.ControlPaneShownWhenMissing;
 
 		/// <summary>
 		/// The Reset the build menu… button: every setting back to how it ships, once the player
@@ -193,6 +199,17 @@ namespace BetterBuildingMenu
 		private LocalizedString AutoWidenSearchDescription() => RowDescription(nameof(AutoWidenSearch));
 
 		private LocalizedString AssetMenuTileSizeDescription() => RowDescription(nameof(AssetMenuTileSize));
+
+		private LocalizedString AssetMenuWidthStepDescription() => RowDescription(nameof(AssetMenuWidthStep));
+
+		private LocalizedString ControlPaneShownDescription() => RowDescription(nameof(ControlPaneShown));
+
+		/// <summary>The Width row's choices: the five steps, by their labels.</summary>
+		/// <remarks>Static, so a test reads it without building the settings class.</remarks>
+		private static DropdownItem<int>[] WidthStepItems() =>
+			Domain.OptionRows.WidthStepLabelIds
+				.Select((id, index) => new DropdownItem<int> { value = index + 1, displayName = LocalizedString.Id(id) })
+				.ToArray();
 
 		private LocalizedString ResetBuildMenuDescription() => RowDescription(nameof(ResetBuildMenu));
 	}

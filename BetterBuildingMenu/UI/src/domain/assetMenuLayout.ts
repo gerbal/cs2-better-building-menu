@@ -340,7 +340,7 @@ export function pxPerRemFrom(lengthPx: number | null | undefined, lengthRem: num
 }
 
 /**
- * Vanilla's tool-side column at the game's own text size, which the row starts
+ * Vanilla's tool-side column at the game's own text size, which the box starts
  * beside. It grows by half the text scale's increase: see widthSteps.ts.
  */
 export const VANILLA_TOOL_COLUMN_WIDTH = 380;

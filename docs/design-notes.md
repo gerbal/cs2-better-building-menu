@@ -121,10 +121,11 @@ the step's number, 1 to 5, never a width, because the widths follow the screen: 
 
 ## The box at its Width step, and the control pane
 
-The build menu draws at its Width step (see "The Width steps"), the same rectangle in every menu,
-and shows or hides the control pane with the button beside the X. The step is the hidden setting
-`AssetMenuWidthStep` and the pane `ControlPaneShown`, each pushed to its binding. The UI turns the
-step into a width on this screen, in `widthSteps.ts`.
+The build menu draws at its Width step (see "The Width steps"), the same rectangle in every menu.
+The step is Options › Width (`AssetMenuWidthStep`, a dropdown of the five, "1 · the game's size" to
+"5 · covers the chirper") and the pane Options › Control pane (`ControlPaneShown`), each greyed out
+while Replace is off and pushed to its binding whenever Options applies. The UI turns the step into
+a width on this screen, in `widthSteps.ts`.
 
 **Where the box sits.** A step keeps vanilla's left edge, x 607 on 16:9, while its right edge stays
 6 rem short of the chirper (x 1,500); a wider step grows left from there, never past the tool
@@ -180,14 +181,9 @@ with the pane hidden, so nothing reaches past the room's edge.
 - At rest the width pill looks like a scrollbar thumb; the white fill under the
   mouse is what marks it as a handle. The owner chose that over a dark band, which
   the game draws nowhere.
-- The pane button and the close × are 24 rem white icons on the round highlight
-  theme the game's close buttons use, 10 rem apart. The pane button shows its state
-  by its glyph's right column, filled or outlined, as the game's collapsible panels
-  swap theirs; an accent-tinted glyph would read as keyboard focus.
-- Both count badges are the game's number badge (`_numberBadge.scss`): light bold
-  text on the accent with a soft shadow, sized by the text scale. On the pane button
-  it sits top left, where the glyph is empty in both states, so it never covers the
-  column that shows the pane's state.
+- The close × is a 24 rem white icon on the round highlight theme the game's close buttons use.
+- The filter rail's count badge is the game's number badge (`_numberBadge.scss`): light bold text on
+  the accent with a soft shadow, sized by the text scale.
 
 **The row is never wider than the box.** It keeps vanilla's 706 at every step, and every step is at
 least 706, so no stretch of the row lies beside the box to take a click meant for the city.

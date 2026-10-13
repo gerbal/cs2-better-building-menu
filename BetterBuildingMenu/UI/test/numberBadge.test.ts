@@ -2,14 +2,12 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { declarationsOf } from "./harness/compiledCss.ts";
 
-// The game's count badge is the one on the toolbar's Notifications button: light
-// bold text on the accent with a soft shadow. Both of the mod's badges draw it,
-// sized by the text scale.
-describe("the count badges", () => {
-  const toggle = declarationsOf("mods/ControlPaneToggle/controlPaneToggle.module.scss", ".badge");
+// The game's count badge is the one on the toolbar's Notifications button: light bold text on the
+// accent with a soft shadow. The filter rail's badge draws it, sized by the text scale.
+describe("the count badge", () => {
   const rail = declarationsOf("mods/FilterRail/filterRail.module.scss", ".badge");
 
-  it("are the game's number badge", () => {
+  it("is the game's number badge", () => {
     const game: Record<string, string> = {
       "background-color": "var(--accentColorNormal)",
       color: "var(--textColor)",
@@ -26,16 +24,8 @@ describe("the count badges", () => {
       "padding-bottom": "0",
       "padding-left": "4rem",
     };
-    for (const badge of [toggle, rail]) {
-      for (const [property, value] of Object.entries(game)) {
-        assert.equal(badge[property], value, property);
-      }
+    for (const [property, value] of Object.entries(game)) {
+      assert.equal(rail[property], value, property);
     }
-  });
-
-  it("sits on the pane button's empty top-left corner, clear of the column that shows the pane's state", () => {
-    assert.equal(toggle.top, "-6rem");
-    assert.equal(toggle.left, "-6rem");
-    assert.equal(toggle.right, undefined);
   });
 });

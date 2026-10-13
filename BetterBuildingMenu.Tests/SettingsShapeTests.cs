@@ -1,6 +1,7 @@
 using BetterBuildingMenu.Domain;
 using Game.Settings;
 using Game.UI.Localization;
+using Game.UI.Widgets;
 
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -186,6 +187,37 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(reset.IsDefined(typeof(SettingsUIButtonAttribute)));
 			Assert.True(reset.IsDefined(typeof(SettingsUIConfirmationAttribute)));
 			Assert.Equal(BetterBuildingMenuSettings.UIUX, reset.GetCustomAttribute<SettingsUISectionAttribute>()!.simpleGroup);
+		}
+
+		[Fact]
+		public void TheWidthRowIsADropdownOfTheFiveStepsUnderUiUx()
+		{
+			var width = typeof(BetterBuildingMenuSettings).GetProperty(nameof(BetterBuildingMenuSettings.AssetMenuWidthStep))!;
+			var dropdown = width.GetCustomAttribute<SettingsUIDropdownAttribute>();
+
+			Assert.False(width.IsDefined(typeof(SettingsUIHiddenAttribute)), "the Width row is hidden");
+			Assert.Equal(BetterBuildingMenuSettings.UIUX, width.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup);
+			Assert.True(dropdown is not null, "the Width row is not a dropdown");
+			Assert.Equal(typeof(BetterBuildingMenuSettings), dropdown!.itemsGetterType);
+
+			// Static, so the test calls it without building the settings class.
+			var getter = typeof(BetterBuildingMenuSettings).GetMethod(dropdown.itemsGetterMethod, BindingFlags.Static | BindingFlags.NonPublic);
+			Assert.True(getter is not null && getter.GetParameters().Length == 0, dropdown.itemsGetterMethod);
+			var items = Assert.IsType<DropdownItem<int>[]>(getter!.Invoke(null, null));
+
+			Assert.Equal(Enumerable.Range(1, WidthSteps.Count), items.Select(item => item.value));
+			Assert.Equal(OptionRows.WidthStepLabelIds, items.Select(item => item.displayName.id));
+			Assert.All(OptionRows.WidthStepLabelIds, id => Assert.InRange(ModSource.English(id).Length, 1, 24));
+		}
+
+		[Fact]
+		public void TheControlPaneRowIsAToggleUnderUiUx()
+		{
+			var pane = typeof(BetterBuildingMenuSettings).GetProperty(nameof(BetterBuildingMenuSettings.ControlPaneShown))!;
+
+			Assert.Equal(typeof(bool), pane.PropertyType);
+			Assert.False(pane.IsDefined(typeof(SettingsUIHiddenAttribute)), "the Control pane row is hidden");
+			Assert.Equal(BetterBuildingMenuSettings.UIUX, pane.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup);
 		}
 
 		[Fact]

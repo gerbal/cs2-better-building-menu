@@ -365,7 +365,6 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Theory]
-		[InlineData(nameof(BetterBuildingMenuSettings.AssetMenuWidthStep))]
 		[InlineData(nameof(BetterBuildingMenuSettings.Upgrader))]
 		[InlineData(nameof(BetterBuildingMenuSettings.AssetMenuCatalogWidth))]
 		public void TheMigrationsSettingsAreHidden(string name)

@@ -61,7 +61,7 @@ export function sanitizeWidthStep(step: unknown): number {
     : WIDTH_STEP_DEFAULT;
 }
 
-/** The tool options column's right edge, where the row starts: the column grows by half the text scale's increase. */
+/** The tool options column's right edge, where the box starts: the column grows by half the text scale's increase. */
 export function toolOptionsEdge(textScale: number): number {
   const scale = Number.isFinite(textScale) && textScale > 1 ? textScale : 1;
   return WIDTH_ROOM_LEFT + (VANILLA_TOOL_COLUMN_WIDTH * (scale - 1)) / 2;

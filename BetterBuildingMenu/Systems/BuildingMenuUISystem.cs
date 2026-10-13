@@ -276,7 +276,6 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger<string>("SetAssetMenu", SetAssetMenu);
 			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
 			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
-			CreateTrigger<bool>("SetControlPaneShown", SetControlPaneShown);
 
 			// A gamepad cannot reach BBM's menu: the game's own stands in while one is used.
 			// Last, so the handler never runs before the bindings it reads exist.

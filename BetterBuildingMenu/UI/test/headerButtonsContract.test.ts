@@ -2,42 +2,32 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { declarationsOf, everyDeclaration } from "./harness/compiledCss.ts";
 
-// The build menu's header buttons are drawn as the game draws its close buttons:
-// 24rem, white, on the round highlight theme, which paints their hover and press.
-describe("the header buttons", () => {
-  const toggle = declarationsOf("mods/ControlPaneToggle/controlPaneToggle.module.scss", ".toggle");
-  const glyph = declarationsOf("mods/ControlPaneToggle/controlPaneToggle.module.scss", ".glyph");
-  const close = declarationsOf("mods/BuildingMenu/buildingMenuHeader.module.scss", ".menuClose");
-  const closeGlyph = declarationsOf("mods/BuildingMenu/buildingMenuHeader.module.scss", ".menuCloseGlyph");
+// The build menu's close is drawn as the game draws its close buttons: 24rem, white, on the round
+// highlight theme, which paints its hover and press.
+const HEADER = "mods/BuildingMenu/buildingMenuHeader.module.scss";
 
-  it("are the same size as the game's close button", () => {
-    for (const button of [toggle, close]) {
-      assert.equal(button.width, "24rem");
-      assert.equal(button.height, "24rem");
+describe("the header's close", () => {
+  const close = declarationsOf(HEADER, ".menuClose");
+  const closeGlyph = declarationsOf(HEADER, ".menuCloseGlyph");
+
+  it("is the same size as the game's close button", () => {
+    assert.equal(close.width, "24rem");
+    assert.equal(close.height, "24rem");
+  });
+
+  it("leaves its background to the round highlight theme, in every state", () => {
+    for (const { selectors, prop } of everyDeclaration(HEADER)) {
+      if (!selectors.some((selector) => /^\.menuClose(\b|:)/.test(selector))) continue;
+      assert.ok(!/^background/.test(prop), `${selectors.join(", ")} { ${prop} }`);
     }
   });
 
-  it("leave their background to the round highlight theme, in every state", () => {
-    const sheets: Array<[string, RegExp]> = [
-      ["mods/ControlPaneToggle/controlPaneToggle.module.scss", /^\.toggle(\b|:)/],
-      ["mods/BuildingMenu/buildingMenuHeader.module.scss", /^\.menuClose(\b|:)/],
-    ];
-    for (const [sheet, button] of sheets) {
-      for (const { selectors, prop } of everyDeclaration(sheet)) {
-        if (!selectors.some((selector) => button.test(selector))) continue;
-        assert.ok(!/^background/.test(prop), `${selectors.join(", ")} { ${prop} }`);
-      }
-    }
-  });
-
-  it("draw white icons, the pane's as the close's", () => {
-    assert.equal(glyph["background-color"], "rgb(255, 255, 255)");
+  it("draws a white icon as wide as the button", () => {
     assert.equal(closeGlyph["background-color"], "rgb(255, 255, 255)");
-    assert.equal(glyph.width, closeGlyph.width);
+    assert.equal(closeGlyph.width, close.width);
   });
 
-  it("sit as far apart as the game spaces its close button", () => {
-    assert.equal(toggle["margin-left"], "10rem");
+  it("sits as far from the field as the game spaces its close button", () => {
     assert.equal(close["margin-left"], "10rem");
   });
 });

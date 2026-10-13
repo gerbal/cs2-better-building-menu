@@ -138,6 +138,16 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("AssetMenuTuning", TypeScriptNames());
 		}
 
+		[Fact]
+		public void TheControlPaneIsSetFromOptionsAlone()
+		{
+			// The header's switch and its trigger give way to the Options row; the pane still reads the binding.
+			Assert.Contains("ControlPaneShown", CSharpNames());
+			Assert.Contains("ControlPaneShown", TypeScriptNames());
+			Assert.DoesNotContain("SetControlPaneShown", CSharpNames());
+			Assert.DoesNotContain("SetControlPaneShown", TypeScriptNames());
+		}
+
 		// Matches CreateBinding, CreateTrigger and the two-name CreateBinding
 		// overload. The generic argument may not contain parentheses, which
 		// keeps a lazy match from spanning one call into the next.

@@ -43,19 +43,6 @@ namespace BetterBuildingMenu.Systems
 			Mod.Settings.ApplyAndSave();
 		}
 
-		private void SetControlPaneShown(bool shown)
-		{
-			// One click, one write: there is no drag to wait out.
-			_ControlPaneShown.Value = shown;
-			if (Mod.Settings.ControlPaneShown == shown)
-			{
-				return;
-			}
-
-			Mod.Settings.ControlPaneShown = shown;
-			Mod.Settings.ApplyAndSave();
-		}
-
 		private void SetAssetMenuViewMode(string picked)
 		{
 			// The binding helper has already published what the UI sent: publish the kept

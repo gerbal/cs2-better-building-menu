@@ -12,8 +12,7 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 import { noteSearchField } from "./searchField";
 import { textInputText } from "domain/textInput";
-import { ControlPaneShown$, CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
-import { ControlPaneToggle, useActiveFilterCount } from "mods/ControlPaneToggle/ControlPaneToggle";
+import { CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
 import { GameTextInput, gameClasses } from "mods/gameModules";
 
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
@@ -31,8 +30,8 @@ export interface BuildingMenuHeaderProps {
 }
 
 /**
- * The build menu's own header: the search field, the control pane's switch and
- * the game's close X, on one row. The tabs are the tab row's, under the list.
+ * The build menu's own header: the search field and the game's close X, on one row.
+ * The tabs are the tab row's, under the list.
  */
 export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, large, onClose }: BuildingMenuHeaderProps) {
   const { translate } = useLocalization();
@@ -40,8 +39,6 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
 
   const IsSearchLoading = useValue(IsSearchLoading$);
   const CurrentSearch = useValue(CurrentSearch$);
-  const paneShown = useValue(ControlPaneShown$);
-  const filterCount = useActiveFilterCount();
 
   const localizedLabel = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
 
@@ -61,7 +58,7 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
   return (
     <div className={classNames(large && styles.large, small && styles.small)}>
       <div className={styles.headerRow}>
-        {/* Holds the search field at the right, beside the pane switch and the close. */}
+        {/* Holds the search field at the right, beside the close. */}
         <div className={styles.headerSpacer} />
         <div className={styles.headerSearch}>
           {IsSearchLoading && (
@@ -98,14 +95,6 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
             )}
           </div>
         </div>
-        {/* The control pane's switch, beside the X like a desktop app's side-panel
-            button. In the header rather than the pane, so it is there while the
-            pane is hidden. */}
-        <ControlPaneToggle
-          shown={paneShown}
-          filterCount={filterCount}
-          onToggle={() => send({ method: "SetControlPaneShown", args: [!paneShown] })}
-        />
         {/* Vanilla closes its menus from an X here, so ours does too. Masked
             and tinted like .searchIcon because Close.svg carries no fill of its
             own; no assetGridTheme.item, which is the 48x48 TILE theme. */}
