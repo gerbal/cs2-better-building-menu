@@ -137,9 +137,29 @@ describe("the tiles", () => {
     ];
     const html = renderHtml(<TilesBody entries={rows(2)} grid={grid()} sections={sections} onPlace={() => undefined} />);
 
-    assert.match(html, /<div class="label stacked" style="left:16rem;top:0rem;width:64rem;height:64rem" data-bbm-label="group"><span class="labelText">Residential<\/span><span class="labelCount">62<\/span><\/div>/);
+    assert.match(html, /<div class="label stacked" style="left:16rem;top:0rem;width:64rem;height:64rem" data-bbm-label="group"><span class="labelText"><span class="labelWords">Residential<\/span><\/span><span class="labelCount">62<\/span><\/div>/);
     assert.match(html, /left:82rem;top:0rem;width:64rem;height:64rem[^>]*data-catalog-entry="1"/);
     assert.match(html, /left:148rem;top:0rem[^>]*data-bbm-label="group"/);
+  });
+
+  it("draw the Locked label in a tile's square as a plate that can be pressed, its word over its count", () => {
+    const locked: CatalogSection = { id: "locked", kind: "locked", label: "", labelId: "", start: 1, count: 9, collapsed: false };
+    const html = renderHtml(<TilesBody entries={rows(2)} grid={grid()} sections={[locked]} onPlace={() => undefined} />);
+
+    assert.match(html, /<button class="label lockedLabel stacked" style="left:82rem;top:0rem;width:64rem;height:64rem" data-has-select="true" aria-expanded="true" data-bbm-label="locked">/);
+  });
+
+  it("draw an own-line label across the whole line, its name beside its count", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, blockLabels: "ownLine" });
+    const sections: CatalogSection[] = [
+      { id: "group:0", kind: "group", label: "Residential", labelId: "", start: 0, count: 1, collapsed: false },
+      { id: "group:1", kind: "group", label: "Commercial", labelId: "", start: 1, count: 1, collapsed: false },
+    ];
+    const html = renderHtml(<TilesBody entries={rows(2)} grid={grid()} sections={sections} onPlace={() => undefined} />);
+
+    // Ten tiles across: the label spans them, and the tile after it starts the next line.
+    assert.match(html, /<div class="label" style="left:16rem;top:0rem;width:658rem;height:64rem" data-bbm-label="group">/);
+    assert.match(html, /left:16rem;top:66rem;width:64rem;height:64rem[^>]*data-catalog-entry="1"/);
   });
 });
 

@@ -19,13 +19,21 @@
   letter-spacing: 0.4rem;
 }
 
-// On the body, which an interface style can turn light: body inks that follow it. A name too long for
-// its plate is cut on its one line, its count kept whole.
+// On the body, which an interface style can turn light: body inks that follow it. The flex child takes
+// the room the count leaves.
 .labelText {
   flex: 1 1 auto;
   min-width: 0;
-  @include _base.truncate;
+  overflow: hidden;
   color: var(--bbm-bodyWord);
+}
+
+// The name inside it, never a flex item, as Cohtml cuts a flex item's text with no ellipsis: one line,
+// cut with "…" where it runs past the plate, its count kept whole.
+.labelWords {
+  display: inline-block;
+  max-width: 100%;
+  @include _base.truncate;
 }
 
 .labelCount {
@@ -48,8 +56,13 @@
   justify-content: center;
   padding: 0 4rem;
 
+  // The whole square's width, so the name's box wraps at the square's edge.
   .labelText {
     flex: 0 1 auto;
+    align-self: stretch;
+  }
+
+  .labelWords {
     white-space: normal;
   }
 }

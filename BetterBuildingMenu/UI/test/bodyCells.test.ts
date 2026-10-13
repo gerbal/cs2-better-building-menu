@@ -45,6 +45,12 @@ describe("the cells a body places", () => {
     assert.deepEqual(layout(cells), ["L10@0x1", "1@1", "L11@2x1", "2@3", "3@4"]);
   });
 
+  it("draws no label for a section that ends before the window, and the label of the one it starts inside first", () => {
+    const { cells } = bodyCells(rows(4), [section(0, 5), section(5, 3), section(8, 4)], 4, "inline", 6);
+
+    assert.deepEqual(layout(cells), ["L5@0x1", "1@1", "2@2", "L8@3x1", "3@4", "4@5"]);
+  });
+
   it("starts an own-line label on a fresh line and gives it the whole line, so no line holds two blocks", () => {
     const { cells, slots } = bodyCells(rows(5), [section(0, 3), section(3, 2)], 4, "ownLine");
 

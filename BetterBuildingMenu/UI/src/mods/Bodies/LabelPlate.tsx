@@ -37,7 +37,8 @@ export const LabelPlate = memo(function LabelPlate({ section, place, stacked }: 
   const style = { left: `${place.left}rem`, top: `${place.top}rem`, width: `${place.width}rem`, height: `${place.height}rem` };
   const content = (
     <>
-      <span className={styles.labelText}>{text}</span>
+      {/* The name in a box of its own inside the flex child: Cohtml draws no ellipsis on a flex item. */}
+      <span className={styles.labelText}><span className={styles.labelWords}>{text}</span></span>
       <span className={styles.labelCount}>{groupDigits(section.count, separators)}</span>
     </>
   );
@@ -59,4 +60,10 @@ export const LabelPlate = memo(function LabelPlate({ section, place, stacked }: 
       {content}
     </Button>
   );
-});
+}, samePlate);
+
+/** A body places its plates afresh each render, so the place is compared by its numbers. */
+function samePlate(a: LabelPlateProps, b: LabelPlateProps): boolean {
+  return a.section === b.section && a.stacked === b.stacked
+    && a.place.left === b.place.left && a.place.top === b.place.top && a.place.width === b.place.width && a.place.height === b.place.height;
+}

@@ -124,7 +124,7 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
-  const { cells, slots } = useBodyCells(entries, sections, offset, grid.cols);
+  const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
 
   return (
     <div className={styles.body} data-bbm-view="list">

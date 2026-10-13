@@ -133,7 +133,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const armedId = useValue(ActivePrefabId$);
   const lineKnob = useValue(AssetMenuTuning$).tileNameLine ?? SHIPPED_TUNING.tileNameLine;
-  const { cells, slots } = useBodyCells(entries, sections, offset, grid.cols);
+  const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;

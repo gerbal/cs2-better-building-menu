@@ -30,13 +30,17 @@ export interface BodyCells {
 
 /**
  * The window's buildings in order, each section's label before its first row once the window has
- * reached it. A section's start counts from the result's first row and the window's from its offset,
- * so the start is read less the offset. After the last row comes only a collapsed section's label,
- * which is all it draws: a group whose rows the window has not reached yet waits for its first row,
- * never a label above Load more with nothing under it.
+ * reached it. A section's start counts from the result's first row and the window's from its
+ * offset, so the start is read less the offset: a section that ends before the window draws nothing,
+ * and the one the window starts inside draws its label first. After the last row comes only a
+ * collapsed section's label, which is all it draws: a group whose rows the window has not reached
+ * yet waits for its first row, never a label above Load more with nothing under it.
  */
 export function bodyOrder(entries: readonly BuildingCatalogEntry[], sections: readonly CatalogSection[], offset = 0): BodyEntry[] {
-  const ordered = [...sections].sort((a, b) => a.start - b.start);
+  // A collapsed section's rows are out of the order: it ends where it starts.
+  const ordered = sections
+    .filter((section) => section.start >= offset || section.start + (section.collapsed ? 0 : section.count) > offset)
+    .sort((a, b) => a.start - b.start);
   const out: BodyEntry[] = [];
   let next = 0;
 

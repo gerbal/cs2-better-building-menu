@@ -1045,8 +1045,7 @@ as lines with their counts (the unused-export guard allows no export without a c
 (`BuildingGrid`) is gone too, the tiles drawing in its place, and with it `stripRedundantNamePrefix`,
 which told look-alike names apart on Grid's tiles by dropping the theme and category words a name
 repeats. The label plates derive the first again from the page's sections (`bodyCells`, see "Label
-plates"); the name planner will derive the second, and until then the tiles' name line tells
-look-alikes apart.
+plates"); until the name planner derives the second, the tiles' name line tells look-alikes apart.
 
 **Slots.** The list and the tiles place each building from its index alone (`bodyGrid`,
 `slotPosition`): left to right, then down, a cell and a 2 rem gap apart, inside the box less 8 rem
@@ -1165,15 +1164,17 @@ are collapsed). Two kinds:
 **The plates.** The list and the tiles place their cells with `bodyCells`, from the page's sections
 rather than the window's own headings (`bodyOrder` is the one interleave): a label goes in the slot
 before its section's first row once the window has reached that row, and every building after it moves
-a slot on. A section's start counts from the result's first row, so it is read less the page's offset.
+a slot on. A section's start counts from the result's first row, so it is read less the page's offset:
+a section that ends before the window draws nothing, and the one the window starts inside draws first.
 After the window's last row only a collapsed section's label is drawn, which is all a fold leaves; a
 group whose first row the window has not reached waits for it, so no label sits above Load more with
 nothing under it. A tab whose rows are all locked and folded draws its Locked label alone, never the
 empty line. A plate says the group's name, in the game's words where the game has one
-(`resolveVanillaLabel`, from the section's label id), or the locked word, in caps at 10 rem, cut on
-its one line where it runs past the plate, then the count. It sits on the label plate's fill (`labBg`),
-which follows an interface style, in body inks that follow it too (`bodyWord`, `bodyChipDim`; Locked in
-`bodyMilestone`, the ink of "MS n"). In the tiles it takes a tile's square, its name over its count. The
+(`resolveVanillaLabel`, from the section's label id), or the locked word, in caps at 10 rem, then the
+count. The name sits in a box of its own inside the room the count leaves, cut on its one line with an
+ellipsis where it runs past the plate: Cohtml draws no ellipsis on a flex item. The plate's fill
+(`labBg`) follows an interface style, and so do its inks, body inks (`bodyWord`, `bodyChipDim`; Locked
+in `bodyMilestone`, the ink of "MS n"). In the tiles it takes a tile's square, its name over its count. The
 Locked plate is a button that lights under the pointer as a plate does: a press collapses the locked
 rows, another brings them back. The plate reads its words and digit separators itself, so every body
 draws it from its section and its place alone (`LabelPlate`, `labelPlace`); the cells and the Block
