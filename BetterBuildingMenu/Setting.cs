@@ -179,6 +179,16 @@ namespace BetterBuildingMenu
 		[SettingsUISearchHidden]
 		public bool DevInterfaceStyles { get; set; } = Domain.Tuning.InterfaceStyles;
 
+		/// <summary>
+		/// Developer only: whether a box wider than the game's own menu names each tab beside its
+		/// picture where every tab fits that way, or keeps the picture over the count at every width.
+		/// </summary>
+		/// <remarks>Read through Utilities.Knobs, so it counts only in developer mode. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		public bool DevTabNames { get; set; } = Domain.Tuning.TabNames;
+
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
 		/// The initializers above read the same constants, except the control pane's: its

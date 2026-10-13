@@ -432,6 +432,17 @@ scale the game offers, the name going from 110% and the last tabs clipping from 
 folds the last tabs into a list, is increment 20's. The All count, like the others, draws blank
 until C# sends it: its binding starts negative.
 
+**Named tabs.** Above the first Width step, the box drawn wider than the game's 706, where every tab
+fits with its name and the readout's range still fits beside them (`tabForm`, on the same estimate
+as the rest of the row), each picture cell draws its picture, its name and its count in a line: the
+row's 5 rem padding, the picture in a slot as wide as it is, 4, the name at the worded cells' size,
+4, the count. The All cell names itself on its plate; a cell that already says its name keeps its
+form, and Education's plate keeps its own. Short of room the row keeps the picture over the count,
+never part named and part not, so names never push out the range, which always shows. The form
+follows the drawn width, so a stored step drawn narrower beside the pane, and a width drag, read as
+what is on screen. The developer knob Tab names turns the names off at every width. "New N", which
+then draws right after All, is increment 15's.
+
 ## The box's height
 
 The box is the stored height and 63.75 rem, in every look. The stored height (`AssetMenuHeight`)
@@ -826,6 +837,9 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
   knob into one binding, `AssetMenuTuning` (`TuningValues`: whether this run is in developer mode,
   and each knob the UI reads), seeded when the system starts and pushed again whenever Options
   applies, so a stored value counts only in developer mode on the UI's side too.
+- **Tab names** (on or off, ships on): whether a box above the first Width step names its tabs where
+  they all fit (see "The tab row"); off, the tabs keep their picture over their count at every
+  width, to compare. The UI reads it in `AssetMenuTuning`, treating a missing value as on.
 
 ## The pick logger
 

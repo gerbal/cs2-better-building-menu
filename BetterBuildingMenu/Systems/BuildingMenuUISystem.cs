@@ -364,7 +364,10 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>The knobs the UI reads, through the one rule every knob is read by.</summary>
 		private static TuningValues CurrentTuning() =>
-			new(Knobs.DeveloperMode, Knobs.Value(settings => settings.DevInterfaceStyles, Tuning.InterfaceStyles));
+			new(
+				Knobs.DeveloperMode,
+				Knobs.Value(settings => settings.DevInterfaceStyles, Tuning.InterfaceStyles),
+				Knobs.Value(settings => settings.DevTabNames, Tuning.TabNames));
 
 		protected override void OnUpdate()
 		{

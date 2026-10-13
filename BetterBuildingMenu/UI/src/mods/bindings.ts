@@ -74,9 +74,11 @@ export interface AssetMenuTuning {
   developerMode: boolean;
   /** Whether the build menu follows the game's interface style. */
   interfaceStyles: boolean;
+  /** Whether a box above the first Width step names its tabs where they all fit; off, never. */
+  tabNames: boolean;
 }
 
-export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", { developerMode: false, interfaceStyles: true });
+export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", { developerMode: false, interfaceStyles: true, tabNames: true });
 export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
 /** True while the toolbar's open menu is one the asset menu takes over. */
 export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);

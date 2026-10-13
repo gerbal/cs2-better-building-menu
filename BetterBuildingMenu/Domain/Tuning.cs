@@ -14,6 +14,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The build menu follows the game's interface style as it ships.</summary>
 		public const bool InterfaceStyles = true;
 
+		/// <summary>The tabs say their names above the first Width step, where they all fit, as it ships.</summary>
+		public const bool TabNames = true;
+
 		/// <summary>The slot margin's shipped value, in percent: a newcomer needs 1.25 times a holder's placements.</summary>
 		public const int SlotMarginPercent = 25;
 

@@ -147,6 +147,30 @@ describe("the tab row", () => {
 
     assert.ok(render().includes(picture('coui://ail/BuildingPrefab.JP_Wastewater Treatment \\&quot;2\\&quot;.png')));
   });
+
+  it("names each tab beside its picture above the first Width step, when every tab fits named", () => {
+    seedRoads();
+    const html = renderHtml(<TabRow width={893} />);
+
+    assert.match(html, /data-tab-form="named"/);
+    // All: the menu's picture on its plate, then its name, then the count.
+    assert.ok(
+      html.includes(`<span class="iconSlot iconInline"><span class="picture plate" ${picture("Media/Game/Icons/Roads.svg")}></span></span><span class="name">All</span><span class="count">779</span>`),
+      html,
+    );
+    assert.ok(
+      html.includes(`${picture("Media/Game/Icons/SmallRoads.svg")}></span></span><span class="name">SmallRoads</span><span class="count">30</span>`),
+      html,
+    );
+  });
+
+  it("keeps each picture over its count at the first step", () => {
+    seedRoads();
+    const html = render();
+
+    assert.match(html, /data-tab-form="stack"/);
+    assert.doesNotMatch(html, /<span class="name">SmallRoads<\/span>/);
+  });
 });
 
 describe("a picture that will not load", () => {

@@ -34,5 +34,7 @@ namespace BetterBuildingMenu.Domain
 		bool DevPickLogger { get; set; }
 
 		bool DevInterfaceStyles { get; set; }
+
+		bool DevTabNames { get; set; }
 	}
 }

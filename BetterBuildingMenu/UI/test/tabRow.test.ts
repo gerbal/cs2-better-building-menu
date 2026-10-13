@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { TAB_CELL_GAP, TAB_COUNT_SIZE, TAB_ROW_INSET, TAB_ROW_INSET_RIGHT } from "../src/domain/assetMenuLayout.ts";
-import { arrivedCount, cellsOf, planTabRow, readoutRange, TAB_PLACEHOLDER, tabRow, textWidth, type TabRowInput } from "../src/domain/tabRow.ts";
+import { arrivedCount, cellsOf, planTabRow, readoutRange, TAB_PLACEHOLDER, tabForm, tabRow, textWidth, type TabRowInput } from "../src/domain/tabRow.ts";
 import { NO_TIER_BRACKET } from "../src/domain/menuProgression.ts";
+import { WIDTH_STEP_VANILLA } from "../src/domain/sharedContracts.generated.ts";
+import { drawnStepWidth } from "../src/domain/widthSteps.ts";
 
 const ROADS_ICON = "Media/Game/Icons/Roads.svg";
 const category = (id: string, icon = `Media/Game/Icons/${id}.svg`) => ({ id, name: id, icon, priority: 0 });
@@ -286,5 +288,73 @@ describe("a count C# has not sent", () => {
 
   it("leaves the All cell's count blank, like every other", () => {
     assert.equal(cellsOf(tabRow(roads({ allCount: null })).items)[0].count, null);
+  });
+});
+
+describe("the tabs' names at the wider steps", () => {
+  const plain = (count: number) => String(count);
+  const ROADS = ["SmallRoads", "MediumRoads", "LargeRoads", "Highways", "Intersections", "Bridges"];
+  /** All and six worded roads tabs: too wide named for the first step, named from the second. */
+  const six = () => tabRow(roads({
+    categories: ROADS.map((id) => category(id)),
+    counts: ROADS.map((id, index) => ({ id, count: [30, 34, 22, 40, 15, 18][index] })),
+    allCount: 159,
+  })).items;
+  /** All and nineteen short-named tabs, the size of a big Roads menu. */
+  const nineteen = () => tabRow(roads({
+    categories: Array.from({ length: 19 }, (_, index) => category(`Tab${index}`)),
+    counts: Array.from({ length: 19 }, (_, index) => ({ id: `Tab${index}`, count: [183, 120, 410][index] ?? 12 + index })),
+    allCount: 779,
+  })).items;
+  const readout = { place: "Medium Roads", range: "1–34 of 159" };
+  const step = (number: number, textScale: number) => drawnStepWidth(number, { aspect: 16 / 9, textScale, paneShown: false });
+
+  it("names every tab beside its picture above the first step when they all fit", () => {
+    const three = tabRow(roads()).items;
+
+    assert.equal(tabForm(three, readout, step(2, 1), 1, plain, true), "named");
+    assert.equal(planTabRow(three, readout, step(2, 1), 1, plain, "named").clipped, false);
+  });
+
+  it("keeps each picture over its count at the first step, however much room it has", () => {
+    const three = tabRow(roads()).items;
+
+    // Three tabs named fit the game's own width with room to spare; the first step is the game's own row.
+    assert.equal(planTabRow(three, readout, WIDTH_STEP_VANILLA, 1, plain, "named").clipped, false);
+    assert.equal(tabForm(three, readout, WIDTH_STEP_VANILLA, 1, plain, true), "stack");
+  });
+
+  it("names the tabs at the steps and text sizes where every one fits, and nowhere else", () => {
+    // S is a picture over its count, N a name: from 130% the second step is too narrow named.
+    const expected = new Map([[1, "SNNNN"], [1.1, "SNNNN"], [1.15, "SNNNN"], [1.3, "SSNNN"], [1.5, "SSNNN"]]);
+
+    for (const [scale, forms] of expected) {
+      const drawn = [1, 2, 3, 4, 5].map((number) => (tabForm(six(), readout, step(number, scale), scale, plain, true) === "named" ? "N" : "S"));
+
+      assert.equal(drawn.join(""), forms, `at ${scale}`);
+    }
+  });
+
+  it("keeps a big menu's tabs over their counts at every step and text size", () => {
+    for (const scale of [1, 1.1, 1.15, 1.3, 1.5]) {
+      for (const number of [1, 2, 3, 4, 5]) {
+        assert.equal(tabForm(nineteen(), { place: "Medium Roads", range: "1–100 of 779" }, step(number, scale), scale, plain, true), "stack", `step ${number} at ${scale}`);
+      }
+    }
+  });
+
+  it("names nothing with the Tab names knob on Never", () => {
+    assert.equal(tabForm(tabRow(roads()).items, readout, step(5, 1), 1, plain, false), "stack");
+  });
+
+  it("keeps Education's tab in its plate as a picture over its count", () => {
+    // The plate alone at 100% text fits at 480 and clips at 479, in either form.
+    const plate = tabRow(education()).items.filter((item) => item.kind === "bracket");
+    const levels = { place: "Elementary School", range: "1–22 of 22" };
+
+    assert.equal(plate.length, 1);
+    assert.equal(planTabRow(plate, levels, 480, 1, plain, "named").clipped, false, "named, the plate is as wide as it was");
+    assert.equal(planTabRow(plate, levels, 479, 1, plain, "named").clipped, true);
+    assert.equal(planTabRow(plate, levels, 479, 1, plain, "stack").clipped, true);
   });
 });

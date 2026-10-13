@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import { useTextScale } from "domain/textScaleSetting";
 import { NO_TIER_BRACKET } from "domain/menuProgression";
-import { arrivedCount, cssUrl, planTabRow, readoutRange, tabRow, type TabCell } from "domain/tabRow";
+import { arrivedCount, cssUrl, planTabRow, readoutRange, tabForm, tabRow, type TabCell, type TabForm } from "domain/tabRow";
 import type { VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import {
@@ -23,6 +23,7 @@ import {
   AssetMenuStripTab$,
   AssetMenuStripTabs$,
   AssetMenuTierBracket$,
+  AssetMenuTuning$,
   BuildingCatalog$,
   CurrentSearch$,
   send,
@@ -33,7 +34,7 @@ import styles from "./tabRow.module.scss";
  * A picture in a cell's icon slot, drawn as a background, whole at its own aspect: Cohtml has no
  * object-fit and reports no picture's natural size, and a mod's picture need not be square.
  */
-const TabIcon = ({ src, plate, onFail }: { src: string; plate: boolean; onFail: (src: string) => void }) => {
+const TabIcon = ({ src, plate, inline, onFail }: { src: string; plate: boolean; inline: boolean; onFail: (src: string) => void }) => {
   // A background says nothing when its picture fails, so a picture of BBM's own finds out.
   useEffect(() => {
     if (typeof Image !== "function") return undefined;
@@ -46,7 +47,7 @@ const TabIcon = ({ src, plate, onFail }: { src: string; plate: boolean; onFail: 
   }, [src, onFail]);
 
   return (
-    <span className={styles.iconSlot}>
+    <span className={classNames(styles.iconSlot, inline && styles.iconInline)}>
       <span className={classNames(styles.picture, plate && styles.plate)} style={{ backgroundImage: cssUrl(src) }} />
     </span>
   );
@@ -79,6 +80,8 @@ export const TabRow = ({ width }: { width: number }) => {
   const bracket = useValue(AssetMenuTierBracket$) ?? NO_TIER_BRACKET;
   const selectedTier = useValue(AssetMenuSchoolTier$) ?? -1;
   const searching = (useValue(CurrentSearch$) ?? "").trim() !== "";
+  // On unless C# says Never: the binding's fallback is the shipped value.
+  const namesAllowed = useValue(AssetMenuTuning$)?.tabNames !== false;
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
   // A picture that would not load, which the row then draws as the next in the chain.
   const [failedIcons, setFailedIcons] = useState(NONE_FAILED);
@@ -116,7 +119,9 @@ export const TabRow = ({ width }: { width: number }) => {
   const place = searching && allCount !== null
     ? (translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutHere]", "{0} here") ?? "{0} here").replace("{0}", format(allCount))
     : row.place;
-  const plan = planTabRow(row.items, { place, range }, width, textScale, format);
+  // Named above the first step where every tab fits so. See docs/design-notes.md, "The tab row".
+  const form = tabForm(row.items, { place, range }, width, textScale, format, namesAllowed);
+  const plan = planTabRow(row.items, { place, range }, width, textScale, format, form);
 
   const select = (cell: TabCell) => {
     if (cell.kind === "branch") send({ method: "SetAssetMenuStripTab", args: [cell.id] });
@@ -125,22 +130,25 @@ export const TabRow = ({ width }: { width: number }) => {
     else send({ method: "SetAssetMenuCategory", args: [cell.id] });
   };
 
-  const renderCell = (cell: TabCell) => {
+  const renderCell = (cell: TabCell, form: TabForm) => {
     const count = cell.count === null ? "" : format(cell.count);
     const label = cell.count === null ? cell.label : `${cell.label} · ${count}`;
     const worded = cell.named || cell.kind === "tier";
+    // A picture cell in the named form: its picture, its name and its count in a line.
+    const named = !worded && form === "named";
 
     return (
       <Tooltip key={cell.key} tooltip={label}>
         <Button
-          className={classNames(styles.cell, worded && styles.inline, cell.lit && styles.lit, cell.empty && styles.empty, searching && styles.matches)}
+          className={classNames(styles.cell, (worded || named) && styles.inline, cell.lit && styles.lit, cell.empty && styles.empty, searching && styles.matches)}
           variant="icon"
           focusKey={FOCUS_DISABLED}
           aria-label={label}
           aria-current={cell.lit ? "true" : undefined}
           onSelect={() => select(cell)}
         >
-          {worded ? <span className={styles.name}>{cell.label}</span> : <TabIcon src={cell.icon} plate={cell.kind === "all"} onFail={fail} />}
+          {worded ? <span className={styles.name}>{cell.label}</span> : <TabIcon src={cell.icon} plate={cell.kind === "all"} inline={named} onFail={fail} />}
+          {named && <span className={styles.name}>{cell.label}</span>}
           <span className={styles.count}>{count}</span>
         </Button>
       </Tooltip>
@@ -149,12 +157,13 @@ export const TabRow = ({ width }: { width: number }) => {
 
   return (
     <div className={styles.band}>
-      <div className={styles.tabRow} data-clipped={plan.clipped ? "true" : undefined}>
+      <div className={styles.tabRow} data-clipped={plan.clipped ? "true" : undefined} data-tab-form={form}>
         <div className={styles.cells}>
           {row.items.map((item) =>
             item.kind === "bracket"
-              ? <div key={item.key} className={styles.segment}>{[item.parent, ...item.tiers].map(renderCell)}</div>
-              : renderCell(item)
+              // Education's plate keeps its own form.
+              ? <div key={item.key} className={styles.segment}>{[item.parent, ...item.tiers].map((cell) => renderCell(cell, "stack"))}</div>
+              : renderCell(item, form)
           )}
         </div>
         <div className={styles.spacer} />

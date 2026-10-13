@@ -305,6 +305,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevSlotMargin));
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevPickLogger));
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevInterfaceStyles));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevTabNames));
 			Assert.All(knobs, knob =>
 			{
 				Assert.Equal(BetterBuildingMenuSettings.TUNING, knob.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup);

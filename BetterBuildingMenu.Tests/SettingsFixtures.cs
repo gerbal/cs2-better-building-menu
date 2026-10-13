@@ -39,6 +39,8 @@ namespace BetterBuildingMenu.Tests
 		public bool DevPickLogger { get; set; }
 
 		public bool DevInterfaceStyles { get; set; } = Tuning.InterfaceStyles;
+
+		public bool DevTabNames { get; set; } = Tuning.TabNames;
 	}
 
 	/// <summary>A settings file as a load reads it: the values, the key names, and how many keys no property reads.</summary>

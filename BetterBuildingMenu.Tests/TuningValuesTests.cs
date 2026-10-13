@@ -10,11 +10,11 @@ namespace BetterBuildingMenu.Tests
 		{
 			var writer = new RecordingJsonWriter();
 
-			new TuningValues(DeveloperMode: true, InterfaceStyles: false).Write(writer);
+			new TuningValues(DeveloperMode: true, InterfaceStyles: false, TabNames: true).Write(writer);
 
-			Assert.Equal(new[] { "developerMode", "interfaceStyles" }, writer.PropertyNames);
+			Assert.Equal(new[] { "developerMode", "interfaceStyles", "tabNames" }, writer.PropertyNames);
 			Assert.Equal(
-				new[] { "Write:Boolean:True", "Write:Boolean:False" },
+				new[] { "Write:Boolean:True", "Write:Boolean:False", "Write:Boolean:True" },
 				writer.Tokens.Where(token => token.StartsWith("Write:", StringComparison.Ordinal)));
 		}
 
@@ -24,6 +24,15 @@ namespace BetterBuildingMenu.Tests
 			var applied = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private void OnSettingsApplied(");
 
 			Assert.Contains("_AssetMenuTuning.Value = CurrentTuning();", applied);
+		}
+
+		[Fact]
+		public void TheTabNamesKnobShipsOnAndIsReadThroughTheOneRule()
+		{
+			Assert.True(Tuning.TabNames);
+			Assert.Contains(
+				"Knobs.Value(settings => settings.DevTabNames, Tuning.TabNames)",
+				ModSource.Text("Systems/BuildingMenuUISystem.cs"));
 		}
 	}
 }

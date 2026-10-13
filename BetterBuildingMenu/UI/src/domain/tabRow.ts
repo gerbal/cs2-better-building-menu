@@ -16,6 +16,7 @@ import {
 } from "./assetMenuLayout";
 import { isEducationMenu } from "./buildingGroups";
 import { branchTabTooltip, expandedTabsFor, schoolTierTabs, type MenuBranchCount, type MenuCategoryTabs, type TierBracket } from "./menuProgression";
+import { WIDTH_STEP_VANILLA } from "./sharedContracts.generated";
 import {
   ALL_CATEGORIES_ID,
   categoryCount,
@@ -227,39 +228,50 @@ export interface TabRowPlan {
   clipped: boolean;
 }
 
-/** A cell's width as the sheet lays it out: a picture over its count, or a name beside it. */
-function cellWidth(cell: TabCell, scale: number, format: (count: number) => string): number {
+/** How the tabs draw: each picture over its count, or, at a wider step, its picture, name and count in a line. */
+export type TabForm = "stack" | "named";
+
+/** A cell's width as the sheet lays it out: a picture over its count, a name beside its count, or all three in a line. */
+function cellWidth(cell: TabCell, scale: number, format: (count: number) => string, form: TabForm): number {
   const countWidth = textWidth(cell.count === null ? "" : format(cell.count), TAB_COUNT_SIZE * scale);
+  const nameWidth = textWidth(cell.label, TAB_NAME_SIZE * scale);
+  const iconSide = TAB_ROW_HEIGHT - TAB_COUNT_SIZE * scale;
 
   if (cell.named || cell.kind === "tier") {
-    return textWidth(cell.label, TAB_NAME_SIZE * scale) + TAB_NAME_GAP + countWidth + 2 * TAB_CELL_PADDING;
+    return nameWidth + TAB_NAME_GAP + countWidth + 2 * TAB_CELL_PADDING;
   }
 
-  return Math.max(TAB_CELL_MIN_WIDTH, Math.max(TAB_ROW_HEIGHT - TAB_COUNT_SIZE * scale, countWidth) + 2 * TAB_CELL_PADDING);
+  if (form === "named") {
+    return 2 * TAB_CELL_PADDING + iconSide + TAB_NAME_GAP + nameWidth + TAB_NAME_GAP + countWidth;
+  }
+
+  return Math.max(TAB_CELL_MIN_WIDTH, Math.max(iconSide, countWidth) + 2 * TAB_CELL_PADDING);
 }
 
-function itemWidth(item: TabRowItem, scale: number, format: (count: number) => string): number {
-  if (item.kind !== "bracket") return cellWidth(item, scale, format);
+/** An item's width: a cell, or Education's plate, which keeps its own form. */
+function itemWidth(item: TabRowItem, scale: number, format: (count: number) => string, form: TabForm): number {
+  if (item.kind !== "bracket") return cellWidth(item, scale, format, form);
 
   const cells = [item.parent, ...item.tiers];
   return 2 * TAB_SEGMENT_MARGIN
-    + cells.reduce((sum, member) => sum + cellWidth(member, scale, format), 0)
+    + cells.reduce((sum, member) => sum + cellWidth(member, scale, format, "stack"), 0)
     + (cells.length - 1) * TAB_CELL_GAP;
 }
 
 /**
- * How the row fits a box this wide. The readout's place line gives way first: the two lines fit
- * the row only at 100% text. Its range always stays, and the last tabs run past the room it leaves,
- * where the row cuts them: it never wraps.
+ * How the row fits a box this wide, in a form. The readout's place line gives way first: the two
+ * lines fit the row only at 100% text. Its range always stays, and the last tabs run past the room
+ * it leaves, where the row cuts them: it never wraps.
  */
 export function planTabRow(
   items: readonly TabRowItem[],
   readout: { place: string; range: string },
   boxWidth: number,
   scale: number,
-  format: (count: number) => string
+  format: (count: number) => string,
+  form: TabForm = "stack"
 ): TabRowPlan {
-  const widths = items.map((item) => itemWidth(item, scale, format));
+  const widths = items.map((item) => itemWidth(item, scale, format, form));
   const cells = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, widths.length - 1) * TAB_CELL_GAP;
   // The spacer and the readout each sit a gap past what comes before them.
   const room = boxWidth - TAB_ROW_INSET - TAB_ROW_INSET_RIGHT - cells - 2 * TAB_CELL_GAP;
@@ -268,6 +280,25 @@ export function planTabRow(
   const full = scale <= 1 && Math.max(place, range) <= room;
 
   return { readout: full ? "full" : "range", clipped: range > room };
+}
+
+/**
+ * How the tabs draw in a box this wide: above the first Width step, where every tab fits named with
+ * the readout's range beside them, each says its name; else each draws its picture over its count,
+ * never part named and part not. Off by the developer knob, never named. See docs/design-notes.md,
+ * "The tab row".
+ */
+export function tabForm(
+  items: readonly TabRowItem[],
+  readout: { place: string; range: string },
+  boxWidth: number,
+  scale: number,
+  format: (count: number) => string,
+  namesAllowed: boolean
+): TabForm {
+  if (!namesAllowed || boxWidth <= WIDTH_STEP_VANILLA) return "stack";
+
+  return planTabRow(items, readout, boxWidth, scale, format, "named").clipped ? "stack" : "named";
 }
 
 /** The readout's second line: the window the list holds, with the true total; the total alone while nothing is loaded. */
