@@ -2,24 +2,38 @@
 
 Rationale that is too long for a code comment. The code carries one-line pointers to the headings below.
 
-## Escape closes the asset menu unconditionally
+## Escape
 
-`shouldClearOnEscape` in `domain/vanillaMenuWatch.ts` asks one question: is the
-asset menu open (and is Find It's own panel not up)? It clears the *game's* toolbar
-selection rather than hiding our asset menu, reusing the path the toolbar button
-takes — `VanillaMenuWatcher`'s close branch picks up the resulting null, so the
-asset menu has one way to close rather than two. `ClearAssetSelection` nulls menu,
-category and asset together, so no vanilla grid appears in the gap.
+An Escape is two presses at once: the game's own, which cancels an armed tool or opens the pause
+menu and which BBM's listener cannot consume, and BBM's, which one rule decides (`escapeAction` in
+`domain/vanillaMenuWatch.ts`), run by a capture-phase listener in the always-mounted
+`VanillaMenuWatcher`.
 
-The absence of a second condition is the point. Vanilla keeps its menu open when
-a tool is cancelled, and matching that would mean holding on the press that
-disarms the tool and closing on the next. Telling those two presses apart from a
-DOM listener is not possible: both available signals — elapsed time since the
-tool disarmed, and what the tool last reported as — depend on the game's disarm
-notification, which races the keypress. Closing on every Escape is
-deterministic, and the divergence is accepted: cancelling a tool with Escape
-also puts the menu away. The pause menu still works, because the game opens it
-when Escape finds nothing to close, and the asset menu is gone after the first press.
+- **From the search field,** in order: an open list closes, in the top row's popover or over the
+  pane, since one list is open at a time across both; else a typed query clears; else the field
+  blurs and the menu closes. The game masks its keyboard while a text field has focus, so that press
+  is BBM's alone. The game's `TextInput` blurs itself on Escape, so on the first two steps the
+  listener stops the press at the document, short of the field, which keeps the keys for the next
+  press. The box hands the watcher its open list's close (`openListCloser`), since the watcher sits
+  beside the box, not inside it.
+- **From anywhere else** the menu closes, and an open list with it. It clears the *game's* toolbar
+  selection rather than hiding the box, reusing the path the toolbar button takes:
+  `VanillaMenuWatcher`'s close branch picks up the resulting null, so the box has one way to close
+  rather than two. `ClearAssetSelection` nulls menu, category and asset together, so no vanilla grid
+  appears in the gap. While Find It's own panel is up, Escape is theirs.
+
+The absence of a second condition away from the field is the point. Vanilla keeps its menu open when
+a tool is cancelled, and matching that would mean holding on the press that disarms the tool and
+closing on the next. Telling those two presses apart from a DOM listener is not possible: both
+available signals — elapsed time since the tool disarmed, and what the tool last reported as —
+depend on the game's disarm notification, which races the keypress. Closing on every Escape is
+deterministic, and the divergence is accepted: cancelling a tool with Escape also puts the menu
+away. The pause menu still works, because the game opens it when Escape finds nothing to close, and
+the box is gone after the first press. A list closed alone would leave the box up under a cancelled
+tool, so away from the field a list goes with the menu.
+
+**This changes 0.2.x:** Escape from the search field closed the menu at once; it now closes an open
+list, then clears the query, and closes the menu on the press after.
 
 ## Tools that take the screen
 
@@ -525,28 +539,29 @@ control sits over it (`topRowRightInset`).
 - **The pane** draws the same four lists: Filters inline, the chips under them in their Active row,
   and Group by, Sort by and View as summaries that open theirs over the pane, on the popovers'
   surface. One of its lists is open at a time, and a press outside leaves it open, since the pane's
-  lists are not popovers. While a search is typed, its caption names it ("Results for road"). A
-  summary cuts its value inside itself, so a row's label is whole at every text size. Its lists,
-  VIEW's Width sub-list furthest, open left over the box's top row; the pane's blur makes it a
-  stacking context, so they paint at the pane's own order, z-index 46: over the top row's band (40)
-  and the top edge (45), under the popovers (50). The pane is beside the box, never over it, so
-  nothing else moves. The game's dropdowns are portalled outside the menu's own stacking order, as
-  over the top row, so the pane's order stays under them. Its root
-  carries the look's class (`useLookRoot`), since custom properties reach only a root's own
-  children, and the pane sits beside the box, not inside it; its own surface is the look's `body`,
-  the box's beside it. The row labels, the chips and the summaries sit on that body, which Bright
-  blue turns light, so they take the body's inks (`bodyLabel`, `bodyChip*`, `bodyWord`, `bodyCtl*`),
-  whose plates and text follow the style together: under Bright blue and Dark grey-orange the game's
-  menu plates and its text. The FILTER popover stays dark under every style, so its chips keep the
-  light ink. **This changes 0.2.x:** the pane's surface draws without the game's gradient in every
-  style, and in the game's default style it is the look's dark panel; its lists draw their rows in
-  the look's ink, 24 rem tall, the lit one in the game's selected colour with white text, on the
-  popovers' surface; its chips draw in the body's inks, and Clear filters loses the accent colour;
-  the sort's summary names its direction (▲ or ▼); two of its lists can no longer be open together.
-  The pane draws no scope chips (the search reaches other menus), no Reset menu (Options' Reset the
-  build menu… puts everything back) and no row of view buttons (VIEW carries the views, on the top
-  row and in the pane), and the triggers `SetAssetMenu`, `ClearAssetMenuScope` and `ResetAssetMenu`
-  are gone.
+  lists are not popovers; Escape from the search field closes it as it closes a popover (see
+  "Escape"), and arming a building leaves it open. While a search is typed, its caption names it
+  ("Results for road"). A summary cuts its value inside itself, so a row's label is whole at every
+  text size. Its lists, VIEW's Width sub-list furthest, open left over the box's top row; the pane's
+  blur makes it a stacking context, so they paint at the pane's own order, z-index 46: over the top
+  row's band (40) and the top edge (45), under the popovers (50). The pane is beside the box, never
+  over it, so nothing else moves. The game's dropdowns are portalled outside the menu's own stacking
+  order, as over the top row, so the pane's order stays under them. Its root carries the look's
+  class (`useLookRoot`), since custom properties reach only a root's own children, and the pane sits
+  beside the box, not inside it; its own surface is the look's `body`, the box's beside it. The row
+  labels, the chips and the summaries sit on that body, which Bright blue turns light, so they take
+  the body's inks (`bodyLabel`, `bodyChip*`, `bodyWord`, `bodyCtl*`), whose plates and text follow
+  the style together: under Bright blue and Dark grey-orange the game's menu plates and its text.
+  The FILTER popover stays dark under every style, so its chips keep the light ink.
+  **This changes 0.2.x:** the pane's surface draws without the game's gradient in every style, and
+  in the game's default style it is the look's dark panel; its lists draw their rows in the look's
+  ink, 24 rem tall, the lit one in the game's selected colour with white text, on the popovers'
+  surface; its chips draw in the body's inks, and Clear filters loses the accent colour; the sort's
+  summary names its direction (▲ or ▼); two of its lists can no longer be open together. The pane
+  draws no scope chips (the search reaches other menus), no Reset menu (Options' Reset the build
+  menu… puts everything back) and no row of view buttons (VIEW carries the views, on the top row and
+  in the pane), and the triggers `SetAssetMenu`, `ClearAssetMenuScope` and `ResetAssetMenu` are
+  gone.
 
 ## The top edge
 

@@ -85,15 +85,33 @@ export interface EscapeContext {
   assetMenuOpen: boolean;
   /** Upstream Find It's panel is up; Escape is theirs then. */
   findItPanelShown?: boolean;
+  /** Whether the press came from the search field, which holds the keys while it has focus. */
+  fieldFocused?: boolean;
+  /** Whether a list is open, in the top row's popover or over the pane. */
+  listOpen?: boolean;
+  /** Whether the field holds a query. */
+  queryTyped?: boolean;
 }
 
+/** What an Escape does on BBM's side: nothing, close the open list, clear the query, or close the menu. */
+export type EscapeAction = "none" | "closeList" | "clearQuery" | "closeMenu";
+
 /**
- * Whether an Escape should clear the toolbar selection, taking the asset menu with it.
- * One condition, deliberately: see docs/design-notes.md, "Escape closes the
- * asset menu unconditionally".
+ * What an Escape does. From the search field, whose press is BBM's alone: the open list, then the
+ * query, then the menu. From anywhere else the menu closes, whatever is open in it, because the
+ * game's own Escape acts at the same time. See docs/design-notes.md, "Escape".
  */
-export function shouldClearOnEscape({ assetMenuOpen, findItPanelShown = false }: EscapeContext): boolean {
+export function escapeAction({
+  assetMenuOpen,
+  findItPanelShown = false,
+  fieldFocused = false,
+  listOpen = false,
+  queryTyped = false,
+}: EscapeContext): EscapeAction {
   // Escape belongs to Find It's panel while it is up; clearing the menu
   // selection underneath it would close our menu behind their back.
-  return assetMenuOpen && !findItPanelShown;
+  if (!assetMenuOpen || findItPanelShown) return "none";
+  if (fieldFocused && listOpen) return "closeList";
+  if (fieldFocused && queryTyped) return "clearQuery";
+  return "closeMenu";
 }

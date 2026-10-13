@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { useCallback, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ControlPane } from "mods/ControlPane/ControlPane";
@@ -10,6 +10,7 @@ import { TopEdge } from "mods/TopEdge/TopEdge";
 import { TopRow } from "mods/TopRow/TopRow";
 import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
+import { setOpenListCloser } from "mods/BuildingMenu/openListCloser";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useLookRoot } from "mods/useLookRoot";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
@@ -62,6 +63,13 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const togglePaneList = useCallback((kind: ControlKind) => setList((open) => toggleList(open, { home: "pane", kind })), []);
   const closeList = useCallback(() => setList(null), []);
   const popover = list?.home === "popover" ? list : null;
+  // Escape from the search field closes the open list first, from the watcher beside the box. See
+  // docs/design-notes.md, "Escape".
+  useEffect(() => {
+    if (list === null) return undefined;
+    setOpenListCloser(closeList);
+    return () => setOpenListCloser(null);
+  }, [list, closeList]);
 
   // The patches on vanilla's own layout, the toolbar sunk beneath the box and the pane and the tool
   // options moved clear of a box that reaches left of the slot, live with their reason in vanillaLayout.ts.

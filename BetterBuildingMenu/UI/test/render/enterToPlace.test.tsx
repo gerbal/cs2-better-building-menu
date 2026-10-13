@@ -1,38 +1,26 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { fakeSearchField, keysPage, type KeysPage } from "../harness/fakeKeys";
 import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
-import { searchFieldClass } from "../../src/mods/TopRow/searchField";
 
 // Mounted, not rendered to markup: the Enter listener is an effect. Node has no
 // document, so the few globals the catalog's effects reach for are faked here.
 type KeyEvent = { key: string; keyCode?: number; target?: unknown };
-type Listener = (event: KeyEvent) => void;
 const globals = globalThis as unknown as Record<string, unknown>;
-let keydown: Listener[] = [];
+let page: KeysPage = keysPage();
 
 function installDocument(): void {
-  keydown = [];
-  globals.document = {
-    // Only capture-phase listeners hear a key typed in the asset menu: the game's app
-    // container stops keydown propagation before it bubbles to the document.
-    addEventListener: (type: string, listener: Listener, capture?: boolean) => {
-      if (type === "keydown" && capture === true) keydown.push(listener);
-    },
-    removeEventListener: (type: string, listener: Listener, capture?: boolean) => {
-      if (type === "keydown" && capture === true) keydown = keydown.filter((other) => other !== listener);
-    },
-  };
+  page = keysPage();
+  globals.document = page.document;
   globals.requestAnimationFrame = () => 0;
   globals.cancelAnimationFrame = () => undefined;
 }
 
-const press = (event: KeyEvent) => act(() => {
-  for (const listener of [...keydown]) listener(event);
-});
+const press = (event: KeyEvent) => act(() => page.keydown(event));
 const enter = (target?: unknown) => press({ key: "Enter", target });
 const armed = () => triggers.filter((call) => call.name === "SetCurrentPrefab").map((call) => call.args[0]);
 
@@ -160,7 +148,7 @@ describe("Enter in the catalog", () => {
     enter({ tagName: "TEXTAREA" });
     assert.deepEqual(armed(), []);
 
-    enter({ tagName: "TEXTAREA", classList: { contains: (name: string) => name === searchFieldClass } });
+    enter(fakeSearchField());
     assert.deepEqual(armed(), [1], "the search box's own Enter still arms");
   });
 
@@ -184,6 +172,6 @@ describe("Enter in the catalog", () => {
 
     act(() => root?.unmount());
     root = undefined;
-    assert.equal(keydown.length, 0);
+    assert.equal(page.listeners(), 0);
   });
 });

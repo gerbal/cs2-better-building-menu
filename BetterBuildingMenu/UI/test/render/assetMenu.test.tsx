@@ -6,6 +6,7 @@ import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_CHROME_HEIGHT, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
+import { openListCloser, setOpenListCloser } from "../../src/mods/BuildingMenu/openListCloser";
 
 // The lengths AssetMenu writes inline, read off the markup by the element's first class.
 const styleOf = (html: string, className: string): string =>
@@ -513,5 +514,48 @@ describe("the asset menu's controls", () => {
     act(() => summary("View").props.onSelect());
     assert.equal(paneLists().length, 1);
     assert.equal(popovers().length, 0, "the pane's list closes the popover");
+  });
+});
+
+describe("the asset menu's open list and Escape", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    setOpenListCloser(null);
+    saved = globals.document;
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved;
+  });
+
+  it("hands Escape the open list's close while a list is open, in the top row or the pane", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    const press = (label: string) =>
+      act(() => root!.root.find((node) => String(node.props["aria-label"] ?? "").startsWith(label) && typeof node.props.onSelect === "function").props.onSelect());
+    assert.equal(openListCloser(), null, "nothing open, nothing to close");
+
+    press("Sort · ");
+    assert.equal(typeof openListCloser(), "function", "the top row's popover");
+
+    press("Group by · ");
+    const close = openListCloser();
+    assert.equal(typeof close, "function", "the pane's list, which took the popover's place");
+
+    act(() => close!());
+    assert.equal(openListCloser(), null);
+    assert.equal(root!.root.findAll((node) => node.props["data-bbm-popover"] === "true").length, 0);
   });
 });

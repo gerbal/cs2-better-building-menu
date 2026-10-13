@@ -29,3 +29,15 @@ export function isSearchField(target: EventTarget | null | undefined): boolean {
   const classList = (target as { classList?: { contains?: (name: string) => boolean } }).classList;
   return typeof classList?.contains === "function" && classList.contains(searchFieldClass);
 }
+
+/**
+ * Gives the keys back to the game: blurs the search field if it has focus, and nothing else. The
+ * game masks its keyboard while a text field has focus, so the camera keys stay dead until the field
+ * lets go. See docs/design-notes.md, "Escape".
+ */
+export function blurSearchField(): void {
+  if (typeof document === "undefined") return;
+
+  const active = document.activeElement as (EventTarget & { blur?: () => void }) | null;
+  if (isSearchField(active)) active?.blur?.();
+}

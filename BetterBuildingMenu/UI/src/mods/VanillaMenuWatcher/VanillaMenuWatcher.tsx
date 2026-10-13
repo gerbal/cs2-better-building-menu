@@ -1,8 +1,8 @@
 import { trigger, useValue } from "cs2/api";
 import { useEffect, useRef } from "react";
 import {
+  escapeAction,
   nextWatchState,
-  shouldClearOnEscape,
   toolbarEntityIndex,
   vanillaMenuDeselectedCommand,
   vanillaMenuSelectedCommand,
@@ -10,6 +10,8 @@ import {
   watchStateWhileOff,
   type WatchState,
 } from "domain/vanillaMenuWatch";
+import { searchChangedCommand } from "domain/buildingCatalogContracts";
+import { textInputText } from "domain/textInput";
 import {
   FindItPanelShown$,
   OwnsCurrentMenu$,
@@ -17,6 +19,8 @@ import {
   SelectedAssetMenu$,
   send,
 } from "mods/bindings";
+import { openListCloser } from "mods/BuildingMenu/openListCloser";
+import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
 
 /** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
 const ESCAPE_KEY_CODE = 27;
@@ -40,9 +44,10 @@ export const VanillaMenuWatcher = () => {
   const findItPanelShown = useValue(FindItPanelShown$) === true;
 
   /**
-   * Escape takes the asset menu down by clearing the GAME's selection, so the close
-   * branch below does the work and there is one route out. Capture phase, so a
-   * control inside the asset menu cannot swallow it. See shouldClearOnEscape.
+   * Escape, BBM's half: from the search field the open list, then the query, then the menu; from
+   * anywhere else the menu. The menu goes by clearing the GAME's selection, so the close branch
+   * below does the work and there is one route out. Capture phase, so a control inside the asset
+   * menu cannot swallow it. See escapeAction.
    */
   useEffect(() => {
     if (!enabled) {
@@ -54,11 +59,28 @@ export const VanillaMenuWatcher = () => {
         return;
       }
 
-      if (!shouldClearOnEscape({ assetMenuOpen, findItPanelShown })) {
+      const closeList = openListCloser();
+      const action = escapeAction({
+        assetMenuOpen,
+        findItPanelShown,
+        fieldFocused: isSearchField(event.target),
+        listOpen: closeList !== null,
+        queryTyped: (textInputText(event) ?? "").trim() !== "",
+      });
+
+      if (action === "closeList" || action === "clearQuery") {
+        // The field's own Escape blurs it: stopped here, short of the field, it keeps the keys.
+        event.stopPropagation();
+        if (action === "closeList") closeList?.();
+        else send(searchChangedCommand(""));
         return;
       }
 
-      trigger("toolbar", "clearAssetSelection");
+      if (action === "closeMenu") {
+        // The camera keys come back with the menu: a field left focused would keep them.
+        blurSearchField();
+        trigger("toolbar", "clearAssetSelection");
+      }
     };
 
     document.addEventListener("keydown", onKeyDown, true);
