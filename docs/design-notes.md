@@ -1512,7 +1512,10 @@ so it finds each plan kept and plans again only the few drawn alike, each kept b
 more or a view switch plans no name twice. Each group's names and their words are read once, so a group
 costs its size, not its square; a pass asks for at most 600 plans with hints, so a page of thousands
 drawn alike tells its first plates apart; and a pass over plates that draw alone as the last pass's did
-(an Up or Down step moves Enter's mark, narrowing two rooms) answers as that pass did.
+(an Up or Down step moves Enter's mark, narrowing two rooms) answers as that pass did. The pass judges
+its hints in each plate's estimate, and the room as drawn can be narrower, where the words they add could
+crowd out the one that tells the row apart: a plate draws with its hints only where that plan keeps its
+distinguishing word whole wherever the plan without them does, else without them (`planApart`).
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's

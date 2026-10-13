@@ -7,7 +7,7 @@
  * first plan that keeps its distinguishing word as whole as before and draws it apart from every plate
  * stands. Pure but for the last pass it keeps. See docs/design-notes.md, "Names".
  */
-import { CUT_MARK, planName, SEPARATORS, STOP_WORDS, type NameBox } from "./namePlan";
+import { CUT_MARK, planName, SEPARATORS, STOP_WORDS, type NameBox, type NamePlan } from "./namePlan";
 
 /** A plate's name as the body plans it. */
 export interface PlateName {
@@ -141,4 +141,17 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
   const answer = found.size === 0 ? NONE : found;
   last = { key, found: answer };
   return answer;
+}
+
+/**
+ * A plate's name as it draws in its room: with what the pass hands it, where that plan keeps the
+ * distinguishing word whole wherever the plan without it does; else without it. The pass judged its hints
+ * in the plate's estimate, and the room as drawn can be narrower, where the words it adds can crowd out
+ * the one that tells the row apart.
+ */
+export function planApart(name: string, room: NameBox, distinct: string, typed: readonly string[], apart?: ApartHints): NamePlan {
+  const alone = planName(name, room, { keep: [distinct], typed });
+  if (apart === undefined) return alone;
+  const hinted = planName(name, room, { keep: [distinct, ...apart.keep], typed, leads: apart.leads });
+  return distinct !== "" && holdsWhole(alone.lines, distinct) && !holdsWhole(hinted.lines, distinct) ? alone : hinted;
 }

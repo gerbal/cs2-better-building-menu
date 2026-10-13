@@ -3,8 +3,8 @@ import { memo, useEffect, useRef, useState } from "react";
 
 import { deviceRem } from "domain/bodyGeometry";
 import { drawnRoom, type DrawnRoom } from "domain/measuredFit";
-import { nameRuns, planFits, planName } from "domain/namePlan";
-import type { ApartHints } from "domain/platesApart";
+import { nameRuns, planFits } from "domain/namePlan";
+import { planApart, type ApartHints } from "domain/platesApart";
 import styles from "./plannedName.module.scss";
 
 export interface PlannedNameProps {
@@ -57,7 +57,7 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
   if (state.key !== key) setState({ key, drawn });
   const room = { width: (drawn.box ?? width) * drawn.fit, lines, font, tracking };
   // Each word typed is kept on its own: a search matches its phrase anywhere in the name.
-  const plan = planName(name, room, { keep: [distinct, ...(apart?.keep ?? [])], typed: typed.split(/\s+/), leads: apart?.leads ?? false });
+  const plan = planApart(name, room, distinct, typed.split(/\s+/), apart);
   const fitted = planFits(plan.lines, room);
 
   useEffect(() => {

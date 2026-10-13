@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { bodyGrid } from "../src/domain/bodyGeometry";
 import { NAME_FONT, plateNameRoom } from "../src/domain/listPlate";
 import { CUT_MARK, planFits, planName, plansWorkedOut, type NameBox } from "../src/domain/namePlan";
-import { wordsApart, type PlateName } from "../src/domain/platesApart";
+import { planApart, wordsApart, type PlateName } from "../src/domain/platesApart";
 import { ASSET_MENU_DEFAULT_HEIGHT } from "../src/domain/sharedContracts.generated";
 
 /** The base game's names, each with its distinguishing word in its menu. */
@@ -107,6 +107,28 @@ describe("the list's plates told apart over the page", () => {
       assert.equal(planName(stepped[5].name, stepped[5].room, { keep: [""], typed: [""] }).lines.join(), planName(plates[5].name, at150, { keep: [""], typed: [""] }).lines.join());
       assert.equal(wordsApart(stepped, [""]), first);
     });
+  });
+
+  it("keeps the distinguishing word in a room drawn 1 to 20% narrower than the pass planned in, at 130% and 150%, wherever the plan without hints keeps it", () => {
+    for (const textScale of [1.3, 1.5]) {
+      const room = roomOf(textScale, "moreBuildings");
+      const seen = new Set<string>();
+      const plates = page(room, names.filter(([name]) => !seen.has(name) && seen.add(name)));
+      const apart = wordsApart(plates, [""]);
+      assert.ok(apart.size > 0);
+
+      for (const plate of plates.filter((each) => apart.has(each.id) && each.distinct !== "")) {
+        for (let narrower = 1; narrower <= 20; narrower += 1) {
+          const drawnRoom = { ...room, width: (room.width * (100 - narrower)) / 100 };
+          const alone = planName(plate.name, drawnRoom, { keep: [plate.distinct], typed: [""] }).lines.join("\n");
+          const plan = planApart(plate.name, drawnRoom, plate.distinct, [""], apart.get(plate.id)).lines;
+          const where = `${plate.name} at ${textScale}, ${narrower}% narrower: ${plan.join(" / ")}`;
+
+          assert.ok(planFits(plan, drawnRoom) && plan.length <= drawnRoom.lines, where);
+          if (whole(alone, plate.distinct)) assert.ok(whole(plan.join("\n"), plate.distinct), where);
+        }
+      }
+    }
   });
 
   it("over the base game's names in every form and search, draws fewer plates alike and never more, and keeps every planner guarantee", () => {
