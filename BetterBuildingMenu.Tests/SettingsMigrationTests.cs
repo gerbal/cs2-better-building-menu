@@ -522,6 +522,18 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ALaterReleasesLookStaysInItsFileWhileTheMenuDrawsStandard()
+		{
+			var values = new FakeSettings { SettingsVersion = SettingsMigration.Current + 1, MenuLook = Looks.Line };
+			var result = SettingsMigration.Migrate(values, Array.Empty<string>(), StampOnly, SixteenNine);
+
+			Assert.False(result.Changed);
+			Assert.Equal(Looks.Line, values.MenuLook);
+			// What the binding publishes, at load and after Options: this release offers no Line.
+			Assert.Equal(Looks.Standard, Looks.Sanitize(values.MenuLook));
+		}
+
+		[Fact]
 		public void WhatEarlierReleasesLeftIsReadBeforeTheMarkerIsWritten()
 		{
 			var source = ModSource.Text("Mod.cs");

@@ -443,7 +443,7 @@ describe("Asset menu stylesheet contracts", () => {
     const up = declarationsOf(PICKER_LIST, ".lookList.up");
     const down = declarationsOf(PICKER_LIST, ".lookList.down");
 
-    assert.equal(up.bottom, "44rem");
+    assert.equal(rem(up.bottom), 2 * rem(declarationsOf(PICKER_LIST, ".list .row").height) - 4);
     assert.ok(up.top === undefined && down.top && down.bottom === undefined);
     assert.equal(declarationsOf(PICKER_LIST, ".lookList").left, declarationsOf(PICKER_LIST, ".widthList").left);
   });

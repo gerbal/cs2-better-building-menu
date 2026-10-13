@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { declarationsOf, rem, sides } from "../harness/compiledCss";
 import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetModules, setModule } from "../harness/stubs/cs2-modding";
 import { Dropdown, DropdownItem } from "../harness/stubs/cs2-ui";
+import { POPOVER_FILTER_HEIGHT } from "../../src/domain/assetMenuLayout";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_SORT_OPTIONS } from "../../src/domain/assetMenuSortPresentation";
 import { SORT_FIRST_DESCENDING } from "../../src/domain/sharedContracts.generated";
@@ -14,6 +16,8 @@ import { PickerRow } from "../../src/mods/Pickers/PickerRow";
 
 type Press = (event: { target: unknown }) => void;
 
+const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
+const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
 const set = (name: string, value: unknown) => setBinding("BetterBuildingMenu", name, value);
 const globals = globalThis as unknown as Record<string, unknown>;
 // The document's capture listeners for presses, so a test can press where it likes.
@@ -288,6 +292,22 @@ describe("a control's popover", () => {
     pick("Icons with names");
 
     assert.deepEqual(sent("SetAssetMenuView"), [["iconsNamed"]]);
+  });
+
+  it("keeps VIEW at its tallest, every body and the developer pick, within FILTER's height, which a popover's anchor holds room for", () => {
+    set("AssetMenu", "Landscaping");
+    set("AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true });
+    mount({ kind: "view", left: 0 });
+    const dividers = root!.root.findAll((node) => node.type === "div" && node.props.className === "divider").length;
+    const divider = declarationsOf(PICKER_LIST, ".divider");
+    const [above, , below] = sides(divider.margin);
+    const padding = rem(declarationsOf(POPOVER, ".popover").padding);
+    const height = rows().length * rem(declarationsOf(PICKER_LIST, ".list .row").height)
+      + dividers * (rem(divider.height) + rem(above) + rem(below))
+      + 2 * padding;
+
+    assert.equal(rows().length, 9);
+    assert.ok(height <= POPOVER_FILTER_HEIGHT, `VIEW is ${height} rem tall, FILTER's height ${POPOVER_FILTER_HEIGHT}`);
   });
 
   it("lists no body with no menu open, as under Search everything, where a pick would have no menu to keep it", () => {
