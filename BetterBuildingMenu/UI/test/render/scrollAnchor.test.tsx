@@ -23,15 +23,19 @@ const TOP = 50;
  */
 function fakeList(count: number) {
   let scrolled = 0;
-  const end = count * ROW - VIEWPORT;
+  // How far a late re-layout has pushed every row down, as Cohtml re-wrapping the cards above them does.
+  let pushed = 0;
+  const end = () => count * ROW + pushed - VIEWPORT;
   const scroller = {
     clientHeight: VIEWPORT,
-    scrollHeight: count * ROW,
+    get scrollHeight() {
+      return count * ROW + pushed;
+    },
     get scrollTop() {
       return scrolled;
     },
     set scrollTop(value: number) {
-      scrolled = Math.max(0, Math.min(value, end));
+      scrolled = Math.max(0, Math.min(value, end()));
     },
     parentElement: null as unknown,
     getBoundingClientRect: () => ({ top: TOP, height: VIEWPORT }),
@@ -39,7 +43,7 @@ function fakeList(count: number) {
   const rows = Array.from({ length: count }, (_, at) => ({
     id: at + 1,
     parentElement: scroller,
-    getBoundingClientRect: () => ({ top: TOP + at * ROW - scrolled, height: ROW }),
+    getBoundingClientRect: () => ({ top: TOP + at * ROW + pushed - scrolled, height: ROW }),
   }));
   const root = {
     scrollHeight: VIEWPORT,
@@ -56,7 +60,11 @@ function fakeList(count: number) {
     ref: { current: root } as unknown as RefObject<HTMLElement>,
     scroller,
     /** Where a row's top sits below the top of the list's viewport: 0 is line 1. */
-    offsetOf: (id: number) => (id - 1) * ROW - scrolled,
+    offsetOf: (id: number) => (id - 1) * ROW + pushed - scrolled,
+    /** A late re-layout: every row drops a line, with no scroll set. */
+    rewrap: () => {
+      pushed += ROW;
+    },
   };
 }
 
@@ -183,6 +191,38 @@ describe("where the list goes when a page lands", () => {
 
     assert.equal(list.scroller.scrollTop, 0);
     assert.equal(getAssetMenuAnchor(KEY), 120);
+  });
+
+  it("sets the scroll again when a late re-layout drops the row off line 1 the frame after it got there", () => {
+    // On a fresh mount Cohtml can re-wrap the cards above the row one frame after the set: one
+    // reading on line 1 is not the end of the move.
+    const list = fakeList(250);
+
+    mount(list, { listStart: 1, anchorId: 150, anchorIndex: 149, itemCount: 250 });
+    tick();
+    tick();
+    assert.equal(list.offsetOf(150), 0);
+    list.rewrap();
+    flush();
+
+    assert.equal(list.offsetOf(150), 0);
+    assert.equal(getAssetMenuListStart(), 1);
+    assert.equal(getAssetMenuAnchor(KEY), 150);
+  });
+
+  it("sets the top again when the scroller does not read 0 on the frame after the set", () => {
+    const list = fakeList(250);
+    list.scroller.scrollTop = 1200;
+    setAssetMenuListStart(1);
+
+    mount(list, { listStart: 2, anchorId: 0, anchorIndex: -1, itemCount: 250 });
+    tick();
+    assert.equal(list.scroller.scrollTop, 0);
+    list.scroller.scrollTop = 600;
+    flush();
+
+    assert.equal(list.scroller.scrollTop, 0);
+    assert.equal(getAssetMenuListStart(), 2);
   });
 
   it("holds a row in the list's last screen in view where the scroll stops", () => {

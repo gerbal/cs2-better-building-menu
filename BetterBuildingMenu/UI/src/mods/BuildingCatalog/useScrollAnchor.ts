@@ -32,8 +32,14 @@ export interface ListStartPage {
 type Move = Exclude<ListScroll, { kind: "none" }>;
 
 /**
- * One frame of a move: true once the list is where the move puts it. A row that has not rendered,
- * or rects still at Cohtml's pre-layout zeroes, are worth another frame.
+ * How many frames running the list must read in place before a move ends: one frame after a set,
+ * Cohtml can still re-wrap the rows above the anchored one and drop it off line 1.
+ */
+const IN_PLACE_READINGS = 2;
+
+/**
+ * One frame of a move: true when the list reads where the move puts it, or else a set towards it. A
+ * row that has not rendered, or rects still at Cohtml's pre-layout zeroes, are worth another frame.
  */
 function moveList(root: HTMLElement | null, move: Move): boolean {
   const row = root ? lastCatalogRow(root, move.kind === "top" ? undefined : move.id) : null;
@@ -46,8 +52,10 @@ function moveList(root: HTMLElement | null, move: Move): boolean {
 
   if (move.kind === "top") {
     // A list that fits has nothing to scroll.
-    if (scroller) scroller.scrollTop = 0;
-    return true;
+    if (!scroller || scroller.scrollTop <= 0) return true;
+
+    scroller.scrollTop = 0;
+    return false;
   }
 
   if (!scroller) {
@@ -120,6 +128,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
     if (move.kind !== "restore") underWay.current = move;
 
     let frame = 0;
+    let inPlace = 0;
     let handle = 0;
     let cancelled = false;
 
@@ -140,7 +149,14 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       }
 
       // Out of budget, the list stays where it is: a row that never rendered is not worth chasing.
-      if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES || moveList(rootRef.current, move)) {
+      if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES) {
+        finish();
+        return;
+      }
+
+      inPlace = moveList(rootRef.current, move) ? inPlace + 1 : 0;
+
+      if (inPlace >= IN_PLACE_READINGS) {
         finish();
         return;
       }

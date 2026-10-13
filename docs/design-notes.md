@@ -1001,7 +1001,9 @@ list; a remount within the same start brings it back into view once, on the moun
 rows, a third of the way down when it is off the first screen. A row armed after that page is kept
 for the next remount, not brought back by a search, a filter or more rows. Cohtml has no scroll
 event: each move is a frame loop over `scrollTop` on the element that scrolls, found by walking up
-from a row, within the restore's budget of frames.
+from a row, within the restore's budget of frames. A move ends only when the list reads in place on
+two frames running: on a fresh mount Cohtml can re-wrap the cards above the row the frame after the
+set, which drops the row a line or more, and the move sets the scroll again.
 
 **This changes 0.2.x:** every menu opened on All and kept the search; a tab pick and a sort left
 the scroll where it was; a restore forgot the row it brought back, so the next placement's remount
