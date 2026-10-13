@@ -1186,14 +1186,17 @@ tag judges its fit from the same table, the wider of the two fonts.
 
 **Its height** is the Card height knob's: 46 rem, three rows in the game's own 144.25 body a little over
 3 apart; or 50, two rows 4 apart, the block centred. Above 100% text a card grows where its two lines
-need more. The rows a screen shows are counted as the list's lines are (`wholeLines`, a device pixel
-forgiven), then spread at most 4 apart; a page steps by whole rows and their gap, so the rows keep the
-place the page found them in, a 50 rem block's centring offset with them. The labels (see "Label
-plates") sit in the rows with the cards, at a card's height, each as wide as the words its plate draws
-(`sectionLabel`, so the game's word in the player's language sizes its own plate); under the Block
-labels knob's own line a label takes a row of its own. The catalog lays the cards out (`useCardsLayout`)
-and tells C# how many buildings a screen's rows hold; the cards fill the rows the packer gives them, so
-a screen holds more short names than long.
+need more: the lines are the stylesheet's 18 and 15 rem times the text scale, the one pitch the sheet
+draws them at, so two rows still fit the game's body at 150% (56 rem cards). The type grows a little
+faster than its lines, as the game's own sizes do, and stands a little over its line at 150%. The rows a
+screen shows are counted as the list's lines are (`wholeLines`, a device pixel forgiven), then spread at
+most 4 apart; a page steps by whole rows and their gap, so the rows keep the place the page found them
+in, a 50 rem block's centring offset with them. A screen of one row starts at the top, 4 above the next,
+so a page shows whole rows. The labels (see "Label plates") sit in the rows with the cards, at a card's
+height, each as wide as the words its plate draws (`sectionLabel`, so the game's word in the player's
+language sizes its own plate); under the Block labels knob's own line a label takes a row of its own.
+The catalog lays the cards out (`useCardsLayout`) and tells C# how many buildings a screen's rows hold;
+the cards fill the rows the packer gives them, so a screen holds more short names than long.
 
 **This changes 0.2.x:** 0.2.4's cards were 50 rem tall in two rows, under headings that took a row of
 their own; they are 46 tall in three rows, the headings label plates in the rows. The Card height knob

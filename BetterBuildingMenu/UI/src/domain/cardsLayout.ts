@@ -23,7 +23,10 @@ const CARD_PICTURE_GAP = 7;
 /** Between two cards, across and, at most, down. */
 export const CARD_GAP = 4;
 
-/** The name's and the facts' type and lines at 100% text: the game's fontSizeS and fontSizeXS. */
+/**
+ * The name's and the facts' type and lines at 100% text: the game's fontSizeS and fontSizeXS. The type
+ * grows as the game's sizes do; the lines grow with the text scale, as the stylesheet draws them.
+ */
 const NAME_FONT = 14;
 const NAME_LINE = 18;
 const FACTS_FONT = 12;
@@ -52,7 +55,7 @@ export interface CardGeometry {
   /** How many rows of cards one screen of the body shows. */
   lines: number;
   rowGap: number;
-  /** The first row's top: the rows' block centred in the body. */
+  /** The first row's top: the rows' block centred in the body, or the top where it holds one row. */
   y0: number;
   pitchY: number;
 }
@@ -60,17 +63,16 @@ export interface CardGeometry {
 /**
  * Rows of cards the knob's height tall, as many as the body shows a slot's gap apart (a device pixel
  * forgiven, as the list's and the tiles' lines are), then spread at most CARD_GAP apart, the block
- * centred in the body.
+ * centred in the body. One row a screen starts at the top, CARD_GAP above the next, so a page is whole rows.
  */
 export function cardGeometry(knobHeight: number, bodyHeight: number, textScale: number, pixelRem: number = 0): CardGeometry {
   const pad = (knobHeight - CARD_PICTURE) / 2;
-  const nameLine = Math.round(NAME_LINE * fontSizeRatio("s", textScale) * 10) / 10;
-  const factsLine = Math.round(FACTS_LINE * fontSizeRatio("xs", textScale) * 10) / 10;
-  const height = Math.max(knobHeight, Math.ceil(2 * pad + Math.max(CARD_PICTURE, nameLine + factsLine)));
+  const words = (NAME_LINE + FACTS_LINE) * (Number.isFinite(textScale) && textScale > 0 ? textScale : 1);
+  const height = Math.max(knobHeight, Math.ceil(2 * pad + Math.max(CARD_PICTURE, words)));
   const body = Math.max(0, bodyHeight);
   const lines = wholeLines(body, height + SLOT_GAP, SLOT_GAP, pixelRem);
-  const rowGap = lines > 1 ? Math.max(0, Math.min(CARD_GAP, (body - lines * height) / (lines - 1))) : 0;
-  const y0 = Math.max(0, Math.floor(((body - (lines * height + (lines - 1) * rowGap)) / 2) * 100) / 100);
+  const rowGap = lines > 1 ? Math.max(0, Math.min(CARD_GAP, (body - lines * height) / (lines - 1))) : CARD_GAP;
+  const y0 = lines > 1 ? Math.max(0, Math.floor(((body - (lines * height + (lines - 1) * rowGap)) / 2) * 100) / 100) : 0;
 
   return { height, lines, rowGap, y0, pitchY: height + rowGap };
 }

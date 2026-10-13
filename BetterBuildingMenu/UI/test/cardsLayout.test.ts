@@ -5,7 +5,6 @@ import { bodyLines, SLOT_GAP } from "../src/domain/bodyGeometry";
 import { cardGeometry, cardText, cardWidth, CARD_GAP, labelWidth, packCards } from "../src/domain/cardsLayout";
 import { pageScrollTop } from "../src/domain/catalogWindow";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { fontSizeRatio } from "../src/domain/textScale";
 import { textWidth } from "../src/domain/textWidth";
 import { declarationsOf, rem, sides } from "./harness/compiledCss";
 
@@ -29,11 +28,18 @@ describe("the cards' geometry", () => {
     assert.deepEqual(cardGeometry(50, 144.25, 1), { height: 50, lines: 2, rowGap: 4, y0: 20.12, pitchY: 54 });
   });
 
-  it("grows a card at large text when its name and facts lines need more than its height", () => {
-    const large = cardGeometry(46, 144.25, 1.3);
+  it("grows a card at large text to its two lines: two rows at 130% and at 150%, centred in the body", () => {
+    assert.deepEqual(cardGeometry(46, 144.25, 1.3), { height: 49, lines: 2, rowGap: 4, y0: 21.12, pitchY: 53 });
+    assert.deepEqual(cardGeometry(46, 144.25, 1.5), { height: 56, lines: 2, rowGap: 4, y0: 14.12, pitchY: 60 });
+  });
 
-    assert.ok(large.height > 46, `${large.height}`);
-    assert.equal(large.lines, 2);
+  it("keeps rows apart and starts at the top when a screen holds one row", () => {
+    const one = cardGeometry(46, 100, 1.5);
+
+    assert.equal(one.lines, 1);
+    assert.ok(one.rowGap >= SLOT_GAP, `${one.rowGap}`);
+    assert.equal(one.y0, 0);
+    assert.equal(one.pitchY, one.height + one.rowGap);
   });
 
   it("pages by whole rows: from the top of the game's own body a page moves three rows of 46", () => {
@@ -106,11 +112,18 @@ describe("a card's width", () => {
     near(cardWidth(locked, 1) - cardWidth(plain, 1), lock + lockGap + textWidth("MS 4", 12) + dot);
   });
 
-  it("grows a card's height from the lines its name and facts draw at", () => {
-    const line = (selector: string) => rem(/calc\(([\d.]+rem)/.exec(declarationsOf(CARDS, selector)["line-height"])![1]);
-    const lines = Math.round(line(".name") * fontSizeRatio("s", 1.5) * 10) / 10 + Math.round(line(".facts") * fontSizeRatio("xs", 1.5) * 10) / 10;
+  it("grows a card's height from the lines its name and facts draw at, which the stylesheet scales with the text", () => {
+    // Each line is calc(N rem * var(--fontScale)) in the sheet: the text scale is the factor the geometry uses too.
+    const line = (selector: string) => {
+      const value = declarationsOf(CARDS, selector)["line-height"];
+      const factor = /^calc\((\d*\.?\d+)rem \* var\(--fontScale\)\)$/.exec(value ?? "");
+      assert.ok(factor, `${selector} line-height is ${value}`);
+      return Number(factor[1]);
+    };
 
-    assert.equal(cardGeometry(46, 144.25, 1.5).height, Math.ceil(46 - 40 + lines));
+    for (const scale of [1.3, 1.5]) {
+      assert.equal(cardGeometry(46, 144.25, scale).height, Math.ceil(46 - 40 + (line(".name") + line(".facts")) * scale), `${scale}`);
+    }
   });
 
   it("grows with the text scale", () => {
