@@ -52,11 +52,30 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
+  const big = grid.form === "big";
+  // A big plate's picture is as tall as the plate allows, inline; the other forms' is the stylesheet's.
+  const picture = big ? { width: `${grid.picture}rem`, height: `${grid.picture}rem` } : undefined;
+  const words = (
+    <>
+      {/* Plain text, no spans: Cohtml drops the space after an inline element, and never breaks at a hyphen. */}
+      <p className={classNames(styles.name, grid.nameLines === 1 && styles.oneLine)} data-bbm-name={name.length} {...{ cohinline: "" }}>
+        {name}
+      </p>
+      <div className={styles.numbers} data-bbm-fact="true">
+        {/* The mark and the number each in their own box: no bare text beside an element in a flex row. */}
+        <span className={styles.firstLine}>
+          {enter && <img className={styles.enterMark} style={{ maskImage: `url(${enterMark})` }} alt="" aria-hidden="true" />}
+          <span className={classNames(styles.first, numbers.locked && styles.milestone)}>{numbers.first}</span>
+        </span>
+        {numbers.second !== null && <span className={styles.second}>{numbers.second}</span>}
+      </div>
+    </>
+  );
 
   return (
     <BuildingHoverCard entry={entry} context={hoverCard}>
       <Button
-        className={classNames(styles.plate, grid.form !== "plate2" && styles.largeText, armed && styles.armed, locked && styles.locked, built && styles.built)}
+        className={classNames(styles.plate, (grid.form === "plate1" || grid.form === "plateWhole") && styles.largeText, big && styles.big, armed && styles.armed, locked && styles.locked, built && styles.built)}
         // Inline, over the game's Button and its own square: the slot is the plate's place and size.
         style={{ left: `${left}rem`, top: `${top}rem`, width: `${grid.cellWidth}rem`, height: `${grid.cellHeight}rem` }}
         variant="flat"
@@ -69,29 +88,20 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
       >
         {/* The picture and its mark share a box, so the game's unique and already-built marks sit on the
             building, as 0.2.x's list drew them. */}
-        <span className={styles.artwork}>
+        <span className={styles.artwork} style={picture}>
           <img
             className={styles.picture}
             src={lockedThumbnail(entry, locked || built)}
             onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+            style={picture}
             alt=""
             aria-hidden="true"
             data-bbm-pic="true"
           />
           <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
         </span>
-        {/* Plain text, no spans: Cohtml drops the space after an inline element, and never breaks at a hyphen. */}
-        <p className={classNames(styles.name, grid.nameLines === 1 && styles.oneLine)} data-bbm-name={name.length} {...{ cohinline: "" }}>
-          {name}
-        </p>
-        <div className={styles.numbers} data-bbm-fact="true">
-          {/* The mark and the number each in their own box: no bare text beside an element in a flex row. */}
-          <span className={styles.firstLine}>
-            {enter && <img className={styles.enterMark} style={{ maskImage: `url(${enterMark})` }} alt="" aria-hidden="true" />}
-            <span className={classNames(styles.first, numbers.locked && styles.milestone)}>{numbers.first}</span>
-          </span>
-          {numbers.second !== null && <span className={styles.second}>{numbers.second}</span>}
-        </div>
+        {/* A big plate stacks its name over its numbers beside the picture; the others line all three up. */}
+        {big ? <span className={styles.bigWords}>{words}</span> : words}
       </Button>
     </BuildingHoverCard>
   );

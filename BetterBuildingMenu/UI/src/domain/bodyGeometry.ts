@@ -6,10 +6,13 @@
  */
 
 import { BODY_SIDE_MARGIN } from "./assetMenuLayout";
-import { LAYOUT_HEIGHT } from "./sharedContracts.generated";
+import { LAYOUT_HEIGHT, WIDTH_STEP_VANILLA } from "./sharedContracts.generated";
 
-/** The list's three forms: two-line plates at 100% text; above it one-line plates, or two-line ones whole. */
-export type ListForm = "plate2" | "plate1" | "plateWhole";
+/**
+ * The list's forms: two-line plates at 100% text; above it one-line plates, or two-line ones whole; and
+ * a small menu's big plates, which have room for a large picture, the name above the numbers.
+ */
+export type ListForm = "plate2" | "plate1" | "plateWhole" | "big";
 
 /** Between two slots, across and down. */
 export const SLOT_GAP = 2;
@@ -29,6 +32,17 @@ export const PLATE_WHOLE_HEIGHT = 34.56;
 /** The Tiles view's name line needs this much room under the tiles, or it drops. */
 export const TILE_NAME_LINE_MIN = 14;
 
+/** A big plate's picture at its largest; a shorter plate's is its height less 4. */
+const BIG_PICTURE_MAX = 66;
+
+/**
+ * A list plate's name line and number line at 100% text (listBody.module.scss), and the room a big
+ * plate keeps besides two of each.
+ */
+const NAME_PITCH = 12.5;
+const NUMBER_PITCH = 12;
+const BIG_SPARE = 10;
+
 export interface BodyGrid {
   /** The list's form, or the tiles. */
   form: ListForm | "tile";
@@ -46,6 +60,11 @@ export interface BodyGrid {
   nameLines: number;
   /** Under the tiles, the room left for the line naming the armed or pointed tile; 0 in the list. */
   nameLine: number;
+  /**
+   * The picture's side: the big form's, as tall as the plate allows; the tiles' own; 0 in the other
+   * list forms, whose stylesheet sets it.
+   */
+  picture: number;
 }
 
 export interface BodyGridInput {
@@ -65,6 +84,10 @@ export interface BodyGridInput {
   plateHeight: number;
   /** The Name lines knob: 0 the form's own, else 1 or 2. */
   nameLines: number;
+  /** The open menu's whole row count, which a small menu's list grows from; 0 or absent while uncounted. */
+  menuRows?: number;
+  /** The Small menus grow knob; absent is off. */
+  smallMenusGrow?: boolean;
 }
 
 /** The list's form: the two-line plate at 100% text; above it, At large text's choice. */
@@ -114,29 +137,64 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
       y0: 0,
       nameLines: 1,
       nameLine: Math.max(0, height - (lines * pitch - SLOT_GAP)),
+      picture: side - 4,
     };
   }
 
   const form = listForm(input.textScale, input.atLargeText);
-  const cellHeight = form === "plate2" ? input.plateHeight : form === "plate1" ? PLATE1_HEIGHT : PLATE_WHOLE_HEIGHT;
-  const cols = across(room, form === "plate2" ? PLATE_MIN_WIDTH : LARGE_PLATE_MIN_WIDTH);
+  const least = form === "plate2" ? PLATE_MIN_WIDTH : LARGE_PLATE_MIN_WIDTH;
+  const cols = across(room, least);
   const cellWidth = (room - (cols - 1) * SLOT_GAP) / cols;
-  const pitchY = cellHeight + SLOT_GAP;
-  const ownLines = form === "plate1" ? 1 : 2;
+  const plateHeight = form === "plate2" ? input.plateHeight : form === "plate1" ? PLATE1_HEIGHT : PLATE_WHOLE_HEIGHT;
+  const lines = wholeLines(height, plateHeight + SLOT_GAP, SLOT_GAP, input.pixelRem);
+  const grown = grownLines(input, lines, across(WIDTH_STEP_VANILLA - 2 * BODY_SIDE_MARGIN, least));
+  // Grown lines share the body less a device pixel: the scroller reads its height in whole pixels, up
+  // to one short, and lines that filled it exactly would scroll by that sliver.
+  const cellHeight = grown === null ? plateHeight : (height - (input.pixelRem ?? 0) - (grown - 1) * SLOT_GAP) / grown;
+  const big = grown !== null && cellHeight >= bigPlateMin(input.textScale);
+  // A grown plate tall enough for two name lines takes them, whatever its form's own.
+  const ownLines = form === "plate1" && !(grown !== null && cellHeight >= twoNameLines(input.textScale)) ? 1 : 2;
 
   return {
-    form,
+    form: big ? "big" : form,
     cols,
-    lines: wholeLines(height, pitchY, SLOT_GAP, input.pixelRem),
+    lines: grown ?? lines,
     cellWidth,
     cellHeight,
     pitchX: cellWidth + SLOT_GAP,
-    pitchY,
+    pitchY: cellHeight + SLOT_GAP,
     x0: 0,
     y0: 0,
-    nameLines: input.nameLines === 1 || input.nameLines === 2 ? input.nameLines : ownLines,
+    nameLines: input.nameLines === 1 || input.nameLines === 2 ? input.nameLines : big ? 2 : ownLines,
     nameLine: 0,
+    picture: big ? Math.min(BIG_PICTURE_MAX, cellHeight - 4) : 0,
   };
+}
+
+/**
+ * The lines a small menu's list grows to: as many as its rows fill at the first Width step's columns,
+ * two at least, where they leave a line of the form's own to spare; null for a menu that does not grow.
+ * Fixed per menu, from its whole row count at a text scale, so no tab, filter or Width step resizes its
+ * plates: a wider step adds columns, never taller plates.
+ */
+function grownLines(input: BodyGridInput, lines: number, firstCols: number): number | null {
+  const rows = input.menuRows ?? 0;
+
+  if (input.smallMenusGrow !== true || rows <= 0 || rows > firstCols * (lines - 1)) {
+    return null;
+  }
+
+  return Math.max(2, Math.ceil(rows / firstCols));
+}
+
+/** The shortest plate the big form fits: two name lines, two number lines and room to spare. */
+function bigPlateMin(textScale: number): number {
+  return 2 * (NAME_PITCH + NUMBER_PITCH) * textScale + BIG_SPARE;
+}
+
+/** The shortest plate two name lines fit, with the plate's padding: a grown one-line plate's room. */
+function twoNameLines(textScale: number): number {
+  return 2 * NAME_PITCH * textScale + BIG_SPARE;
 }
 
 /** How many buildings one screen of the body shows. */

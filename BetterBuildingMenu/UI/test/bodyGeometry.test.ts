@@ -4,6 +4,7 @@ import { bodyGrid, deviceRem, listForm, screenSlots, slotPosition, slotsHeight, 
 import { CATALOG_WINDOW_SCROLL_THRESHOLD, CATALOG_WINDOW_STEP, shouldLoadMore } from "../src/domain/catalogWindow";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { REFERENCE_ASPECT, widthStepWidths } from "../src/domain/widthSteps";
+import { declarationsOf } from "./harness/compiledCss";
 
 // The five 16:9 Width steps: 706, 893, 1091, 1280, 1475.
 const STEPS = widthStepWidths(REFERENCE_ASPECT);
@@ -196,3 +197,83 @@ describe("the shortest body", () => {
     }
   });
 });
+
+describe("a small menu's list", () => {
+  const grown = (over: Partial<BodyGridInput>) => bodyGrid(input({ smallMenusGrow: true, ...over }));
+
+  it("grows a menu of four lines' rows or fewer into the lines they fill: Water's 16 in 4 lines of 34.56", () => {
+    const grid = grown({ menuRows: 16 });
+
+    assert.equal(grid.form, "plate2");
+    assert.deepEqual([grid.cols, grid.lines, grid.cellHeight, grid.pitchY], [4, 4, 34.5625, 36.5625]);
+  });
+
+  it("draws a menu that fills two lines in the big form, its picture up to 66: Garbage's 7", () => {
+    const grid = grown({ menuRows: 7 });
+
+    assert.equal(grid.form, "big");
+    assert.deepEqual([grid.cols, grid.lines, grid.cellHeight, grid.picture], [4, 2, 71.125, 66]);
+    assert.equal(screenSlots(grid), 8);
+  });
+
+  it("keeps the lines a menu grew to at the first step and adds columns at the wider ones", () => {
+    const grid = grown({ menuRows: 7, boxWidth: STEPS[2] });
+
+    assert.deepEqual([grid.form, grid.cols, grid.lines, grid.cellHeight], ["big", 6, 2, 71.125]);
+    assert.deepEqual(STEPS.map((boxWidth) => grown({ menuRows: 16, boxWidth }).lines), [4, 4, 4, 4, 4]);
+  });
+
+  it("grows above 100% text from three columns of six lines: 15 or fewer", () => {
+    assert.equal(grown({ menuRows: 15, textScale: 1.3 }).lines, 5);
+    assert.equal(grown({ menuRows: 16, textScale: 1.3 }).lines, 6);
+  });
+
+  it("gives a grown one-line plate two name lines where it has room for them, unless the Name lines knob says one", () => {
+    // Garbage's 7 at 130%: three lines of 46.75, where two name lines need 32.5 and the plate's padding.
+    const garbage = grown({ menuRows: 7, textScale: 1.3 });
+
+    assert.deepEqual([garbage.form, garbage.lines, garbage.cellHeight, garbage.nameLines], ["plate1", 3, 46.75, 2]);
+    assert.equal(grown({ menuRows: 15, textScale: 1.3 }).nameLines, 1);
+    assert.equal(grown({ menuRows: 7, textScale: 1.3, nameLines: 1 }).nameLines, 1);
+  });
+
+  it("never grows a menu past the threshold, an uncounted one, the tiles, or with the knob off", () => {
+    assert.equal(grown({ menuRows: 17 }).lines, 5);
+    assert.equal(grown({ menuRows: 0 }).lines, 5);
+    assert.equal(grown({ menuRows: 7, body: "tiles" }).lines, 2);
+    assert.equal(grown({ menuRows: 7, body: "tiles" }).cellHeight, 64);
+    assert.equal(bodyGrid(input({ menuRows: 7, smallMenusGrow: false })).lines, 5);
+  });
+
+  it("leaves a device pixel under its lines, so a body the scroller reads in whole pixels holds them with no scroll", () => {
+    // The game's own body, 144.25 rem, reads back as 144.0 at 1080p and at 720p alike.
+    for (const pixelRem of [deviceRem(1080), deviceRem(720)]) {
+      for (const menuRows of [7, 16]) {
+        const grid = grown({ menuRows, pixelRem });
+
+        assert.ok(slotsHeight(grid, menuRows) <= 144, `${menuRows} rows at ${pixelRem}: ${slotsHeight(grid, menuRows)}`);
+        assert.ok(slotsHeight(grid, menuRows) >= 144.25 - pixelRem - 1e-9, `${menuRows} rows at ${pixelRem}`);
+      }
+    }
+    const garbage = grown({ menuRows: 7, pixelRem: 1 });
+    assert.deepEqual([garbage.form, garbage.picture], ["big", 66]);
+  });
+
+  it("draws the big form from two of the stylesheet's name lines and number lines and 10 rem to spare", () => {
+    // Two lines of plates as tall as the big form's floor, and a sixteenth short of it.
+    const floor = 2 * (scaled(".name", "line-height") + scaled(".numbers", "line-height")) + 10;
+    const at = (cellHeight: number) => grown({ menuRows: 7, bodyHeight: 2 * cellHeight + 2 }).form;
+
+    assert.equal(floor, 59);
+    assert.equal(at(floor), "big");
+    assert.equal(at(floor - 0.0625), "plate2");
+  });
+});
+
+/** A list length the stylesheet scales with the game's text, as calc(N rem * var(--fontScale)), at 100%. */
+function scaled(selector: string, prop: string): number {
+  const value = declarationsOf("mods/Bodies/listBody.module.scss", selector)[prop];
+  const factor = /^calc\((\d*\.?\d+)rem \* var\(--fontScale\)\)$/.exec(value ?? "");
+  assert.ok(factor, `${selector} ${prop} is ${value}`);
+  return Number(factor[1]);
+}

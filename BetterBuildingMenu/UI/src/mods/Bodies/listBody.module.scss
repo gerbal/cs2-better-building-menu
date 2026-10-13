@@ -59,6 +59,35 @@
   }
 }
 
+// A small menu's big plate: the picture as tall as the plate allows, sized inline, its mark a share of it,
+// and beside it the name at the top and the numbers at the foot.
+.big {
+  gap: 6rem;
+  padding: 0 6rem 0 2rem;
+
+  .artwork {
+    flex: 0 0 auto;
+
+    .mark {
+      @include _base.unique-mark(100%);
+    }
+  }
+
+  .numbers {
+    align-items: flex-start;
+  }
+}
+
+.bigWords {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4rem 0;
+}
+
 @include unique-mark-states(".plate");
 
 .name {

@@ -1,6 +1,6 @@
 import { useValue } from "cs2/api";
 
-import { autoBody, chooseBody, drawnBody, menuView, type BodyKind, type DrawnBody } from "domain/bodyChoice";
+import { autoBody, chooseBody, drawnBody, menuView, type BodyKind, type DrawnBody, type MenuShare } from "domain/bodyChoice";
 import { menuPickOf } from "domain/menuPicks";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenu$, AssetMenuDefaultView$, AssetMenuTuning$, AssetMenuViews$, CurrentSearch$, MenuShares$ } from "mods/bindings";
@@ -20,12 +20,19 @@ export interface MenuBody {
   drawn: DrawnBody;
 }
 
+/** The open menu, or "" for none, and its share: what C# counts over the whole menu, once it has. */
+export function useOpenMenuShare(): { menu: string; share: MenuShare | undefined } {
+  const menu = useValue(AssetMenu$);
+  const share = (useValue(MenuShares$) ?? []).find((candidate) => candidate.menu === menu);
+
+  return { menu, share };
+}
+
 /** One reading of the open menu's body, so the catalog, VIEW and the View control cannot disagree. */
 export function useMenuBody(): MenuBody {
-  const menu = useValue(AssetMenu$);
+  const { menu, share } = useOpenMenuShare();
   const pick = menuPickOf(useValue(AssetMenuViews$), menu);
   const defaultView = useValue(AssetMenuDefaultView$);
-  const share = (useValue(MenuShares$) ?? []).find((candidate) => candidate.menu === menu);
   const knobs = useValue(AssetMenuTuning$);
   const textScale = useTextScale();
   const { drawnStep } = useAssetMenuLayout();

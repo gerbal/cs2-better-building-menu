@@ -1060,6 +1060,17 @@ the lines are the body's height.
 - **The tiles:** Tile size square, ten across the game's own box from 16 rem in at 64, two lines: 20.
   13 / 16 / 19 / 22 across at the wider steps; 68 gives 9 × 2, and 72 one line of 9.
 
+**Small menus grow.** A menu whose whole row count (its share's rows) fits the first Width step's
+columns in one line fewer than the list shows grows its list: its plates take as many lines as its rows
+fill there, two at least, and share the body's height less a device pixel, so the scroller, which
+reads its height in whole pixels, finds nothing to scroll. A plate with room for two name lines, two
+number lines and 10 rem to spare (59 at 100% text) draws the big form: the picture as tall as the plate
+allows up to 66, the name over the numbers beside it. The growth is the menu's, counted once over the
+whole menu, so no tab or filter resizes its plates, and a wider step adds columns, never taller plates.
+Above 100% text the list's three columns of six lines grow 15 rows or fewer, and a grown one-line plate
+with room for two name lines takes them. The tiles and the cards do not grow. The Small menus grow knob
+turns it off, to compare.
+
 **The window holds a screen.** The UI tells C# how many buildings one screen of the drawn body holds
 (`SetCatalogScreen`); the cards say how many the packer puts in a screen's rows. The window reaches two
 screens past its first row where a screen holds more than half a step, a step otherwise

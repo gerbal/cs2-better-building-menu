@@ -219,6 +219,27 @@ describe("the list", () => {
     assert.equal(declarationsOf(LABELS, ".lockedLabel:hover")["background-color"], "var(--bbm-plateHover)");
   });
 
+  it("draws a small menu's big plates with the picture as tall as the plate allows, the name over the numbers", () => {
+    const html = render(rows(7), { over: { menuRows: 7, smallMenusGrow: true } });
+
+    assert.match(html, /class="plate big" style="left:0rem;top:0rem;width:171rem;height:71\.125rem"/);
+    assert.match(html, /<span class="artwork" style="width:66rem;height:66rem"><img class="picture" src="" style="width:66rem;height:66rem"/);
+    assert.match(html, /<span class="bigWords"><p class="name" data-bbm-name="10" cohinline="">Building 1<\/p><div class="numbers" data-bbm-fact="true">/);
+    assert.match(render(rows(1)), /<span class="artwork"><img class="picture" src="" alt=""/);
+  });
+
+  it("gives the big form both numbers and Enter's mark, and a grown one-line plate one number on two name lines", () => {
+    const facts = () => ({ constructionCost: 85000, capacity: 400 });
+    const big = render(rows(7, facts), { enterId: 2, over: { menuRows: 7, smallMenusGrow: true } });
+    const oneLine = render(rows(7, facts), { over: { menuRows: 7, smallMenusGrow: true, textScale: 1.3 } });
+
+    assert.equal(count(big, /class="second"/), 7);
+    assert.match(big, /data-catalog-entry="2"[\s\S]*?<img class="enterMark"[^>]*><span class="first">¢/);
+    assert.equal(count(oneLine, /class="second"/), 0);
+    assert.equal(count(oneLine, /class="name oneLine"/), 0);
+    assert.match(oneLine, /class="plate largeText" style="[^"]*height:46\.75rem"/);
+  });
+
   it("gives a label the whole line under the Block labels knob's own line, the buildings starting the next", () => {
     setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, blockLabels: "ownLine" });
     const html = render(rows(2), { sections: [group(0, "Small Roads", 1), group(1, "Medium Roads", 1)] });
