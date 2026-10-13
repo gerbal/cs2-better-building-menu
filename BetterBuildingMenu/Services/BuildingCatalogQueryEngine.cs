@@ -113,9 +113,12 @@ namespace BetterBuildingMenu.Services
 			var anchorIndex = query.AnchorId > 0 ? Array.FindIndex(visible, entry => entry.Id == query.AnchorId) : -1;
 			var limit = query.CoveringAnchor(anchorIndex).EffectiveLimit;
 			var offset = ClampOffset(query.EffectiveOffset, visible.Length, limit);
+			// Each row's distinguishing word, against every look-alike in the result, not the window's alone.
+			var distinct = DistinctWords.Of(matching);
 			var items = visible
 				.Skip(offset)
 				.Take(limit)
+				.Select(entry => distinct.TryGetValue(entry.Id, out var word) ? entry with { DistinctWord = word } : entry)
 				.ToArray();
 			// Both halves, because the window has a ceiling as well as an end. At MaxLimit
 			// growing it is a guaranteed no-op, and a Load more button that stays lit and does

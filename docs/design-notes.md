@@ -1299,6 +1299,17 @@ filters, or a search's result, since the UI only ever sees a window of it:
   list is sorted by, whose order every row's value explains. Only C# counts the share, so moving Said
   once at in Options redraws the open menu at once.
 
+## Names
+
+**The distinguishing word.** Each row of a page carries the word that tells it apart from its nearest
+look-alike (`DistinctWords`, beside `DuplicateNameNumbering`, whose numbers it reads): the nearest is
+the row of the whole result that shares the most leading words with it, which in name order is a
+neighbour, and the row's word is the one after those. "Pedestrian" against Covered Bicycle Bridge; "2"
+for Four-Lane Road 2. A row with no look-alike, or that is all of what it shares, has none. Words match
+whatever their case and however many spaces part them. C# finds it over the whole result, as a
+look-alike past the window still decides which word a cut name keeps, and counts each run of leading
+words once in one pass over the rows' words, so a refresh sorts nothing more.
+
 ## The search field's keys
 
 The game masks its keyboard while a text field has focus, so while the search field has focus the

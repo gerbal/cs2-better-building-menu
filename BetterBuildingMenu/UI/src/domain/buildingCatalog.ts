@@ -120,6 +120,8 @@ export interface BuildingCatalogEntry {
   groupPath?: string[];
   /** The game's own id behind the outer heading, where there is one; "" otherwise. */
   groupLabelId?: string;
+  /** The word that tells this row apart from its nearest look-alike in the whole view; "" for none. */
+  distinctWord?: string;
 }
 
 /**
