@@ -55,6 +55,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["tWord", "head"], ["tState", "head"], ["tStateSet", "head"], ["tDim", "head"], ["tRead1", "head"], ["tRead2", "head"],
   ["tabCount", "head"], ["tabIcon", "head"], ["amber", "head"], ["tQuery", "fieldBg"],
   ["armText", "arm"], ["armNum", "arm"], ["pillText", "pillBg"], ["tagText", "tagBg"],
+  // Plates' name band on a look-alike tile.
+  ["pillText", "bandBg"],
   ["bodyChipText", "bodyChipBg"], ["bodyChipDim", "bodyChipBg"], ["bodyWord", "bodyChipBg"],
   ["bodyCtlText", "bodyCtl"], ["bodyCtlDim", "bodyCtl"], ["bodyLabel", "body"],
   ["bodyMilestone", "plateLocked"], ["bodyEntMark", "plate"],

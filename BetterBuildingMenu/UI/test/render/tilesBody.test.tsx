@@ -104,6 +104,23 @@ describe("the tiles", () => {
     assert.doesNotMatch(html, /lookAlike" [^>]*>Stone/);
   });
 
+  it("in Plates, name each look-alike on a band across its top and round the cost tag's ends", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    const zones = [
+      { name: "NA Pack", distinctWord: "Pack" },
+      { name: "NA Trailer Homes", distinctWord: "Trailer", isLocked: true },
+      { name: "Stone Terrace Rowhomes" },
+    ];
+    const html = render(rows(3, (id) => zones[id - 1] as Partial<BuildingCatalogEntry>), { tileSize: 100, tileNameLine: false });
+
+    assert.equal(count(html, /class="band"/), 2);
+    assert.match(html, /<span class="band" style="width:98rem" data-bbm-tag="true" data-bbm-band="true">NA Pack<\/span>/);
+    assert.match(html, /<span class="band" style="width:81rem" data-bbm-tag="true" data-bbm-band="true">[^<]*Trailer[^<]*<\/span>/);
+    assert.doesNotMatch(html, /class="lookAlike"/);
+    assert.match(html, /class="tag pill"/);
+    assert.doesNotMatch(html, /class="nameLine"/);
+  });
+
   it("keep a locked look-alike's tag clear of its lock glyph, measured in the room left beside it", () => {
     const html = render(rows(2, (id) => ({ name: id === 1 ? "NA Pack" : "NA Trailer Homes", distinctWord: id === 1 ? "Pack" : "Trailer", isLocked: id === 1 } as Partial<BuildingCatalogEntry>)));
 

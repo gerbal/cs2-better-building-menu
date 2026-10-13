@@ -6,8 +6,9 @@ import { bodyCells } from "domain/bodyCells";
 import type { BodyKind } from "domain/bodyChoice";
 import { bodyGrid, deviceRem, sameGrid, type BodyGrid, type BodyGridInput } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
+import { lookOf } from "domain/looks";
 import { useTextScale } from "domain/textScaleSetting";
-import { AssetMenuAtLargeText$, AssetMenuHeight$, AssetMenuTileSize$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
+import { AssetMenuAtLargeText$, AssetMenuHeight$, AssetMenuLook$, AssetMenuTileSize$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useOpenMenuShare } from "mods/useMenuBody";
 import { useBlockLabels } from "mods/Bodies/useBodyCells";
@@ -42,12 +43,14 @@ export function useBodyGrid(
   // The open menu's whole row count, fixed per menu, so no tab or filter resizes a small menu's plates.
   const menuRows = useOpenMenuShare().share?.rows ?? 0;
   const blockLabels = useBlockLabels();
+  // The look's tiles: Standard's keep a name line under them, Plates' sit centred in the body.
+  const tileNameLine = lookOf(useValue(AssetMenuLook$)).tileNameLine;
 
   const input = useMemo<BodyGridInput | null>(
     () => (body === "cards"
       ? null
-      : { body, boxWidth: menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow }),
-    [body, menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow]
+      : { body, boxWidth: menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow, tileNameLine }),
+    [body, menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow, tileNameLine]
   );
   const plain = useMemo(() => (input === null ? null : bodyGrid(input)), [input]);
   // The columns never depend on the growth, so the slots counted at them hold for the grown grid; a

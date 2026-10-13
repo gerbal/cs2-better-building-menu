@@ -137,6 +137,15 @@ describe("the tiles", () => {
     assert.deepEqual(STEPS.map((boxWidth) => shown({ body: "tiles", boxWidth }, 62)), [20, 26, 32, 38, 44]);
   });
 
+  it("centre the tiles in the body where no name line goes under them, as Plates draws them: 20 a screen still", () => {
+    const plain = bodyGrid(input({ body: "tiles", tileNameLine: false }));
+
+    assert.equal(plain.cols * plain.lines, 20);
+    assert.equal(plain.y0, (144.25 - (2 * 66 - 2)) / 2);
+    assert.equal(plain.nameLine, 0);
+    assert.equal(bodyGrid(input({ body: "tiles" })).y0, 0);
+  });
+
   it("follow Tile size: 68 gives 9 × 2, 72 one line of 9", () => {
     assert.equal(shown({ body: "tiles", tileSize: 68 }, 99), 18);
     assert.equal(shown({ body: "tiles", tileSize: 72 }, 99), 9);

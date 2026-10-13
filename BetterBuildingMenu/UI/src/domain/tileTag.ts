@@ -15,9 +15,9 @@ import { NOTHING_SAID } from "./saidOnce";
 import { sortedMetricValue } from "./sortedMetric";
 import { textWidth } from "./textWidth";
 
-/** The tag's font at 100% text, and its padding both sides together: tilesBody.module.scss's `.tag`. */
-const TAG_FONT = 10;
-const TAG_PADDING = 6;
+/** The tag's font at 100% text, and its padding both sides together: tilesBody.module.scss's `.tag`, and Plates' `.band`. */
+export const TAG_FONT = 10;
+export const TAG_PADDING = 6;
 
 /** The tag's left edge, inset from the tile's as the picture is. */
 const TAG_LEFT = 2;

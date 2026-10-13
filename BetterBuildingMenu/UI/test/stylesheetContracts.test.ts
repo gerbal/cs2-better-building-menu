@@ -6,7 +6,8 @@ import { LARGE_PICTURE } from "../src/domain/bodyGeometry.ts";
 import { cardGeometry } from "../src/domain/cardsLayout.ts";
 import { SLOT_MAX_HEIGHT, SLOT_PADDING, SLOT_ROOM, SLOT_WIDTH } from "../src/domain/hoverCardPlace.ts";
 import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
-import { tagRoom } from "../src/domain/tileTag.ts";
+import { bandWidth } from "../src/domain/lookAlikeTags.ts";
+import { TAG_FONT, TAG_PADDING, tagRoom } from "../src/domain/tileTag.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
 /**
@@ -567,8 +568,8 @@ describe("a tile's tag and name line are the sizes the UI budgets them at", () =
   it("draws the tag in the font and padding tileTag.ts measures it by, clipped where it still runs over", () => {
     const tag = declarationsOf(TILES, ".tag");
 
-    assert.equal(tag["font-size"], "calc(10rem * var(--fontScale))");
-    assert.equal(tag.padding, "0 3rem");
+    assert.equal(tag["font-size"], `calc(${TAG_FONT}rem * var(--fontScale))`);
+    assert.equal(tag.padding, `0 ${TAG_PADDING / 2}rem`);
     assert.equal(tag.left, "2rem");
     assert.equal(tag["box-sizing"], "border-box");
     assert.equal(tag.overflow, "hidden");
@@ -587,6 +588,23 @@ describe("a tile's tag and name line are the sizes the UI budgets them at", () =
     assert.equal(lookAlike.bottom, undefined);
     // The tag's right edge, its left plus its room, meets the glyph's left edge and never passes it.
     assert.equal(rem(tag.left) + tagRoom(64, true), 64 - rem(lock.right) - rem(lock.width));
+  });
+
+  it("draws Plates' band in the tag's font and padding from the picture's inset across the tag's room, and its cost tag where the tag sits", () => {
+    const tag = declarationsOf(TILES, ".tag");
+    const band = declarationsOf(TILES, ".band");
+    const pill = declarationsOf(TILES, ".tag.pill");
+
+    for (const property of ["font-size", "padding", "left", "box-sizing", "height", "line-height", "overflow", "white-space"]) {
+      assert.equal(band[property], tag[property], property);
+    }
+    assert.equal(band.top, "2rem");
+    assert.equal(band["background-color"], "var(--bbm-bandBg)");
+    assert.equal(band.color, "var(--bbm-pillText)");
+    // Its room is the tag's, which its text is measured in: it runs to the tile's edge as a tag may.
+    assert.equal(rem(band.left) + bandWidth(64, false), 64);
+    // The pill keeps the tag's place and room: only its ends round.
+    assert.deepEqual(Object.keys(pill).filter((property) => !property.endsWith("-radius")), []);
   });
 
   it("draws the name line's name in the font TilesBody budgets its characters by", () => {

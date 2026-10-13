@@ -123,6 +123,8 @@ export interface BodyGridInput {
   drawnSlots?: number;
   /** The Small menus grow knob; absent is off. */
   smallMenusGrow?: boolean;
+  /** Whether the look keeps a name line under the tiles: Standard does, Plates centres its tiles instead. Absent is so. */
+  tileNameLine?: boolean;
 }
 
 /** The list's form: the two-line plate at 100% text; above it, At large text's choice. */
@@ -188,6 +190,9 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
     const pitch = side + SLOT_GAP;
     const cols = across(room, side);
     const lines = wholeLines(height, pitch, SLOT_GAP, input.pixelRem);
+    // What the lines leave under them: the name line's, or in a look without one, shared above and below.
+    const spare = Math.max(0, height - (lines * pitch - SLOT_GAP));
+    const nameLine = input.tileNameLine ?? true;
 
     return {
       form: "tile",
@@ -198,9 +203,9 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
       pitchX: pitch,
       pitchY: pitch,
       x0: (room - (cols * pitch - SLOT_GAP)) / 2,
-      y0: 0,
+      y0: nameLine ? 0 : spare / 2,
       nameLines: 1,
-      nameLine: Math.max(0, height - (lines * pitch - SLOT_GAP)),
+      nameLine: nameLine ? spare : 0,
       picture: side - 4,
       firstCols: across(FIRST_STEP_ROOM, side),
     };

@@ -106,6 +106,34 @@
   top: 2rem;
 }
 
+// Plates' cost tag: the tag's place and room, its ends round.
+.tag.pill {
+  border-top-left-radius: 6.5rem;
+  border-top-right-radius: 6.5rem;
+  border-bottom-left-radius: 6.5rem;
+  border-bottom-right-radius: 6.5rem;
+}
+
+// Plates' name band on a look-alike: across the tile's top from the picture's inset, its width inline,
+// the tag's room, in the tag's type; its name cut to fit by lookAlikeTags.ts, never by CSS, or where no
+// cut fits, its tag. See docs/design-notes.md, "The looks".
+.band {
+  position: absolute;
+  left: 2rem;
+  top: 2rem;
+  box-sizing: border-box;
+  height: 13rem;
+  padding: 0 3rem;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: 13rem;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top-left-radius: 4rem;
+  border-top-right-radius: 4rem;
+  background-color: var(--bbm-bandBg);
+  color: var(--bbm-pillText);
+}
+
 // The tag stays dark under every interface style, so the look's own amber reads on it.
 .milestone {
   color: var(--bbm-amber);

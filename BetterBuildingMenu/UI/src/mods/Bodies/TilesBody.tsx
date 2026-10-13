@@ -11,13 +11,14 @@ import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { lookAlikeKey, lookAlikeTags } from "domain/lookAlikeTags";
+import { bandWidth, lookAlikeKey, lookAlikeTags, tileBands } from "domain/lookAlikeTags";
+import { lookOf } from "domain/looks";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { tileFacts } from "domain/tileNameLine";
 import { tagRoom, tileTag } from "domain/tileTag";
 import { useTextScale } from "domain/textScaleSetting";
-import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
+import { ActivePrefabId$, AssetMenuLook$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { clearPointed } from "domain/assetMenuViewStore";
 import { pointAt, type CellEnter } from "mods/HoverCard/pointing";
@@ -45,6 +46,8 @@ interface TileProps {
   said: readonly SharedValue[];
   /** What tells this tile apart from the look-alikes drawn with it; null where none is drawn. */
   lookAlike: string | null;
+  /** Plates' tile: the look-alike's name on a band across its top, and the cost tag's ends round. */
+  plated: boolean;
   textScale: number;
   separators: NumberSeparators;
   stateWords: StateWords;
@@ -55,10 +58,11 @@ interface TileProps {
 /**
  * One building as a picture tile, with a tag at its foot: its cost, or why a locked one waits, or under
  * a sort by a value that value; and where a look-alike is drawn with it, a tag at its top saying what
- * tells it apart. Its name is the line's under the tiles. The live check and the render tests count what
- * a body shows through the data-bbm markers.
+ * tells it apart, in Plates a band naming it, where the cost tag's ends round. Its name is the line's
+ * under the tiles. The live check and the render tests count what a body shows through the data-bbm
+ * markers.
  */
-const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, lookAlike, textScale, separators, stateWords, achievedMilestone, onPlace }: TileProps) {
+const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, lookAlike, plated, textScale, separators, stateWords, achievedMilestone, onPlace }: TileProps) {
   const name = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
@@ -103,15 +107,21 @@ const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, 
       </span>
       {/* A raster, because a masked vector is what this engine cannot draw. */}
       {locked && <img className={styles.lockGlyph} src="coui://betterbuildingmenu/LockRaster.png" alt="" aria-hidden="true" />}
-      {lookAlike !== null && (
+      {lookAlike !== null && (plated ? (
+        // Across the top, sized inline as Tile size sizes the tile, short of a locked tile's lock glyph; its
+        // name already cut to fit it.
+        <span className={styles.band} style={{ width: `${bandWidth(grid.cellWidth, locked)}rem` }} data-bbm-tag="true" data-bbm-band="true">
+          {lookAlike}
+        </span>
+      ) : (
         // Bounded inline, on a locked tile short of its lock glyph, which it never covers.
         <span className={styles.lookAlike} style={{ maxWidth: `${tagRoom(grid.cellWidth, locked)}rem` }} data-bbm-tag="true">
           {lookAlike}
         </span>
-      )}
+      ))}
       {tag.text !== "" && (
         // Bounded inline, as Tile size sizes the tile: a figure the tag cannot hold is said short, a word cut with "…".
-        <span className={classNames(styles.tag, tag.locked && styles.milestone)} style={{ maxWidth: `${tagRoom(grid.cellWidth)}rem` }} data-bbm-fact="true">
+        <span className={classNames(styles.tag, plated && styles.pill, tag.locked && styles.milestone)} style={{ maxWidth: `${tagRoom(grid.cellWidth)}rem` }} data-bbm-fact="true">
           {tag.text}
         </span>
       )}
@@ -149,7 +159,8 @@ export interface TilesBodyProps {
  * The tiles: each building a picture tile, placed from its slot index, with the label plates over its
  * groups and its locked rows in tiles of their own; then under the tiles a line naming the tile pointed
  * at, else the armed one, with the numbers a tile does not show. The line drops where too little room is
- * left under the tiles, and by the Tile name line knob. See docs/design-notes.md, "The bodies".
+ * left under the tiles, by the Tile name line knob, and in Plates, whose tiles sit centred instead. See
+ * docs/design-notes.md, "The bodies" and "The looks".
  */
 export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_SECTIONS, offset = 0, onPlace, footer }: TilesBodyProps) {
   const separators = useNumberSeparators();
@@ -161,6 +172,12 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
   const said = useAssetMenuView((view) => view.said);
   const lookAlikes = useLookAlikeTags(entries, grid.cellWidth, textScale);
+  // Plates names each look-alike on a band, its tag where no band of its own fits or reads apart.
+  const plated = lookOf(useValue(AssetMenuLook$)).tileLabel === "band";
+  const bands = useMemo(
+    () => (plated ? tileBands(entries, lookAlikes, grid.cellWidth, textScale) : lookAlikes),
+    [plated, entries, lookAlikes, grid.cellWidth, textScale]
+  );
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
   // By id, so a tile that leaves the page under the pointer names nothing.
@@ -189,7 +206,8 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
                 armed={armedId !== 0 && cell.entry.id === armedId}
                 sortedMetric={sortedMetric}
                 said={said}
-                lookAlike={lookAlikes.get(cell.entry.id) ?? null}
+                lookAlike={bands.get(cell.entry.id) ?? null}
+                plated={plated}
                 textScale={textScale}
                 separators={separators}
                 stateWords={stateWords}

@@ -347,6 +347,22 @@ recommends; a change to Standard reaches everyone who never picked another. VIEW
 on the player's own city; only one of Look's and Width's lists shows beside it at a time. No migration
 moves the setting: every player starts on Standard.
 
+What a look draws apart from its tokens is one entry in `LOOKS`, read by BBM's own components: its
+panels' alphas, how its key numbers mark their unit (see "Numbers said once"), and its tiles.
+Standard's tiles tag a look-alike at its top and name the pointed or armed tile on a line under them.
+Plates' tiles sit centred in the body with no line under them (`tileNameLine`), and name a look-alike
+on a band across its top (`tileBands`): the name whole, or cut once between whole words with its
+distinguishing word kept, else, where no such cut fits, where the cut could be another loaded tile's
+name, or where it reads as another band or tag, the tile's tag, which is unique on the screen. The
+band's room is the tag's (`bandWidth`, from the picture's inset to the tile's edge, on a locked tile to
+its lock glyph), and its text is measured as the tag's, in the wider of the game's two fonts, so the tag
+it falls back to always fits it and no band is clipped: a clipped "#02" reads as "#0", another tile's
+number. A band spans its tile, so on a look-alike unique or built tile it covers the top of the game's
+mark, where a tag, only as wide as its text, does not. Each tile's band is worked out once for its
+name, room and lock, and checked only against the loaded names that open and close as its cut does, so
+a push of the same tiles costs a lookup each. Its cost tag keeps the tag's place and room and rounds
+its ends.
+
 ## The looks' tokens
 
 A look is one class of `--bbm-*` custom properties on the build menu's root (`looks/looks.module.scss`,

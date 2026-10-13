@@ -25,6 +25,10 @@ export interface Look {
   alphas: Readonly<Record<Surface, number>>;
   /** How its key numbers say their unit: Standard by a glyph, Plates in words ("80 km/h"). */
   units: UnitMode;
+  /** How a look-alike tile says what tells it apart: Standard by a tag at its top, Plates by its name on a band across it. */
+  tileLabel: "tag" | "band";
+  /** Whether a line under the tiles names the pointed or armed one: Standard's; Plates centres its tiles instead. */
+  tileNameLine: boolean;
 }
 
 /** A look not yet finished: named so the settings keep its id, never drawn. */
@@ -35,9 +39,9 @@ export interface UnfinishedLook {
 
 /** Every look the settings name, in the Look row's order; a look joins the row once its checks pass. C# keeps the same. */
 export const LOOKS: readonly (Look | UnfinishedLook)[] = [
-  { id: "standard", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookStandard]", name: "Standard", alphas: STANDARD_SURFACE_ALPHAS, units: "glyph" },
+  { id: "standard", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookStandard]", name: "Standard", alphas: STANDARD_SURFACE_ALPHAS, units: "glyph", tileLabel: "tag", tileNameLine: true },
   { id: "glass", released: false },
-  { id: "plates", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookPlates]", name: "Plates", alphas: STANDARD_SURFACE_ALPHAS, units: "word" },
+  { id: "plates", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookPlates]", name: "Plates", alphas: STANDARD_SURFACE_ALPHAS, units: "word", tileLabel: "band", tileNameLine: false },
   { id: "line", released: false },
   { id: "cards", released: false },
 ];
