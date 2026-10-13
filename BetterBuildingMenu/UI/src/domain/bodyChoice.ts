@@ -22,6 +22,8 @@ export interface MenuShare {
   costOrCapacity: number;
   capacity: number;
   locked: number;
+  /** The rows under each label the menu's All draws, in order; none where it draws no label. */
+  groupRows?: number[];
 }
 
 /** The developer knobs the Auto rule reads, as AssetMenuTuning carries them; a missing one is its shipped value. */

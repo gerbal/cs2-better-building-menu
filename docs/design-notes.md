@@ -1327,13 +1327,16 @@ building armed from another menu.
 armed building where the menu holds it, as the open rule anchors it on a tab: a menu whose view is
 Cards, by its own VIEW pick or by Default view, its cards under their tabs' labels; and a small menu,
 whose rows all fit one screen of its body at 100% text, the first Width step and the game's own body
-height (`menusOpeningOnAll`), so neither the text scale, the Width nor a drag changes which tab it
-opens on. Which body a menu draws is the UI's rule, so the UI names the small menus
-(`SetMenusOpeningOnAll`, one name a line), from the menu watcher, which is mounted before any menu
-opens; it names only the menus C# has counted, so a small menu opens on its tab the first time a
-session opens it, and on All from then on; the watcher tells C# the set again whenever it changes and
-when it mounts again, as C# keeps the last set it was told. A menu in the Cards from width knob's cards
-opens on All only where it is small: the rule reads the stored picks, not the knob.
+height (`menusOpeningOnAll`), so neither the text scale, the Width nor a drag changes which tab it opens
+on. The rows and All's labels must fit together: C# counts the rows under each label All draws in the
+menu's own grouping with its share (`MenuShare.GroupRows`), and the set places them as the open body
+would (`bodyCells`), so a menu of two tabs that would scroll on All by its labels opens on its tab.
+Which body a menu draws is the UI's rule, so the UI names the small menus (`SetMenusOpeningOnAll`, one
+name a line), from the menu watcher, which is mounted before any menu opens; it names only the menus C#
+has counted, so a small menu opens on its tab the first time a session opens it, and on All from then
+on; the watcher tells C# the set again whenever it changes and when it mounts again, as C# keeps the
+last set it was told. A menu in the Cards from width knob's cards opens on All only where it is small:
+the rule reads the stored picks, not the knob.
 
 **This changes 0.2.x:** 0.2.4 opened every menu on All; a menu now opens on its tab, but a menu in Cards
 opens on All, as an upgrader in Cards had it, and so does a small menu.

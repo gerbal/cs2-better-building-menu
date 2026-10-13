@@ -14,6 +14,9 @@ export const NO_SECTIONS: readonly CatalogSection[] = [];
 /** A label's place: one slot in line, as it ships, or a line of its own. */
 export type BlockLabels = "inline" | "ownLine";
 
+/** The Block labels knob: a value outside its list reads as shipped, as C# reads it. */
+export const blockLabelsOf = (knob: string | undefined): BlockLabels => (knob === "ownLine" ? "ownLine" : "inline");
+
 /** A body's next thing to place: a section's label, or a building with its place in the window. */
 export type BodyEntry =
   | { kind: "label"; section: CatalogSection }

@@ -15,18 +15,18 @@ namespace BetterBuildingMenu.Domain
 		public MenuShare[] Shares => _shares.ToArray();
 
 		/// <summary>
-		/// Counts the menu's share from its rows unless it was counted on this generation; true when it
-		/// counted. The rows are read only when it counts, and a throw while reading them leaves the
-		/// ledger as it was, so the next call counts again.
+		/// Counts the menu's share from its rows, and its All's labels where given them, unless it was
+		/// counted on this generation; true when it counted. Both are read only when it counts, and a throw
+		/// while reading them leaves the ledger as it was, so the next call counts again.
 		/// </summary>
-		public bool Count(string menu, int generation, Func<IEnumerable<BuildingCatalogEntry>> rows)
+		public bool Count(string menu, int generation, Func<IEnumerable<BuildingCatalogEntry>> rows, Func<IEnumerable<CatalogSection>>? allSections = null)
 		{
 			if (menu.Length == 0 || (_countedOn.TryGetValue(menu, out var counted) && counted == generation))
 			{
 				return false;
 			}
 
-			var share = MenuShare.Of(menu, rows());
+			var share = MenuShare.Of(menu, rows(), allSections?.Invoke());
 			var at = _shares.FindIndex(kept => string.Equals(kept.Menu, menu, StringComparison.Ordinal));
 
 			if (at >= 0)

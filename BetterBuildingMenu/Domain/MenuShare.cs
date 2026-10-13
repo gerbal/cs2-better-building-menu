@@ -7,11 +7,15 @@ namespace BetterBuildingMenu.Domain
 	/// a capacity, or a lock. Over the whole menu, no filter or search or tab, so a filter never
 	/// changes a menu's body.
 	/// </summary>
+	/// <param name="GroupRows">
+	/// The rows under each label the menu's All draws in its own grouping, in order; empty where All draws
+	/// none. A small menu opens on All, so its labels count toward the screen it must fit.
+	/// </param>
 	/// <remarks>See docs/design-notes.md, "The bodies".</remarks>
-	public sealed record MenuShare(string Menu, int Rows, int CostOrCapacity, int Capacity, int Locked) : IJsonWritable
+	public sealed record MenuShare(string Menu, int Rows, int CostOrCapacity, int Capacity, int Locked, int[]? GroupRows = null) : IJsonWritable
 	{
-		/// <summary>One menu's share, over its rows as the catalog lists it.</summary>
-		public static MenuShare Of(string menu, IEnumerable<BuildingCatalogEntry> rows)
+		/// <summary>One menu's share, over its rows as the catalog lists it, with the labels its All draws where given them.</summary>
+		public static MenuShare Of(string menu, IEnumerable<BuildingCatalogEntry> rows, IEnumerable<CatalogSection>? allSections = null)
 		{
 			int count = 0, costOrCapacity = 0, capacity = 0, locked = 0;
 
@@ -36,7 +40,9 @@ namespace BetterBuildingMenu.Domain
 				}
 			}
 
-			return new MenuShare(menu, count, costOrCapacity, capacity, locked);
+			var groupRows = allSections?.Where(section => section.Kind == CatalogSection.Group).Select(section => section.Count).ToArray();
+
+			return new MenuShare(menu, count, costOrCapacity, capacity, locked, groupRows);
 		}
 
 		public void Write(IJsonWriter writer)
@@ -52,6 +58,15 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(Capacity);
 			writer.PropertyName("locked");
 			writer.Write(Locked);
+			writer.PropertyName("groupRows");
+			var groupRows = GroupRows ?? Array.Empty<int>();
+			writer.ArrayBegin((uint)groupRows.Length);
+			foreach (var rows in groupRows)
+			{
+				writer.Write(rows);
+			}
+
+			writer.ArrayEnd();
 			writer.TypeEnd();
 		}
 	}

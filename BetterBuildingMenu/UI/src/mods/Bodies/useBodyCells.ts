@@ -1,14 +1,13 @@
 import { useValue } from "cs2/api";
 import { useMemo } from "react";
 
-import { bodyCells, type BlockLabels, type BodyCells, type NearField } from "domain/bodyCells";
+import { blockLabelsOf, bodyCells, type BlockLabels, type BodyCells, type NearField } from "domain/bodyCells";
 import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
 import { AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
 
-/** The Block labels knob: a value outside its list reads as shipped, as C# reads it. */
+/** The Block labels knob, as the bodies place labels by it. */
 export function useBlockLabels(): BlockLabels {
-  const knob = useValue(AssetMenuTuning$).blockLabels ?? SHIPPED_TUNING.blockLabels;
-  return knob === "ownLine" ? "ownLine" : "inline";
+  return blockLabelsOf(useValue(AssetMenuTuning$).blockLabels ?? SHIPPED_TUNING.blockLabels);
 }
 
 /**

@@ -1,5 +1,6 @@
 ﻿using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
+using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
 using System;
 using System.Linq;
@@ -147,7 +148,7 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <summary>What the look's Auto rule reads of the open menu, counted once per index generation; true when it counted.</summary>
+		/// <summary>What the look's Auto rule and the small menus read of the open menu, counted once per index generation; true when it counted.</summary>
 		/// <remarks>
 		/// Over the whole menu, with nothing of the toolbar's row, a filter or a search, so a filter never
 		/// changes a body; with the toolbar's row untouched that is this refresh's own snapshot, cached.
@@ -156,9 +157,13 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private bool PublishMenuShares(CatalogSource source)
 		{
+			// The menu's All in its own grouping, built once and only when the ledger counts.
+			CatalogView? all = null;
+			CatalogView All() => all ??= _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu), VanillaToolbarSelection.None, built => built.DefaultGroupBy);
+
 			try
 			{
-				if (!_menuShares.Count(_assetMenu.Menu, source.Generation, () => _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu), VanillaToolbarSelection.None).MenuSet))
+				if (!_menuShares.Count(_assetMenu.Menu, source.Generation, () => All().MenuSet, () => All().Page.Sections))
 				{
 					return false;
 				}
