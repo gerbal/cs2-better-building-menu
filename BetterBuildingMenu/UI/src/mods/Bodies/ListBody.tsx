@@ -11,7 +11,7 @@ import type { AssetMenuMetric } from "domain/assetMenuLayout";
 import { slotPosition, slotsHeight, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { entryStateWord, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { plateNumbers } from "domain/listPlate";
+import { oneNumber, plateNumbers } from "domain/listPlate";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { ActivePrefabId$, BuildingCatalogSortColumn$ } from "mods/bindings";
@@ -41,7 +41,9 @@ interface PlateProps {
  */
 const Plate = memo(function Plate({ entry, grid, index, armed, enter, sortedMetric, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
-  const numbers = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone);
+  const both = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone);
+  // A one-line plate is one number tall: two would be cut at its top and foot.
+  const numbers = grid.form === "plate1" ? oneNumber(both, sortedMetric) : both;
   const { left, top } = slotPosition(grid, index);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   const locked = isEntryLocked(entry);

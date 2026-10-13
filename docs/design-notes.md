@@ -1066,7 +1066,9 @@ or under a sort by a number the value sorted by, so the order reads down the col
 with a locked building's milestone ("MS 7") in the cost's place, in amber, while the city has not
 reached it (the game's `achievedMilestone`), or the locked word where only the development tree or
 another requirement holds it back (`lockedFact`; never "MS 0", nor a milestone the city has: a
-prefab's milestone stays whatever the city reaches). The amber and the "↵" mark are body inks
+prefab's milestone stays whatever the city reaches). A one-line plate is one number tall, so it says
+one, as a tile's tag does: the value sorted by under a sort by a number, else the cost or why the
+building waits (`oneNumber`). The amber and the "↵" mark are body inks
 (`bodyMilestone`, `bodyEntMark`) that follow an interface style to its own ink, dark on Bright blue's
 light plates. A unique carries the game's own mark on its picture, faint under the pointer, and one
 the city already holds the already-built mark, as 0.2.x's list drew them; a plate that cannot be

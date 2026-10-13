@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FALLBACK_SEPARATORS, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { plateNumbers } from "../src/domain/listPlate";
+import { oneNumber, plateNumbers } from "../src/domain/listPlate";
 
 const row = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry => ({
   id: 1,
@@ -67,5 +67,25 @@ describe("a list plate's numbers", () => {
 
   it("say no cost for a building with none, rather than a dash", () => {
     assert.equal(plateNumbers(row({ constructionCost: null }), null, FALLBACK_SEPARATORS, "Locked", 0).first, "");
+  });
+});
+
+describe("the one number, where there is room for one", () => {
+  it("is the cost, or why a locked building waits, under no sort by a value", () => {
+    assert.deepEqual(oneNumber(plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0), null), {
+      first: plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0).first, second: null, locked: false,
+    });
+    assert.deepEqual(oneNumber(plateNumbers(row({ isLocked: true, unlockMilestone: 7 }), "cost", FALLBACK_SEPARATORS, "Locked", 0), "cost"), {
+      first: "MS 7", second: null, locked: true,
+    });
+  });
+
+  it("is the value sorted by under a sort by a value, in the plain ink, even on a locked building", () => {
+    const locked = row({ isLocked: true, unlockMilestone: 7 });
+
+    assert.deepEqual(oneNumber(plateNumbers(locked, "workers", FALLBACK_SEPARATORS, "Locked", 0), "workers"), {
+      first: plateNumbers(locked, "workers", FALLBACK_SEPARATORS, "Locked", 0).second, second: null, locked: false,
+    });
+    assert.equal(oneNumber(plateNumbers(row({ workers: null }), "workers", FALLBACK_SEPARATORS, "Locked", 0), "workers").first, "");
   });
 });

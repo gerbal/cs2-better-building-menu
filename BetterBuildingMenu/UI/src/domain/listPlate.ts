@@ -1,7 +1,7 @@
 /**
  * What a list plate's number column says: the cost over a second number, or, for a locked building,
- * the milestone it waits on (or the locked word) in the cost's place. Pure, so the rules are tests. See
- * docs/design-notes.md, "The bodies".
+ * the milestone it waits on (or the locked word) in the cost's place; where there is room for one
+ * number, which of them. Pure, so the rules are tests. See docs/design-notes.md, "The bodies".
  */
 import { formatBuildingMetric, formatCapacity, METRIC_NO_DATA, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
@@ -56,4 +56,14 @@ export function plateNumbers(
     : null;
 
   return { first, second: capacity, locked };
+}
+
+/**
+ * The one number where there is room for one, a one-line plate or a tile's tag: under a sort by a
+ * value the value sorted by, so a re-sort says why the order moved; otherwise the first.
+ */
+export function oneNumber(numbers: PlateNumbers, sortedMetric: AssetMenuMetric | null): PlateNumbers {
+  return sortsByValue(sortedMetric)
+    ? { first: numbers.second ?? "", second: null, locked: false }
+    : { first: numbers.first, second: null, locked: numbers.locked };
 }

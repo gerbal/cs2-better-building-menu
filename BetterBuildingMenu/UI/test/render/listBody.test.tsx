@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import { declarationsOf } from "../harness/compiledCss";
 import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
-import { bodyGrid, type BodyGridInput } from "../../src/domain/bodyGeometry";
+import { bodyGrid, PLATE1_HEIGHT, type BodyGridInput } from "../../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { ListBody } from "../../src/mods/Bodies/ListBody";
 
@@ -106,6 +107,40 @@ describe("the list", () => {
     assert.match(more, /class="name oneLine"/);
     assert.match(whole, /height:34\.56rem/);
     assert.match(whole, /<p class="name" /);
+  });
+
+  // A length the stylesheet scales with the game's text, as calc(N rem * var(--fontScale)), at this scale.
+  const scaled = (selector: string, prop: string, scale: number): number => {
+    const value = declarationsOf("mods/Bodies/listBody.module.scss", selector)[prop];
+    const factor = /^calc\((\d*\.?\d+)rem \* var\(--fontScale\)\)$/.exec(value ?? "");
+    assert.ok(factor, `${selector} ${prop} is ${value}`);
+    return Number(factor[1]) * scale;
+  };
+
+  for (const scale of [1.1, 1.3, 1.5]) {
+    it(`says one number on a one-line plate at ${Math.round(scale * 100)}% text, which fits the plate`, () => {
+      const html = render(rows(1, () => ({ constructionCost: 85000, capacity: 400 })), { over: { textScale: scale } });
+      const lines = count(html, /<span class="(?:first|second)(?: [^"]*)?">/);
+
+      assert.equal(count(html, /class="second"/), 0);
+      assert.match(html, /<span class="first">¢85[^<]*000<\/span>/);
+      assert.equal(lines, 1);
+      assert.ok(lines * scaled(".numbers", "line-height", scale) <= PLATE1_HEIGHT, `${lines} lines at ${scale}`);
+      assert.ok(scaled(".oneLine", "max-height", scale) <= PLATE1_HEIGHT);
+    });
+  }
+
+  it("says the sorted value as a one-line plate's number under a sort by a number, in the cost's place", () => {
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Capacity");
+    const sorted = render(rows(1, () => ({ constructionCost: 85000, capacity: 400 })), { over: { textScale: 1.5 } });
+
+    assert.match(sorted, /<div class="numbers" data-bbm-fact="true"><span class="firstLine"><span class="first">400[^<]*<\/span><\/span><\/div>/);
+  });
+
+  it("keeps the cost over the capacity on a whole-name plate at large text", () => {
+    const html = render(rows(1, () => ({ constructionCost: 85000, capacity: 400 })), { over: { textScale: 1.5, atLargeText: "wholeNames" } });
+
+    assert.match(html, /<span class="first">¢85[^<]*000<\/span><\/span><span class="second">400[^<]*<\/span>/);
   });
 
   it("ends the feed inside the scroll, below the slots", () => {

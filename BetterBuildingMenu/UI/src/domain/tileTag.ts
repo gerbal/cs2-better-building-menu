@@ -7,7 +7,7 @@
 import { formatCompactMoney, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
-import { plateNumbers, sortsByValue } from "./listPlate";
+import { oneNumber, plateNumbers, sortsByValue } from "./listPlate";
 import { sortedMetricValue } from "./sortedMetric";
 
 /** The tag's font at 100% text, and its padding both sides together: tilesBody.module.scss's `.tag`. */
@@ -65,10 +65,8 @@ export function tileTag(
   tileWidth: number,
   textScale: number,
 ): TileTag {
-  const numbers = plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone);
+  const { first: text, locked } = oneNumber(plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone), sortedMetric);
   const bySort = sortsByValue(sortedMetric);
-  const text = bySort ? numbers.second ?? "" : numbers.first;
-  const locked = !bySort && numbers.locked;
 
   if (tagFits(text, tileWidth, textScale)) {
     return { text, locked };
