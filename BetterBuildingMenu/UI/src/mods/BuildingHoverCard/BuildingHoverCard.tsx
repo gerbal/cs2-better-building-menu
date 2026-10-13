@@ -124,16 +124,19 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
 };
 
 /**
- * One card body, shared by every view mode, rendered only when the tooltip is
- * shown. Its own component ON PURPOSE: React does not invoke the function until
- * then, so the lines are worked out on hover, not once per tile.
+ * One card body, shared by the upgrades panel's tooltip and the build menu's detail slot, rendered only
+ * when it is shown. Its own component ON PURPOSE: React does not invoke the function until then, so the
+ * lines are worked out on hover, not once per tile. `onPanel` draws it on the build menu's own dark panel,
+ * in the look's inks.
  */
-const HoverCardContent = ({
+export const HoverCardContent = ({
   entry,
   context,
+  onPanel = false,
 }: {
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
+  onPanel?: boolean;
 }) => {
   const label = entry.name || entry.prefabName;
   // What the thing IS, before every line that is a number about it — the same
@@ -146,7 +149,7 @@ const HoverCardContent = ({
   const renderLine = (line: TileTooltipLine) => <CardLine key={line.key} line={line} />;
 
   return (
-    <div className={styles.card}>
+    <div className={classNames(styles.card, onPanel && styles.onPanel)}>
       <div className={styles.cardName}>{label}</div>
       {description && <div className={styles.cardDescription}>{description}</div>}
       {/* Two across where they fit, so short figures do not each take a whole

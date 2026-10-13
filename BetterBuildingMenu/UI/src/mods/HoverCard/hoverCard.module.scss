@@ -20,6 +20,41 @@
   color: var(--bbm-tStateSet);
 }
 
+// The game's detail slot: as wide as the game's box, at most 191 tall, a 150 picture beside the card's
+// lines, then the building's packs.
+.slot {
+  width: 706rem;
+  max-height: 191rem;
+  overflow: hidden;
+  padding: 12rem;
+}
+
+.slotPlate {
+  position: relative;
+  flex: 0 0 auto;
+  width: 150rem;
+  height: 150rem;
+  margin-right: 14rem;
+}
+
+.slotPicture {
+  width: 150rem;
+  height: 150rem;
+}
+
+.slotColumn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.packs {
+  margin-top: 6rem;
+  font-size: calc(10rem * var(--fontScale));
+  color: var(--bbm-tWord);
+}
+
 // Drawn where it cannot be seen until a frame has measured it and placed it.
 .unplaced {
   left: 0;

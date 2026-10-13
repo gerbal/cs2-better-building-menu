@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cellsInField, hudPieces, overlap, placePointerCard, remRect, type Rect } from "../src/domain/hoverCardPlace";
+import { cellsInField, hudPieces, overlap, placePointerCard, placeSlotCard, remRect, type Rect } from "../src/domain/hoverCardPlace";
 
 const SCREEN = { w: 1920, h: 1080 };
 /** The box at the first Width step and at the fifth, on 16:9: its top at 746, 208 tall. */
@@ -75,6 +75,27 @@ describe("the hover card beside the pointer", () => {
     assert.equal(place.fitted, false);
     assert.equal(place.how, "above");
     assert.ok(place.x >= 0 && place.y >= 0 && place.x + place.w <= SCREEN.w && place.y + place.h <= SCREEN.h, JSON.stringify(place));
+  });
+
+  it("draws the game's detail slot 706 × at most 191, its bottom at y 740, at the box's left edge at the first step", () => {
+    const cells = plates(STEP1);
+
+    assert.deepEqual(placeSlotCard({ cell: cells[0], height: 191, box: STEP1, screen: SCREEN }), { x: 604, y: 549, w: 706, h: 191 });
+    assert.deepEqual(placeSlotCard({ cell: cells[3], height: 240, box: STEP1, screen: SCREEN }), { x: 604, y: 549, w: 706, h: 191 });
+    assert.deepEqual(placeSlotCard({ cell: cells[0], height: 120, box: STEP1, screen: SCREEN }).y, 746 - 6 - 120);
+  });
+
+  it("centres the slot over the pointed cell in a wider box, held inside its span, and raises it clear of the chirper", () => {
+    const cells = plates(STEP5, 8, 182);
+    const middle = placeSlotCard({ cell: cells[2], height: 191, box: STEP5, screen: SCREEN });
+    const end = placeSlotCard({ cell: cells[7], height: 191, box: STEP5, screen: SCREEN });
+    const chirper = hudPieces(SCREEN.w).find((piece) => piece.name === "chirper")!;
+
+    assert.equal(middle.x, cells[2].x + cells[2].w / 2 - 353);
+    assert.equal(middle.y, 549);
+    assert.equal(end.x + end.w, STEP5.x + STEP5.w);
+    assert.equal(end.y, chirper.y - 4 - 191);
+    assert.equal(overlap(end, chirper), 0);
   });
 
   it("keeps the HUD at the screen's right edge on a wider screen", () => {

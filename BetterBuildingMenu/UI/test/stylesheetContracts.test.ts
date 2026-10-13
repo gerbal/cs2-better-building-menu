@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
 import { LARGE_PICTURE } from "../src/domain/bodyGeometry.ts";
 import { cardGeometry } from "../src/domain/cardsLayout.ts";
+import { SLOT_MAX_HEIGHT, SLOT_WIDTH } from "../src/domain/hoverCardPlace.ts";
 import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
 import { tagRoom } from "../src/domain/tileTag.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
@@ -476,6 +477,11 @@ const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declarat
       + "draws that much narrower by the padding and borders. Size the box as border-box.",
   },
   {
+    matches: (prop, value) => (prop === "max-width" || prop === "max-height") && value === "none",
+    declaration: "max-width / max-height: none",
+    why: "Cohtml's max-width and max-height take a length or a percentage, never `none`: it drops the declaration and keeps any cap a rule above sets. Give a length.",
+  },
+  {
     matches: (_, value) => /var\(\s*--[\w-]+\s*,/.test(value),
     declaration: "var(--name, fallback)",
     why:
@@ -624,6 +630,14 @@ describe("the hover card's name is the size the UI plans it at", () => {
       [ink(".name"), ink(".value"), ink(".label"), ink(".glyph", "background-color"), ink(".unlock")],
       ["var(--bbm-tStateSet)", "var(--bbm-tStateSet)", "var(--bbm-tWord)", "var(--bbm-tWord)", "var(--bbm-amber)"],
     );
+  });
+});
+
+describe("the game's detail slot is the size placeSlotCard places it at", () => {
+  it("draws the slot as wide as SLOT_WIDTH and at most SLOT_MAX_HEIGHT tall, cutting what runs past", () => {
+    const slot = declarationsOf(HOVER, ".slot");
+
+    assert.deepEqual([rem(slot.width), rem(slot["max-height"]), slot.overflow], [SLOT_WIDTH, SLOT_MAX_HEIGHT, "hidden"]);
   });
 });
 

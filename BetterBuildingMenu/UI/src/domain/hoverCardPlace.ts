@@ -1,7 +1,7 @@
 /**
  * Where the hover card draws, in screen rem (a screen is `LAYOUT_HEIGHT` rem tall): beside the pointer, above the
- * box on the pointed cell's edge, clear of the game's HUD and of the cells around it. Pure. See
- * docs/design-notes.md, "The hover card".
+ * box on the pointed cell's edge, clear of the game's HUD and of the cells around it; or in the game's detail
+ * slot, above the box over the pointed cell, clear of the HUD. Pure. See docs/design-notes.md, "The hover card".
  */
 import { LAYOUT_HEIGHT } from "./sharedContracts.generated";
 
@@ -66,11 +66,49 @@ export function cellsInField(cells: readonly Rect[], field: Rect): Rect[] {
 const meets = (rect: Rect, piece: Rect): boolean =>
   rect.x < piece.x + piece.w + MARGIN && rect.x + rect.w > piece.x - MARGIN && rect.y < piece.y + piece.h + MARGIN && rect.y + rect.h > piece.y - MARGIN;
 
+/** A card's top, raised over each HUD piece it meets until it meets none. */
+function raisedOver(card: Rect, hud: readonly HudPiece[]): number {
+  let { y } = card;
+  for (let pass = 0; pass < hud.length; pass++) {
+    const met = hud.find((piece) => meets({ ...card, y }, piece) && piece.y - MARGIN - card.h < y);
+    if (met === undefined) break;
+    y = met.y - MARGIN - card.h;
+  }
+  return y;
+}
+
 /** Where a card sits, and how it got there: "above", "flipped" (above, on the cell's right edge), "right" or "left" of the cell. */
 export interface CardPlace extends Rect {
   how: "above" | "flipped" | "right" | "left";
   /** False where no place fitted and the card took the first, held on screen. */
   fitted: boolean;
+}
+
+/** The game's detail slot: as wide as the game's own box, and at most this tall. */
+export const SLOT_WIDTH = 706;
+export const SLOT_MAX_HEIGHT = 191;
+
+export interface SlotCardInput {
+  cell: Rect;
+  /** The card's drawn height, at most the slot's. */
+  height: number;
+  box: Rect;
+  screen: { w: number; h: number };
+  hud?: readonly HudPiece[];
+}
+
+/**
+ * The game's detail slot: 706 wide, its bottom 6 rem above the box, centred over the pointed cell and
+ * held inside the box's span, so at the first Width step it is the box's own left edge; raised over any
+ * HUD piece it would meet (the chirper at the widest steps).
+ */
+export function placeSlotCard({ cell, height, box, screen, hud = hudPieces(screen.w) }: SlotCardInput): Rect {
+  const w = Math.min(SLOT_WIDTH, screen.w - 2 * MARGIN);
+  const h = Math.min(height, SLOT_MAX_HEIGHT);
+  const x = Math.min(Math.max(box.x, cell.x + cell.w / 2 - w / 2), Math.max(box.x, box.x + box.w - w));
+  const y = raisedOver({ x, y: box.y - CARD_GAP - h, w, h }, hud);
+
+  return { x, y: Math.max(MARGIN, y), w, h };
 }
 
 export interface PointerCardInput {
@@ -93,16 +131,8 @@ export interface PointerCardInput {
  * first place, held on screen.
  */
 export function placePointerCard({ cell, card, box, screen, cells, hud = hudPieces(screen.w) }: PointerCardInput): CardPlace {
-  const above = (x: number, how: CardPlace["how"]): CardPlace => {
-    let y = box.y - CARD_GAP - card.h;
-    // Raised over each piece it meets, until it meets none.
-    for (let pass = 0; pass < hud.length; pass++) {
-      const met = hud.find((piece) => meets({ x, y, ...card }, piece) && piece.y - MARGIN - card.h < y);
-      if (met === undefined) break;
-      y = met.y - MARGIN - card.h;
-    }
-    return { x, y, ...card, how, fitted: true };
-  };
+  const above = (x: number, how: CardPlace["how"]): CardPlace =>
+    ({ x, y: raisedOver({ x, y: box.y - CARD_GAP - card.h, ...card }, hud), ...card, how, fitted: true });
   const besideY = Math.min(screen.h - MARGIN - card.h, Math.max(MARGIN, cell.y + cell.h / 2 - card.h / 2));
   const places: CardPlace[] = [
     above(cell.x, "above"),

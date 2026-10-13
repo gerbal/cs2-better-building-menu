@@ -213,6 +213,37 @@ describe("the hover card", () => {
     assert.equal(card()[0].props.style.left, "181rem");
   });
 
+  it("draws the game's detail slot, the game's card beside a 150 picture, above the box at its left edge", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "slot");
+    mount();
+    point();
+    wait(150);
+    const slot = () => root!.root.findAll((node) => node.type === "div" && node.props["data-bbm-hovercard"] === "slot");
+
+    assert.equal(slot().length, 1);
+    assert.equal(root!.root.findAll((node) => node.props.className === "cardName")[0].children.join(""), "Elementary School");
+    frame();
+    frame();
+    // The node mock draws it 98 tall: its bottom 6 rem over the box, at the box's left edge.
+    assert.deepEqual(slot()[0].props.style, { left: "0rem", top: "-104rem" });
+    // No cell's marks, which the drawn-cells reading and the body's scroller walk find cells by.
+    assert.equal(slot()[0].findAll((node) => node.props["data-catalog-entry"] !== undefined || node.props["data-bbm-item"] !== undefined).length, 0);
+  });
+
+  it("draws a slot card's footprints and packs with no title, which Cohtml never draws", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "slot");
+    mount();
+    act(() => setPointed({
+      entry: entry(1, { name: "Elementary School", assetPacks: ["Modern Architecture"], footprints: [{ width: 2, depth: 3 }] }),
+      cell: { x: 612, y: 805, w: 171, h: 27.25 },
+    }));
+    wait(150);
+
+    assert.equal(root!.root.findAll((node) => typeof node.props["aria-label"] === "string" && node.props["aria-label"] === "2 by 3").length, 1);
+    assert.match(says(), /Modern Architecture/);
+    assert.equal(root!.root.findAll((node) => typeof node.props.title === "string").length, 0);
+  });
+
   it("draws no card for Status line only, whose readout says the building", () => {
     setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "status");
     mount();

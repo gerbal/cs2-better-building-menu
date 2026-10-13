@@ -160,3 +160,22 @@
     font-size: inherit;
   }
 }
+
+// On the build menu's own panel, the game's detail slot: dark under every interface style, so the look's
+// own inks, which no style turns dark. Its cap is the slot's width, so its column sets the width: Cohtml
+// takes no `none` here.
+.onPanel {
+  max-width: 706rem;
+
+  .cardName,
+  .cardValue,
+  .cardDescription {
+    color: var(--bbm-tStateSet);
+  }
+
+  .cardLine,
+  .glyphOverflow,
+  .cardLinesExtra {
+    color: var(--bbm-tWord);
+  }
+}

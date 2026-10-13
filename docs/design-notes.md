@@ -1599,10 +1599,18 @@ Any other stored value reads as beside the pointer, on every load.
   (`cellsInField`, read by `drawnCells`): a cell scrolled out of the body is still in the page, under the
   top row and over the box where the card's first place is, and counted it would push the card down over
   the cells shown. The scroller is found by walking up from a row (`listScroller`), as the game's
-  Scrollable drops any marker. The card says the building as the page has it now, and places itself
+  Scrollable drops any marker. Each card says the building as the page has it now, and places itself
   again, against the pointed cell where it is drawn then, when the page changes, when the screen, the
   box or the card change size, and on a wheel over the box: Cohtml sends no scroll event, and a wheel is
-  what scrolls the body.
+  what scrolls the body. Both cards share this measure and place (`usePlacedCard`), and neither carries a
+  cell's marks, so neither is read as a cell.
+- **The game's detail slot.** A wide card above the box, 706 wide and at most 191 tall, its bottom 6 rem
+  over the box, where the game's own detail shows (`placeSlotCard`): at the first Width step at the box's
+  left edge; in a wider box centred over the pointed cell and held inside the box's span; raised over any
+  HUD piece it meets, so at the widest steps it clears the chirper. It draws the game's own card's lines
+  (`HoverCardContent`: the description, the game's figures and BBM's, every condition a locked building
+  waits on, the footprints) beside a 150 picture, then the building's packs, in the look's inks on the
+  popovers' panel. Who made a mod's building waits for the mod facet, which names it.
 
 **This changes 0.2.x:** pointing at a building drew the game's tooltip over that building alone, its
 description, every figure, the footprints; one card now says the building beside the pointer in a few

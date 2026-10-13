@@ -8,18 +8,19 @@ import { clearPointed, type Pointed } from "domain/assetMenuViewStore";
 import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { hoverCardForm, pointerCardText } from "domain/hoverCard";
 import { hoverCardLabels } from "domain/hoverCardLines";
-import { placePointerCard, remRect } from "domain/hoverCardPlace";
+import { placePointerCard, placeSlotCard, remRect, type Rect } from "domain/hoverCardPlace";
 import type { KeyKind } from "domain/rowNumbers";
 import { LAYOUT_HEIGHT } from "domain/sharedContracts.generated";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenuHoverCard$, AssetMenuTuning$, BuildingCatalog$, SHIPPED_TUNING } from "mods/bindings";
+import { HoverCardContent, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { PlannedName } from "mods/Bodies/PlannedName";
 import { UNIT_GLYPHS } from "mods/Bodies/unitGlyphs";
 import { useNumberSeparators, useStateWords } from "mods/Bodies/useBodyWords";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import styles from "./hoverCard.module.scss";
-import { drawnCells } from "./pointing";
+import { drawnCells, type DrawnCells } from "./pointing";
 
 /** The name's font at 100% text, and the room it is planned in: hoverCard.module.scss's `.name`. */
 const NAME_FONT = 13;
@@ -49,36 +50,25 @@ export function usePointedAfterDelay(): Pointed | null {
   return pointed !== null && shown !== null && shown.entry.id === pointed.entry.id ? pointed : null;
 }
 
-interface PointerCardProps {
+interface CardProps {
   pointed: Pointed;
   boxRef: RefObject<HTMLElement>;
 }
 
+/** Where a card goes, in screen rem, from its drawn size, the box as drawn with the pointed cell in it, and the screen. */
+type Placer = (card: Rect, drawn: DrawnCells & { cell: Rect }, screen: { w: number; h: number }) => Rect;
+
 /**
- * The card beside the pointer: drawn unseen first, then, two frames on, measured and placed by
- * `placePointerCard` against the box, the screen's HUD and the cells drawn, in the box's own rem. It says
- * the building as the page has it now, and places itself again when the page, the screen, the box or the
- * card change size, and on a wheel over the box.
+ * A card drawn unseen first, then, two frames on, measured and placed against the box, in the box's own
+ * rem: never in the tick of a render or an event, where Cohtml reports the previous layout's sizes. It
+ * places itself again when the page, the screen, the box or the card change size, and on a wheel over the
+ * box. Null until placed for the building pointed at.
  */
-const PointerCard = memo(function PointerCard({ pointed, boxRef }: PointerCardProps) {
-  const page = useValue(BuildingCatalog$);
-  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
-  const { translate } = useLocalization();
-  const separators = useNumberSeparators();
-  const stateWords = useStateWords();
-  const textScale = useTextScale();
-  // The view's key kind, which the card names the key number by; capacity before a page has said.
-  const keyKind = (page?.facts?.keyKind ?? "capacity") as KeyKind;
-  const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
+function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, page: unknown, placer: Placer): { cardRef: RefObject<HTMLDivElement>; placed: { left: number; top: number } | null } {
   const cardRef = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<{ id: number; left: number; top: number } | null>(null);
-  const words = useMemo(() => ({
-    labels: hoverCardLabels((key, fallback) => translate(key, fallback)),
-    unlocksAt: translate("Tooltip.LABEL[BetterBuildingMenu.UnlocksAtMilestone]", "Unlocks at milestone {0}") ?? "Unlocks at milestone {0}",
-    lockedWord: stateWords.locked,
-  }), [translate, stateWords.locked]);
-  const text = pointerCardText(entry, keyKind, separators, words, achievedMilestone);
-  const locked = isEntryLocked(entry);
+  const placerRef = useRef(placer);
+  placerRef.current = placer;
 
   useEffect(() => {
     const card = cardRef.current;
@@ -88,20 +78,16 @@ const PointerCard = memo(function PointerCard({ pointed, boxRef }: PointerCardPr
     const place = () => {
       const height = window.innerHeight;
       const drawn = drawnCells(box, id, height);
-      const size = remRect(card.getBoundingClientRect(), height);
-      const at = placePointerCard({
+      const at = placerRef.current(
+        remRect(card.getBoundingClientRect(), height),
         // Where the cell is drawn now, or where the pointer entered it while it is not.
-        cell: drawn.cell ?? pointed.cell,
-        card: { w: size.w, h: size.h },
-        box: drawn.box,
-        screen: { w: (window.innerWidth * LAYOUT_HEIGHT) / height, h: LAYOUT_HEIGHT },
-        cells: drawn.cells,
-      });
+        { ...drawn, cell: drawn.cell ?? pointed.cell },
+        { w: (window.innerWidth * LAYOUT_HEIGHT) / height, h: LAYOUT_HEIGHT },
+      );
       const left = at.x - drawn.box.x;
       const top = at.y - drawn.box.y;
       setPlace((last) => (last !== null && last.id === id && last.left === left && last.top === top ? last : { id, left, top }));
     };
-    // Never in the tick of a render or an event: Cohtml reports the previous layout's sizes then.
     let outer = 0;
     let inner = 0;
     const schedule = () => {
@@ -127,7 +113,32 @@ const PointerCard = memo(function PointerCard({ pointed, boxRef }: PointerCardPr
     };
   }, [pointed, boxRef, page]);
 
-  const placed = place !== null && place.id === entry.id ? place : null;
+  return { cardRef, placed: place !== null && place.id === pointed.entry.id ? place : null };
+}
+
+/**
+ * The card beside the pointer, placed by `placePointerCard` against the box, the screen's HUD and the
+ * cells drawn. It says the building as the page has it now.
+ */
+const PointerCard = memo(function PointerCard({ pointed, boxRef }: CardProps) {
+  const page = useValue(BuildingCatalog$);
+  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
+  const { translate } = useLocalization();
+  const separators = useNumberSeparators();
+  const stateWords = useStateWords();
+  const textScale = useTextScale();
+  // The view's key kind, which the card names the key number by; capacity before a page has said.
+  const keyKind = (page?.facts?.keyKind ?? "capacity") as KeyKind;
+  const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
+  const { cardRef, placed } = usePlacedCard(pointed, boxRef, page, (card, drawn, screen) =>
+    placePointerCard({ cell: drawn.cell, card: { w: card.w, h: card.h }, box: drawn.box, screen, cells: drawn.cells }));
+  const words = useMemo(() => ({
+    labels: hoverCardLabels((key, fallback) => translate(key, fallback)),
+    unlocksAt: translate("Tooltip.LABEL[BetterBuildingMenu.UnlocksAtMilestone]", "Unlocks at milestone {0}") ?? "Unlocks at milestone {0}",
+    lockedWord: stateWords.locked,
+  }), [translate, stateWords.locked]);
+  const text = pointerCardText(entry, keyKind, separators, words, achievedMilestone);
+  const locked = isEntryLocked(entry);
 
   return (
     <div
@@ -172,6 +183,43 @@ const PointerCard = memo(function PointerCard({ pointed, boxRef }: PointerCardPr
   );
 });
 
+/**
+ * The game's detail slot: a wide card above the box, placed by `placeSlotCard` over the pointed cell, the
+ * game's own card's lines beside a 150 picture, then the building's packs. It says the building as the
+ * page has it now.
+ */
+const SlotCard = memo(function SlotCard({ pointed, boxRef }: CardProps) {
+  const page = useValue(BuildingCatalog$);
+  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
+  const context = useHoverCardContext();
+  const { cardRef, placed } = usePlacedCard(pointed, boxRef, page, (card, drawn, screen) =>
+    placeSlotCard({ cell: drawn.cell, height: card.h, box: drawn.box, screen }));
+  const packs = (entry.assetPacks ?? []).join(" · ");
+
+  return (
+    <div
+      ref={cardRef}
+      className={classNames(styles.card, styles.slot, placed === null && styles.unplaced)}
+      style={placed === null ? undefined : { left: `${placed.left}rem`, top: `${placed.top}rem` }}
+      data-bbm-hovercard="slot"
+    >
+      <span className={styles.slotPlate}>
+        <img
+          className={styles.slotPicture}
+          src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
+          onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+          alt=""
+          aria-hidden="true"
+        />
+      </span>
+      <span className={styles.slotColumn}>
+        <HoverCardContent entry={entry} context={context} onPanel />
+        {packs !== "" && <span className={styles.packs}>{packs}</span>}
+      </span>
+    </div>
+  );
+});
+
 export interface HoverCardProps {
   /** The box, which the card places itself against and finds the cells drawn in. */
   boxRef: RefObject<HTMLElement>;
@@ -181,9 +229,9 @@ export interface HoverCardProps {
 
 /**
  * The one hover card of the menu, a child of the box's root: the building pointed at, in the form the
- * Hover card row picks. Beside the pointer draws a card above the box; Status line only draws none here,
- * the readout saying it instead. Nothing is pointed at once the menu closes. See docs/design-notes.md,
- * "The hover card".
+ * Hover card row picks. Beside the pointer and the game's detail slot draw a card above the box; Status
+ * line only draws none here, the readout saying it instead. Nothing is pointed at once the menu closes.
+ * See docs/design-notes.md, "The hover card".
  */
 export const HoverCard = ({ boxRef, hidden }: HoverCardProps) => {
   const form = hoverCardForm(useValue(AssetMenuHoverCard$));
@@ -191,7 +239,7 @@ export const HoverCard = ({ boxRef, hidden }: HoverCardProps) => {
 
   useEffect(() => () => clearPointed(), []);
 
-  if (hidden || pointed === null || form !== "pointer") return null;
+  if (hidden || pointed === null || form === "status") return null;
 
-  return <PointerCard pointed={pointed} boxRef={boxRef} />;
+  return form === "slot" ? <SlotCard pointed={pointed} boxRef={boxRef} /> : <PointerCard pointed={pointed} boxRef={boxRef} />;
 };

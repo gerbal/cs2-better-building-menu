@@ -8,7 +8,8 @@ interface FootprintGlyphProps {
 /**
  * One lot shape, drawn as a tiny grid of cells, because a player choosing a
  * zone is matching against a block on the map rather than reading a range.
- * Nested flex rows rather than CSS grid, which Cohtml does not support.
+ * Nested flex rows rather than CSS grid, which Cohtml does not support. No
+ * `title`, which Cohtml never draws: the label is for the accessibility tree.
  */
 export const FootprintGlyph = ({ footprint }: FootprintGlyphProps) => {
   const rows = Array.from({ length: footprint.depth });
@@ -17,7 +18,6 @@ export const FootprintGlyph = ({ footprint }: FootprintGlyphProps) => {
   return (
     <span
       className={styles.glyph}
-      title={`${footprint.width} × ${footprint.depth}`}
       aria-label={`${footprint.width} by ${footprint.depth}`}
     >
       {rows.map((_, row) => (
