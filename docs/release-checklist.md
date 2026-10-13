@@ -71,18 +71,20 @@ On a developed save:
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu. Arm a
    terraforming brush from Landscaping: the menu stays, and answers a search.
 6. **Options.** Flip each option under Options › Better Building Menu with a
-   menu open, and see it take effect;
-   with Control pane on, the pane shows the same Sort, Filter, Group and View, and View › More
-   options… opens this page. With Replace the vanilla build menu
-   off, every other row is greyed out and says why. Reset the build menu…
-   asks first, then puts the options, the width, the height and the view
-   back.
-7. **Upgrades.** On a release that touches them, open the upgrades picker from
+   menu open, and see it take effect. With Control pane on, the pane shows the
+   same Sort, Filter, Group and View, and View › More options… opens this page.
+   With Replace the vanilla build menu off, every other row is greyed out and
+   says why. Reset the build menu… asks first, then puts the options, the
+   width, the height and the view back.
+7. **An upgrader.** Start from a settings file 0.2.4 wrote, with the pane shown in
+   it: the pane stays shown, and the menu opens at the Width step nearest the
+   width it had.
+8. **Upgrades.** On a release that touches them, open the upgrades picker from
    a placed service building.
-8. **Controller.** On a release that touches the hand-off, with a gamepad:
+9. **Controller.** On a release that touches the hand-off, with a gamepad:
    the game's own build menu shows, and moving the mouse brings this one
    back on the same menu.
-9. **Interface style.** On a release that touches the menu's colours: with the game's
-   legacy interface on, switch Interface style to Bright blue and to Dark grey-orange,
-   and move Interface transparency to 0% and 100%. No dark text on a dark panel, no
-   light text on a light one, and the lit tab keeps the game's blue.
+10. **Interface style.** On a release that touches the menu's colours: with the game's
+    legacy interface on, switch Interface style to Bright blue and to Dark grey-orange,
+    and move Interface transparency to 0% and 100%. No dark text on a dark panel, no
+    light text on a light one, and the lit tab keeps the game's blue.

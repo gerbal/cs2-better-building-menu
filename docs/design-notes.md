@@ -462,8 +462,8 @@ control sits over it (`topRowRightInset`).
   groupings the menu offers, its own lit. A pick closes either. A sort keeps the results' scroll
   position: scrolling the results to their top on a sort arrives with the list's anchor rule, in a
   later increment. **This changes 0.2.x:** the pane's separate reverse-sort button is gone, since
-  the lit row flips the direction; and the first two groupings are named "By tab" and "No groups",
-  in the strip, the popover and the pane alike, where the pane said "Category" and "None".
+  the lit row flips the direction; and the first grouping is named "By tab" and the last "No
+  groups", in the strip, the popover and the pane alike, where the pane said "Category" and "None".
 - **FILTER** holds the filter rail of the game's dropdowns, then a chip for each filter on and
   Clear filters once two are (`FilterPanel`), scrolling past 300 rem. A pick keeps it open, since a
   filter is often one of several. The game draws a dropdown's menu outside the popover, so while one

@@ -30,7 +30,7 @@ How this mod meets other mods, and a record of how popular ones fared beside it.
 - **A category's icon is an address that draws.** A category can carry an unresolved content
   hash (`assetdb://global/…`), which draws nothing, beside the address the game resolves it to;
   BBM's tab draws the one the game's own tab bar draws (`CategoryIcon`).
-- **Buttons other mods add to the game's category tab bar** draw in the asset menu's top bar
+- **Buttons other mods add to the game's category tab bar** draw in the asset menu's top row
   (`VanillaTabBarHost`), as Zone Color Changer's does.
 - **"Already built" is the game's answer for each unique asset** (`IsPlacedUniqueAsset`),
   asked again on every catalog publish, so a mod that changes that answer, as Anarchy's "place
@@ -49,7 +49,7 @@ result can predate later changes, which are in `BetterBuildingMenu/Changelog.jso
 | Asset UI Manager (StarQ) | — | 0.1.8 | Works. The asset menu groups by its runtime categories, with their own icons; the audit reports 0 misplaced. |
 | Zone Organizer (Mimonsi) | — | 0.1.8 | Works. Its ten Zones tabs sit in our strip; all 22 zones are listed. |
 | Road Builder (TDW) | — | 0.1.8 | Works, including a road created while playing. Removal of the roads it discards is by code reading only. |
-| Zone Color Changer (TDW) | — | 0.1.9 | Works. Its button is hosted in the asset menu's top bar while a zone is armed. |
+| Zone Color Changer (TDW) | — | 0.1.9 | Works. Its button is hosted in the asset menu's top row while a zone is armed. |
 | Tree Controller (yenyang), Advanced Line Tool (algernon) | 1.7.4, 1.2.3 | 0.1.9 | Work. Their options sit in the tool options bank beside ours, and line mode survives picking a tree here. |
 | Anarchy (yenyang) | 1.7.24 | 0.1.10 | Works. Its options sit beside ours, and "place multiple unique buildings" reaches the asset menu. |
 | Asset Icon Library (TDW) | — | 0.1.6 | Works. Tiles draw its icons: 85 of 100 in Landscaping. |
