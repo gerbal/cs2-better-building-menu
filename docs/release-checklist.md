@@ -84,7 +84,8 @@ On a developed save:
    - Garbage shows its buildings bigger, two lines of them, and opens on All;
    - at Width 3, type in Roads: the fifth result sits under the first, not along the row;
    - Education's list shows each school's cost over its capacity by a person symbol, and the right end
-     of the tabs names Capacity by the same symbol; Roads › Medium Roads at the widest Width says
+     of the tabs names Capacity by the same symbol, or states the shared capacity (Elementary school);
+     Roads › Medium Roads at the widest Width says
      100 km/h unless shown there, and only the roads at another speed show theirs; a road's cost reads
      per cell (¢44/c);
    - a name too long for its plate is cut once, with …, keeping the words that tell it apart, and never

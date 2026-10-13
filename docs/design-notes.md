@@ -1460,10 +1460,10 @@ its lines and cut once, keeping the words that tell it apart, with "…" where w
 
 **Look-alike tags.** On the tiles drawn, those that share a first word, whatever its case, are a run of
 look-alikes, whose pictures alone do not tell them apart (the theme and density families of Zones: "NA
-Low Density Basic Housing", "NA Low Density Classic Housing"). Every member gets a tag at its top left,
+Low Density Housing", "NA Low Density Waterfront Housing"). Every member gets a tag at its top left,
 in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first of these that fits the
 tag and no other tag says: its whole name; its distinguishing word; that word and the next; the run's
-word and that word ("UK Medium" beside "CHI Medium"), which tells two runs apart; its name cut once by
+word and that word ("NA Row" beside "EU Row"), which tells two runs apart; its name cut once by
 the planner, that word and every number whole, or where that word alone is wider than the tag, the word
 cut inside it, two letters at least each side of the mark, a hyphenated word only to its head
 ("Mansard…" for Mansard-Roof). A tag is cut once, with one mark, and never cuts a number or the
