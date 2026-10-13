@@ -3,7 +3,7 @@ import { memo, useEffect, useRef, useState } from "react";
 
 import { deviceRem } from "domain/bodyGeometry";
 import { drawnRoom, type DrawnRoom } from "domain/measuredFit";
-import { nameRuns, planName } from "domain/namePlan";
+import { nameRuns, planFits, planName } from "domain/namePlan";
 import styles from "./plannedName.module.scss";
 
 export interface PlannedNameProps {
@@ -40,26 +40,28 @@ const NO_BOX = { clientWidth: 0 };
 /**
  * A name planned over its lines, each line a box of its own, whole where it fits and cut once where it
  * does not; the hover card and the aria-label carry the whole of it. The room is the body's estimate
- * until a frame has drawn the name, then the box as drawn, narrowed by any line that ran past it, a
- * narrowing that never widens again, so it cannot spiral. See docs/design-notes.md, "Names".
+ * until a frame has drawn the name, then the box as drawn, narrowed by any line the estimate said fits
+ * that ran past it. It never widens again until the name, its type, its lines, the typed text or the
+ * distinguishing word change. See docs/design-notes.md, "Names".
  */
 export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", typed = "", dim = false, hugs = false, marked = true, className }: PlannedNameProps) {
   const boxRef = useRef<HTMLSpanElement>(null);
-  // A room drawn for one name, type and line count says nothing of another: they start from the estimate
-  // again in the same render, not a frame late.
-  const key = `${name}\n${font}\n${lines}`;
+  // A room drawn for one name, type, line count, typed text or distinguishing word says nothing of
+  // another: they start from the estimate again in the same render, not a frame late.
+  const key = `${name}\n${font}\n${lines}\n${typed}\n${distinct}`;
   const [state, setState] = useState<{ key: string; drawn: DrawnRoom }>({ key, drawn: UNDRAWN });
   const drawn = state.key === key ? state.drawn : UNDRAWN;
   if (state.key !== key) setState({ key, drawn });
-  const room = (drawn.box ?? width) * drawn.fit;
+  const room = { width: (drawn.box ?? width) * drawn.fit, lines, font, tracking };
   // Each word typed is kept on its own: a search matches its phrase anywhere in the name.
-  const plan = planName(name, { width: room, lines, font, tracking }, { keep: [distinct, ...typed.split(/\s+/)] });
+  const plan = planName(name, room, { keep: [distinct], typed: typed.split(/\s+/) });
+  const fitted = planFits(plan.lines, room);
 
   useEffect(() => {
     const box = boxRef.current;
     if (!box) return;
     const measure = () => {
-      const next = drawnRoom(drawn, hugs ? NO_BOX : box, Array.from(box.children) as HTMLElement[], deviceRem(window.innerHeight));
+      const next = drawnRoom(drawn, hugs ? NO_BOX : box, Array.from(box.children) as HTMLElement[], deviceRem(window.innerHeight), fitted);
       if (next !== drawn) setState({ key, drawn: next });
     };
     // Never in the tick of the render: Cohtml reports the PREVIOUS text's
@@ -84,7 +86,7 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, [key, drawn, hugs]);
+  }, [key, drawn, hugs, fitted]);
 
   return (
     <span ref={boxRef} className={classNames(styles.planned, className)} data-bbm-name={marked ? name.length : undefined}>

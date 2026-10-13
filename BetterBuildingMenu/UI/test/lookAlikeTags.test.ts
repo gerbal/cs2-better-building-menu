@@ -105,7 +105,8 @@ describe("the tiles' look-alike tags", () => {
     const roofs = tags([tile(1, "Oz Low Density Gable-Roof Housing", "Gable-Roof"), tile(2, "Oz Low Density Mansard-Roof Housing", "Mansard-Roof")]);
 
     assert.equal(roofs[1], "Gable-Roof");
-    assert.match(roofs[2], /^Man.*….*oof$/u, JSON.stringify(roofs));
+    // A hyphenated word keeps a readable head: "M…of" could be another roof.
+    assert.equal(roofs[2], "Mansard…", JSON.stringify(roofs));
     assert.ok(fits(roofs[2]), roofs[2]);
     // A number is never cut: a tile whose only word is a number too wide for the tag goes untagged.
     assert.deepEqual(tags([tile(1, "Plaza 12345678901234", "12345678901234"), tile(2, "Plaza Corner", "Corner")]), { 2: "Corner" });
@@ -146,10 +147,15 @@ describe("the tiles' look-alike tags", () => {
     assert.doesNotMatch(Object.values(bridges).join(" "), /(^|\s)\d/u, JSON.stringify(bridges));
   });
 
-  it("never cut a word to a single letter on either side of the mark", () => {
+  it("never cut a word to a single letter on either side of the mark, nor a hyphenated word but to its head", () => {
     const large = tags([tile(1, "Oz Low Density Gable-Roof Housing", "Gable-Roof"), tile(2, "Oz Low Density Mansard-Roof Housing", "Mansard-Roof"), tile(3, "Oz Medium Housing", "Medium")], 64, 1.5);
 
-    for (const tag of Object.values(large)) assert.doesNotMatch(tag, /^[^…]?…|…[^…]?$/u, JSON.stringify(large));
+    assert.ok(Object.keys(large).length > 0);
+    for (const tag of Object.values(large)) {
+      assert.doesNotMatch(tag, /^[^…]?…|…[^…]$/u, JSON.stringify(large));
+      assert.ok(!tag.includes("-") || !tag.includes("…") || /^[^…]+…$/u.test(tag), JSON.stringify(large));
+    }
+    assert.ok(Object.values(large).every((tag) => !/^(Ga|Ma)[^…]*…[^…]+$/u.test(tag)), JSON.stringify(large));
   });
 
   it("bound the work: ninety tiles at 150% text measure each tag a few times, not once a rem", () => {

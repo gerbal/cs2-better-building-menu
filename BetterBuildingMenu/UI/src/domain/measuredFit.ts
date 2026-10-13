@@ -1,7 +1,8 @@
 /**
  * Estimates corrected from what was actually drawn: an advance table holds for
  * one font and not quite for another, and no fixed margin fits both ends. The
- * correction only ever narrows, so correcting cannot spiral.
+ * correction only narrows, and only on a line the estimate said fits: a line
+ * the estimate already says overruns is no evidence about the box.
  */
 
 /**
@@ -43,15 +44,15 @@ const SAME_WIDTH = 0.01;
 
 /**
  * The room a drawn name's lines may take now: its box as drawn, `remPerPx` rem a pixel, and its fit,
- * narrowed by the most any line ran past its box, in proportion, and never widened. The same room,
- * the very object, where nothing moved. Call it a frame AFTER the render: in the same tick an element
- * reports its PREVIOUS text's width.
+ * narrowed by the most any line ran past its box, in proportion, and never widened; narrowed only
+ * where the plan `fitted` its room by the estimate. The same room, the very object, where nothing
+ * moved. Call it a frame AFTER the render: in the same tick an element reports its PREVIOUS text's width.
  */
-export function drawnRoom(current: DrawnRoom, box: DrawnBox, lines: readonly DrawnLine[], remPerPx: number): DrawnRoom {
+export function drawnRoom(current: DrawnRoom, box: DrawnBox, lines: readonly DrawnLine[], remPerPx: number, fitted = true): DrawnRoom {
   // A rem of no size or of none at all (deviceRem's 0 for an unknown screen) says no width: the estimate stays.
   const width = box.clientWidth > 0 && remPerPx > 0 && Number.isFinite(remPerPx) ? box.clientWidth * remPerPx : current.box;
   let fit = current.fit;
-  for (const line of lines) {
+  for (const line of fitted ? lines : []) {
     const own = Math.max(line.clientWidth, line.offsetWidth);
     const over = contentOverflowPx(line.clientWidth, line.offsetWidth, line.scrollWidth);
     if (own > 0 && over > ROUNDING_NOISE_PX) fit = Math.min(fit, current.fit * (own / (own + over)));

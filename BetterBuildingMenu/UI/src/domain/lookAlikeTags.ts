@@ -55,8 +55,15 @@ function pairOf(words: readonly string[], own: number): string {
   return before >= 0 ? words.slice(before, own + 1).map(tagWord).join(" ") : "";
 }
 
-/** A word cut inside it reads as that word only with two letters or more each side of the mark. */
-const READABLE_CUT = /^[^…]{2,}…[^…]{2,}$/u;
+/**
+ * Whether a word cut inside it still reads as that word: two letters or more each side of the mark; a
+ * hyphenated word only cut to its head, a part of two letters or more ("Mansard…" for Mansard-Roof), as
+ * the name planner cuts one.
+ */
+const readableCut = (cut: string, word: string): boolean =>
+  word.includes("-")
+    ? /^[^…]{2,}…$/u.test(cut) && word.startsWith(`${cut.slice(0, -CUT_MARK.length)}-`)
+    : /^[^…]{2,}…[^…]{2,}$/u.test(cut);
 
 /** The room a tile's tag is measured in. */
 interface TagBox {
@@ -100,7 +107,7 @@ function memberOf(entry: BuildingCatalogEntry, box: TagBox): Member | null {
 /**
  * Adds a member's last tag and moves to it: its name cut once by the name planner, the word that tells
  * it apart and every number whole; else, where that word alone is wider than the tag, the word cut
- * inside it ("Gam…Roof"). False where neither fits or says what a form already does.
+ * inside it ("Wat…ont", "Mansard…"). False where neither fits or says what a form already does.
  */
 function addCut(member: Member, box: TagBox): boolean {
   member.cut = true;
@@ -115,7 +122,7 @@ function addCut(member: Member, box: TagBox): boolean {
   // cost the room that lets the cut fit at all.
   const named = box.fits(word, box.tileWidth, box.textScale, member.locked) ? cut(words.join(" "), [word]) : CUT_MARK;
   const inside = cut(word, []);
-  const form = [named, inside].find((text, index) => text !== CUT_MARK && (index === 0 ? text.split(CUT_MARK).length === 2 : READABLE_CUT.test(text)) && !member.forms.includes(text));
+  const form = [named, inside].find((text, index) => text !== CUT_MARK && (index === 0 ? text.split(CUT_MARK).length === 2 : readableCut(text, word)) && !member.forms.includes(text));
   if (form === undefined) return false;
 
   member.forms.push(form);

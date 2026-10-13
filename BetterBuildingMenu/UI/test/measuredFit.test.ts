@@ -39,6 +39,15 @@ describe("the room a drawn name's lines may take", () => {
     assert.equal(drawnRoom(narrowed, { clientWidth: 60 }, [fits], 1.5), narrowed);
   });
 
+  it("narrows only where the plan fitted its room by the estimate: a line it already said overruns says nothing of the box", () => {
+    const over = { clientWidth: 64, offsetWidth: 64, scrollWidth: 96 };
+    const room = { box: 90, fit: 1 };
+
+    assert.equal(drawnRoom(room, { clientWidth: 60 }, [over], 1.5, false), room);
+    // The box as drawn still counts.
+    assert.deepEqual(drawnRoom(room, { clientWidth: 50 }, [over], 1.5, false), { box: 75, fit: 1 });
+  });
+
   it("is the same room, the very object, where nothing moved beyond rounding", () => {
     const room = { box: 90, fit: 1 };
 

@@ -109,13 +109,13 @@ export function cutToTag(text: string, tileWidth: number, textScale: number, { b
   if (fitsTag(text)) return text;
 
   // From the tag's room down, each step narrowed by what the last cut ran over in the tag's measure: the
-  // planner measures one font and the tag the wider of two. A cut the planner could not fit in its own
-  // room (a kept word or a number wider than it) fits no narrower one, so the search stops there.
+  // planner measures one font and the tag the wider of two. Where the planner draws no line (a kept word
+  // or a number it would have to cut) no narrower room draws one, so the search stops there.
   const font = TAG_FONT * textScale;
   for (let room = Math.floor(tagRoom(tileWidth, besideLock) - TAG_PADDING); room > 0;) {
-    const [line = ""] = planName(text, { width: room, lines: 1, font }, { keep }).lines;
+    const [line = ""] = planName(text, { width: room, lines: 1, font }, { keep, lastResort: false }).lines;
+    if (line === "") break;
     if (fitsTag(line)) return line;
-    if (textWidth(line, font) > room) break;
     room -= Math.max(1, Math.ceil(TAG_PADDING + textWidth(line, font, "wider") - tagRoom(tileWidth, besideLock)));
   }
 

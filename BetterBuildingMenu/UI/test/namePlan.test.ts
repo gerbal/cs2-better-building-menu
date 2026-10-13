@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
-import { AFTER_SPAN, CUT_MARK, nameRuns, planName } from "../src/domain/namePlan";
+import { bodyGrid } from "../src/domain/bodyGeometry";
+import { NAME_FONT, plateNameRoom } from "../src/domain/listPlate";
+import { AFTER_SPAN, CUT_MARK, nameRuns, planFits, planName } from "../src/domain/namePlan";
+import { ASSET_MENU_DEFAULT_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { textWidth } from "../src/domain/textWidth";
 
 /** A list plate's name room at 100% text, two lines at 11 rem. */
@@ -31,45 +35,70 @@ describe("a name planned in its box", () => {
 
   it("keeps the distinguishing word and the typed word through a cut", () => {
     const divided = planName("Four-Lane Divided Suspension Bridge", plate(60), { keep: ["Divided"] });
-    const tram = planName("Tram + Four-Lane Road Double-Decked Suspension Bridge", plate(60), { keep: ["tram"] });
+    const tram = planName("Tram + Four-Lane Road Double-Decked Suspension Bridge", plate(60), { typed: ["tram"] });
 
     assert.ok(divided.lines.join(" ").includes("Divided"), JSON.stringify(divided));
     assert.ok(tram.lines.join(" ").startsWith("Tram"), JSON.stringify(tram));
   });
 
-  it("cuts only words that are neither kept nor numbers where no cut of whole words keeps them all", () => {
+  it("cuts the plain words inside first, then the typed words, the distinguishing word last", () => {
     // A typed "bridge" is in every name of the family: each must still say which bridge it is.
     const family = [
-      ["Four-Lane Extradosed Bridge", "Extradosed", 85],
-      ["Two-Lane Wooden Covered Bridge", "Wooden", 85],
-      ["Six-Lane Highway Cable-Stayed Bridge", "Highway", 85],
-      ["Four-Lane Divided Suspension Bridge", "Divided", 70],
+      ["Two-Lane Wooden Covered Bridge", "Wooden", ["Two… Wooden", "Covered Bridge"]],
+      ["Six-Lane Highway Cable-Stayed Bridge", "Highway", ["Six… Highway", "Cable… Bridge"]],
+      // No plain word left to cut: the typed word goes before the word that tells the bridge apart.
+      ["Four-Lane Extradosed Bridge", "Extradosed", ["Four-Lane", `Extradosed B${CUT_MARK}e`]],
     ] as const;
 
-    for (const [name, distinct, width] of family) {
-      const words = planName(name, plate(width), { keep: [distinct, "bridge"] }).lines.join(" ").split(" ");
-
-      assert.ok(words.includes(distinct) && words.includes("Bridge"), `${name}: ${words.join(" ")}`);
-      assert.ok(fitsBox(planName(name, plate(width), { keep: [distinct, "bridge"] }).lines, plate(width)), name);
+    for (const [name, distinct, lines] of family) {
+      assert.deepEqual(planName(name, plate(85), { keep: [distinct], typed: ["bridge"] }).lines, lines, name);
     }
 
     const tram = planName("Tram + Four-Lane Road Double-Decked Suspension Bridge", plate(100), { keep: ["Double-Decked"] });
     assert.match(tram.lines.join(" "), /(^| )Double-Decked( |…|$)/u, JSON.stringify(tram));
   });
 
-  it("never cuts a number, a level or a size inside it: whole, or clipped as the last resort", () => {
-    const station = planName("Gas Station 01 - L1 2x2", plate(50, 1), { keep: ["01"] }).lines.join(" ").split(" ");
-    const depot = planName("Depot 123456789", plate(40, 1));
+  it("keeps a whole word that tells the name apart, and a word a search begins, two letters or more", () => {
+    const name = "Large Roundabout with a Tree and Bushes";
+    const plain = planName(name, plate(110, 1));
 
-    assert.ok(station.includes("01") && station.includes("2x2"), station.join(" "));
-    assert.ok(depot.lines.join(" ").split(" ").includes("123456789"), JSON.stringify(depot));
-    assert.equal(depot.lines.length, 1);
+    // A single letter, or a word like "a", is never kept: it tells nothing apart.
+    assert.deepEqual(planName(name, plate(110, 1), { keep: ["a"], typed: ["a"] }), plain);
+    // A typed word keeps the word it begins, never one it only sits inside.
+    assert.deepEqual(planName(name, plate(110, 1), { typed: ["round"] }).lines, [`Large Roundabout${CUT_MARK}`]);
+    assert.deepEqual(planName(name, plate(110, 1), { typed: ["ound"] }), plain);
+    assert.deepEqual(planName(name, plate(110, 1), { keep: ["Round"] }), plain);
   });
 
-  it("cuts a word it may cut to no fewer than a letter each side of the mark", () => {
-    const [first] = planName("Four-Lane Extradosed Bridge", plate(85), { keep: ["Extradosed", "bridge"] }).lines[0].split(" ");
+  it("drops a word before a number, and cuts a word inside before it cuts a number", () => {
+    // The last word first, but never at the cost of a number while a word could go in its place.
+    assert.deepEqual(planName("Plaza 2x2 Corner Large", plate(110, 1)).lines, [`Plaza 2x2${CUT_MARK} Large`]);
+    assert.deepEqual(planName("Hangar 2x2", plate(45, 1)).lines, [`H${CUT_MARK}r 2x2`]);
+  });
 
-    assert.match(first, /^\p{L}+…\p{L}+$/u);
+  it("cuts a hyphenated word to a readable head, or keeps it whole: \"F…e\" could be Five-Lane", () => {
+    for (const width of [40, 60, 70, 85, 95, 120]) {
+      for (const lines of [1, 2]) {
+        for (const name of ["Four-Lane Extradosed Bridge", "Six-Lane Highway Cable-Stayed Bridge", "Two-Lane Wooden Covered Bridge"]) {
+          const plan = planName(name, plate(width, lines), { typed: ["bridge"] });
+          const [first = ""] = plan.lines.join(" ").split(" ");
+          const head = first.split(CUT_MARK)[0];
+
+          assert.ok(head === "" || head.length >= name.indexOf("-"), `${name} at ${width}×${lines}: ${plan.lines.join(" / ")}`);
+        }
+      }
+    }
+  });
+
+  it("cuts a word to no fewer than a letter each side of the mark while any such cut fits", () => {
+    for (const width of [30, 35, 40, 45, 50]) {
+      for (const name of ["Underground Parking Garage", "Elementary School", "Transformer Station", "Water Treatment Plant"]) {
+        const plan = planName(name, plate(width, 1));
+
+        assert.equal(plan.lines.length, 1, `${name} at ${width}`);
+        assert.doesNotMatch(plan.lines[0], /(^|\s)…/u, `${name} at ${width}: ${plan.lines[0]}`);
+      }
+    }
   });
 
   it("never opens a cut's tail or a line with a separator", () => {
@@ -139,14 +168,35 @@ describe("a name planned in its box", () => {
     assert.deepEqual(planName("  ", plate(95)), { lines: [], whole: true });
   });
 
-  it("draws a box with no room, or none it can say, as the name's shortest cut on one line", () => {
-    const none = planName("StoneCornerGarage01", plate(0));
+  it("draws no line in a box with no room, or none it can say: never a line wider than the box", () => {
+    assert.deepEqual(planName("StoneCornerGarage01", plate(0)), { lines: [], whole: false });
+    assert.deepEqual(planName("StoneCornerGarage01", plate(Number.NaN)), { lines: [], whole: false });
+    // Where nothing but the mark fits, the mark: a name was cut, never silently dropped.
+    assert.deepEqual(planName("StoneCornerGarage01", plate(textWidth(CUT_MARK, 11))).lines, [CUT_MARK]);
+  });
+});
 
-    assert.equal(none.lines.length, 1);
-    assert.equal(none.whole, false);
-    assert.ok(none.lines[0].startsWith(CUT_MARK) && none.lines[0].endsWith("1"), none.lines[0]);
-    assert.deepEqual(planName("StoneCornerGarage01", plate(Number.NaN)), none);
-    assert.deepEqual(planName("Four-Lane Road", plate(Number.NaN)), planName("Four-Lane Road", plate(0)));
+describe("the base game's names in a plate's room", () => {
+  /** The base game's names, each with its distinguishing word in its menu. */
+  const names: [string, string][] = JSON.parse(readFileSync(new URL("./fixtures/baseGameNames.json", import.meta.url), "utf8"));
+  const forms = [[1, "moreBuildings"], [1.1, "moreBuildings"], [1.3, "moreBuildings"], [1.5, "moreBuildings"], [1.1, "wholeNames"], [1.3, "wholeNames"], [1.5, "wholeNames"]] as const;
+
+  it("never draws a line wider than its room, nor more than two marks in one, with or without a search", () => {
+    for (const [textScale, atLargeText] of forms) {
+      const grid = bodyGrid({ body: "list", boxWidth: 706, bodyHeight: ASSET_MENU_DEFAULT_HEIGHT, textScale, atLargeText, tileSize: 64, plateHeight: 27.25, nameLines: 0 });
+      const numbers = grid.form === "plate2" ? { first: "¢12,500", second: "1,200", glyph: "person" as const, locked: false } : { first: "¢12,500", second: null, glyph: null, locked: false };
+      const box = { width: plateNameRoom(grid, numbers, false, textScale), lines: grid.nameLines, font: NAME_FONT * textScale };
+
+      for (const typed of ["", "a", "e", "ro", "st"]) {
+        for (const [name, distinct] of names) {
+          const plan = planName(name, box, { keep: [distinct], typed: [typed] });
+          const said = `${name} at ${textScale} ${grid.form} "${typed}": ${plan.lines.join(" / ")}`;
+
+          assert.ok(plan.lines.length <= box.lines && planFits(plan.lines, box), said);
+          assert.ok(plan.lines.every((line) => line.split(CUT_MARK).length <= 3), said);
+        }
+      }
+    }
   });
 });
 

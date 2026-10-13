@@ -1397,32 +1397,39 @@ so the renders and the game draw the same lines. In order:
 1. **Whole,** broken between words, where it fits its lines. An ideograph breaks on either side, as the
    engine breaks it, and never stands alone on the last line.
 2. **Cut once,** between words, the mark ending the head ("Four-Lane… Parking Road"), never leading:
-   every word a cut must keep stays (the distinguishing word, and in a search each word typed, as a
-   search matches its phrase anywhere in the name); the head never ends on a word like "of" or "and"; a
-   cut keeping the last word comes first, where catalog names say which of a family a building is, then
-   the one keeping the most. Twins that differ in their last word get one shape ("Wide… Road 1",
+   every word a cut must keep stays: the distinguishing word, matched whole, and in a search each name
+   word a typed word of two letters or more begins, as a search matches its phrase anywhere in the name.
+   A single letter, a word like "a", "and" or "with", or a separator is never kept: it tells nothing
+   apart, and kept it would hold most of a name after one keystroke. The head never ends on a word like
+   "of" or "and"; a cut keeping a number comes first, so a number goes only where no word could go in
+   its place; then one keeping the last word, where catalog names say which of a family a building is;
+   then the one keeping the most. Twins that differ in their last word get one shape ("Wide… Road 1",
    "Wide… Road 2"). The tail never opens on a separator ("Small… Mirrored", not "… - Mirrored"), and no
    line opens with one: a lone "-", "–" or "," stays with the word before it.
 3. **At a hyphen,** whole, only where every cut keeps under 60% of the name.
-4. **Inside a word,** its head and its tail kept (`shortenTileLabel`), the last resort, and never one a
-   cut must keep nor a number, a level or a size ("01", "L1", "2x2"), which cut would read as another
-   building: the other words are cut inside them, the widest first, to a letter each side of the mark
-   at the least ("F…e Extradosed / Bridge" for a search of "bridge"). A kept word is cut inside only where
-   it alone is wider than a line; a number never is, and where nothing else gives, the line clips it. A
-   name with nothing to guard has a word too long for its line cut on it, else the whole name cut, so a
-   one-word name never runs into the numbers beside it. A box with no room, or a width that is no number,
-   draws the name's shortest cut.
+4. **Inside a word,** its head and its tail kept (`shortenTileLabel`), to a letter each side of the mark
+   at the least; a hyphenated word only to a head of two letters or more ("Four…"), or whole, as "F…e"
+   could be Five-Lane. The plain words go first, then the typed words, and the distinguishing word and
+   the numbers ("01", "L1", "2x2") last, which cut would read as another building: "Two… Wooden / Covered
+   Bridge", and with no plain word left, "Four-Lane / Extradosed B…e" for a search of "bridge". Of the
+   cuts that fit, the one keeping most of the words held hardest, then the fewest marks, never more than
+   two in a line. Only where none fits is the whole name cut inside its words, then the mark put first,
+   the head dropped ("…Bridge"); where not even the mark fits, no line is drawn. The planner never draws
+   a line wider than its room, so a one-word name never runs into the numbers beside it.
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's
-flex row sizes whatever the name holds, narrowed by the most any line ran past it (`drawnRoom`), a
-narrowing that never widens again, so it cannot spiral. A box that hugs its line (the tiles' name line)
-gives no room as drawn, and only a line drawn past it narrows the plan. It never reads widths in the
-render's own tick, where Cohtml reports the previous text's, nor where the screen's rem is unknown. A
-name planned to its lines draws no third line at any text scale. The plate's markers stay:
+flex row sizes whatever the name holds, narrowed by the most any line ran past it (`drawnRoom`). Only a
+plan the estimate says fits narrows the room: a line the estimate already says overruns is no evidence
+about the box. Each narrowing is by what ran over and the room never widens again, so the plan settles
+once its lines draw inside the box, or once the room is too narrow for any line and none is drawn. A
+box that hugs its line (the tiles' name line) gives no room as drawn, and only a line drawn past it
+narrows the plan. It never reads widths in the render's own tick, where Cohtml reports the previous
+text's, nor where the screen's rem is unknown. A name planned to its lines draws no third line at any
+text scale. The plate's markers stay:
 `data-bbm-name` on the name's box carries the whole name's length, a building's only (a label's planned
-name carries none). A room drawn for one name, type and line count starts from the estimate again for
-another.
+name carries none). A room drawn for one name, type, line count, search or distinguishing word starts
+from the estimate again for another, so a room narrowed in one search never outlives it.
 
 Each line, and the name's box, clips across but never above or below. The game's sheets show no
 `overflow-y: visible` beside `overflow-x: hidden`, and a browser scrolls that pair, so each box is an
@@ -1448,7 +1455,9 @@ in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first 
 tag and no other tag says: its whole name; its distinguishing word; that word and the next; the run's
 word and that word ("UK Medium" beside "CHI Medium"), which tells two runs apart; its name cut once by
 the planner, that word and every number whole, or where that word alone is wider than the tag, the word
-cut inside it, two letters at least each side of the mark ("Gam…Roof"). A number is never bare: it says
+cut inside it, two letters at least each side of the mark, a hyphenated word only to its head
+("Mansard…" for Mansard-Roof). A tag is cut once, with one mark, and never cuts a number or the
+distinguishing word inside: where only such a cut fits, the tile is not tagged. A number is never bare: it says
 "#02". No tag opens or ends on a separator, and a word like "with" never stands alone: the word after it
 tells the tile apart ("Median" for "Five-Lane Road with Median"). Every tag is unique on the screen:
 members whose tags would read alike, in a run or across two, each take their next form, and a tag

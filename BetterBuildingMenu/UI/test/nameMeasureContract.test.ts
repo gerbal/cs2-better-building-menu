@@ -27,6 +27,15 @@ describe("a planned name measures what Cohtml has laid out", () => {
     assert.match(tileName, /drawnRoom\(/);
   });
 
+  it("narrows only on a plan that fits its room by the estimate, and starts again for a new search or word", () => {
+    // A plan the estimate says overruns would narrow its room on every measure, without end.
+    assert.match(tileName, /const fitted = planFits\(plan\.lines, room\);/);
+    assert.match(tileName, /drawnRoom\([^;]*, fitted\);/);
+    // A room narrowed under one search must not outlive it: the plates are keyed by entry.
+    const key = /const key = `([^`]*)`;/.exec(tileName)?.[1] ?? "";
+    for (const part of ["${name}", "${font}", "${lines}", "${typed}", "${distinct}"]) assert.ok(key.includes(part), `${part} in ${key}`);
+  });
+
   it("reads no room from a box that hugs its line, which would narrow it every frame", () => {
     // The tiles' name line is as wide as its text: planned again in that width, a name drawn narrower
     // than its estimate is cut, its box narrows, and so on down to its shortest cut.
