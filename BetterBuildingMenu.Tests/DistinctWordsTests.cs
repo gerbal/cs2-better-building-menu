@@ -78,5 +78,25 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("distinctWord", writer.PropertyNames);
 			Assert.Contains("Write:String:2", writer.Tokens);
 		}
+
+		[Fact]
+		public void WordsMatchHoweverManySpacesPartThem()
+		{
+			var rows = new[] { Row(1, "Stadt  Sign 1"), Row(2, "Stadt Bench"), Row(3, "Stadt Sign 2") };
+
+			Assert.Equal("1", WordOf(rows, 1));
+			Assert.Equal("Bench", WordOf(rows, 2));
+			Assert.Equal("2", WordOf(rows, 3));
+		}
+
+		[Fact]
+		public void ARowWithNoNameHasNoWordAndLeavesItsLookAlikesTheirs()
+		{
+			var rows = new[] { Row(1, "Covered Pedestrian Bridge"), Row(2, null!), Row(3, "Covered Bicycle Bridge") };
+
+			Assert.Equal("", WordOf(rows, 2));
+			Assert.Equal("Pedestrian", WordOf(rows, 1));
+			Assert.Equal("Bicycle", WordOf(rows, 3));
+		}
 	}
 }

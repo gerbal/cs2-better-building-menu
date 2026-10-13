@@ -27,17 +27,21 @@ namespace BetterBuildingMenu.Domain
 			var shared = new int[rows.Count];
 			// Each run of leading words some row starts with, by the run before it and its last word,
 			// to the first row that starts with it.
-			var runs = new Dictionary<(int Before, string Word), int>(new RunComparer());
-			var firstRow = new List<int>();
+			var runs = new Dictionary<(int Before, string Word), int>(rows.Count * 2, new RunComparer());
+			var firstRow = new List<int>(rows.Count * 2);
 
 			for (var row = 0; row < rows.Count; row++)
 			{
 				words[row] = Words(rows[row]?.Name);
 				var before = -1;
+				// Once a row starts a run of its own, no earlier row starts with any longer run of its words.
+				var alone = false;
 
 				for (var depth = 0; depth < words[row].Length; depth++)
 				{
-					if (runs.TryGetValue((before, words[row][depth]), out var run))
+					int run;
+
+					if (!alone && runs.TryGetValue((before, words[row][depth]), out run))
 					{
 						// An earlier row starts with these words too: the two share at least this many.
 						shared[row] = depth + 1;
@@ -45,6 +49,7 @@ namespace BetterBuildingMenu.Domain
 					}
 					else
 					{
+						alone = true;
 						run = firstRow.Count;
 						firstRow.Add(row);
 						runs.Add((before, words[row][depth]), run);
