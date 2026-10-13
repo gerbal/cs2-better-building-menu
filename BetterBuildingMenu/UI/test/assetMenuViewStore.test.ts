@@ -14,6 +14,7 @@ import {
   setAssetMenuListStart,
   setAssetMenuSlotLeft,
   setAssetMenuView,
+  setReadoutSaid,
   subscribeAssetMenuView,
 } from "../src/domain/assetMenuViewStore.ts";
 
@@ -22,6 +23,27 @@ describe("Asset menu view store", () => {
 
   it("starts with nothing chosen", () => {
     assert.deepEqual(getAssetMenuView(), { disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null });
+  });
+
+  it("says the readout's values again where only a value's basis or unit moves, and not where nothing does", () => {
+    // A network's ¢5,000 a cell and a building's ¢5,000 whole are two values: a row holding back by the
+    // old basis would leave blank a value the readout no longer says.
+    let fired = 0;
+    const unsubscribe = subscribeAssetMenuView(() => { fired += 1; });
+
+    setReadoutSaid([{ kind: "cost", value: 5000, depth: 0, perCell: true, unit: "" }]);
+    setReadoutSaid([{ kind: "cost", value: 5000, depth: 0, perCell: true, unit: "" }]);
+    assert.equal(fired, 1);
+
+    setReadoutSaid([{ kind: "cost", value: 5000, depth: 0, perCell: false, unit: "" }]);
+    assert.equal(fired, 2);
+    assert.equal(getAssetMenuView().said[0].perCell, false);
+
+    setReadoutSaid([{ kind: "capacity", value: 400, depth: 0, perCell: false, unit: "PowerPlant" }]);
+    setReadoutSaid([{ kind: "capacity", value: 400, depth: 0, perCell: false, unit: "Battery" }]);
+    assert.equal(fired, 4);
+    assert.equal(getAssetMenuView().said[0].unit, "Battery");
+    unsubscribe();
   });
 
   it("tells a subscriber when a field moves, and not when it does not", () => {

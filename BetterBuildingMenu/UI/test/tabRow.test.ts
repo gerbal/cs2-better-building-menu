@@ -372,11 +372,13 @@ describe("the tabs' names at the wider steps", () => {
 
   it("never names the tabs at the cost of the legend: a wider step keeps the legend's form or a longer one", () => {
     const EIGHT = ["SmallRoads", "MediumRoads", "LargeRoads", "Highways", "Intersections", "Bridges", "Parking", "Roundabouts"];
-    const eight = tabRow(roads({
-      categories: EIGHT.map((id) => category(id)),
-      counts: EIGHT.map((id, index) => ({ id, count: 12 + index })),
+    const tabs = (ids: readonly string[]) => tabRow(roads({
+      categories: ids.map((id) => category(id)),
+      counts: ids.map((id, index) => ({ id, count: 12 + index })),
       allCount: 159,
     })).items;
+    const eight = tabs(EIGHT);
+    const four = tabs(EIGHT.slice(0, 4));
     const speed = { full: "100 km/h unless shown", short: "others 100 km/h", bare: "others 100" };
     const cost = { full: "¢44/c unless shown", short: "others ¢44/c", bare: "others ¢44/c" };
     const legends = (parts: number) => Object.assign({}, ...(["full", "short", "bare"] as const).map((form) => ({
@@ -384,15 +386,15 @@ describe("the tabs' names at the wider steps", () => {
     })));
     const forms = ["full", "short", "bare", "none"];
 
-    for (const [scale, parts] of [[1.1, 1], [1.5, 2]]) {
+    for (const [row, scale, parts] of [[eight, 1.1, 1], [eight, 1, 2], [eight, 1.5, 2], [four, 1.5, 2]] as const) {
       const said = { ...readout, legends: legends(parts) };
       const drawn = [1, 2, 3, 4, 5].map((number) => {
         const width = step(number, scale);
-        return planTabRow(eight, said, width, scale, plain, tabForm(eight, said, width, scale, plain, true)).legend;
+        return planTabRow(row, said, width, scale, plain, tabForm(row, said, width, scale, plain, true)).legend;
       });
 
       for (let at = 1; at < drawn.length; at++) {
-        assert.ok(forms.indexOf(drawn[at]) <= forms.indexOf(drawn[at - 1]), `at ${scale}: ${drawn.join(" ")}`);
+        assert.ok(forms.indexOf(drawn[at]) <= forms.indexOf(drawn[at - 1]), `${row.length} tabs at ${scale}, ${parts} parts: ${drawn.join(" ")}`);
       }
     }
   });

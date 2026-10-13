@@ -152,9 +152,13 @@ export const ASSET_MENU_DISCLOSURE_KEYS = {
   metricRanges: "metricRanges",
 } as const;
 
-/** Says which values the readout says once; the same values said again tell no subscriber. */
+/**
+ * Says which values the readout says once; the same values said again tell no subscriber. A value is
+ * its figure, its basis and its unit: one figure in another basis or unit is another value.
+ */
 export function setReadoutSaid(said: readonly SharedValue[]): void {
-  const key = (values: readonly SharedValue[]) => values.map((value) => `${value.kind}:${value.value}:${value.depth}`).join("|");
+  const key = (values: readonly SharedValue[]) =>
+    values.map((value) => `${value.kind}:${value.value}:${value.depth}:${value.perCell ?? ""}:${value.unit ?? ""}`).join("|");
 
   if (key(said) === key(state.said)) {
     return;
