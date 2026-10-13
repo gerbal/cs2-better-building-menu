@@ -2,12 +2,13 @@
  * The small menus, which open on All: those whose rows all fit one screen of the body they draw, at 100%
  * text, the first Width step and the game's own body height, so neither the text scale, the Width nor a
  * drag changes which tab a menu opens on. All draws a label over each of its groups, so the rows and
- * those labels must fit. A menu whose view is Cards opens on All in C#, whatever its size, and is left
- * out here. Pure. See docs/design-notes.md, "Opening on the building's tab".
+ * those labels must fit; but a small menu drawn as a list with Small menus grow on draws no groups
+ * unless the player picks one, so its rows alone must. A menu whose view is Cards opens on All in C#, whatever its size, and is
+ * left out here. Pure. See docs/design-notes.md, "Opening on the building's tab" and "The bodies".
  */
 import { drawnBodyHeight } from "./assetMenuLayout";
 import { autoBody, drawnBody, menuView, type AutoKnobs, type MenuShare } from "./bodyChoice";
-import { blockLabelsOf, bodyCells } from "./bodyCells";
+import { blockLabelsOf, bodyCells, NO_SECTIONS } from "./bodyCells";
 import { bodyGrid, screenSlots, type BodyGridInput } from "./bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "./buildingCatalog";
 import { menuPickOf, type MenuPick } from "./menuPicks";
@@ -24,35 +25,50 @@ export interface OnAllInput {
 }
 
 /** The menus C# has counted whose rows all fit one screen of their body there, by name. */
-export function menusOpeningOnAll({ shares, views, defaultView, tuning, tileSize, atLargeText }: OnAllInput): string[] {
-  return shares
-    .filter((share) => {
-      const body = drawnBody(menuView({ menuPick: menuPickOf(views, share.menu), defaultView, auto: autoBody({ share, textScale: 1, step: 1, knobs: tuning }) }));
-
-      if (body === "cards" || share.rows <= 0) {
-        return false;
-      }
-
-      const input: BodyGridInput = {
-        body,
-        boxWidth: WIDTH_STEP_VANILLA,
-        bodyHeight: drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT),
-        textScale: 1,
-        atLargeText,
-        tileSize,
-        plateHeight: tuning.listPlateHeight,
-        nameLines: tuning.nameLines,
-        menuRows: share.rows,
-        smallMenusGrow: tuning.smallMenusGrow,
-      };
-      // The slots All draws at the body's columns, which no growth changes, as the open body counts them.
-      const cols = bodyGrid(input).cols;
-      const drawnSlots = bodyCells(standIns(share.rows), allSections(share.groupRows ?? []), cols, blockLabelsOf(tuning.blockLabels)).slots;
-
-      return drawnSlots <= screenSlots(bodyGrid({ ...input, drawnSlots }));
-    })
-    .map((share) => share.menu)
+export function menusOpeningOnAll(input: OnAllInput): string[] {
+  return smallMenus(input)
+    .map((small) => small.menu)
     .sort();
+}
+
+/** The small menus drawn as a list with Small menus grow on, which draw no groups unless picked: C# groups their All by none. */
+export function menusDrawingNoGroups(input: OnAllInput): string[] {
+  return smallMenus(input)
+    .filter((small) => small.noGroups)
+    .map((small) => small.menu)
+    .sort();
+}
+
+/** Each small menu, and whether it draws no groups unless picked: a list with Small menus grow on. */
+function smallMenus({ shares, views, defaultView, tuning, tileSize, atLargeText }: OnAllInput): { menu: string; noGroups: boolean }[] {
+  return shares.flatMap((share) => {
+    const body = drawnBody(menuView({ menuPick: menuPickOf(views, share.menu), defaultView, auto: autoBody({ share, textScale: 1, step: 1, knobs: tuning }) }));
+
+    if (body === "cards" || share.rows <= 0) {
+      return [];
+    }
+
+    // The growth is the point of a small menu, and labels take the slots it grows into.
+    const noGroups = body === "list" && tuning.smallMenusGrow;
+    const input: BodyGridInput = {
+      body,
+      boxWidth: WIDTH_STEP_VANILLA,
+      bodyHeight: drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT),
+      textScale: 1,
+      atLargeText,
+      tileSize,
+      plateHeight: tuning.listPlateHeight,
+      nameLines: tuning.nameLines,
+      menuRows: share.rows,
+      smallMenusGrow: tuning.smallMenusGrow,
+    };
+    // The slots All draws at the body's columns, which no growth changes, as the open body counts them.
+    const cols = bodyGrid(input).cols;
+    const sections = noGroups ? NO_SECTIONS : allSections(share.groupRows ?? []);
+    const drawnSlots = bodyCells(standIns(share.rows), sections, cols, blockLabelsOf(tuning.blockLabels)).slots;
+
+    return drawnSlots <= screenSlots(bodyGrid({ ...input, drawnSlots })) ? [{ menu: share.menu, noGroups }] : [];
+  });
 }
 
 /** Rows to place: only how many there are counts. */

@@ -46,6 +46,20 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheSystemKeepsTheUisSmallListsAndRedrawsTheOpenMenuWhenItsOwnChanges()
+		{
+			// The UI names a small menu's list once C# has counted the menu, which is while it is open.
+			var system = ModSource.Text("Systems/BuildingMenuUISystem.cs");
+			var handler = ModSource.Member(system, "private void SetMenusDrawingNoGroups(");
+
+			Assert.Contains("private IReadOnlyCollection<string> _menusDrawingNoGroups = Array.Empty<string>();", system);
+			Assert.Contains("CreateTrigger<string>(\"SetMenusDrawingNoGroups\", SetMenusDrawingNoGroups);", system);
+			Assert.Contains("OpensOnAll.Parse(joined)", handler);
+			Assert.Contains("_menusDrawingNoGroups = named;", handler);
+			Assert.Contains("RefreshBuildingCatalog();", handler);
+		}
+
+		[Fact]
 		public void EveryOpenAsksTheRuleWithTheUisSetAndTheStoredViews()
 		{
 			var takeover = ModSource.Text("Systems/BuildingMenuUISystem.MenuTakeover.cs");

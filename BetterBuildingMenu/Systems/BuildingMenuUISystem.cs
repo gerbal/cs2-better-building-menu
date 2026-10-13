@@ -39,6 +39,8 @@ namespace BetterBuildingMenu.Systems
 		// The small menus the UI names, whose rows all fit one screen: each opens on All. Empty until the UI
 		// first says, so a menu opened before then opens on its tab.
 		private IReadOnlyCollection<string> _menusOpeningOnAll = Array.Empty<string>();
+		// Of those, the ones drawn as a list with Small menus grow on: each groups by none unless picked.
+		private IReadOnlyCollection<string> _menusDrawingNoGroups = Array.Empty<string>();
 
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
@@ -300,6 +302,8 @@ namespace BetterBuildingMenu.Systems
 			CreateTrigger<string, bool>("SetCatalogSectionCollapsed", SetCatalogSectionCollapsed);
 			// The small menus, whose rows all fit one screen of their body: each opens on All from its next open.
 			CreateTrigger<string>("SetMenusOpeningOnAll", joined => _menusOpeningOnAll = OpensOnAll.Parse(joined));
+			// Of those, the ones drawn as a list with Small menus grow on, which draw no groups unless picked.
+			CreateTrigger<string>("SetMenusDrawingNoGroups", SetMenusDrawingNoGroups);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);
@@ -352,6 +356,24 @@ namespace BetterBuildingMenu.Systems
 			// A load or a return to the main menu clears the toolbar while the UI is gone, so no
 			// deselect arrives to forget a menu given up under the gamepad.
 			_gamepadMenu.Forget();
+		}
+
+		/// <summary>The small menus drawn as a list with Small menus grow on, as the UI names them; the open menu redraws when it joins or leaves them.</summary>
+		/// <remarks>
+		/// The UI can name only a menu C# has counted, which is the open one on its first open, so its page
+		/// is grouped until the name arrives. See docs/design-notes.md, "The bodies".
+		/// </remarks>
+		private void SetMenusDrawingNoGroups(string joined)
+		{
+			var named = OpensOnAll.Parse(joined);
+			var menu = _assetMenu.Menu;
+			var changed = named.Contains(menu) != _menusDrawingNoGroups.Contains(menu);
+			_menusDrawingNoGroups = named;
+
+			if (changed && _assetMenuOpen)
+			{
+				RefreshBuildingCatalog();
+			}
 		}
 
 		/// <summary>

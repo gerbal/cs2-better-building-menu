@@ -52,6 +52,10 @@ export const setSectionCollapsedCommand = (id: string, collapsed: boolean): Trig
 export const setMenusOpeningOnAllCommand = (joined: string): TriggerCommand =>
   createTriggerCommand("SetMenusOpeningOnAll", joined);
 
+// Of those, the ones drawn as a list with Small menus grow on, one name a line: C# groups each one's All by none unless picked.
+export const setMenusDrawingNoGroupsCommand = (joined: string): TriggerCommand =>
+  createTriggerCommand("SetMenusDrawingNoGroups", joined);
+
 /** Whether a sort's first click puts the highest first, which C# says per sort (SortDefaults). */
 const startsDescending = (column: SortColumn): boolean =>
   (SORT_FIRST_DESCENDING as readonly string[]).includes(column);

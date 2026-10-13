@@ -46,14 +46,15 @@ namespace BetterBuildingMenu.Systems
 
 			// One view, built once; every publish below reads it. See CatalogView.
 			var menu = _assetMenu.Menu;
+			var noGroups = _menusDrawingNoGroups.Contains(menu);
 			var view = _buildingCatalogAdapter.Build(
 				source,
 				_assetMenu.Query,
 				_toolbarSelection,
-				built => built.GroupFor(_assetMenu.Query.GroupBy, _assetMenu.Query.SearchText));
+				built => built.GroupFor(_assetMenu.Query.GroupBy, _assetMenu.Query.SearchText, noGroups));
 			BuildingCatalogPage page = view.Page;
-			// What a GROUP pick is compared with: the menu's own grouping, which takes a menu's own pick away.
-			_menuDefaultGroup = view.DefaultGroupBy;
+			// What a GROUP pick is compared with: the menu's default, which takes a menu's own pick away.
+			_menuDefaultGroup = view.GroupFor(string.Empty, null, noGroups);
 
 			// A search that matches nothing in the current section reads as "this building does
 			// not exist" when it usually means "not here". With auto-widen on a scoped miss drops

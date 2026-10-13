@@ -9,7 +9,8 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <param name="GroupRows">
 	/// The rows under each label the menu's All draws in its own grouping, in order; empty where All draws
-	/// none. A small menu opens on All, so its labels count toward the screen it must fit.
+	/// none. A small menu opens on All, so its labels count toward the screen it must fit where its body
+	/// draws them; a small menu's list draws none unless picked, with Small menus grow on.
 	/// </param>
 	/// <remarks>See docs/design-notes.md, "The bodies".</remarks>
 	public sealed record MenuShare(string Menu, int Rows, int CostOrCapacity, int Capacity, int Locked, int[]? GroupRows = null) : IJsonWritable

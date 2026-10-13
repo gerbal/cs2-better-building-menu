@@ -10,8 +10,8 @@ import {
   watchStateWhileOff,
   type WatchState,
 } from "domain/vanillaMenuWatch";
-import { searchChangedCommand, setMenusOpeningOnAllCommand } from "domain/buildingCatalogContracts";
-import { menusOpeningOnAll } from "domain/opensOnAll";
+import { searchChangedCommand, setMenusDrawingNoGroupsCommand, setMenusOpeningOnAllCommand, type TriggerCommand } from "domain/buildingCatalogContracts";
+import { menusDrawingNoGroups, menusOpeningOnAll, type OnAllInput } from "domain/opensOnAll";
 import { textInputText } from "domain/textInput";
 import {
   AssetMenuAtLargeText$,
@@ -29,6 +29,20 @@ import {
 } from "mods/bindings";
 import { openListCloser } from "mods/BuildingMenu/openListCloser";
 import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
+
+/**
+ * Tells C# a set of menus, one name a line: once C# has counted a menu, again whenever the set changes,
+ * and on a remount, as C# keeps the last set it was told.
+ */
+function useToldSet(counted: boolean, joined: string, command: (joined: string) => TriggerCommand): void {
+  const told = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!counted || joined === told.current) return;
+    told.current = joined;
+    send(command(joined));
+  }, [counted, joined, command]);
+}
 
 /** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
 const ESCAPE_KEY_CODE = 27;
@@ -51,28 +65,22 @@ export const VanillaMenuWatcher = () => {
   const assetMenuOpen = useValue(OwnsCurrentMenu$);
   const findItPanelShown = useValue(FindItPanelShown$) === true;
 
-  // The small menus, which open on All: told to C# here, where the watcher is mounted before any menu
-  // opens, since the asset menu mounts only once one has. Again whenever the set changes, and on a
-  // remount, as C# keeps the last set it was told; never before C# has counted a menu. See
-  // domain/opensOnAll.ts.
+  // The small menus, which open on All, and of them those whose list draws no groups unless picked:
+  // told to C# here, where the watcher is mounted before any menu opens, since the asset menu mounts
+  // only once one has. See domain/opensOnAll.ts.
   const shares = useValue(MenuShares$);
   const views = useValue(AssetMenuViews$);
   const defaultView = useValue(AssetMenuDefaultView$);
   const tuning = useValue(AssetMenuTuning$);
   const tileSize = useValue(AssetMenuTileSize$);
   const atLargeText = useValue(AssetMenuAtLargeText$);
-  const small = useMemo(
-    () => menusOpeningOnAll({ shares: shares ?? [], views: views ?? [], defaultView, tuning: { ...SHIPPED_TUNING, ...tuning }, tileSize, atLargeText }).join("\n"),
+  const small = useMemo<OnAllInput>(
+    () => ({ shares: shares ?? [], views: views ?? [], defaultView, tuning: { ...SHIPPED_TUNING, ...tuning }, tileSize, atLargeText }),
     [shares, views, defaultView, tuning, tileSize, atLargeText]
   );
   const counted = (shares ?? []).length > 0;
-  const toldSmall = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!counted || small === toldSmall.current) return;
-    toldSmall.current = small;
-    send(setMenusOpeningOnAllCommand(small));
-  }, [counted, small]);
+  useToldSet(counted, useMemo(() => menusOpeningOnAll(small).join("\n"), [small]), setMenusOpeningOnAllCommand);
+  useToldSet(counted, useMemo(() => menusDrawingNoGroups(small).join("\n"), [small]), setMenusDrawingNoGroupsCommand);
 
   /**
    * Escape, BBM's half: from the search field the open list, then the query, then the menu; from

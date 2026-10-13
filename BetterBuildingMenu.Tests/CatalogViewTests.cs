@@ -479,6 +479,18 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ASmallMenusListGroupsByNoneUnlessPickedAndItsOwnGroupingStaysForItsShare()
+		{
+			var all = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed"));
+
+			Assert.Equal(BuildingCatalogGrouping.None, all.GroupFor(string.Empty, null, drawsNoGroups: true));
+			Assert.Equal(BuildingCatalogGrouping.Development, all.GroupFor(BuildingCatalogGrouping.Development, null, drawsNoGroups: true));
+			// The share counts All's labels in the menu's own grouping, for a body that draws them.
+			Assert.Equal(all.GroupFor(string.Empty, null), all.DefaultGroupBy);
+			Assert.NotEqual(BuildingCatalogGrouping.None, all.DefaultGroupBy);
+		}
+
+		[Fact]
 		public void AMenusDefaultGroupingFollowsTheAxisItsWholeCutsBest()
 		{
 			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));

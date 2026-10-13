@@ -47,4 +47,15 @@ describe("the small menus the watcher tells C#", () => {
 
     assert.deepEqual(told(), ["Garbage Management", ""]);
   });
+
+  it("names with them the small menus whose list draws no groups unless picked, again when that changes", () => {
+    const noGroups = () => triggers.filter((call) => call.name === "SetMenusDrawingNoGroups").map((call) => call.args[0]);
+    setBinding("BetterBuildingMenu", "MenuShares", shares(7));
+    act(() => { root = create(<VanillaMenuWatcher />); });
+    // Small menus grow off: the menu still opens on All, and draws its groups.
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuTuning", { smallMenusGrow: false }));
+
+    assert.deepEqual(noGroups(), ["Garbage Management", ""]);
+    assert.deepEqual(told(), ["Garbage Management"]);
+  });
 });
