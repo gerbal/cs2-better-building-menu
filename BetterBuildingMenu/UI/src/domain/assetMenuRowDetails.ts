@@ -1,7 +1,7 @@
 /**
- * The context an expanded catalog row shows beyond its projected numbers. The
- * entry already carries all of it; without this the same data is reachable only
- * as filter facets, so a building never states its own flags.
+ * What the hover card says of a building beyond its projected numbers: the game's
+ * own description, its extensions and its leisure. The entry already carries all
+ * of it, so none of it costs a backend projection.
  */
 
 /**

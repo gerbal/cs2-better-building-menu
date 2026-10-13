@@ -46,8 +46,11 @@ describe("what a keystroke re-renders", () => {
     root = create(<BuildingCatalogComponent />);
   });
 
+  // A query draws the list in a menu whose view is the tiles, so that case says so.
   for (const body of ["tiles", "list", "cards"]) {
-    it(`leaves the rows alone in the ${body} body when only the search box moves`, () => {
+    const drawn = body === "tiles" ? "the list a tiles menu draws under a query" : `the ${body} body`;
+
+    it(`leaves the rows alone in ${drawn} when only the search box moves`, () => {
       // The box echoes every keystroke, and the catalog reads it; the rows'
       // props do not change until the page does. The first letter turns tiles
       // to the list, so the query is under way before the count starts.

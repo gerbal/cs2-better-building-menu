@@ -71,8 +71,11 @@ describe("Enter in the catalog", () => {
     root!.update(<BuildingCatalogComponent />);
   });
 
+  // A query draws the list in a menu whose view is the tiles, so that case says so.
   for (const body of ["tiles", "list", "cards"]) {
-    it(`arms the best match exactly once in the ${body} body`, () => {
+    const drawn = body === "tiles" ? "the list a tiles menu draws under a query" : `the ${body} body`;
+
+    it(`arms the best match exactly once in ${drawn}`, () => {
       showBody(body);
       groupedPage("clinic", 1);
       typed("clinic");

@@ -142,27 +142,39 @@ namespace BetterBuildingMenu.Systems
 				// On a line of its own, as it runs once per index generation: its cost shows apart from the refresh's.
 				if (sharesCounted)
 				{
-					Mod.Log.Debug($"[ASSET-MENU-SHARES] {sharesMs}ms menus={_MenuShares.Value?.Length ?? 0} generation={source.Generation}");
+					Mod.Log.Debug($"[ASSET-MENU-SHARES] {sharesMs}ms menu='{_assetMenu.Menu}' generation={source.Generation}");
 				}
 			}
 		}
 
-		/// <summary>What the look's Auto rule reads of every menu, counted once per index generation; true when it counted.</summary>
+		/// <summary>What the look's Auto rule reads of the open menu, counted once per index generation; true when it counted.</summary>
 		/// <remarks>
-		/// Over each menu as the catalog lists it, with nothing of the toolbar's row, a filter or a search:
-		/// a filter never changes a menu's body. See docs/design-notes.md, "The bodies".
+		/// Over the whole menu, with nothing of the toolbar's row, a filter or a search, so a filter never
+		/// changes a body; with the toolbar's row untouched that is this refresh's own snapshot, cached.
+		/// Only the open menu: a unique placed or an unlock moves the generation, and Auto reads no other.
+		/// A count that throws is tried again next refresh. See docs/design-notes.md, "The bodies".
 		/// </remarks>
 		private bool PublishMenuShares(CatalogSource source)
 		{
-			if (_menuSharesGeneration == source.Generation)
+			try
 			{
+				if (!_menuShares.Count(_assetMenu.Menu, source.Generation, () => _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu), VanillaToolbarSelection.None).MenuSet))
+				{
+					return false;
+				}
+			}
+			catch (Exception e)
+			{
+				if (!_menuSharesWarned)
+				{
+					_menuSharesWarned = true;
+					Mod.Log.Warn(e, $"Could not count the share of '{_assetMenu.Menu}'; its body is the list until a count succeeds");
+				}
+
 				return false;
 			}
 
-			_menuSharesGeneration = source.Generation;
-			_MenuShares.Value = source.Index.Menus.AssetMenus()
-				.Select(menu => MenuShare.Of(menu.Id, _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: menu.Id), VanillaToolbarSelection.None).MenuSet))
-				.ToArray();
+			_MenuShares.Value = _menuShares.Shares;
 
 			return true;
 		}

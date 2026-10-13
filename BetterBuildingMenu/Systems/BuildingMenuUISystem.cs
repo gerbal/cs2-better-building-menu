@@ -74,9 +74,10 @@ namespace BetterBuildingMenu.Systems
 		private string? _publishedMenuGroups;
 		// The grouping dimensions that can act on the current menu set; the picker lists these.
 		private ValueBindingHelper<string[]> _AssetMenuGroupDimensions = null!;
-		// What the look's Auto rule reads of each menu, from the index generation it was counted on.
+		// What the look's Auto rule reads of each menu opened, each from the index generation it was counted on.
 		private ValueBindingHelper<MenuShare[]> _MenuShares = null!;
-		private int _menuSharesGeneration;
+		private readonly MenuShareLedger _menuShares = new();
+		private bool _menuSharesWarned;
 		// Whether the menu the toolbar currently has open is one the asset menu takes
 		// over. Lets the vanilla menu stay hidden after the asset menu is closed, so
 		// closing means closed rather than revealing the grid underneath.

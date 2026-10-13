@@ -65,7 +65,7 @@ install (`SilhouetteIcons`, sent as `silhouetteThumbnail`; `lockedThumbnail`
 picks it), giving the same silhouette with no compositing effect, and fall back
 to the ordinary thumbnail when no blackened copy exists. The remaining locked
 signals — a lighter tile ground, locked label colour, padlock — cost nothing on
-either path. The grid's, list's and table's stylesheets carry the rule this
+either path. The grid's and the list's stylesheets carry the rule this
 drives.
 
 ## Patching vanilla's layout for the asset menu
@@ -224,8 +224,8 @@ changes. A release on the step the box already draws sends nothing: beside the p
 or 5 draws as 3, and a drag back onto 3 would otherwise store 3 over the step the pane keeps for
 later. A menu closed mid-drag follows the same rule. The box keeps the snapped width until the
 stored step comes back from C#, so it does not flash the old width for the round trip. The drag is
-the hook's own state, so the catalog's table, which budgets its columns from the stored step, moves
-its columns at the release.
+the hook's own state, so what reads the stored step, the Auto rule's Cards from width among them,
+changes at the release, not on every frame of the drag.
 
 **The width strip runs down the box's right edge.** A 6 rem strip from under the top row, so close
 keeps its presses, to the box's bottom, past the tab row's band: a child of the box, not of the
@@ -252,19 +252,6 @@ the strip does, and it is absent with the pane hidden, so nothing reaches past t
 
 **The row is never wider than the box.** It keeps step 1's 706 at every step, and every step is at
 least 706, so no stretch of the row lies beside the box to take a click meant for the city.
-
-**The table's arithmetic still counts the pane.** The column widths, the density tier
-and the name budget were tuned against the whole row with the pane in it, so they are
-handed the build menu plus the pane (`catalogLayoutWidth`) whether or not the pane is
-shown. At step 3 that is the number they always had.
-
-**A narrow table drops columns.** Table view draws at the step's width and shows as many
-metric columns as fit beside the name at their comfortable widths, grown by the game's
-text scale (`visibleTableMetrics`). Parking, Level, Lot, Workers and Capacity go first;
-the column the table is sorted by always stays. Below the comfortable set, a road's
-per-km cost ("¢3,500 /km") clips in every row, even at the columns' minima. At step 3
-all seven fit; at 125 % text step 3 narrows to 1,043.5 beside the pane and three fit; at
-the first step, cost and upkeep.
 
 **Cursors and the hint.** The game draws its own cursors, so the strip uses
 `cursor://horizontal-can-resize` and `cursor://horizontal-resize`, from the game's own
@@ -1037,14 +1024,19 @@ The icons draw as the tiles until they have a body of their own.
 **The shares.** `MenuShares` holds, for every menu, its rows and how many carry a cost or a capacity, a
 capacity, or a lock (`MenuShare.Of`), counted over the whole menu as the catalog lists it, with nothing
 of the toolbar's row, a filter or a search, so a filter never changes a body. C# counts them on the
-first refresh after the index moves (`PublishMenuShares`), the refresh's `shares=` stage, logged on a
-line of its own so its cost shows apart from the refresh's.
+refresh that opens a menu, once per index generation (`PublishMenuShares`, `MenuShareLedger`): the open
+menu only, since a unique placed or removed or an unlock moves the generation and the Auto rule reads no
+other menu's share. With the toolbar's row untouched the count reads the snapshot the refresh already
+projected. `MenuShares` carries every share counted so far; a menu counted on an older generation is
+counted again when it next opens. The refresh's `shares=` stage times it, and a line of its own logs
+each count.
 
 **Grid and Table leave.** VIEW offers Default view, List, Tiles and Cards; the table, its columns and
-their arithmetic are gone. Two helpers go with them, as the unused-export guard requires:
-`flattenGroupedRows`, which laid the table's group headings out as lines with their counts, and, with
-Grid's name line, `stripRedundantNamePrefix`, which told look-alike names apart there. The bodies' label
-plates and name planner derive what each did again.
+their arithmetic are gone, and with them `flattenGroupedRows`, which laid the table's group headings out
+as lines with their counts (the unused-export guard allows no export without a caller). Until the
+tiles get a body of their own, Grid's drawing stands in for them, and `stripRedundantNamePrefix`, which
+tells look-alike names apart on Grid's name line, stays with it; it leaves when Grid's drawing does. The
+bodies' label plates and name planner derive what each did again.
 
 **This changes 0.2.x:** one view, picked in VIEW, drew every menu, and every session opened in Cards
 (0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid
@@ -1192,7 +1184,7 @@ Where the card differs from vanilla on purpose:
   where vanilla leaves it off.
 - **Power output is one figure**, the top of vanilla's range: vanilla shows the plant's own
   output up to that plus every source that can add to it, as 0–400,000 for an incinerator. The
-  table's column and sort need one number. A network whose sub-objects hold a power plant,
+  sort and the range filter need one number. A network whose sub-objects hold a power plant,
   without one owning the network, shows no output or voltage; vanilla sums its sub-objects'.
 - **A telecom facility's capacity keeps its decimal**; vanilla rounds it up.
 - **Nothing is drawn for nothing.** A percentage effect that rounds to zero draws no line, where
@@ -1207,8 +1199,8 @@ Where the card differs from vanilla on purpose:
   each one fact for several of vanilla's lines (`MEDICAL_`, `FIRE_` and
   `POLICE_HELICOPTER_COUNT`; `WATER_` and `SEWAGE_PURIFICATION_RATE`); and the headline
   capacity, which vanilla names per service (`PATIENT_CAPACITY`, `STUDENT_CAPACITY` and so on)
-  where the card draws one line with a unit. The table's columns and range filters keep our
-  cost and upkeep labels, which are shorter.
+  where the card draws one line with a unit. The range filters keep our cost and upkeep labels,
+  which are shorter.
 - **A network's cost takes the building's key**, `Properties.CONSTRUCTION_COST`. The key its
   binder passes, `Common.ASSET_CONSTRUCTION_COST`, is in no locale, so it would read "Cost" in
   every language.

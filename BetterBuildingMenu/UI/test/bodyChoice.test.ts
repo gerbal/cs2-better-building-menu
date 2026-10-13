@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { autoBody, chooseBody, drawnBody, menuView, type MenuShare } from "../src/domain/bodyChoice";
+import { autoBody, chooseBody, drawnBody, ICONS_ABOVE, menuView, type MenuShare } from "../src/domain/bodyChoice";
 
 // The shares of the 2026-10-06 capture's menus: rows, then how many carry a cost or a capacity, a capacity, a lock.
 const share = (menu: string, rows: number, costOrCapacity: number, capacity: number, locked = 0): MenuShare =>
@@ -67,6 +67,19 @@ describe("Standard's Auto", () => {
     assert.equal(auto(CAPTURE.roads, { textScale: 1, knobs: { autoLargeText: "tiles" } }), "list");
     assert.equal(auto(CAPTURE.education, { textScale: 1.3, knobs: { autoLargeText: "tiles" } }), "list");
     assert.equal(auto(CAPTURE.roads, { textScale: 1.3, knobs: { autoLargeText: "lookOwn" } }), "list");
+  });
+
+  it("forces the list too, where the look's own would draw the tiles", () => {
+    const knobs = { whatCounts: "capacityOnly", autoLargeText: "list" };
+
+    assert.equal(auto(CAPTURE.roads, { textScale: 1, knobs }), "tiles");
+    assert.equal(auto(CAPTURE.roads, { textScale: 1.1, knobs }), "list");
+  });
+
+  it("draws icons only for a menu over 200 rows, tiles at 200 and below", () => {
+    assert.equal(auto(share("Props", ICONS_ABOVE + 1, 0, 0)), "icons");
+    assert.equal(auto(share("Props", ICONS_ABOVE, 0, 0)), "tiles");
+    assert.equal(auto(share("Small", 50, 0, 0)), "tiles");
   });
 
   it("draws the list for a menu C# has not counted yet, or one with nothing in it", () => {
