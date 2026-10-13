@@ -57,13 +57,13 @@ describe("the list", () => {
   });
 
   it("cuts a one-word name too long for its line inside it, its head and its tail kept", () => {
-    const html = render(rows(1, () => ({ name: "ModernBrickGarageWithAVeryLongName01" })));
+    const html = render(rows(1, () => ({ name: "StoneCornerGarageWithAVeryLongName01" })));
 
     assert.match(html, /data-bbm-name="36"><span class="line">[^<]*…[^<]*01<\/span><\/span>/);
   });
 
   it("keeps the distinguishing word through a cut, and each typed word, dimmed by the knob", () => {
-    const long = "Tram + Four-Lane Road Double-Decked Extradosed Bridge";
+    const long = "Tram + Four-Lane Road Double-Decked Suspension Bridge";
     const plain = render(rows(1, () => ({ name: long, distinctWord: "Double-Decked" })));
     assert.match(plain, /Double-Decked/);
 
@@ -212,7 +212,7 @@ describe("the list", () => {
   });
 
   it("never draws a third name line at 130% under Whole names: two lines, whole device pixels each, fit the plate", () => {
-    const html = render(rows(1, () => ({ name: "Prestigious High School (based on Ohio State University Hall)" })), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
+    const html = render(rows(1, () => ({ name: "Lakeside High School (based on the Old Harbour Customs Hall)" })), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
     const lines = count(html, /<span class="line">/);
     // A line draws in whole device pixels: at 720p, 1.5 rem each.
     const drawn = Math.ceil(scaled(".name", "line-height", 1.3) / 1.5) * 1.5;

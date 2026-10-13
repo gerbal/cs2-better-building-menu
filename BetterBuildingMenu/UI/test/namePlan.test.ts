@@ -15,7 +15,7 @@ describe("a name planned in its box", () => {
   });
 
   it("cuts a one-word name too wide for a line inside it, so it never runs into the numbers beside it", () => {
-    const plan = planName("ModernBrickGarage01", plate(60));
+    const plan = planName("StoneCornerGarage01", plate(60));
 
     assert.equal(plan.whole, false);
     assert.ok(plan.lines[0].includes(CUT_MARK), plan.lines[0]);
@@ -30,8 +30,8 @@ describe("a name planned in its box", () => {
   });
 
   it("keeps the distinguishing word and the typed word through a cut", () => {
-    const divided = planName("Four-Lane Divided Extradosed Bridge", plate(60), { keep: ["Divided"] });
-    const tram = planName("Tram + Four-Lane Road Double-Decked Extradosed Bridge", plate(60), { keep: ["tram"] });
+    const divided = planName("Four-Lane Divided Suspension Bridge", plate(60), { keep: ["Divided"] });
+    const tram = planName("Tram + Four-Lane Road Double-Decked Suspension Bridge", plate(60), { keep: ["tram"] });
 
     assert.ok(divided.lines.join(" ").includes("Divided"), JSON.stringify(divided));
     assert.ok(tram.lines.join(" ").startsWith("Tram"), JSON.stringify(tram));
@@ -43,7 +43,7 @@ describe("a name planned in its box", () => {
       ["Four-Lane Extradosed Bridge", "Extradosed", 85],
       ["Two-Lane Wooden Covered Bridge", "Wooden", 85],
       ["Six-Lane Highway Cable-Stayed Bridge", "Highway", 85],
-      ["Four-Lane Divided Extradosed Bridge", "Divided", 70],
+      ["Four-Lane Divided Suspension Bridge", "Divided", 70],
     ] as const;
 
     for (const [name, distinct, width] of family) {
@@ -53,7 +53,7 @@ describe("a name planned in its box", () => {
       assert.ok(fitsBox(planName(name, plate(width), { keep: [distinct, "bridge"] }).lines, plate(width)), name);
     }
 
-    const tram = planName("Tram + Four-Lane Road Double-Decked Extradosed Bridge", plate(100), { keep: ["Double-Decked"] });
+    const tram = planName("Tram + Four-Lane Road Double-Decked Suspension Bridge", plate(100), { keep: ["Double-Decked"] });
     assert.match(tram.lines.join(" "), /(^| )Double-Decked( |…|$)/u, JSON.stringify(tram));
   });
 
@@ -102,7 +102,7 @@ describe("a name planned in its box", () => {
 
     assert.deepEqual(plan, { lines: ["Two-", "Lane", "One-", "Way", "Road"], whole: true });
     // With room for a cut that keeps more, the compound stays whole.
-    assert.ok(!planName("Two-Lane One-Way Half Road Left", plate(95)).lines.some((line) => line.endsWith("-")));
+    assert.ok(!planName("Two-Lane One-Way Narrow Road Left", plate(95)).lines.some((line) => line.endsWith("-")));
   });
 
   it("never leaves an ideograph alone on the last line", () => {
@@ -114,8 +114,8 @@ describe("a name planned in its box", () => {
 
   it("never draws more lines than it is given, nor a line wider than its box", () => {
     const names = [
-      "Four-Lane Perpendicular Parking Road", "Prestigious High School (based on Ohio State University Hall)",
-      "Two-Lane One-Way Half Road Left", "ModernBrickGarage01", "第一中学实验学校高中部", "Grand Bridge with Dedicated Tram Lanes",
+      "Four-Lane Perpendicular Parking Road", "Lakeside High School (based on the Old Harbour Customs Hall)",
+      "Two-Lane One-Way Narrow Road Left", "StoneCornerGarage01", "第一中学实验学校高中部", "Harbour Arch with Twin Tram Lanes",
     ];
 
     for (const name of names) {
@@ -140,12 +140,12 @@ describe("a name planned in its box", () => {
   });
 
   it("draws a box with no room, or none it can say, as the name's shortest cut on one line", () => {
-    const none = planName("ModernBrickGarage01", plate(0));
+    const none = planName("StoneCornerGarage01", plate(0));
 
     assert.equal(none.lines.length, 1);
     assert.equal(none.whole, false);
     assert.ok(none.lines[0].startsWith(CUT_MARK) && none.lines[0].endsWith("1"), none.lines[0]);
-    assert.deepEqual(planName("ModernBrickGarage01", plate(Number.NaN)), none);
+    assert.deepEqual(planName("StoneCornerGarage01", plate(Number.NaN)), none);
     assert.deepEqual(planName("Four-Lane Road", plate(Number.NaN)), planName("Four-Lane Road", plate(0)));
   });
 });

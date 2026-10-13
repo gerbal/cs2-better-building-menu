@@ -41,9 +41,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ARowWithNoLookAlikeOrWhollyItsLookAlikesHeadHasNone()
 		{
-			var rows = new[] { Row(1, "Grand Bridge"), Row(2, "Alley"), Row(3, "Grand Bridge Viaduct") };
+			var rows = new[] { Row(1, "Harbour Arch"), Row(2, "Alley"), Row(3, "Harbour Arch Viaduct") };
 
-			// Grand Bridge is all of what it shares; Alley shares no first word.
+			// Harbour Arch is all of what it shares; Alley shares no first word.
 			Assert.Equal("", WordOf(rows, 1));
 			Assert.Equal("", WordOf(rows, 2));
 			Assert.Equal("Viaduct", WordOf(rows, 3));
@@ -52,7 +52,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void FirstWordsMatchWhateverTheirCase()
 		{
-			var rows = new[] { Row(1, "Custom Four-lane Divided Road"), Row(2, "custom Four-Lane Road") };
+			var rows = new[] { Row(1, "Plain Four-lane Divided Road"), Row(2, "plain Four-Lane Road") };
 
 			Assert.Equal("Divided", WordOf(rows, 1));
 			Assert.Equal("Road", WordOf(rows, 2));

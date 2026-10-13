@@ -42,7 +42,7 @@ describe("a row's key number", () => {
 
 describe("a name that says its lot", () => {
   it("says it as width x depth, either mark, any case, and never inside a longer number", () => {
-    assert.ok(nameHoldsLot("Small Underground Parking Lot 1x3", 1, 3));
+    assert.ok(nameHoldsLot("Corner Parking Lot 1x3", 1, 3));
     assert.ok(nameHoldsLot("Plaza 2 × 2", 2, 2));
     assert.ok(nameHoldsLot("Lot 2X3 - Mirrored", 2, 3));
     assert.ok(!nameHoldsLot("Lot 12x3", 2, 3));

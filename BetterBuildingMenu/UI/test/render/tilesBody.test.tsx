@@ -87,25 +87,25 @@ describe("the tiles", () => {
 
   it("tag look-alikes at their top with the word that tells each apart, a whole name where it fits", () => {
     const zones = [
-      { name: "NA Low Density Basic Housing", distinctWord: "Basic" },
-      { name: "NA Low Density Classic Housing", distinctWord: "Classic" },
+      { name: "NA Low Density Cabin Housing", distinctWord: "Cabin" },
+      { name: "NA Low Density Country Housing", distinctWord: "Country" },
       { name: "NA Pack", distinctWord: "Pack" },
-      { name: "Modern Brick SF Rowhomes" },
+      { name: "Stone Terrace Rowhomes" },
     ];
     const html = render(rows(4, (id) => zones[id - 1]));
 
     assert.equal(count(html, /class="lookAlike"/), 3);
     // Marked, so the live check and the render tests can count them.
-    assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">Basic<\/span>/);
+    assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">Cabin<\/span>/);
     assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">NA Pack<\/span>/);
-    assert.doesNotMatch(html, /lookAlike" [^>]*>Modern/);
+    assert.doesNotMatch(html, /lookAlike" [^>]*>Stone/);
   });
 
   it("keep a locked look-alike's tag clear of its lock glyph, measured in the room left beside it", () => {
-    const html = render(rows(2, (id) => ({ name: id === 1 ? "NA Pack" : "NA Mobile Homes", distinctWord: id === 1 ? "Pack" : "Mobile", isLocked: id === 1 } as Partial<BuildingCatalogEntry>)));
+    const html = render(rows(2, (id) => ({ name: id === 1 ? "NA Pack" : "NA Trailer Homes", distinctWord: id === 1 ? "Pack" : "Trailer", isLocked: id === 1 } as Partial<BuildingCatalogEntry>)));
 
     assert.match(html, /<img class="lockGlyph"[^>]*><span class="lookAlike" style="max-width:45rem" data-bbm-tag="true">Pack<\/span>/);
-    assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">Mobile<\/span>/);
+    assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">Trailer<\/span>/);
   });
 
   it("keep the game's unique mark on a unique tile, shown on hover as 0.2.x's grid did", () => {

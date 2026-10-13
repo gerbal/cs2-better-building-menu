@@ -114,7 +114,7 @@ function countsCapacity(entry: BuildingCatalogEntry): boolean {
   return unit !== "MW" && unit !== "m³" && unit !== "t";
 }
 
-/** Whether a name already says its lot ("Small Underground Parking Lot 1x3"), so the row need not. */
+/** Whether a name already says its lot ("Corner Parking Lot 1x3"), so the row need not. */
 export function nameHoldsLot(name: string, width: number, depth: number): boolean {
   return new RegExp(`(^|[^\\d])${width}\\s*[x×]\\s*${depth}($|[^\\d])`, "iu").test(name);
 }
