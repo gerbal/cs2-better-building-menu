@@ -1437,6 +1437,9 @@ eighth of an em taller each side than its line, which a negative margin gives ba
 and descent run past a line-height under 1.3 em (the list's names draw at 12.5 on 11), and an accent or
 a descender is never cut.
 
+A plan is kept by its name, its room to a hundredth of a rem, its type and what it keeps, a few
+screens' worth, so a render or a keystroke that plans the same rows again plans none of them twice.
+
 The same planner cuts every name the bodies draw: the list's plates, the tiles' name line, a label
 plate's name and a held card's, which keeps its distinguishing word as a row does. None relies on a CSS ellipsis, and a test fails on one in the bodies'
 stylesheets.
@@ -1469,7 +1472,8 @@ counted over every tile the body draws, which holds every tile on the screen, so
 drop, when Load more draws a look-alike, even one scrolled out of sight. A cut starts from the tag's
 room at the text scale and narrows by what it runs over, stopping where the planner cannot fit the kept
 word, and the tags are worked out again only when the tiles' names, distinguishing words or locks, the
-tile's width or the text scale change. On a locked tile the tag's room ends at the lock glyph, which it
+tile's width or the text scale change. Each tile's forms are kept by those, so a Load more works out only
+the new tiles' forms; only the pass that keeps every tag unique runs over every tile. On a locked tile the tag's room ends at the lock glyph, which it
 never covers, and its forms are measured in that room. A tile with no look-alike drawn with it draws no
 tag at its top: the line under the tiles names it. A tag carries `data-bbm-tag`, so the live check and
 the render tests count the tags drawn.

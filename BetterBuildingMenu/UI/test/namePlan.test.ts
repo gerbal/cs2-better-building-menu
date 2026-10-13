@@ -164,6 +164,23 @@ describe("a name planned in its box", () => {
     assert.deepEqual(planName("PARKS", square), { lines: ["PARKS"], whole: true });
   });
 
+  it("plans the same name in the same room once, and forgets the oldest past a few screens' names", () => {
+    const name = "Four-Lane Perpendicular Parking Road";
+    const plan = planName(name, plate(95));
+
+    assert.equal(planName(name, plate(95)), plan);
+    assert.equal(planName(name, plate(95), { keep: [], typed: [] }), plan);
+    assert.notEqual(planName(name, plate(95), { keep: ["Perpendicular"] }), plan);
+    // A room a hair narrower, within the same hundredth, still gets a plan that fits it.
+    assert.ok(planFits(planName("Small Elementary School", plate(57.004, 1)).lines, plate(57.004, 1)));
+    assert.ok(planFits(planName("Small Elementary School", plate(57.0, 1)).lines, plate(57.0, 1)));
+
+    for (let at = 0; at < 2_100; at += 1) planName(`Plaza ${at}`, plate(95));
+    const again = planName(name, plate(95));
+    assert.notEqual(again, plan);
+    assert.deepEqual(again, plan);
+  });
+
   it("draws nothing for an empty name", () => {
     assert.deepEqual(planName("  ", plate(95)), { lines: [], whole: true });
   });

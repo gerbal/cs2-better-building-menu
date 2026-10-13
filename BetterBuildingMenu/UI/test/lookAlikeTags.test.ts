@@ -173,6 +173,38 @@ describe("the tiles' look-alike tags", () => {
     assert.ok(measured <= zones.length * 24, `${measured} measures for ${zones.length} tiles`);
   });
 
+  it("work out only the new tiles at a Load more: only the collision pass runs over every tile", () => {
+    const counter = () => {
+      const count = { measured: 0 };
+      const fits: typeof tagFits = (...args) => {
+        count.measured += 1;
+        return tagFits(...args);
+      };
+      return { count, fits };
+    };
+    // Two runs whose tags never read alike, so the new run moves no tile of the old one.
+    const syllables = ["ka", "lo", "mi", "nu", "pe", "ri", "so", "tu"];
+    const word = (at: number) => `${syllables[at % 8]}${syllables[Math.floor(at / 8) % 8]}`.replace(/^./u, (first) => first.toUpperCase());
+    const first = Array.from({ length: 30 }, (_, at) => tile(at + 1, `Alpha Tower ${word(at)}`, word(at)));
+    const loaded = Array.from({ length: 30 }, (_, at) => tile(at + 101, `Beta Hall ${word(at + 30)}`, word(at + 30)));
+
+    const page = counter();
+    lookAlikeTags(first, 64, 1.5, page.fits);
+    const before = page.count.measured;
+    const tagsAfter = lookAlikeTags([...first, ...loaded], 64, 1.5, page.fits);
+    const atLoadMore = page.count.measured - before;
+
+    const alone = counter();
+    lookAlikeTags(loaded, 64, 1.5, alone.fits);
+
+    assert.ok(before > 0 && alone.count.measured > 0);
+    assert.equal(atLoadMore, alone.count.measured);
+    assert.equal(tagsAfter.size, first.length + loaded.length);
+    // The same tiles pushed again measure nothing.
+    lookAlikeTags([...first, ...loaded], 64, 1.5, page.fits);
+    assert.equal(page.count.measured - before, atLoadMore);
+  });
+
   it("key the tags on what they read, so a page pushed again with the same tiles keeps them", () => {
     const page = [tile(1, "NA Pack", "Pack"), tile(2, "NA Trailer Homes", "Trailer")];
 

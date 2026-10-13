@@ -72,9 +72,29 @@ interface TagBox {
   fits: typeof tagFits;
 }
 
+/**
+ * A tile's tags as worked out once for its name, distinguishing word and lock at a tile width and text
+ * scale: the forms in words that fit, and its cut once tried (null for none).
+ */
+interface Forms {
+  forms: readonly string[];
+  cut?: string | null;
+}
+
+/**
+ * The tiles' forms worked out lately, by the measure that decided them, the latest last: a Load more
+ * works out only the new tiles', and only the collision pass runs over every tile.
+ */
+const worked = new WeakMap<typeof tagFits, Map<string, Forms>>();
+
+/** The most tiles' forms kept: the 2,000 tiles a list loads, at two widths. */
+const MOST_WORKED = 4096;
+
 interface Member {
   entry: BuildingCatalogEntry;
   locked: boolean;
+  /** Its forms as worked out, which its cut is kept on. */
+  own: Forms;
   /** Its tags that fit, in order; its cut joins them only once the others are spent. */
   forms: string[];
   level: number;
@@ -89,6 +109,24 @@ interface Member {
  */
 function memberOf(entry: BuildingCatalogEntry, box: TagBox): Member | null {
   const locked = isEntryLocked(entry);
+  const own = formsOf(entry, locked, box);
+  const member: Member = { entry, locked, own, forms: [...own.forms], level: 0, cut: false };
+
+  return member.forms.length > 0 || addCut(member, box) ? member : null;
+}
+
+/** A tile's forms in words, worked out once for its name, distinguishing word, lock, tile width and text scale. */
+function formsOf(entry: BuildingCatalogEntry, locked: boolean, box: TagBox): Forms {
+  let byTile = worked.get(box.fits);
+  if (byTile === undefined) worked.set(box.fits, (byTile = new Map()));
+  const key = `${entry.name || entry.prefabName}\u0001${entry.distinctWord ?? ""}\u0001${locked ? 1 : 0}\u0001${box.tileWidth}\u0001${box.textScale}`;
+  const known = byTile.get(key);
+  if (known !== undefined) {
+    byTile.delete(key);
+    byTile.set(key, known);
+    return known;
+  }
+
   const words = wordsOf(entry);
   const own = ownWord(words, entry.distinctWord ?? "");
   const telling = own >= 0 && says(words[own]);
@@ -98,22 +136,33 @@ function memberOf(entry: BuildingCatalogEntry, box: TagBox): Member | null {
     own >= 0 ? pairOf(words, own) : "",
     telling && own > 0 ? `${words[0]} ${tagWord(words[own])}` : "",
   ];
-  const forms = candidates.filter((form, index) => form !== "" && candidates.indexOf(form) === index && box.fits(form, box.tileWidth, box.textScale, locked));
-  const member: Member = { entry, locked, forms, level: 0, cut: false };
-
-  return forms.length > 0 || addCut(member, box) ? member : null;
+  const forms: Forms = { forms: candidates.filter((form, index) => form !== "" && candidates.indexOf(form) === index && box.fits(form, box.tileWidth, box.textScale, locked)) };
+  byTile.set(key, forms);
+  if (byTile.size > MOST_WORKED) byTile.delete(byTile.keys().next().value!);
+  return forms;
 }
 
 /**
  * Adds a member's last tag and moves to it: its name cut once by the name planner, the word that tells
  * it apart and every number whole; else, where that word alone is wider than the tag, the word cut
- * inside it ("Wat…ont", "Mansard…"). False where neither fits or says what a form already does.
+ * inside it ("Wat…ont", "Mansard…"). False where neither fits or says what a form already does. A
+ * tile's cut is worked out once, with its forms.
  */
 function addCut(member: Member, box: TagBox): boolean {
   member.cut = true;
+  if (member.own.cut === undefined) member.own.cut = cutOf(member, box);
+  if (member.own.cut === null) return false;
+
+  member.forms.push(member.own.cut);
+  member.level = member.forms.length - 1;
+  return true;
+}
+
+/** A member's cut, its forms in words not yet joined by it; null where none fits or it says what a form does. */
+function cutOf(member: Member, box: TagBox): string | null {
   const words = wordsOf(member.entry);
   const own = ownWord(words, member.entry.distinctWord ?? "");
-  if (own < 0) return false;
+  if (own < 0) return null;
 
   const word = words[own];
   const cut = (text: string, keep: readonly string[]) => cutToTag(text, box.tileWidth, box.textScale, { besideLock: member.locked, keep, fits: box.fits });
@@ -122,12 +171,7 @@ function addCut(member: Member, box: TagBox): boolean {
   // cost the room that lets the cut fit at all.
   const named = box.fits(word, box.tileWidth, box.textScale, member.locked) ? cut(words.join(" "), [word]) : CUT_MARK;
   const inside = cut(word, []);
-  const form = [named, inside].find((text, index) => text !== CUT_MARK && (index === 0 ? text.split(CUT_MARK).length === 2 : readableCut(text, word)) && !member.forms.includes(text));
-  if (form === undefined) return false;
-
-  member.forms.push(form);
-  member.level = member.forms.length - 1;
-  return true;
+  return [named, inside].find((text, index) => text !== CUT_MARK && (index === 0 ? text.split(CUT_MARK).length === 2 : readableCut(text, word)) && !member.own.forms.includes(text)) ?? null;
 }
 
 /**

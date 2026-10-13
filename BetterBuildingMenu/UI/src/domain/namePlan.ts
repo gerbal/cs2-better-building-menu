@@ -422,12 +422,41 @@ function lastResort(name: string, words: readonly string[], box: NameBox, holds:
     ?? (runWidth(CUT_MARK, box) <= box.width ? [CUT_MARK] : []);
 }
 
-/** How a name draws in a box: whole where it fits, else its best cut, never a line wider than the box. See the module's comment. */
+/** The plans made lately, the latest last: a page plans the same names again at each render and keystroke. */
+const plans = new Map<string, NamePlan>();
+
+/** The most plans kept: a few screens' names at a few rooms. */
+const MOST_PLANS = 2048;
+
+/**
+ * How a name draws in a box: whole where it fits, else its best cut, never a line wider than the box.
+ * The same name, room to a hundredth of a rem, type and hints plan once, while the plan fits the room
+ * asked for; the plan is shared, and nobody changes it. See the module's comment.
+ */
 export function planName(name: string, room: NameBox, hints: NameHints = {}): NamePlan {
+  // A width that says nothing is no room, never a line laid out against NaN.
+  const width = Number.isFinite(room.width) ? Math.round(room.width * 100) / 100 : 0;
+  const key = [name, width, room.lines, room.font, room.tracking ?? 0, (hints.keep ?? []).join("\u0002"), (hints.typed ?? []).join("\u0002"), hints.lastResort ?? true].join("\u0001");
+  const known = plans.get(key);
+  const box = Number.isFinite(room.width) ? room : { ...room, width: 0 };
+  if (known !== undefined && planFits(known.lines, box)) {
+    plans.delete(key);
+    plans.set(key, known);
+    return known;
+  }
+
+  const plan = planOnce(name, box, hints);
+  Object.freeze(plan.lines);
+  plans.set(key, Object.freeze(plan));
+  if (plans.size > MOST_PLANS) plans.delete(plans.keys().next().value!);
+  return plan;
+}
+
+/** A name's plan, worked out. */
+function planOnce(name: string, room: NameBox, hints: NameHints): NamePlan {
   const whole = name.trim();
   if (whole === "" || room.lines < 1) return { lines: [], whole: true };
-  // A width that says nothing is no room, never a line laid out against NaN.
-  const box = Number.isFinite(room.width) ? room : { ...room, width: 0 };
+  const box = room;
 
   const fits = layout(pieces(whole, false), box);
   if (fits !== null) return { lines: fits, whole: true };
