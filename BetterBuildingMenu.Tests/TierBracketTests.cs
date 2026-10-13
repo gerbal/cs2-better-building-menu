@@ -107,7 +107,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			// The trigger keeps its one argument: C# knows the tab from the bracket it published.
 			Assert.Contains(
-				"SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier, _tierParent));",
+				"SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier, _tierParent, ArmedEntryId()));",
 				ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"));
 			Assert.Contains("_tierParent = view.TierBracket.ParentCategory;", ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs"));
 		}

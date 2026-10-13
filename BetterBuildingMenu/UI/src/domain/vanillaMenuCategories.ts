@@ -17,6 +17,7 @@ export const ALL_CATEGORIES_ID = "";
  * reason: a row offering one choice is not a choice. Ours carries an extra
  * "All" tab, so two real categories still make three and are worth showing.
  * Counted over the tabs the menu fills, as C# counts them when it picks the strip instead.
+ * CatalogView.Opening opens on a tab by the same two-tab rule.
  */
 export function shouldShowCategoryStrip(
   categories: readonly VanillaMenuCategory[] | null | undefined,

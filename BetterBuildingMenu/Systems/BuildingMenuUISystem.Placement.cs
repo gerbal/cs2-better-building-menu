@@ -37,20 +37,17 @@ namespace BetterBuildingMenu.Systems
 			// A prefab we did not arm ourselves normally means the player picked something in
 			// vanilla's own UI, and the polite answer is to get out of its way. The binding is
 			// mirrored first: it is a fact about what the GAME has armed, not a record of who set it.
-			if (prefab is null)
-			{
-				_ActivePrefabId.Value = 0;
-			}
-			else if (_prefabSystem.TryGetEntity(prefab, out var entity))
-			{
-				_ActivePrefabId.Value = entity.Index;
-			}
+			_ActivePrefabId.Value = EntryIdOf(prefab);
 
 			if (!settingPrefab)
 			{
 				SetAssetMenuOpen(false);
 			}
 		}
+
+		/// <summary>A prefab as the index's id, or 0 for none or one the prefab system does not hold.</summary>
+		private int EntryIdOf(PrefabBase? prefab) =>
+			prefab is not null && _prefabSystem.TryGetEntity(prefab, out var entity) ? entity.Index : 0;
 
 		private void OnToolChanged(ToolBaseSystem tool)
 		{

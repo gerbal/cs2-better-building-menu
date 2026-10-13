@@ -127,6 +127,13 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
+		/// <summary>The prefab the game has armed, as the index's id, or 0 for none.</summary>
+		/// <remarks>
+		/// Read from the tool when asked: a bar press re-arms the menu's last building before the open
+		/// reaches BBM, so the open sees it. See docs/design-notes.md, "Opening on the building's tab".
+		/// </remarks>
+		private int ArmedEntryId() => EntryIdOf(_toolSystem.activePrefab);
+
 		/// <summary>
 		/// A vanilla toolbar menu was opened: show the asset menu filtered to it.
 		/// </summary>
@@ -174,7 +181,9 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			_assetMenu = _assetMenu.SelectMenu(menuName);
+			// The tab and the row the open rule picks, over the menu as it opens. See CatalogView.Opening.
+			var armed = ArmedEntryId();
+			_assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed));
 			// The player is now looking at everything this menu holds, which is
 			// what vanilla treats as having seen it.
 			ClearVanillaMenuHighlights(menuName);

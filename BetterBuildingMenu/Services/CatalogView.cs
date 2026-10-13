@@ -109,6 +109,50 @@ namespace BetterBuildingMenu.Services
 		/// <summary>The All cell's count: every row the filters and the search leave in the menu.</summary>
 		public int AllCount => FilteredMenuSet.Length;
 
+		/// <summary>
+		/// Where this menu opens, asked of a view of it as it opens (no tab, no search): the armed
+		/// building's tab when the menu holds it, else Education's first level with rows, else the
+		/// menu's first tab with rows; All where the row draws fewer than two tabs.
+		/// </summary>
+		/// <param name="armed">The prefab the game has armed, as the index's id, or 0 for none.</param>
+		/// <remarks>See docs/design-notes.md, "Opening on the building's tab".</remarks>
+		public MenuOpening Opening(int armed)
+		{
+			// One tab draws no tab cells: the row draws All and the strip, vanilla's one tab being the whole menu.
+			// The same two-tab rule as the UI's shouldShowCategoryStrip.
+			var tabs = MenuCategoryCounts.Count > 1 ? MenuCategoryCounts : Array.Empty<MenuCategoryCount>();
+			var held = armed > 0 ? PresentSet.FirstOrDefault(entry => entry.Id == armed) : null;
+
+			if (held is not null)
+			{
+				var tab = tabs.Count > 0 ? TabOf(held) : string.Empty;
+
+				return new MenuOpening(tab, LevelOf(held, tab), armed);
+			}
+
+			if (DrawsLevels
+				&& TierBracket.Tiers.FirstOrDefault(tier => tier.Count > 0) is { } level
+				&& int.TryParse(level.Id, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var first))
+			{
+				return new MenuOpening(TierBracket.ParentCategory, first, 0);
+			}
+
+			// A tab the filters empty is passed over; the toolbar's own row already narrowed the set.
+			var opened = tabs.FirstOrDefault(count => count.Count > 0) ?? tabs.FirstOrDefault();
+
+			return opened is null ? MenuOpening.All : new MenuOpening(opened.Id, -1, 0);
+		}
+
+		/// <summary>Whether Education's levels draw as chips beside their tab: two or more, as the row draws them.</summary>
+		/// <remarks>The same two-level rule as the UI's tab row (tabRow.ts, categoryItems).</remarks>
+		private bool DrawsLevels => TierBracket.Tiers.Length > 1;
+
+		/// <summary>The level an armed school opens on, where its tab draws its levels; -1 anywhere else.</summary>
+		private int LevelOf(BuildingCatalogEntry entry, string tab) =>
+			DrawsLevels && string.Equals(tab, TierBracket.ParentCategory, StringComparison.Ordinal) && entry.EducationLevel is int level and >= 1 and <= 4
+				? level
+				: -1;
+
 		/// <summary>What the page is drawn from: menu, category, tab and tier, facets cleared.</summary>
 		public BuildingCatalogEntry[] ViewSet => _viewSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query).ToArray();
 

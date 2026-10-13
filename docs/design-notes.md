@@ -839,6 +839,41 @@ row's readout states the window with the true total ("1–100 of 779"), so the l
 what the readout cannot: while the window can grow it offers Load more; once it is at the ceiling
 with rows past it (`Capped`), it says how to narrow the list instead: a tab, the search or a filter.
 
+## Opening on the building's tab
+
+A menu opens where the player was, as the game's own does: a bar press re-arms the menu's last
+building before the open reaches BBM, so the open rule reads the tool in hand at that moment
+(`ArmedEntryId`). After a city load the game remembers nothing, and neither does the rule.
+
+**The open rule** (`AssetMenuState.OpenMenu`, `CatalogView.Opening`). The search clears. The rule
+is asked about the menu as it opens, with no tab and no search, and the first answer that applies
+picks the tab: the armed building's tab, when this menu holds it (Roads' gathered networks open on
+the tab Roads gives them, a school on its level); Education's first level with rows; the menu's
+first tab with rows, passing over a tab the filters empty; All, for a menu that draws fewer than
+two tabs, where the row draws All and its strip. The armed building's tab wins even when the filters
+empty it, and its list then starts at the top. A tab drawn as its branches or densities opens
+whole: no branch lights, and the readout names the tab. The hand-back reopen when the mouse returns
+after a gamepad is an open like a bar press. Small menus opening on All join the rule with
+increment 9's bodies, which decide what fits on one screen; the warm start and the follow call
+`OpenMenu` with their own building.
+
+**The anchor** is an entry id in the query (`BuildingCatalogQuery.AnchorId`). An open and a tab pick
+set it to the armed building; a sort, a second click on the lit tab and a tab picked while a search
+is typed clear it, so those lists start at the top. It matches no row: the page names its place in
+the order (`AnchorIndex`, −1 when the result does not hold it), and the first window grows to hold
+it and a step of rows after it (`CoveringAnchor`), up to the 2,000-row ceiling, so the row can sit
+on line 1 in any body. The state keeps the window the page served (`CoverAnchor`), so Load more
+grows from there and not from the first chunk.
+
+**Starts.** An open, a tab pick and a sort move `ListStart`, which every page carries, and nothing
+else does: a search, a filter, a grouping, more rows and an index refresh leave the list where the
+player has it. A counter rather than a flag on one page, because two pages can land in one frame.
+The UI's own anchor, the first visible row as scrolling settles (`SetCatalogAnchor`), waits for
+windows that move by offset, which know that row.
+
+**This changes 0.2.x:** every menu opened on All and kept the search; a tab pick and a sort left
+the scroll where it was.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size

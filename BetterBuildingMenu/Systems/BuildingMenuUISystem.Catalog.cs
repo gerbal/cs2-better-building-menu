@@ -75,9 +75,13 @@ namespace BetterBuildingMenu.Systems
 					? _buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery(), _toolbarSelection).Page.TotalCount
 					: 0;
 			var pageMs = Lap();
+			// The window the page served is the one the state keeps, so Load more grows from the anchored row.
+			_assetMenu = _assetMenu.CoverAnchor(page.AnchorIndex);
 			_BuildingCatalogBinding.Value = page with
 			{
 				Status = AssetMenuState.GetPageStatus(source.Index.IsReady, page.TotalCount),
+				// The UI puts the list in place once per start. See docs/design-notes.md, "Opening on the building's tab".
+				ListStart = _assetMenu.ListStart,
 			};
 			// Publish the order the query actually ran with, so the header can
 			// never disagree with the rows beneath it.

@@ -12,10 +12,10 @@ namespace BetterBuildingMenu.Systems
 		/// Picks one of the scoped menu's category tabs, or all of them.
 		/// </summary>
 		/// <remarks>
-		/// The empty string is "every category in this menu", the state a menu opens in.
-		/// Vanilla has no such tab, but the asset menu can show a whole menu at once.
+		/// The empty string is All, every category in this menu. Vanilla has no such tab, but the
+		/// asset menu can show a whole menu at once.
 		/// </remarks>
-		private void SetAssetMenuCategory(string category) => ApplyTabPick(_assetMenu.SelectCategory(category));
+		private void SetAssetMenuCategory(string category) => ApplyTabPick(_assetMenu.SelectCategory(category, ArmedEntryId()));
 
 		/// <summary>
 		/// Narrows the menu to one branch of its service's development tree.
@@ -24,12 +24,12 @@ namespace BetterBuildingMenu.Systems
 		/// The strip's fallback axis. Single-select, like the category and
 		/// progression tabs beside it — the strip asks one question per segment.
 		/// </remarks>
-		private void SetAssetMenuStripTab(string tab) => ApplyTabPick(_assetMenu.SelectStripTab(tab));
+		private void SetAssetMenuStripTab(string tab) => ApplyTabPick(_assetMenu.SelectStripTab(tab, ArmedEntryId()));
 
 		/// <summary>Narrows the education menu to one school tier, in the tab that holds the levels.</summary>
-		private void SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier, _tierParent));
+		private void SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier, _tierParent, ArmedEntryId()));
 
-		/// <summary>A tab, strip tab or school tier the player picks: the pick logger counts it, then it applies.</summary>
+		/// <summary>A tab, strip tab or school tier the player picks: the pick logger counts it, then it applies, its list starting at the armed building.</summary>
 		/// <remarks>Each of the three triggers is a click in the tab row, so each counts.</remarks>
 		private void ApplyTabPick(AssetMenuState next)
 		{

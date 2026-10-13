@@ -142,6 +142,7 @@ function categoryItems(input: TabRowInput, category: VanillaMenuCategory): TabRo
   const picked = isCategorySelected(category.id, input.selectedCategory) && input.selectedStripTabs.length === 0;
   const tiers = schoolTierTabs(input.bracket.tiers);
 
+  // Two levels or more draw as chips; CatalogView's DrawsLevels opens on a level by the same rule.
   if (isEducationMenu(input.menu) && category.id === input.bracket.parentCategory && tiers.length > 1) {
     return [{
       kind: "bracket",
