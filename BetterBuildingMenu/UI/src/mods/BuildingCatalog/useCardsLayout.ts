@@ -28,7 +28,8 @@ export interface CardPlace {
 
 export type CardCell =
   | { kind: "label"; section: CatalogSection; place: CardPlace }
-  | { kind: "item"; entry: BuildingCatalogEntry; text: CardText; place: CardPlace };
+  /** `held`: the packer holds the card to the row, narrower than its words, so its name is cut. */
+  | { kind: "item"; entry: BuildingCatalogEntry; text: CardText; place: CardPlace; held: boolean };
 
 export interface CardsLayout {
   geometry: CardGeometry;
@@ -74,12 +75,13 @@ export function useCardsLayout(
       ? { ...next, text: cardText(next.entry, sortedMetric, separators, lockedWord, achievedMilestone) }
       : next);
     // A label is sized from the words its plate draws, the game's in the player's language.
-    const packed = packCards(order.map((next) => next.kind === "item"
+    const inputs = order.map((next) => next.kind === "item"
       ? { width: cardWidth(next.text, textScale) }
       : {
           width: labelWidth(sectionLabel(next.section, (key) => translate(key, null), lockedWord), groupDigits(next.section.count, separators), textScale),
           ownLine: blockLabels === "ownLine",
-        }), rowWidth);
+        });
+    const packed = packCards(inputs, rowWidth);
     // Whole thousandths of a rem: the widths' sums carry float noise into the inline style.
     const placeOf = (at: number): CardPlace => ({
       left: thousandths(packed[at].left),
@@ -88,7 +90,7 @@ export function useCardsLayout(
       height: thousandths(geometry.height),
     });
     const cells: CardCell[] = order.map((next, at) => next.kind === "item"
-      ? { kind: "item", entry: next.entry, text: next.text, place: placeOf(at) }
+      ? { kind: "item", entry: next.entry, text: next.text, place: placeOf(at), held: packed[at].width < inputs[at].width }
       : { kind: "label", section: next.section, place: placeOf(at) });
     const rows = packed.length === 0 ? 0 : packed[packed.length - 1].row + 1;
 

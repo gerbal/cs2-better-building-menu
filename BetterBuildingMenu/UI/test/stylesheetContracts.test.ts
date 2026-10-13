@@ -53,6 +53,17 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(cards(".card")["box-sizing"], "border-box");
   });
 
+  it("cuts a card's name with an ellipsis where the packer holds the card to the row", () => {
+    // Cohtml draws no ellipsis on a flex item, so the name is cut in an inline-block box of its own,
+    // inside the flex item, which keeps to the card's words.
+    assert.equal(cards(".nameHeld")["max-width"], "100%");
+    assert.equal(cards(".nameHeld").overflow, "hidden");
+    assert.equal(cards(".nameWords").display, "inline-block");
+    assert.equal(cards(".nameWords")["max-width"], "100%");
+    assert.equal(cards(".nameWords").overflow, "hidden");
+    assert.equal(cards(".nameWords")["text-overflow"], "ellipsis");
+  });
+
   it("lets every body's scroller fill the body and no more, and the body shrink below its content", () => {
     // A scroller with no cap outgrows the box, and a body that cannot shrink lays its rows out
     // below the screen, present in the DOM and never drawn.

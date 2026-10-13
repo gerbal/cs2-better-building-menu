@@ -21,6 +21,7 @@ interface CardProps {
   entry: BuildingCatalogEntry;
   text: CardText;
   place: CardPlace;
+  held: boolean;
   armed: boolean;
   enter: boolean;
   stateWords: StateWords;
@@ -34,7 +35,7 @@ interface CardProps {
  * and the capacity); and under a sort by a number, the value sorted by at its right. The live check and
  * the render tests count what a body shows through the data-bbm markers.
  */
-const Card = memo(function Card({ entry, text, place, armed, enter, stateWords, hoverCard, onPlace }: CardProps) {
+const Card = memo(function Card({ entry, text, place, held, armed, enter, stateWords, hoverCard, onPlace }: CardProps) {
   const fullName = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
@@ -74,7 +75,12 @@ const Card = memo(function Card({ entry, text, place, armed, enter, stateWords, 
           )}
         </span>
         <span className={styles.words}>
-          <span className={styles.name} data-bbm-name={fullName.length}>{text.name}</span>
+          {held ? (
+            // The name in a box of its own inside the flex child: Cohtml draws no ellipsis on a flex item.
+            <span className={classNames(styles.name, styles.nameHeld)}><span className={styles.nameWords} data-bbm-name={fullName.length}>{text.name}</span></span>
+          ) : (
+            <span className={styles.name} data-bbm-name={fullName.length}>{text.name}</span>
+          )}
           {/* Each figure in its own box, "·" between: two figures with only space between read as one number. */}
           <span className={styles.facts} data-bbm-fact="true">
             {text.locked !== null && (
@@ -131,6 +137,7 @@ export const CardsBody = memo(function CardsBody({ layout, enterId, onPlace, foo
               entry={cell.entry}
               text={cell.text}
               place={cell.place}
+              held={cell.held}
               armed={armedId !== 0 && cell.entry.id === armedId}
               enter={cell.entry.id === enterId}
               stateWords={stateWords}

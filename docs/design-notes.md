@@ -1177,12 +1177,16 @@ plate's (`cell-face`, `cell-lit`, `tName`, `tNum2`, `tCost`, `bodyMilestone`).
 
 **Placed by a packer.** Each card is as wide as its name or its facts line, whichever is longer, with
 its picture and padding, so the rows end ragged. Cohtml lays out no flex-wrap a body can trust, so each
-card is placed from the widths its words draw at (`cardText`, `cardWidth`, `packCards`): the widths
-come from each character's advance in the game's own fonts (`textWidth`, measured from Overpass and Noto
+card is placed from the widths its words draw at (`cardText`, `cardWidth`, `packCards`): the widths come
+from each character's advance in the game's own fonts (`textWidth`, measured from Overpass and Noto
 Sans), never from the drawn card, so the packer is pure and no frame re-packs. A character the table
 lacks counts 0.65 em, an ideograph or a syllable block a whole em. A card a few rem wider than its words
-costs nothing; one narrower would cut its last letter, so the estimate keeps 2 rem of slack. The tiles'
-tag judges its fit from the same table, the wider of the two fonts.
+costs nothing; one narrower would cut its last letter, so the estimate keeps 2 rem of slack. A card
+wider than the row (a long name in a script the table counts a whole em a character, or a long name at
+large text on the first step) is held to the row, and its name is cut with "…" in a box of its own, as a
+label plate's is: Cohtml draws no ellipsis on a flex item. Only a held card's name is cut, so an
+estimate a rem short runs into the card's padding rather than losing letters to "…". The tiles' tag
+judges its fit from the same table, the wider of the two fonts.
 
 **Its height** is the Card height knob's: 46 rem, three rows in the game's own 144.25 body a little over
 3 apart; or 50, two rows 4 apart, the block centred. Above 100% text a card grows where its two lines

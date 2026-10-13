@@ -117,6 +117,16 @@ describe("the cards", () => {
     assert.match(render(rows(1)), /class="card" style="left:0rem;top:20\.12rem;width:[\d.]+rem;height:50rem"/);
   });
 
+  it("cut the name of a card the packer holds to the row in a box of its own, and no other card's", () => {
+    // 56 ideographs, a whole em each, pass the game's own 706 box's row.
+    const long = "漢".repeat(56);
+    const html = render([entry(1, { name: long }), entry(2)]);
+
+    // The live check reads how much of the name the box that cuts it draws.
+    assert.match(html, new RegExp(`<span class="name nameHeld"><span class="nameWords" data-bbm-name="56">${long}</span></span>`));
+    assert.match(html, /<span class="name" data-bbm-name="10">Building 2<\/span>/);
+  });
+
   it("draw no title, which Cohtml never shows", () => {
     assert.doesNotMatch(render(rows(2)), / title="/);
   });
