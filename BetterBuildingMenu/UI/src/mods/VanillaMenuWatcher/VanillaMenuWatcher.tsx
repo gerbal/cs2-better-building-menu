@@ -77,9 +77,10 @@ export const VanillaMenuWatcher = () => {
       }
 
       if (action === "closeMenu") {
-        // The camera keys come back with the menu: a field left focused would keep them.
-        blurSearchField();
+        // The close goes first, so a blur that fails cannot lose it; the camera keys come back with
+        // the menu, and a field left focused would keep them.
         trigger("toolbar", "clearAssetSelection");
+        blurSearchField();
       }
     };
 

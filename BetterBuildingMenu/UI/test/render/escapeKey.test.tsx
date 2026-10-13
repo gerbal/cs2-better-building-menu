@@ -91,6 +91,21 @@ describe("Escape, BBM's half", () => {
     assert.deepEqual(sent(), ["toolbar.clearAssetSelection"]);
   });
 
+  it("sends the close first and blurs the field after, so a blur that goes wrong cannot lose the close", () => {
+    const field = fakeSearchField("");
+    const calls: string[] = [];
+    const blur = field.blur;
+    field.blur = () => {
+      calls.push(`blur after ${sent().join(",") || "nothing"}`);
+      blur();
+    };
+    focus(field);
+
+    escape(field);
+
+    assert.deepEqual(calls, ["blur after toolbar.clearAssetSelection"]);
+  });
+
   it("closes the menu from anywhere else, an open list with it", () => {
     listOpen();
 
