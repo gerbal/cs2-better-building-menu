@@ -13,6 +13,8 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>The keys of ours the active language has no translation of, so the UI can use the game's words there.</summary>
 		private ValueBindingHelper<string[]> _UntranslatedKeys = null!;
 
+		private bool _localeWarned;
+
 		/// <summary>
 		/// Publishes which of our strings the active language lacks, now and at each language change.
 		/// The game answers those in English, so the UI cannot tell from the string alone.
@@ -32,7 +34,14 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			GameManager.instance.localizationManager.onActiveDictionaryChanged += OnLocaleChanged;
+			// The handler runs inside the game's language switch, so neither the subscribe nor the
+			// handler may throw into it.
+			try
+			{
+				GameManager.instance.localizationManager.onActiveDictionaryChanged += OnLocaleChanged;
+			}
+			catch (Exception e) { WarnLocaleOnce(e); }
+
 			OnLocaleChanged();
 		}
 
@@ -46,8 +55,20 @@ namespace BetterBuildingMenu.Systems
 
 		private void OnLocaleChanged()
 		{
-			_UntranslatedKeys.Value = _localeStrings?.UntranslatedKeys(GameManager.instance.localizationManager.activeLocaleId)
-				?? Array.Empty<string>();
+			try
+			{
+				_UntranslatedKeys.Value = _localeStrings?.UntranslatedKeys(GameManager.instance.localizationManager.activeLocaleId)
+					?? Array.Empty<string>();
+			}
+			catch (Exception e) { WarnLocaleOnce(e); }
+		}
+
+		private void WarnLocaleOnce(Exception e)
+		{
+			if (_localeWarned) { return; }
+
+			_localeWarned = true;
+			Mod.Log.Warn($"Could not publish which of the mod's strings the active language lacks: {e.Message}");
 		}
 	}
 }

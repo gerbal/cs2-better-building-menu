@@ -509,7 +509,8 @@ control sits over it (`topRowRightInset`).
   is open the popover ignores presses outside it: the first press on the map closes the dropdown, as
   anywhere in the game, and the next closes the popover. Whether a menu is open is read off the
   document at the press (`gameMenuOpen`), by the class of the game's dropdown theme the rail hands
-  its dropdowns (`dropdownMenu`), never from a flag the dropdown's `onToggle` sets: the game's
+  its dropdowns (`dropdownMenu`), or cs2/ui's own dropdown theme's when the game's gives none,
+  never from a flag the dropdown's `onToggle` sets: the game's
   dropdown closes itself on a pick or an outside press without calling it. The popover's listener
   is captured, so it runs before the dropdown's own and still finds the menu on the press that
   closes it.

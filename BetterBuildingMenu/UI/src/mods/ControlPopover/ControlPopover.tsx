@@ -10,6 +10,15 @@ import { SortList } from "mods/Pickers/SortList";
 import { ViewList } from "mods/Pickers/ViewList";
 import styles from "./controlPopover.module.scss";
 
+/** cs2/ui's own dropdown theme, whose menu class a Dropdown draws when the game's in-game theme gives none. */
+const CS2_DROPDOWN_THEME = "game-ui/common/input/dropdown/themes/default.module.scss";
+
+/**
+ * The class of a game dropdown's open menu: the in-game theme's, else cs2/ui's own, else null, and
+ * with null a press in a menu counts as outside.
+ */
+const dropdownMenuClass = () => vanillaClass(GAME_DROPDOWN_THEME, "dropdownMenu") ?? vanillaClass(CS2_DROPDOWN_THEME, "dropdownMenu");
+
 export interface ControlPopoverProps {
   open: OpenPopover | null;
   /** Where a popover may end, in the box: its right edge, or 6 rem short of the chirper. */
@@ -34,7 +43,7 @@ export const ControlPopover = ({ open, limit, anchor, onClose }: ControlPopoverP
     // that press closes the dropdown, and the next one FILTER.
     const onPress = (event: MouseEvent) => {
       if (isWithin(event.target, POPOVER_MARK) || isWithin(event.target, CONTROLS_MARK)) return;
-      if (open.kind === "filter" && gameMenuOpen(document, vanillaClass(GAME_DROPDOWN_THEME, "dropdownMenu"))) return;
+      if (open.kind === "filter" && gameMenuOpen(document, dropdownMenuClass())) return;
       onClose();
     };
 

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetModules, setModule } from "../harness/stubs/cs2-modding";
 import { Dropdown, DropdownItem } from "../harness/stubs/cs2-ui";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_SORT_OPTIONS } from "../../src/domain/assetMenuSortPresentation";
@@ -70,6 +71,7 @@ describe("a control's popover", () => {
   });
 
   afterEach(() => {
+    resetModules();
     act(() => root?.unmount());
     root = undefined;
     globals.document = saved;
@@ -232,6 +234,29 @@ describe("a control's popover", () => {
     menuShown = true;
     pressAt(outside);
     assert.equal(closed, 0);
+  });
+
+  it("falls back to cs2/ui's own dropdown menu when the game's theme has no menu class, and keeps FILTER open for it", () => {
+    filters();
+    set("BuildingCatalogMetricRanges", null);
+    setModule("game-ui/game/themes/game-dropdown.module.scss", "classes", {});
+    mount({ kind: "filter", left: 0 });
+
+    menuShown = true;
+    pressAt(outside);
+    assert.equal(closed, 0);
+  });
+
+  it("still closes FILTER on a press outside when neither theme gives a menu class", () => {
+    filters();
+    set("BuildingCatalogMetricRanges", null);
+    setModule("game-ui/game/themes/game-dropdown.module.scss", "classes", {});
+    setModule("game-ui/common/input/dropdown/themes/default.module.scss", "classes", {});
+    mount({ kind: "filter", left: 0 });
+
+    menuShown = true;
+    pressAt(outside);
+    assert.equal(closed, 1);
   });
 
   it("closes another control's popover on a press outside, whatever dropdown menu is open", () => {
