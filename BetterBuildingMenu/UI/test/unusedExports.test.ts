@@ -23,6 +23,7 @@ const TEST_SEAMS: Readonly<Record<string, string>> = {
   SERVICE_FACT_LOCALIZATION_KEYS: "the service-facts test checks each key's wording",
   SERVICE_TEXT_FACT_KEYS: "the fact-coverage test compares it with the indexer's keys",
   WIDTH_STEPS_REFERENCE: "C#'s own widths at three aspects, which the UI's copy of the step rule is tested against",
+  plansWorkedOut: "the view-switch test counts the names a switch plans",
 };
 
 const withoutComments = (source: string): string =>

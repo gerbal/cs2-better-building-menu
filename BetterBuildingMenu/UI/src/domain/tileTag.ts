@@ -2,8 +2,8 @@
  * What a tile's tag says: the plate's first number (the cost, or why a locked building waits), or under
  * a sort by a value the value sorted by, as 0.2.x's Grid drew it, so a re-sort says why the tiles moved.
  * A money figure too wide for the tag is said in thousands or millions, shortened a step at a time,
- * rather than cut; a tag drops only a unit every tile beside it shares, and a word that still runs over
- * is cut by the name planner, with "…". Pure. See docs/design-notes.md, "The bodies".
+ * rather than cut, and where no form fits, not said; a tag drops only a unit every tile beside it shares,
+ * and a word that still runs over is cut by the name planner, with "…". Pure. See docs/design-notes.md, "The bodies".
  */
 import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
@@ -85,12 +85,12 @@ export function tileTag(
 }
 
 /**
- * The most exact of a figure's forms that fits the tag; where none does, the narrowest, which the tag
- * clips least: a figure is never cut, as a cut number reads as another number.
+ * The most exact of a figure's forms that fits the tag; where none does, no tag: a figure is never cut
+ * nor clipped, as a cut number reads as another number, and a clipped unit as another unit ("500MW" for
+ * 500 MWh).
  */
 function fittingForm(forms: readonly string[], tileWidth: number, textScale: number): string {
-  return forms.find((form) => tagFits(form, tileWidth, textScale))
-    ?? forms.reduce((least, form) => (textWidth(form, 1, "wider") < textWidth(least, 1, "wider") ? form : least));
+  return forms.find((form) => tagFits(form, tileWidth, textScale)) ?? "";
 }
 
 /** How a tag is cut: beside a lock glyph or not, the words it keeps, and the measure that decides it fits. */

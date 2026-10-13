@@ -72,6 +72,22 @@ export function oneLineNumber(entry: BuildingCatalogEntry, numbers: PlateNumbers
   return { first: numbers.second ?? "", second: null, glyph: numbers.second === null ? null : numbers.glyph, locked: false, firstIsKey: true };
 }
 
+/** A plate's numbers as it draws them: both, or on a one-line plate its one. */
+export function drawnPlateNumbers(
+  entry: BuildingCatalogEntry,
+  grid: BodyGrid,
+  sortedMetric: AssetMenuMetric | null,
+  separators: NumberSeparators,
+  lockedWord: string,
+  achievedMilestone: number,
+  keyKind: KeyKind,
+  said: readonly SharedValue[],
+): PlateNumbers {
+  const both = plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone, keyKind, said);
+  // A one-line plate is one number tall: two would be cut at its top and foot.
+  return grid.form === "plate1" ? oneLineNumber(entry, both, sortedMetric, said) : both;
+}
+
 /** A plate's padding either side together and the gap between its picture, name and numbers, at 100% text: listBody.module.scss. */
 const PLATE_PADDING = 1 + 4;
 const PLATE_GAP = 3;

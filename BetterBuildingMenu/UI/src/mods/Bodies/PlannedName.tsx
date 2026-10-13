@@ -4,6 +4,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { deviceRem } from "domain/bodyGeometry";
 import { drawnRoom, type DrawnRoom } from "domain/measuredFit";
 import { nameRuns, planFits, planName } from "domain/namePlan";
+import type { ApartHints } from "domain/platesApart";
 import styles from "./plannedName.module.scss";
 
 export interface PlannedNameProps {
@@ -17,6 +18,8 @@ export interface PlannedNameProps {
   tracking?: number;
   /** The row's distinguishing word, which a cut keeps; "" for none. */
   distinct?: string;
+  /** What the list's pass over the page plans it with beyond that word, where it drew as another plate. */
+  apart?: ApartHints;
   /** The query the page answers, whose words a cut keeps; "" without one. */
   typed?: string;
   /** Whether the typed word is drawn dimmed, by the Dim the typed word knob. */
@@ -44,17 +47,17 @@ const NO_BOX = { clientWidth: 0 };
  * that ran past it. It never widens again until the name, its type, its lines, the typed text or the
  * distinguishing word change. See docs/design-notes.md, "Names".
  */
-export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", typed = "", dim = false, hugs = false, marked = true, className }: PlannedNameProps) {
+export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", apart, typed = "", dim = false, hugs = false, marked = true, className }: PlannedNameProps) {
   const boxRef = useRef<HTMLSpanElement>(null);
-  // A room drawn for one name, type, line count, typed text or distinguishing word says nothing of
-  // another: they start from the estimate again in the same render, not a frame late.
-  const key = `${name}\n${font}\n${lines}\n${typed}\n${distinct}`;
+  // A room drawn for one name, type, line count, typed text or kept words says nothing of another: they
+  // start from the estimate again in the same render, not a frame late.
+  const key = `${name}\n${font}\n${lines}\n${typed}\n${distinct}\n${apart?.keep.join(" ") ?? ""}\n${apart?.leads ?? false}`;
   const [state, setState] = useState<{ key: string; drawn: DrawnRoom }>({ key, drawn: UNDRAWN });
   const drawn = state.key === key ? state.drawn : UNDRAWN;
   if (state.key !== key) setState({ key, drawn });
   const room = { width: (drawn.box ?? width) * drawn.fit, lines, font, tracking };
   // Each word typed is kept on its own: a search matches its phrase anywhere in the name.
-  const plan = planName(name, room, { keep: [distinct], typed: typed.split(/\s+/) });
+  const plan = planName(name, room, { keep: [distinct, ...(apart?.keep ?? [])], typed: typed.split(/\s+/), leads: apart?.leads ?? false });
   const fitted = planFits(plan.lines, room);
 
   useEffect(() => {

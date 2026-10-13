@@ -50,6 +50,17 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void AWordOfMarksAloneIsPassedOverForTheWordAfterIt()
+		{
+			// A lone dash tells nothing apart, and the name planner never keeps one.
+			var rows = new[] { Row(1, "Covered Bridge"), Row(2, "Covered Bridge \u2014 Curvable & Illuminated"), Row(3, "Covered Bridge - -") };
+
+			Assert.Equal("Curvable", WordOf(rows, 2));
+			// Marks to its end: no word tells it apart.
+			Assert.Equal("", WordOf(rows, 3));
+		}
+
+		[Fact]
 		public void FirstWordsMatchWhateverTheirCase()
 		{
 			var rows = new[] { Row(1, "Plain Four-lane Divided Road"), Row(2, "plain Four-Lane Road") };

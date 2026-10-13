@@ -1127,7 +1127,8 @@ counts each menu's tabs with its share (`MenuShare.Tabs`), and the open menu red
 leaves them. C# counts a menu's share with its first page, so on a menu's first open the UI names it
 only once that page has arrived grouped by its default; the body drawn before holds over that one page
 (`useAwaitsNoGroups`, `useHeld`) until the page without groups arrives a frame later, so the menu's first
-frame is its grown form, never its labels over small plates. A second grouped page draws, so nothing
+frame is its grown form, never its labels over small plates. The held body keeps its buildings' clicks,
+so a press in that one round trip places a building from the menu just left. A second grouped page draws, so nothing
 waits on C# twice. A small menu with two tabs or more keeps All's labels naming them, as All names each
 tab, and their slots count toward the screen it must fit. A GROUP pick of the player's still applies,
 and its labels take their slots, so the list grows less or not at all; its dot shows only for a pick
@@ -1190,8 +1191,8 @@ beside it shares it, and keeps every unit that tells tiles apart: under a sort b
 monthly, so a building's reads without its month ("¢4,612", "¢16.5k"); a network's cost and upkeep read
 per cell ("¢44/c", "¢36.9/c"), the cell telling a network's figure from a building's whole one. A road's
 cost or upkeep and a building's bill fit the smallest tile at every text scale; only a mod's road dearer
-than ten thousand a cell outruns the tag at 150%, where the tag clips it: a figure is never cut, as a
-cut number reads as another number. A sorted value whose unit
+than ten thousand a cell outruns the tag at 150%, where the tile draws no tag: a figure is never cut nor
+clipped, as a cut number reads as another number. A sorted value whose unit
 does not fit beside it keeps its whole number and drops the unit ("1 000", not "1 000 stu…"), which the
 Sort control names, unless the unit scales with its size (see "Numbers said once"). The fit is judged from the glyph advances of the
 game's own fonts, the wider of Overpass and Noto Sans per character, so it errs toward the short form;
@@ -1388,10 +1389,12 @@ weight, water, data) says its own unit and draws no glyph, and the lot is left o
 1x3"). Under a sort by a number the second is the value sorted by, with its unit, as Sort names the
 kind; under a sort by upkeep without the month every row shares, one convention for the list, the cards
 and the tiles' tags ("¢1,200", "¢3.9/c"). A unit that scales with its size (kW or MW, MWh, t or kt) is never dropped: where a
-tile's tag is short of room the number loses its decimals, then says thousands ("20k MW"), then closes
-up the space before its unit ("20kMW", "500MWh") (`compactUnitForms`), since two such figures bare side
-by side read as one scale. Where no form fits, as a battery's "500MWh" at 150% on the smallest tile by
-the estimate, which errs wide, the tag says the narrowest, as it does a money figure. The cards and the tiles' name line read their figures through the same
+tile's tag is short of room the number loses its decimals, then closes up the space before its unit
+("1,139MWh"), and only then says thousands ("20k MW", "20kMW"), which can be a few per cent out
+(`compactUnitForms`), since two such figures bare side by side read as one scale; a unit already a
+thousand of another (kt) says no thousands of it. Where no form fits, as a battery's 500 MWh at 130% and
+150% on the smallest tile by the estimate, which errs wide, the tile draws no tag, as for a money figure:
+a clipped "500MW" would read as power. The cards and the tiles' name line read their figures through the same
 functions.
 
 A network's cost is said per cell (`formatCostPerCell`): the index carries a kilometre's worth, 125
@@ -1438,7 +1441,9 @@ the readout now says it once and only the rows that differ print it.
 look-alike (`DistinctWords`, beside `DuplicateNameNumbering`, whose numbers it reads): the nearest is
 the row of the whole result that shares the most leading words with it, which in name order is a
 neighbour, and the row's word is the one after those. "Pedestrian" against Covered Bicycle Bridge; "2"
-for Four-Lane Road 2. A row with no look-alike, or that is all of what it shares, has none. Words match
+for Four-Lane Road 2. A word of marks alone ("—") is passed over for the word after it ("Curvable"), as a
+lone dash tells nothing apart and the planner never keeps one. A row with no look-alike, or that is all of
+what it shares, or only marks after it, has none. Words match
 whatever their case and however many spaces part them. C# finds it over the whole result, as a
 look-alike past the window still decides which word a cut name keeps, and counts each run of leading
 words once in one pass over the rows' words, so a refresh sorts nothing more. A page only counted, the
@@ -1492,6 +1497,19 @@ so the renders and the game draw the same lines. In order:
    the first word nor more fits, rows of two families can still read alike ("…Perpendicular…"). Only where none of these fits is the whole name cut inside its words, then the mark
    put first; where not even the mark fits, no line is drawn. The planner never draws a line wider than
    its room, so a one-word name never runs into the numbers beside it.
+
+**Plates told apart over the page.** The planner cuts each name alone, so two names can cut alike
+("NA… Aluminum…" for NA Low and NA Tall Aluminum Fence at 150%) and read as one building. The list makes
+one pass over its page, beside the tiles' look-alike tags (`wordsApart`): each plate drawn as another plate
+of a different name draws is planned again keeping, beside its distinguishing word, the first word that
+tells its name from theirs ("…Tall Aluminum…"); else with the mark leading, its first word dropped
+(`leads`: "…Angled…" beside "Two… Angled…"); else both. The first plan that keeps its distinguishing
+word as whole as before and draws apart from every plate stands, so the pass never draws alike two plates
+that were not, and each plan is the planner's, with every guarantee it gives. Where no such plan fits
+(the Perpendicular Parking Roads at 130% and 150%, whose "…Perpendicular…" leaves no room for more), the
+plates still read alike. The pass plans each plate in its estimate's room, as the plate first plans it,
+so it finds each plan kept and plans again only the few drawn alike, each kept by its hints, and a Load
+more or a view switch plans no name twice; a plate's room as drawn may still cut it otherwise.
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's

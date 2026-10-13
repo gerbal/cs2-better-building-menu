@@ -5,6 +5,7 @@ import { catalogPage, entry, showBody } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { cellsDrawn } from "../harness/stubs/cs2-ui";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { plansWorkedOut } from "../../src/domain/namePlan";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 
 // Mounted, so the button's handler runs. The effects need a document and a
@@ -64,6 +65,30 @@ describe("Load more", () => {
       assert.equal(cellsDrawn.count, 100, body);
     });
   }
+
+  it("plans no name again when the view switches back, list to tiles to list and to tiles again", () => {
+    // Look-alike names, so the tiles tag them too, each a plan of its own.
+    const page = () => catalogPage(
+      JSON.parse(JSON.stringify(Array.from({ length: 300 }, (_, at) => entry(at + 1, { name: `Four-Lane Perpendicular Parking Road ${at + 1}` })))),
+      { hasMore: true, totalCount: 1_000, limit: 300 },
+    );
+    const show = (body: string) => {
+      showBody(body);
+      act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", page()));
+    };
+    show("list");
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+    show("tiles");
+    const planned = plansWorkedOut();
+
+    show("list");
+    show("tiles");
+
+    assert.ok(planned > 0);
+    assert.equal(plansWorkedOut(), planned);
+  });
 
   it("asks for no more than the rows a fold leaves", () => {
     showBody("list");

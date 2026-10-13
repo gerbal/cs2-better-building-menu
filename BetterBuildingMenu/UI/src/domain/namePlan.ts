@@ -44,6 +44,12 @@ export interface NameHints {
    * says nothing rather than such a cut, and draws no line.
    */
   lastResort?: boolean;
+  /**
+   * Whether a cut around the distinguishing word opens with the mark, the name's head dropped ("…Angled…"),
+   * rather than keeping its first word ("Two… Angled…"): the list's pass over the page asks it of a plate
+   * whose first word leaves it drawn as another. False by default.
+   */
+  leads?: boolean;
 }
 
 export interface NamePlan {
@@ -465,11 +471,12 @@ function charCut(name: string, box: NameBox, leads: boolean): string[] | null {
  * numbers, cut or dropped. Then, where the row has a distinguishing word, that word whole with the first
  * word and a mark after each ("One… Perpendicular…"), so look-alikes of two families still read apart,
  * or with the mark leading where that keeps more of what is held, a typed word dropped where it must be;
- * both before the word is cut inside, as two look-alikes that lose it read alike. Then the whole name cut inside its words, then the mark leading, then the whole name
- * cut to its tail; and where not even the mark fits, no line. Without `further`, only the plain words are
- * cut, and once: no line where that does not fit and a word is held.
+ * with `leads`, only with the mark leading. Both before the word is cut inside, as two look-alikes that
+ * lose it read alike. Then the whole name cut inside its words, then the mark leading, then the whole
+ * name cut to its tail; and where not even the mark fits, no line. Without `further`, only the plain
+ * words are cut, and once: no line where that does not fit and a word is held.
  */
-function lastResort(name: string, words: readonly string[], box: NameBox, holds: readonly number[], further: boolean): string[] {
+function lastResort(name: string, words: readonly string[], box: NameBox, holds: readonly number[], further: boolean, leads: boolean): string[] {
   if (!further) {
     const inside = cutInside(words, box, holds, PLAIN, PLAIN, HEAD, 1);
     if (inside !== null) return inside;
@@ -479,10 +486,11 @@ function lastResort(name: string, words: readonly string[], box: NameBox, holds:
 
   // Around the distinguishing word a typed word may go: two look-alikes that lose that word read alike.
   const told = holds.includes(DISTINCT);
+  const around = leads ? LEAD : AROUND;
   return cutInside(words, box, holds, PLAIN, NUMBER, HEAD, MOST_MARKS)
-    ?? (told ? cutInside(words, box, holds, PLAIN, NUMBER, AROUND, MOST_MARKS, true) : null)
+    ?? (told ? cutInside(words, box, holds, PLAIN, NUMBER, around, MOST_MARKS, true) : null)
     ?? cutInside(words, box, holds, DISTINCT, DISTINCT, HEAD, MOST_MARKS)
-    ?? (told ? cutInside(words, box, holds, DISTINCT, DISTINCT, AROUND, MOST_MARKS, true) : null)
+    ?? (told ? cutInside(words, box, holds, DISTINCT, DISTINCT, around, MOST_MARKS, true) : null)
     ?? charCut(name, box, false)
     ?? (told ? null : cutInside(words, box, holds, PLAIN, DISTINCT, LEAD, MOST_MARKS))
     ?? charCut(name, box, true)
@@ -495,6 +503,14 @@ const plans = new Map<string, NamePlan>();
 /** The most plans kept: a window's 2,000 names in the list, and its tiles' tags cut at a few rooms each. */
 const MOST_PLANS = 8192;
 
+/** How many plans were worked out rather than found kept. */
+let worked = 0;
+
+/** How many plans were worked out rather than found kept: a test seam, which counts what a view switch plans. */
+export function plansWorkedOut(): number {
+  return worked;
+}
+
 /**
  * How a name draws in a box: whole where it fits, else its best cut, never a line wider than the box.
  * The same name, room to a hundredth of a rem, type and hints plan once, while the plan fits the room
@@ -503,7 +519,7 @@ const MOST_PLANS = 8192;
 export function planName(name: string, room: NameBox, hints: NameHints = {}): NamePlan {
   // A width that says nothing is no room, never a line laid out against NaN.
   const width = Number.isFinite(room.width) ? Math.round(room.width * 100) / 100 : 0;
-  const key = [name, width, room.lines, room.font, room.tracking ?? 0, (hints.keep ?? []).join("\u0002"), (hints.typed ?? []).join("\u0002"), hints.lastResort ?? true].join("\u0001");
+  const key = [name, width, room.lines, room.font, room.tracking ?? 0, (hints.keep ?? []).join("\u0002"), (hints.typed ?? []).join("\u0002"), hints.lastResort ?? true, hints.leads ?? false].join("\u0001");
   const known = plans.get(key);
   const box = Number.isFinite(room.width) ? room : { ...room, width: 0 };
   if (known !== undefined && planFits(known.lines, box)) {
@@ -512,6 +528,7 @@ export function planName(name: string, room: NameBox, hints: NameHints = {}): Na
     return known;
   }
 
+  worked += 1;
   const plan = planOnce(name, box, hints);
   Object.freeze(plan.lines);
   plans.set(key, Object.freeze(plan));
@@ -540,7 +557,7 @@ function planOnce(name: string, room: NameBox, hints: NameHints): NamePlan {
     if (broken !== null) return { lines: broken, whole: true };
   }
 
-  return { lines: cut ?? lastResort(whole, words, box, holds, hints.lastResort ?? true), whole: false };
+  return { lines: cut ?? lastResort(whole, words, box, holds, hints.lastResort ?? true, hints.leads ?? false), whole: false };
 }
 
 /** Whether a plan's lines each fit its box by the estimate: a line that does not is no evidence about the box it drew in. */

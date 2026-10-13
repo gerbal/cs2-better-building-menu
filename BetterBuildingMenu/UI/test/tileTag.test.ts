@@ -72,12 +72,14 @@ describe("a tile's tag", () => {
     assert.ok(tagFits(text, 64, 1.3));
   });
 
-  it("keeps a road's cell at 130% and 150% text, however dear the road", () => {
+  it("keeps a road's cell at 130% and 150% text, and past the dearest road's figure draws no tag rather than clip it", () => {
     for (const scale of [1.3, 1.5]) {
       for (const cost of [950, 5_500, 16_500, 1_250_000, 12_500_000]) {
+        if (scale === 1.5 && cost === 12_500_000) continue;
         assert.match(gameTag(row({ constructionCost: cost, costIsPerDistance: true }), scale), /^¢[^ ]+\/c$/, `${cost} at ${scale}`);
       }
     }
+    assert.equal(gameTag(row({ constructionCost: 12_500_000, costIsPerDistance: true }), 1.5), "");
   });
 
   it("says a road's upkeep per cell under a sort by upkeep, which fits the smallest tile at every text scale", () => {
@@ -184,7 +186,7 @@ describe("a tile's tag", () => {
     assert.equal(tag(plant(4_500), 1.3, "capacity").text, "450 kW");
   });
 
-  it("keeps a scaled unit at 150% text on the smallest tile, its number in thousands first, never past the tag", () => {
+  it("keeps a scaled unit at 150% text on the smallest tile, its number in thousands first, and draws no tag where no form with its unit fits", () => {
     const measure = (buildingType: string, subCategory: string) => (capacity: number) => row({ subCategory, buildingType, capacity });
     const plant = measure("PowerPlant", "ServiceBuildings_Electricity");
     const battery = measure("Battery", "ServiceBuildings_Electricity");
@@ -194,9 +196,13 @@ describe("a tile's tag", () => {
     // 20,000 MW, as a dam makes; in thousands, the space before the unit closed up where the tag needs it.
     assert.equal(at150(plant(200_000_000)), "20kMW");
     assert.ok(tagFits(at150(plant(200_000_000)), 64, 1.5));
-    // 500 MWh, as a battery stores: its unit kept, never the bare "500"; the narrowest form, as no form
-    // with its unit fits the smallest tile by the estimate, which errs wide.
-    assert.equal(at150(battery(5_000_000)), "500MWh");
+    // 500 MWh, as a battery stores, at 130% and 150%: no form with its unit fits the smallest tile by the
+    // estimate, which errs wide, and a clipped "500MW" would read as power, so no tag; never the bare "500".
+    assert.equal(at150(battery(5_000_000)), "");
+    assert.equal(tag(battery(5_000_000), 1.3, "capacity").text, "");
+    assert.equal(tag(battery(5_000_000), 1, "capacity").text, "500 MWh");
+    // 999.9 kW at 150%, the same.
+    assert.equal(at150(plant(9_999)), "");
     // kW, t and kt: each keeps its unit and fits.
     for (const [entry, unit] of [[plant(4_500), "kW"], [dump(999_990), "t"], [dump(12_345_678), "kt"]] as const) {
       const text = at150(entry);

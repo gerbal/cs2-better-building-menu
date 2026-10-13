@@ -46,6 +46,17 @@ describe("the list", () => {
     assert.equal(count(html, /data-tooltip/), 0);
   });
 
+  it("draws two plates the planner cuts alike apart at 150% text, each keeping its distinguishing word", () => {
+    setBinding("options", "textScale", 1.5);
+    const fences = [entry(1, { name: "NA Low Aluminum Fence", distinctWord: "Aluminum" }), entry(2, { name: "NA Tall Aluminum Fence", distinctWord: "Aluminum" })];
+    const html = render(fences, { over: { textScale: 1.5 } });
+    const names = [...html.matchAll(/data-bbm-name="\d+">(.*?)<\/span><\/span>/g)].map(([, lines]) => lines.replace(/<[^>]+>/g, ""));
+
+    assert.equal(names.length, 2);
+    assert.notEqual(names[0], names[1]);
+    assert.ok(names.every((name) => name.includes("Aluminum")), names.join(" | "));
+  });
+
   it("marks the region the live check counts in, and every picture, name and number inside each plate", () => {
     const html = render(rows(3));
 

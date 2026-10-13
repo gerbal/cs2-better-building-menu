@@ -463,9 +463,11 @@ export function compactMoneyForms(value: number, separators: NumberSeparators = 
 
 /**
  * A figure with a unit's shorter forms, for a place too narrow for every digit, the most exact first: to
- * one decimal, to none, then from a thousand on in thousands ("20k MW"), its unit always kept, since a
- * unit that scales with its size (kW or MW, t or kt) read bare beside another reads as one scale; last,
- * each form again with the space before the unit closed up ("500MWh"). Rounded, never cut.
+ * one decimal, to none, then those with the space before the unit closed up ("1,139MWh"); only then, from
+ * a thousand on, in thousands ("1.1k MWh"), spaced and closed up, as a thousands form can be a few per
+ * cent out. Its unit is always kept, since a unit that scales with its size (kW or MW, t or kt) read bare
+ * beside another reads as one scale, and a unit already a thousand of another (kt, ktn) says no thousands
+ * of it. Rounded, never cut.
  */
 export function compactUnitForms(text: string, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
   const group = separators.group.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -479,11 +481,14 @@ export function compactUnitForms(text: string, separators: NumberSeparators = FA
   const add = (form: string) => {
     if (!forms.includes(form)) forms.push(form);
   };
+  const closed = (form: string) => form.slice(0, form.length - unit.length).trimEnd() + unit;
   for (const decimals of [1, 0]) add(fixedDigits(value, decimals, separators) + gap + unit);
-  if (Math.abs(value) >= 1_000) {
-    for (const decimals of [1, 0]) add(`${fixedDigits(value / 1_000, decimals, separators)}k${gap}${unit}`);
+  for (const form of [...forms]) add(closed(form));
+  if (Math.abs(value) >= 1_000 && !unit.startsWith("k")) {
+    const thousands = [1, 0].map((decimals) => `${fixedDigits(value / 1_000, decimals, separators)}k${gap}${unit}`);
+    for (const form of thousands) add(form);
+    for (const form of thousands) add(closed(form));
   }
-  for (const form of [...forms]) add(form.slice(0, form.length - unit.length).trimEnd() + unit);
   return forms;
 }
 

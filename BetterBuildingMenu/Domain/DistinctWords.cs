@@ -3,7 +3,8 @@ namespace BetterBuildingMenu.Domain
 	/// <summary>
 	/// The word that tells a row apart from its nearest look-alike: the row sharing the most leading words
 	/// with it, which in name order is a neighbour, and the row's word is the one after those it shares.
-	/// "Pedestrian" against Covered Bicycle Bridge, "2" for Four-Lane Road 2.
+	/// "Pedestrian" against Covered Bicycle Bridge, "2" for Four-Lane Road 2. A word of marks alone ("—") is
+	/// passed over for the word after it.
 	/// </summary>
 	/// <remarks>
 	/// Over the whole view, beside <see cref="DuplicateNameNumbering"/>, whose numbers it reads: the UI
@@ -61,13 +62,39 @@ namespace BetterBuildingMenu.Domain
 
 			for (var row = 0; row < rows.Count; row++)
 			{
-				if (shared[row] > 0 && shared[row] < words[row].Length)
+				if (shared[row] == 0)
 				{
-					found[rows[row].Id] = words[row][shared[row]];
+					continue;
+				}
+
+				// A word of marks alone, a dash, tells nothing apart: the word after it does.
+				var at = shared[row];
+
+				while (at < words[row].Length && IsMarks(words[row][at]))
+				{
+					at++;
+				}
+
+				if (at < words[row].Length)
+				{
+					found[rows[row].Id] = words[row][at];
 				}
 			}
 
 			return found;
+		}
+
+		private static bool IsMarks(string word)
+		{
+			foreach (var character in word)
+			{
+				if (char.IsLetterOrDigit(character))
+				{
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		private static string[] Words(string? name) =>

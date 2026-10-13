@@ -325,6 +325,17 @@ describe("the base game's names in a plate's room", () => {
     }
   });
 
+  it("opens a cut around the distinguishing word with the mark where asked, its first word dropped, the word kept whole", () => {
+    const box = roomOf(1.5, "moreBuildings");
+    const name = "Two-Lane Divided Angled Parking Road";
+
+    assert.equal(planName(name, box, { keep: ["Angled"] }).lines.join(" "), `Two${CUT_MARK} Angled${CUT_MARK}`);
+    const leading = planName(name, box, { keep: ["Angled"], leads: true }).lines.join(" ");
+    assert.ok(leading.startsWith(CUT_MARK) && leading.split(" ").some((token) => token.replace(/^…|…$/gu, "") === "Angled"), leading);
+    // A name that fits whole, or cut between whole words, is planned alike either way.
+    assert.deepEqual(planName("Elementary School", box, { leads: true }), planName("Elementary School", box));
+  });
+
   it("keeps the distinguishing word over a typed word at large text, so the parking roads draw apart under \"ro\"", () => {
     const words = new Map(names);
     const parking = [...words.keys()].filter((name) => /(Angled|Perpendicular) Parking Road$/u.test(name));

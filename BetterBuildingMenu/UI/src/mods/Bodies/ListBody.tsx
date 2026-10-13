@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useEffect, useLayoutEffect, type ReactNode } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, type ReactNode } from "react";
 
 import enterMark from "images/enter.svg";
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
@@ -13,7 +13,8 @@ import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, slotPosition, slotsHeight, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { NAME_FONT, oneLineNumber, plateNameRoom, plateNumbers } from "domain/listPlate";
+import { drawnPlateNumbers, NAME_FONT, plateNameRoom } from "domain/listPlate";
+import { wordsApart, type ApartHints } from "domain/platesApart";
 import type { KeyKind } from "domain/rowNumbers";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "domain/textScaleSetting";
@@ -50,6 +51,8 @@ interface PlateProps {
   separators: NumberSeparators;
   stateWords: StateWords;
   achievedMilestone: number;
+  /** What the name is planned with beyond its distinguishing word, where it drew as another plate. */
+  apart?: ApartHints;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
 
@@ -58,11 +61,9 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, typed, dim, textScale, separators, stateWords, achievedMilestone, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, typed, dim, textScale, separators, stateWords, achievedMilestone, apart, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
-  const both = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said);
-  // A one-line plate is one number tall: two would be cut at its top and foot.
-  const numbers = grid.form === "plate1" ? oneLineNumber(entry, both, sortedMetric, said) : both;
+  const numbers = drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said);
   const { left, top } = slotPosition(grid, slot);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   // A cell that goes from under the pointer sends no leave: it takes its own building away as it goes.
@@ -83,6 +84,7 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
         lines={grid.nameLines}
         font={NAME_FONT * textScale}
         distinct={entry.distinctWord ?? ""}
+        apart={apart}
         typed={typed}
         dim={dim}
       />
@@ -191,6 +193,18 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   useLayoutEffect(() => setDrawnForm(drawnForm), [drawnForm]);
   useLayoutEffect(() => () => setDrawnForm(null), []);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, flow);
+  // The plates drawn alike told apart over the page, each planned in its estimate's room as its plate first
+  // plans it, so it plans again only the few drawn alike. See docs/design-notes.md, "Names".
+  const apart = useMemo(() => wordsApart(entries.map((entry) => ({
+    id: entry.id,
+    name: entry.name || entry.prefabName,
+    distinct: entry.distinctWord ?? "",
+    room: {
+      width: plateNameRoom(grid, drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said), entry.id === enterId, textScale),
+      lines: grid.nameLines,
+      font: NAME_FONT * textScale,
+    },
+  })), typed.split(/\s+/)), [entries, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, enterId, textScale, typed]);
 
   return (
     <div className={styles.body} data-bbm-view="list">
@@ -215,6 +229,7 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
               separators={separators}
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}
+              apart={apart.get(cell.entry.id)}
               onPlace={onPlace}
             />
           ))}
