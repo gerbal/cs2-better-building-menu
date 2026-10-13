@@ -42,5 +42,19 @@ namespace BetterBuildingMenu.Domain
 		bool DevInterfaceStyles { get; set; }
 
 		bool DevTabNames { get; set; }
+
+		int DevListShare { get; set; }
+
+		string DevWhatCounts { get; set; }
+
+		string DevAutoLargeText { get; set; }
+
+		int DevCardsFrom { get; set; }
+
+		float DevListPlateHeight { get; set; }
+
+		int DevNameLines { get; set; }
+
+		bool DevTileNameLine { get; set; }
 	}
 }

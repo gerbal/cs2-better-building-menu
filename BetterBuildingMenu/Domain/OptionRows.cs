@@ -35,6 +35,39 @@ namespace BetterBuildingMenu.Domain
 			"Options.LABEL[BetterBuildingMenu.AtLargeTextWholeNames]",
 		};
 
+		/// <summary>The What counts knob's labels, one per value of <see cref="Tuning.WhatCountsValues"/>.</summary>
+		public static readonly IReadOnlyList<string> WhatCountsLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.WhatCountsCostOrCapacity]",
+			"Options.LABEL[BetterBuildingMenu.WhatCountsCapacityOnly]",
+		};
+
+		/// <summary>The Auto at large text knob's labels, one per value of <see cref="Tuning.AutoLargeTextValues"/>.</summary>
+		public static readonly IReadOnlyList<string> AutoLargeTextLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.AutoLargeTextLookOwn]",
+			"Options.LABEL[BetterBuildingMenu.AutoLargeTextList]",
+			"Options.LABEL[BetterBuildingMenu.AutoLargeTextTiles]",
+		};
+
+		/// <summary>The Cards from width knob's labels, one per value of <see cref="Tuning.CardsFromValues"/>.</summary>
+		public static readonly IReadOnlyList<string> CardsFromLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.CardsFromNever]",
+			"Options.LABEL[BetterBuildingMenu.CardsFrom2]",
+			"Options.LABEL[BetterBuildingMenu.CardsFrom3]",
+			"Options.LABEL[BetterBuildingMenu.CardsFrom4]",
+			"Options.LABEL[BetterBuildingMenu.CardsFrom5]",
+		};
+
+		/// <summary>The Name lines knob's labels, one per value of <see cref="Tuning.NameLinesValues"/>.</summary>
+		public static readonly IReadOnlyList<string> NameLinesLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.NameLinesAuto]",
+			"Options.LABEL[BetterBuildingMenu.NameLines1]",
+			"Options.LABEL[BetterBuildingMenu.NameLines2]",
+		};
+
 		/// <summary>A row's description: its own while Replace is on, else the line saying why it is greyed out.</summary>
 		public static string DescriptionId(bool replaceOn, string ownId) => replaceOn ? ownId : OffWhileReplaceOffId;
 

@@ -384,7 +384,14 @@ namespace BetterBuildingMenu.Systems
 			new(
 				Knobs.DeveloperMode,
 				Knobs.Value(settings => settings.DevInterfaceStyles, Tuning.InterfaceStyles),
-				Knobs.Value(settings => settings.DevTabNames, Tuning.TabNames));
+				Knobs.Value(settings => settings.DevTabNames, Tuning.TabNames),
+				Tuning.ListShareOf(Knobs.Value(settings => settings.DevListShare, Tuning.ListShare)),
+				Tuning.OneOf(Tuning.WhatCountsValues, Knobs.Value(settings => settings.DevWhatCounts, Tuning.WhatCounts), Tuning.WhatCounts),
+				Tuning.OneOf(Tuning.AutoLargeTextValues, Knobs.Value(settings => settings.DevAutoLargeText, Tuning.AutoLargeText), Tuning.AutoLargeText),
+				Tuning.OneOf(Tuning.CardsFromValues, Knobs.Value(settings => settings.DevCardsFrom, Tuning.CardsFrom), Tuning.CardsFrom),
+				Tuning.ListPlateHeightOf(Knobs.Value(settings => settings.DevListPlateHeight, Tuning.ListPlateHeight)),
+				Tuning.OneOf(Tuning.NameLinesValues, Knobs.Value(settings => settings.DevNameLines, Tuning.NameLines), Tuning.NameLines),
+				Knobs.Value(settings => settings.DevTileNameLine, Tuning.TileNameLine));
 
 		protected override void OnUpdate()
 		{

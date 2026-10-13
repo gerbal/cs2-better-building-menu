@@ -47,6 +47,20 @@ namespace BetterBuildingMenu.Tests
 		public bool DevInterfaceStyles { get; set; } = Tuning.InterfaceStyles;
 
 		public bool DevTabNames { get; set; } = Tuning.TabNames;
+
+		public int DevListShare { get; set; } = Tuning.ListShare;
+
+		public string DevWhatCounts { get; set; } = Tuning.WhatCounts;
+
+		public string DevAutoLargeText { get; set; } = Tuning.AutoLargeText;
+
+		public int DevCardsFrom { get; set; } = Tuning.CardsFrom;
+
+		public float DevListPlateHeight { get; set; } = Tuning.ListPlateHeight;
+
+		public int DevNameLines { get; set; } = Tuning.NameLines;
+
+		public bool DevTileNameLine { get; set; } = Tuning.TileNameLine;
 	}
 
 	/// <summary>A settings file as a load reads it: the values, the key names, and how many keys no property reads.</summary>

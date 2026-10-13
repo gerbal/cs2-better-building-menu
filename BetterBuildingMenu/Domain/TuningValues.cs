@@ -7,7 +7,17 @@ namespace BetterBuildingMenu.Domain
 	/// Resolved in C# through the one rule every knob is read by, so a value stored for tuning does
 	/// nothing in a normal run on the UI's side either. See docs/design-notes.md, "Developer knobs".
 	/// </remarks>
-	public sealed record TuningValues(bool DeveloperMode, bool InterfaceStyles, bool TabNames) : IJsonWritable
+	public sealed record TuningValues(
+		bool DeveloperMode,
+		bool InterfaceStyles,
+		bool TabNames,
+		int ListShare = Tuning.ListShare,
+		string WhatCounts = Tuning.WhatCounts,
+		string AutoLargeText = Tuning.AutoLargeText,
+		int CardsFrom = Tuning.CardsFrom,
+		float ListPlateHeight = Tuning.ListPlateHeight,
+		int NameLines = Tuning.NameLines,
+		bool TileNameLine = Tuning.TileNameLine) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -18,6 +28,20 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(InterfaceStyles);
 			writer.PropertyName("tabNames");
 			writer.Write(TabNames);
+			writer.PropertyName("listShare");
+			writer.Write(ListShare);
+			writer.PropertyName("whatCounts");
+			writer.Write(WhatCounts);
+			writer.PropertyName("autoLargeText");
+			writer.Write(AutoLargeText);
+			writer.PropertyName("cardsFrom");
+			writer.Write(CardsFrom);
+			writer.PropertyName("listPlateHeight");
+			writer.Write(ListPlateHeight);
+			writer.PropertyName("nameLines");
+			writer.Write(NameLines);
+			writer.PropertyName("tileNameLine");
+			writer.Write(TileNameLine);
 			writer.TypeEnd();
 		}
 	}

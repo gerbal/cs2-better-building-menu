@@ -55,6 +55,13 @@ namespace BetterBuildingMenu.Domain
 			values.DevPickLogger = Tuning.PickLogger;
 			values.DevInterfaceStyles = Tuning.InterfaceStyles;
 			values.DevTabNames = Tuning.TabNames;
+			values.DevListShare = Tuning.ListShare;
+			values.DevWhatCounts = Tuning.WhatCounts;
+			values.DevAutoLargeText = Tuning.AutoLargeText;
+			values.DevCardsFrom = Tuning.CardsFrom;
+			values.DevListPlateHeight = Tuning.ListPlateHeight;
+			values.DevNameLines = Tuning.NameLines;
+			values.DevTileNameLine = Tuning.TileNameLine;
 		}
 
 		/// <summary>The button: every setting as it ships, then a settings version the next load does not migrate.</summary>

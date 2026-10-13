@@ -79,9 +79,40 @@ export interface AssetMenuTuning {
   interfaceStyles: boolean;
   /** Whether a box above the first Width step names its tabs where they all fit; off, never. */
   tabNames: boolean;
+  /** The share of a menu's rows, in percent, that must carry what counts for Auto to draw a list. */
+  listShare?: number;
+  /** What Auto counts: "costOrCapacity" or "capacityOnly". */
+  whatCounts?: string;
+  /** From 110% text, Roads and Parks: "lookOwn", "list" or "tiles". */
+  autoLargeText?: string;
+  /** The Width step from which Auto draws Cards; 0 never. */
+  cardsFrom?: number;
+  /** The list's plate height at 100% text, in rem. */
+  listPlateHeight?: number;
+  /** How many lines a list name takes; 0 the look's own. */
+  nameLines?: number;
+  /** Whether the Tiles view names the armed or pointed tile under its rows. */
+  tileNameLine?: boolean;
 }
 
-export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", { developerMode: false, interfaceStyles: true, tabNames: true });
+/**
+ * The knobs as they ship, until C# answers: the fallback of every field a page reads. The fields
+ * after tabNames are optional, so a reading without them is the shipped value.
+ */
+export const SHIPPED_TUNING: Required<AssetMenuTuning> = {
+  developerMode: false,
+  interfaceStyles: true,
+  tabNames: true,
+  listShare: 50,
+  whatCounts: "costOrCapacity",
+  autoLargeText: "lookOwn",
+  cardsFrom: 0,
+  listPlateHeight: 27.25,
+  nameLines: 0,
+  tileNameLine: true,
+};
+
+export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", SHIPPED_TUNING);
 export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
 /** True while the toolbar's open menu is one the asset menu takes over. */
 export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);

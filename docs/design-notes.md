@@ -883,6 +883,19 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
 - **Tab names** (on or off, ships on): whether a box above the first Width step names its tabs where
   they all fit (see "The tab row"); off, the tabs keep their picture over their count at every
   width, to compare. The UI reads it in `AssetMenuTuning`, treating a missing value as on.
+- **The bodies' knobs** (see "The bodies"), each read through `Knobs.Value` into `AssetMenuTuning`, a
+  value a hand edit left outside a knob's range reading as the nearer end or as shipped:
+  - **List share** (30 to 90%, step 5, ships 50): Auto draws a list where at least this share of a
+    menu's rows carry what counts.
+  - **What counts** (cost or capacity, as it ships, or capacity only): what a row needs to count toward
+    the list.
+  - **Auto at large text** (the look's own, as it ships, the list, or the tiles): from 110% text, the
+    body Roads and Parks draw.
+  - **Cards from width** (never, as it ships, or steps 2 to 5): the step from which Auto draws Cards.
+  - **List plate height** (23 to 34, step 0.25, ships 27.25): the two-line plate's height at 100% text.
+  - **Name lines** (the form's own, as it ships, or 1 or 2): the lines a list name takes.
+  - **Tile name line** (on, as it ships, or off): the line naming the pointed or armed tile under the
+    tiles.
 
 ## The pick logger
 

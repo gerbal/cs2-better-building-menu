@@ -213,6 +213,61 @@ namespace BetterBuildingMenu
 		[SettingsUISearchHidden]
 		public bool DevTabNames { get; set; } = Domain.Tuning.TabNames;
 
+		/// <summary>Developer only: the share of a menu's rows, in percent, that must carry what counts for Auto to draw a list.</summary>
+		/// <remarks>Read through Utilities.Knobs, so it counts only in developer mode. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUISlider(min = Domain.Tuning.ListShareMin, max = Domain.Tuning.ListShareMax, step = 5, scalarMultiplier = 1, unit = Unit.kPercentage)]
+		public int DevListShare { get; set; } = Domain.Tuning.ListShare;
+
+		/// <summary>Developer only: whether Auto counts a cost or a capacity, or a capacity only.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(WhatCountsItems))]
+		public string DevWhatCounts { get; set; } = Domain.Tuning.WhatCounts;
+
+		/// <summary>Developer only: at large text, Roads and Parks keep the look's own body, or show the list or the tiles.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(AutoLargeTextItems))]
+		public string DevAutoLargeText { get; set; } = Domain.Tuning.AutoLargeText;
+
+		/// <summary>Developer only: the Width step from which Auto draws Cards, or never.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(CardsFromItems))]
+		public int DevCardsFrom { get; set; } = Domain.Tuning.CardsFrom;
+
+		/// <summary>Developer only: the list's plate height at normal text size, in rem.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUISlider(min = Domain.Tuning.ListPlateHeightMin, max = Domain.Tuning.ListPlateHeightMax, step = 0.25f, scalarMultiplier = 1, unit = Unit.kFloatTwoFractions)]
+		public float DevListPlateHeight { get; set; } = Domain.Tuning.ListPlateHeight;
+
+		/// <summary>Developer only: how many lines a list name takes, or the look's own.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(NameLinesItems))]
+		public int DevNameLines { get; set; } = Domain.Tuning.NameLines;
+
+		/// <summary>Developer only: whether the Tiles view names the armed or pointed tile on a line under its rows.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		public bool DevTileNameLine { get; set; } = Domain.Tuning.TileNameLine;
+
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
 		/// The initializers above read the same constants, except the control pane's: its
@@ -255,6 +310,17 @@ namespace BetterBuildingMenu
 
 		/// <summary>The At large text row's two choices, by their labels.</summary>
 		private static DropdownItem<string>[] AtLargeTextItems() => StringItems(Domain.LargeText.Values, Domain.OptionRows.AtLargeTextLabelIds);
+
+		private static DropdownItem<string>[] WhatCountsItems() => StringItems(Domain.Tuning.WhatCountsValues, Domain.OptionRows.WhatCountsLabelIds);
+
+		private static DropdownItem<string>[] AutoLargeTextItems() => StringItems(Domain.Tuning.AutoLargeTextValues, Domain.OptionRows.AutoLargeTextLabelIds);
+
+		private static DropdownItem<int>[] CardsFromItems() => IntItems(Domain.Tuning.CardsFromValues, Domain.OptionRows.CardsFromLabelIds);
+
+		private static DropdownItem<int>[] NameLinesItems() => IntItems(Domain.Tuning.NameLinesValues, Domain.OptionRows.NameLinesLabelIds);
+
+		private static DropdownItem<int>[] IntItems(IReadOnlyList<int> values, IReadOnlyList<string> labelIds) =>
+			values.Select((value, index) => new DropdownItem<int> { value = value, displayName = LocalizedString.Id(labelIds[index]) }).ToArray();
 
 		private static DropdownItem<string>[] StringItems(IReadOnlyList<string> values, IReadOnlyList<string> labelIds) =>
 			values.Select((value, index) => new DropdownItem<string> { value = value, displayName = LocalizedString.Id(labelIds[index]) }).ToArray();
