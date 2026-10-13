@@ -1263,11 +1263,11 @@ document, since the app container stops keydown from bubbling, and read the key 
 field's.
 
 - **Up and Down** move Enter's target, the building the field names after "↵", a row a press through
-  the rows that can be placed, in the result's order, past locked rows and built uniques,
-  stopping at the list's ends. The move is C#'s, as the target is (see "Search and sort over the whole
+  the rows that can be placed, in the result's order, past locked rows and built uniques, stopping
+  at the list's ends. The move is C#'s, as the target is (see "Search and sort over the whole
   result"): the query carries `EnterStep`, how many such rows past the best match the target sits;
-  the engine walks the whole result from the best match and serves the step it takes, which the state
-  keeps, so a key held past an end moves back on the first press the other way. Any new result
+  the engine walks the whole result from the best match and serves the step it takes, which the
+  state keeps, so a key held past an end moves back on the first press the other way. Any new result
   (typing on, a filter, a sort, a grouping, a tab, an open) puts the target back on the best match;
   Load more and an index refresh keep it. The keys send nothing until the field names a target, the
   page answering the query in it. One move is in flight: a key held down sends the next move only once

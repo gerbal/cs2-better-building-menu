@@ -25,7 +25,10 @@ export type BodyCell =
 
 export interface BodyCells {
   cells: BodyCell[];
-  /** How many slots the cells take: the furthest one used and every one before it, empty ones included. */
+  /**
+   * How many slots the cells take: the furthest one used and every one before it, empty ones
+   * included.
+   */
   slots: number;
 }
 

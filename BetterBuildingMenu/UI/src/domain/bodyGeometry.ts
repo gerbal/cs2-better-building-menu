@@ -70,7 +70,10 @@ export interface BodyGrid {
    * list forms, whose stylesheet sets it.
    */
   picture: number;
-  /** How many columns the same form has at the first Width step, which a search's results fill first. */
+  /**
+   * How many columns the same form has at the first Width step, which a search's results fill
+   * first.
+   */
   firstCols: number;
 }
 
