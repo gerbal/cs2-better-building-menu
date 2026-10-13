@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { releasedLooks } from "../src/domain/looks.ts";
 import { declarationsOf, everyDeclaration } from "./harness/compiledCss.ts";
 
 // The top row's close is the game's own: 24rem, on the round highlight theme, which paints its hover
 // and press, its glyph in the look's light ink, 4 rem after what comes before it.
 const TOP_ROW = "mods/TopRow/topRow.module.scss";
 const LOOKS = "looks/looks.module.scss";
-const STYLES = ["standard", "plates"].flatMap((look) => [
-  `.${look}`,
-  `:global(.style--bright-blue) .${look}.followStyle`,
-  `:global(.style--dark-grey-orange) .${look}.followStyle`,
+const STYLES = releasedLooks().flatMap(({ id }) => [
+  `.${id}`,
+  `:global(.style--bright-blue) .${id}.followStyle`,
+  `:global(.style--dark-grey-orange) .${id}.followStyle`,
 ]);
 
 describe("the top row's close", () => {

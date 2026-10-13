@@ -57,6 +57,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["armText", "arm"], ["armNum", "arm"], ["pillText", "pillBg"], ["tagText", "tagBg"],
   // Plates' name band on a look-alike tile.
   ["pillText", "bandBg"],
+  // The tile's own surface, which a look may set apart from the plate's: a plate's inks hold on it too.
+  ["tName", "tile"], ["tCost", "tile"],
   ["bodyChipText", "bodyChipBg"], ["bodyChipDim", "bodyChipBg"], ["bodyWord", "bodyChipBg"],
   ["bodyCtlText", "bodyCtl"], ["bodyCtlDim", "bodyCtl"], ["bodyLabel", "body"],
   ["bodyMilestone", "plateLocked"], ["bodyEntMark", "plate"],

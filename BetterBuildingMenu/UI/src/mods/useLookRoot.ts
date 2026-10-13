@@ -7,7 +7,10 @@ import { lookOf, surfaceAlphaStyle, type LookId } from "domain/looks";
 import looks from "looks/looks.module.scss";
 import { AssetMenuLook$, AssetMenuTuning$ } from "mods/bindings";
 
-/** Each finished look's class, named as the stylesheet declares it; a look joins here as it joins the Look row. */
+/**
+ * Each finished look's class, named as the stylesheet declares it; a look joins here as it joins the Look
+ * row. `lookOf` returns only a finished look, so every look drawn has its class here.
+ */
 const LOOK_CLASS: Readonly<Partial<Record<LookId, string>>> = { standard: looks.standard, plates: looks.plates };
 
 /**
@@ -24,7 +27,7 @@ export function useLookRoot(): { id: LookId; className: string; style: CSSProper
 
   return {
     id: look.id,
-    className: classNames(LOOK_CLASS[look.id] ?? looks.standard, tuning.interfaceStyles && looks.followStyle),
+    className: classNames(LOOK_CLASS[look.id], tuning.interfaceStyles && looks.followStyle),
     style: surfaceAlphaStyle(transparency, look.alphas),
   };
 }

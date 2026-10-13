@@ -19,13 +19,15 @@ const render = () => renderHtml(<AssetMenu onClose={() => {}} />);
 // The pane's root, whatever look classes follow its own.
 const PANE = /class="pane[ "]/;
 
-/** The box's classes and inline style, read off the markup one property at a time. */
-const boxOf = (html: string): { classes: string[]; style: Record<string, string> } => {
-  const [, classes = "", style = ""] = /class="(toolContainer(?: [^"]*)?)" style="([^"]*)"/.exec(html) ?? [];
+/** The box's classes, inline style and look marker, read off its own tag one property at a time. */
+const boxOf = (html: string): { classes: string[]; style: Record<string, string>; look: string | undefined } => {
+  const [, classes = "", style = "", rest = ""] = /class="(toolContainer(?: [^"]*)?)" style="([^"]*)"([^>]*)>/.exec(html) ?? [];
   const declarations = style.split(";").filter((declaration) => declaration.includes(":"));
 
   return {
     classes: classes.split(" "),
+    // The marker on the box itself, not on any element under it.
+    look: /\sdata-bbm-look="([^"]*)"/.exec(rest)?.[1],
     style: Object.fromEntries(declarations.map((declaration) => {
       const colon = declaration.indexOf(":");
       return [declaration.slice(0, colon).trim(), declaration.slice(colon + 1).trim()];
@@ -315,9 +317,9 @@ describe("the asset menu's look", () => {
 
     assert.ok(boxOf(plates).classes.includes("plates") && boxOf(plates).classes.includes("followStyle"), boxOf(plates).classes.join(" "));
     assert.ok(!boxOf(plates).classes.includes("standard"));
-    assert.match(plates, /data-bbm-look="plates"/);
+    assert.equal(boxOf(plates).look, "plates");
     assert.ok(boxOf(glass).classes.includes("standard"), boxOf(glass).classes.join(" "));
-    assert.match(glass, /data-bbm-look="standard"/);
+    assert.equal(boxOf(glass).look, "standard");
   });
 
   it("switches the look in place: the box takes the new class and mounts nothing again", () => {
