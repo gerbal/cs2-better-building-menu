@@ -484,6 +484,28 @@ describe("the readout under Status line only", () => {
     });
   }
 
+  it("shortens its one line at large text in a crowded row: the upkeep goes first, then the key number, the cost and the name kept", () => {
+    // Thirteen worded tabs leave the readout less room at each text scale.
+    const ids = Array.from({ length: 13 }, (_, at) => `Cat${at}`);
+    set("AssetMenuCategories", ids.map((id) => category(id)));
+    set("AssetMenuCategoryCounts", ids.map((id) => ({ id, count: 30 })));
+    set("AssetMenuCategory", "Cat0");
+    const figures = () => root!.root.findAll((node) => node.type === "span" && node.props.className === "statusFigure").map((node) => text(node));
+    const said = [1, 1.3, 1.5].map((scale) => {
+      setBinding("options", "textScale", scale);
+      act(() => root!.unmount());
+      root = mount();
+      pointAtRoad();
+      return { scale, name: text(named()[0]), figures: figures().map((figure) => figure.replace(/\s/g, " ")) };
+    });
+
+    assert.deepEqual(said, [
+      { scale: 1, name: "Four-Lane Road", figures: ["¢5 500/km", "¢120/km/mo", "100 km/h"] },
+      { scale: 1.3, name: "Four-Lane Road", figures: ["¢5 500/km", "100 km/h"] },
+      { scale: 1.5, name: "Four-Lane Road", figures: ["¢5 500/km"] },
+    ]);
+  });
+
   it("keeps the readout's own text under the other forms", () => {
     set("AssetMenuHoverCard", "pointer");
     act(() => setPointed({ entry: entry(9), cell: { x: 0, y: 0, w: 171, h: 27.25 } }));

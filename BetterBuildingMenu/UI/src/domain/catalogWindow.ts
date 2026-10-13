@@ -233,7 +233,7 @@ export function catalogWindowRemaining({ shown, total }: CatalogWindowState): nu
 }
 
 /** Whether two values the page carries say the same: a number, a string, or arrays and objects of them. */
-function sameValue(one: unknown, other: unknown): boolean {
+export function sameValue(one: unknown, other: unknown): boolean {
   if (one === other) return true;
   if (typeof one !== "object" || typeof other !== "object" || one === null || other === null) return false;
   if (Array.isArray(one)) return Array.isArray(other) && one.length === other.length && one.every((value, at) => sameValue(value, other[at]));

@@ -150,7 +150,7 @@
   "Options.LABEL[BetterBuildingMenu.AtLargeTextMoreBuildings]": "More buildings",
   "Options.LABEL[BetterBuildingMenu.AtLargeTextWholeNames]": "Whole names",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HoverCard]": "Hover card",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HoverCard]": "What shows when you point at a building. Beside the pointer: a small card above the menu, at the building's left edge. The game's detail slot: a wide card above the menu, where the game's own shows. Status line only: the name and numbers at the right end of the tabs.",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HoverCard]": "What shows when you point at a building. Beside the pointer: a small card, usually above the menu at the building's left edge. The game's detail slot: a wide card above the menu, where the game's own shows. Status line only: the name and numbers at the right end of the tabs.",
   "Options.LABEL[BetterBuildingMenu.HoverCardPointer]": "Beside the pointer",
   "Options.LABEL[BetterBuildingMenu.HoverCardSlot]": "The game's detail slot",
   "Options.LABEL[BetterBuildingMenu.HoverCardStatus]": "Status line only",

@@ -180,6 +180,27 @@ describe("the hover card", () => {
     assert.match(says(), /High School/);
   });
 
+  it("waits the delay again for a building the pointer comes back to before the next has rested", () => {
+    plates.set(2, { x: 785, y: 805 });
+    mount();
+    point(1);
+    wait(150);
+    assert.equal(card().length, 1);
+
+    act(() => {
+      clearPointed(1);
+      setPointed(pointed(2, "High School"));
+    });
+    act(() => {
+      clearPointed(2);
+      setPointed(pointed(1));
+    });
+    assert.equal(card().length, 0);
+
+    wait(150);
+    assert.match(says(), /Elementary School/);
+  });
+
   it("counts only the cells drawn in the body's field, so a plate scrolled away above the body moves no card", () => {
     // Scrolled out above the body, over the box's top edge, where the card's first place is.
     plates.set(9, { x: 612, y: 690 });
@@ -369,6 +390,84 @@ describe("the hover card", () => {
       assert.deepEqual(rows().map((row) => row.props["data-card-row"]), every.slice(0, Math.floor(SLOT_ROOM / pitch)));
     });
   }
+
+  describe("a slot card's rows, measured with the layout stand-in", () => {
+    /** Each row's box under the column's top: one a line, or two across, half the width each. */
+    let pitch = 24;
+    let across = 1;
+    const rows = () => root!.root.findAll((node) => typeof node.type === "string" && node.props["data-card-row"] !== undefined);
+    const kept = () => rows().map((row) => row.props["data-card-row"] as string);
+    const slot = () => root!.root.findAll((node) => node.type === "div" && node.props["data-bbm-hovercard"] === "slot")[0];
+    const school = (cost = 1000) => entry(1, {
+      name: "Elementary School",
+      constructionCost: cost,
+      assetPacks: ["Modern Architecture"],
+      footprints: [{ width: 2, depth: 3 }, { width: 3, depth: 3 }],
+    });
+    const show = () => {
+      setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "slot");
+      setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([school()]));
+      const mock = (element: { props: Record<string, unknown> }) => (element.props.className === "slotColumn"
+        ? {
+          getBoundingClientRect: () => rect(12, 12, 518, SLOT_ROOM),
+          querySelectorAll: () => rows().map((_, at) => ({ getBoundingClientRect: () => rect(12 + (at % across) * (518 / across), 12 + Math.floor(at / across) * pitch, 518 / across, pitch) })),
+        }
+        : { getBoundingClientRect: () => rect(0, 0, 706, 191), children: [], clientWidth: 0 });
+      act(() => {
+        root = create(<HoverCard boxRef={boxRef} hidden={false} />, { createNodeMock: mock });
+      });
+      act(() => setPointed({ entry: school(), cell: { x: 612, y: 805, w: 171, h: 27.25 } }));
+      wait(150);
+      frame();
+      frame();
+      frame();
+      frame();
+    };
+
+    beforeEach(() => {
+      pitch = 24;
+      across = 1;
+    });
+
+    it("keeps two rows that share a line together, by their shared bottom", () => {
+      across = 2;
+      pitch = 60;
+      show();
+      const lines = Math.floor(SLOT_ROOM / pitch);
+
+      assert.ok(kept().length > 0 && kept().length <= lines * 2, kept().join(", "));
+      assert.equal(kept().length % 2, 0, kept().join(", "));
+      assert.doesNotMatch(String(slot().props.className), /unplaced/);
+    });
+
+    it("stays placed through a page that brings the building back unchanged", () => {
+      show();
+      assert.doesNotMatch(String(slot().props.className), /unplaced/);
+      const before = kept();
+
+      act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([school()])));
+      assert.doesNotMatch(String(slot().props.className), /unplaced/);
+      frame();
+      frame();
+      assert.deepEqual(kept(), before);
+      assert.doesNotMatch(String(slot().props.className), /unplaced/);
+    });
+
+    it("measures every row again when what the card says changes under the same building, so rows it dropped come back", () => {
+      pitch = 40;
+      show();
+      const dropped = kept();
+      assert.ok(!dropped.includes("packs"), dropped.join(", "));
+
+      // The game's milestone names arrive, and the rows draw shorter.
+      pitch = 10;
+      act(() => setBinding("BetterBuildingMenu", "AssetMenuMilestones", ["Tiny Village"]));
+      frame();
+      frame();
+
+      assert.ok(kept().includes("packs"), kept().join(", "));
+    });
+  });
 
   it("draws no card for Status line only, whose readout says the building until a wheel moves its cell from under the pointer", () => {
     setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "status");

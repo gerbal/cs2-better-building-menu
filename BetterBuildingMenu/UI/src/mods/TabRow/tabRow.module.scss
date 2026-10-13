@@ -177,11 +177,24 @@ $icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
   align-items: flex-end;
 }
 
-.place {
+// The readout's two faces, which Status line only's name and figures share: the first line's, brighter,
+// and the second's.
+@mixin read-first {
   color: var(--bbm-tRead1);
   font-size: calc(#{$tab-name-size} * var(--fontScale));
   line-height: 13rem;
   white-space: nowrap;
+}
+
+@mixin read-second {
+  color: var(--bbm-tRead2);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
+  white-space: nowrap;
+}
+
+.place {
+  @include read-first;
 }
 
 // The second line: the legend, then the range, side by side.
@@ -193,25 +206,16 @@ $icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
 }
 
 .range {
-  color: var(--bbm-tRead2);
-  font-size: calc(#{$tab-count-size} * var(--fontScale));
-  line-height: 12rem;
-  white-space: nowrap;
+  @include read-second;
 }
 
 // What Status line only says: the building's name, in the place line's look, and its figures, in the range's.
 .statusName {
-  color: var(--bbm-tRead1);
-  font-size: calc(#{$tab-name-size} * var(--fontScale));
-  line-height: 13rem;
-  white-space: nowrap;
+  @include read-first;
 }
 
 .statusFigure {
-  color: var(--bbm-tRead2);
-  font-size: calc(#{$tab-count-size} * var(--fontScale));
-  line-height: 12rem;
-  white-space: nowrap;
+  @include read-second;
 }
 
 // A value said once, or the key kind named: its glyph beside its words, in the place line's brighter ink.

@@ -95,10 +95,11 @@ On a developed save:
      wider Width; Landscaping › Nature's Boulder 01 to 08 carry their numbers on pills and share a
      shade; a locked icon is dark (bare under the game's interface styles), its lock over MS n at
      100% text; at larger text a word wider than the icon is left off, the lock alone;
-   - point at a building in Roads and in Landscaping's icons: after a moment a small card above the
-     menu, at the building's left edge, names it, with its cost, upkeep and key number in Roads and
-     its name and picture in the icons, clear of the chirper at the widest Width, and it goes when the
-     pointer leaves, a list opens, or a wheel scrolls the building from under a resting pointer;
+   - point at a building in Roads and in Landscaping's icons: after a moment a small card, usually
+     above the menu at the building's left edge, names it, with its cost, upkeep and key number in
+     Roads and its name and picture in the icons, clear of the chirper at the widest Width, and it
+     goes when the pointer leaves, a list opens, or a wheel scrolls the building from under a resting
+     pointer;
      Options › Hover card › The game's detail slot draws the wide card above the menu, where the
      game's own detail shows, and Status line only draws no card: it names the building and its
      figures at the tabs' right end;

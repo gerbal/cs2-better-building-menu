@@ -11,13 +11,14 @@ import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type
 import { hoverCardLabels } from "domain/hoverCardLines";
 import { coversPoint, placePointerCard, placeSlotCard, remRect, SLOT_ROOM, slotRowsKept, type Rect } from "domain/hoverCardPlace";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
+import { sameValue } from "domain/catalogWindow";
 import type { KeyKind } from "domain/rowNumbers";
 import { readoutSepWidth } from "domain/tabRow";
 import { LAYOUT_HEIGHT } from "domain/sharedContracts.generated";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenuHoverCard$, AssetMenuTuning$, BuildingCatalog$, SHIPPED_TUNING } from "mods/bindings";
-import { HoverCardContent, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { HoverCardContent, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { PlannedName } from "mods/Bodies/PlannedName";
 import { UNIT_GLYPHS } from "mods/Bodies/unitGlyphs";
 import { useNumberSeparators, useStateWords } from "mods/Bodies/useBodyWords";
@@ -34,7 +35,7 @@ const NAME_LINES = 3;
 /**
  * The building the pointer rests on, once it has rested the Hover delay knob's time; null at once when it
  * leaves. A move from one cell to the next takes the first away at once, and shows the next once it has
- * rested as long. With `active` false it reads nothing from the store, so a component that only sometimes
+ * rested as long, as it does the first again where the pointer comes back to it sooner. With `active` false it reads nothing from the store, so a component that only sometimes
  * says the building never draws again as the pointer crosses cells.
  */
 export function usePointedAfterDelay(active = true): Pointed | null {
@@ -47,6 +48,8 @@ export function usePointedAfterDelay(active = true): Pointed | null {
       setShown(null);
       return undefined;
     }
+    // Another building: the one shown is shown no more, so the pointer coming back to it waits again.
+    setShown((last) => (last !== null && last.entry.id !== pointed.entry.id ? null : last));
     const timer = setTimeout(() => setShown(pointed), delay);
     return () => clearTimeout(timer);
   }, [pointed, delay]);
@@ -286,9 +289,10 @@ const PointerCard = memo(function PointerCard({ pointed, boxRef, pointer }: Card
   );
 });
 
-/** The rows a slot card draws, measured for one building as the page has it, at one text scale. */
+/** The rows a slot card draws, measured for what it says of one building: the row, the card's words, the text scale. */
 interface SlotRows {
   entry: BuildingCatalogEntry;
+  context: HoverCardContext;
   textScale: number;
   /** The leading rows that fit the slot's room. */
   rows: number;
@@ -309,7 +313,8 @@ const SlotCard = memo(function SlotCard({ pointed, boxRef, pointer }: CardProps)
   const [measured, setMeasured] = useState<SlotRows | null>(null);
   const { cardRef, placed, entry } = usePlacedCard(pointed, boxRef, pointer, (card, drawn, screen) =>
     placeSlotCard({ cell: drawn.cell, height: card.h, box: drawn.box, screen }), measured);
-  const rows = measured !== null && measured.entry === entry && measured.textScale === textScale ? measured : null;
+  // Kept while the card says the same: a page that brings the building back unchanged keeps it drawn and placed.
+  const rows = measured !== null && measured.context === context && measured.textScale === textScale && sameValue(measured.entry, entry) ? measured : null;
   const packs = (entry.assetPacks ?? []).join(" · ");
 
   useEffect(() => {
@@ -325,8 +330,8 @@ const SlotCard = memo(function SlotCard({ pointed, boxRef, pointer }: CardProps)
       const kept = slotRowsKept(bottoms, SLOT_ROOM);
       // With every row drawn, the rows that fit; with fewer, fewer again only where a drawn row grew (a line
       // too long for its half takes the row), so it settles.
-      if (rows === null) setMeasured({ entry, textScale, rows: kept, all: kept === bottoms.length });
-      else if (kept < bottoms.length) setMeasured({ entry, textScale, rows: kept, all: false });
+      if (rows === null) setMeasured({ entry, context, textScale, rows: kept, all: kept === bottoms.length });
+      else if (kept < bottoms.length) setMeasured({ entry, context, textScale, rows: kept, all: false });
     };
     // Never in the tick of a render: Cohtml reports the previous layout's sizes then.
     let outer = 0;
@@ -348,7 +353,7 @@ const SlotCard = memo(function SlotCard({ pointed, boxRef, pointer }: CardProps)
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, [rows, entry, textScale]);
+  }, [rows, entry, context, textScale]);
 
   return (
     <div

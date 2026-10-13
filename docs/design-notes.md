@@ -1578,7 +1578,7 @@ Any other stored value reads as beside the pointer, on every load.
   once the pointer has rested the Hover delay knob's time on one building (150 ms as it ships), and goes
   at once when it leaves, to nothing or to the next cell: React sends a cell's leave and the next one's
   enter from one mouseout, so a card kept up until the next had rested would name a building the pointer
-  has left. A cell that goes from under a resting pointer (typing turns the tiles into the list, a page
+  has left; a building the pointer comes back to before the next has rested waits the delay again. A cell that goes from under a resting pointer (typing turns the tiles into the list, a page
   changes) sends no leave, so each cell takes its own building away as it unmounts; nothing is pointed
   at once the menu closes.
 - **One card, a child of the box's root,** so it takes the look's tokens and the interface style with them,
@@ -1627,7 +1627,9 @@ Any other stored value reads as beside the pointer, on every load.
   the card is drawn unseen with every row, measured two frames on, then drawn with only the leading rows
   whose bottoms fit (`slotRowsKept`) and placed as drawn: a long card drops its last rows whole, the packs
   first, its order kept, and the clip never cuts a row. A drawn row that grows (a line too long for its
-  half takes the row) drops more, never fewer, so it settles. It is placed against the pointed cell
+  half takes the row) drops more, never fewer, so it settles. What the card says keys the measure (the
+  building's row, the card's words, the text scale): a page that brings the building back unchanged keeps
+  the card drawn and placed, and a change measures every row again, so rows dropped come back. It is placed against the pointed cell
   alone, and reads no other. Who made a mod's building waits for the mod facet, which names it.
 - **Status line only.** No card: the readout at the tabs' right end names the building on its first line,
   planned to the room the tabs leave it and cut once where it runs over, and says its figures on the second
