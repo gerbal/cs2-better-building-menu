@@ -46,7 +46,14 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>Whether a search matched rows and none of them can be placed, so Enter does nothing.</summary>
 		bool AllMatchesLocked = false,
 		/// <summary>Whether the window is at its ceiling with rows past it, so the list stops and must say so.</summary>
-		bool Capped = false) : IJsonWritable
+		bool Capped = false,
+		/// <summary>The row the list starts at, as the query holds it, or 0 for none.</summary>
+		int AnchorId = 0,
+		/// <summary>That row's place in the result's order, or -1 when the result does not hold it.</summary>
+		/// <remarks>The UI puts the row on line 1 when the window holds it, and the list at its top when not.</remarks>
+		int AnchorIndex = -1,
+		/// <summary>Which start of the list this page answers; see AssetMenuState.ListStart.</summary>
+		int ListStart = 0) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -87,6 +94,12 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(AllMatchesLocked);
 			writer.PropertyName("capped");
 			writer.Write(Capped);
+			writer.PropertyName("anchorId");
+			writer.Write(AnchorId);
+			writer.PropertyName("anchorIndex");
+			writer.Write(AnchorIndex);
+			writer.PropertyName("listStart");
+			writer.Write(ListStart);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

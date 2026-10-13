@@ -81,7 +81,6 @@ namespace BetterBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var limit = query.EffectiveLimit;
 			// Reframed before ordering, because the Roads menu's extra networks are placed
 			// behind its own categories by a rewritten priority. Materialised once: Count,
 			// Order and ReorderableSortColumns all read this array.
@@ -90,10 +89,14 @@ namespace BetterBuildingMenu.Services
 				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu))
 				.ToArray();
 			var totalCount = matching.Length;
-			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
 			// The whole result in display order: the window is a slice of it, and Enter's target
 			// is chosen from all of it, wherever its row is.
 			var ordered = Order(matching, query).ToArray();
+			// The anchored row's place in that order, and a window that holds it, so the list can open
+			// on it. See docs/design-notes.md, "Opening on the building's tab".
+			var anchorIndex = query.AnchorId > 0 ? Array.FindIndex(ordered, entry => entry.Id == query.AnchorId) : -1;
+			var limit = query.CoveringAnchor(anchorIndex).EffectiveLimit;
+			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
 			var items = ordered
 				.Skip(offset)
 				.Take(limit)
@@ -123,7 +126,9 @@ namespace BetterBuildingMenu.Services
 				BestMatch: bestMatch,
 				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && bestMatch is null,
 				// At the ceiling with rows past it, Load more cannot reach them: the UI says so instead.
-				Capped: limit >= BuildingCatalogQuery.MaxLimit && offset + items.Length < totalCount);
+				Capped: limit >= BuildingCatalogQuery.MaxLimit && offset + items.Length < totalCount,
+				AnchorId: query.AnchorId,
+				AnchorIndex: anchorIndex);
 		}
 
 		/// <summary>

@@ -53,7 +53,11 @@ namespace BetterBuildingMenu.Domain
 		// The school tier the education menu's strip is narrowed to, or -1.
 		// SchoolData.m_EducationLevel is 1-based, so 0 is a real value (a capacity
 		// upgrade with no tier) and cannot be the sentinel.
-		int SchoolTier = -1)
+		int SchoolTier = -1,
+		// The row the list starts at, as the index's id, or 0 for none. It matches no row: only the
+		// first window's size and the page's AnchorIndex follow it.
+		// See docs/design-notes.md, "Opening on the building's tab".
+		int AnchorId = 0)
 	{
 		/// <summary>
 		/// The sort fields the picker offers, in its order.
@@ -94,6 +98,23 @@ namespace BetterBuildingMenu.Domain
 			> MaxLimit => MaxLimit,
 			_ => Limit,
 		};
+
+		/// <summary>
+		/// This query with its window grown to hold the row at <paramref name="anchorIndex"/> and a step of
+		/// rows after it, so the row can sit on the list's first line in any body; itself when the window
+		/// already does or there is no such row. Up to the ceiling, from the first row.
+		/// </summary>
+		public BuildingCatalogQuery CoveringAnchor(int anchorIndex)
+		{
+			if (anchorIndex < 0)
+			{
+				return this;
+			}
+
+			var holding = Math.Min(anchorIndex + 1 + WindowStep, MaxLimit);
+
+			return holding <= EffectiveLimit ? this : this with { Limit = holding };
+		}
 
 		/// <summary>Whether this query is pinned to a place in the vanilla build menu.</summary>
 		public bool IsScopedToMenu =>
