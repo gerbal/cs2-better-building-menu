@@ -1501,15 +1501,18 @@ so the renders and the game draw the same lines. In order:
 **Plates told apart over the page.** The planner cuts each name alone, so two names can cut alike ("NA…
 Aluminum…" for NA Low and NA Tall Aluminum Fence at 150%) and read as one building. The list makes one
 pass over its page, beside the tiles' look-alike tags (`wordsApart`): each plate drawn as another plate
-of a different name draws is planned again keeping, beside its distinguishing word, the first word that
-tells its name from theirs ("…Tall Aluminum…"); else with the mark leading, its first word dropped
+of a different name draws is planned again keeping, beside its distinguishing word, the word of its own
+the fewest of the others hold ("…Tall Aluminum…"); else with the mark leading, its first word dropped
 (`leads`: "…Angled…" beside "Two… Angled…"); else both. The first plan that keeps its distinguishing word
 as whole as before and draws apart from every plate stands, so the pass never draws alike two plates that
 were not, and each plan is the planner's, with every guarantee it gives. Where no such plan fits (the
 Perpendicular Parking Roads at 130% and 150%, whose "…Perpendicular…" leaves no room for more), the
 plates still read alike. The pass plans each plate in its estimate's room, as the plate first plans it,
 so it finds each plan kept and plans again only the few drawn alike, each kept by its hints, and a Load
-more or a view switch plans no name twice; a plate's room as drawn may still cut it otherwise.
+more or a view switch plans no name twice. Each group's names and their words are read once, so a group
+costs its size, not its square; a pass asks for at most 600 plans with hints, so a page of thousands
+drawn alike tells its first plates apart; and a pass over plates that draw alone as the last pass's did
+(an Up or Down step moves Enter's mark, narrowing two rooms) answers as that pass did.
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's

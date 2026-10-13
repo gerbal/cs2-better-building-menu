@@ -70,6 +70,45 @@ describe("the list's plates told apart over the page", () => {
     assert.equal(plansWorkedOut(), again);
   });
 
+  describe("a group of 2,000 plates drawn alike", () => {
+    /** A name's own word, letters only, so it is no number the planner holds. */
+    const letters = (n: number): string => (n < 26 ? "" : letters(Math.floor(n / 26) - 1)) + String.fromCharCode(97 + (n % 26));
+    /** 2,000 names that differ only in a middle word the cut drops: told apart by it where it fits, else by none. */
+    const group = (fits: boolean): PlateName[] => Array.from({ length: 2_000 }, (_, at) => ({
+      id: at,
+      name: fits ? `Modular Housing Block Var${letters(at)} With Long Shared Tail Section` : `Modular Housing Block Extraordinarilylongvariant${letters(at)}word With Long Shared Tail Section`,
+      distinct: fits ? "" : "Section",
+      room: at150,
+    }));
+
+    for (const fits of [true, false]) {
+      it(`is told apart in a bounded pass, its words compared once and its plans counted, ${fits ? "its own word fitting" : "no word of its own fitting"}`, () => {
+        const plates = group(fits);
+        assert.equal(new Set(plates.map((plate) => planName(plate.name, at150, { keep: [plate.distinct], typed: [""] }).lines.join())).size, 1);
+        const planned = plansWorkedOut();
+        wordsApart(plates, [""]);
+        // Each name planned once alone, and a bounded number planned again.
+        assert.ok(plansWorkedOut() - planned <= 2_000 + 600, `${plansWorkedOut() - planned} plans`);
+
+        // Again over the same plans, another page in between: bounded, not a group's square.
+        wordsApart(page(at150, [["Elementary School", ""]]), [""]);
+        const started = performance.now();
+        wordsApart(plates, [""]);
+        const took = performance.now() - started;
+        assert.ok(took < 100, `${took.toFixed(1)} ms`);
+      });
+    }
+
+    it("is not worked out again on a step that changes a plate's room but no plate's text, as Up and Down move Enter's mark", () => {
+      const plates = group(true);
+      const first = wordsApart(plates, [""]);
+      const stepped = plates.map((plate, at) => (at === 5 ? { ...plate, room: { ...plate.room, width: plate.room.width - 2 } } : plate));
+
+      assert.equal(planName(stepped[5].name, stepped[5].room, { keep: [""], typed: [""] }).lines.join(), planName(plates[5].name, at150, { keep: [""], typed: [""] }).lines.join());
+      assert.equal(wordsApart(stepped, [""]), first);
+    });
+  });
+
   it("over the base game's names in every form and search, draws fewer plates alike and never more, and keeps every planner guarantee", () => {
     for (const typedText of ["", "ro", "pa"]) {
       const typed = [typedText];
