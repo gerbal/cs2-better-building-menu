@@ -363,11 +363,12 @@ function bestCut(words: readonly string[], box: NameBox, guarded: (index: number
 /**
  * The best cut that fits with words cut inside them, the least held first: for each hold from `least` to
  * `most`, the cuts that cut no word held harder, of which the best; null where none fits. From the
- * numbers' hold on, a number the row is not told apart by may be dropped too. In each shape each word
- * alone is cut to the longest form that fits, and the words in turn, the least held and the widest first,
- * each as far as it must. A shape whose words cannot fit its lines even at their shortest is passed over.
+ * numbers' hold on, a number the row is not told apart by may be dropped too; with `dropsTyped`, a typed
+ * word may be dropped at any hold, the distinguishing word kept over it. In each shape each word alone is
+ * cut to the longest form that fits, and the words in turn, the least held and the widest first, each as
+ * far as it must. A shape whose words cannot fit its lines even at their shortest is passed over.
  */
-function cutInside(words: readonly string[], box: NameBox, holds: readonly number[], least: number, most: number, openings: readonly Opening[], mostMarks: number): string[] | null {
+function cutInside(words: readonly string[], box: NameBox, holds: readonly number[], least: number, most: number, openings: readonly Opening[], mostMarks: number, dropsTyped = false): string[] | null {
   const cuts = words.map(cutsOf);
   // One mark saying two cuts only where a line may carry two.
   const merges = mostMarks > 1;
@@ -400,8 +401,10 @@ function cutInside(words: readonly string[], box: NameBox, holds: readonly numbe
   const space = runWidth(" ", box);
   const shortest = (index: number, level: number) => runWidth(holds[index] <= level && cuts[index].length > 0 ? cuts[index][cuts[index].length - 1] : words[index], box);
 
-  const held = openings.flatMap((opening) => shapes(words, (index) => holds[index] > PLAIN, opening));
-  const numbersFree = openings.flatMap((opening) => shapes(words, (index) => holds[index] > PLAIN && holds[index] !== NUMBER, opening));
+  // The words no shape drops: every held word, or with `dropsTyped` every one held harder than a typed word.
+  const guarded = (index: number) => holds[index] > (dropsTyped ? TYPED : PLAIN);
+  const held = openings.flatMap((opening) => shapes(words, guarded, opening));
+  const numbersFree = openings.flatMap((opening) => shapes(words, (index) => guarded(index) && holds[index] !== NUMBER, opening));
 
   for (let level = least; level <= most; level += 1) {
     for (const shape of level >= NUMBER ? numbersFree : held) {
@@ -461,8 +464,8 @@ function charCut(name: string, box: NameBox, leads: boolean): string[] | null {
  * Where no cut of whole words fits: the plain words cut inside them; then the typed words too; then the
  * numbers, cut or dropped. Then, where the row has a distinguishing word, that word whole with the first
  * word and a mark after each ("One… Perpendicular…"), so look-alikes of two families still read apart,
- * or with the mark leading where that keeps more of what is held; both before the word is cut inside, as
- * two look-alikes that lose it read alike. Then the whole name cut inside its words, then the mark leading, then the whole name
+ * or with the mark leading where that keeps more of what is held, a typed word dropped where it must be;
+ * both before the word is cut inside, as two look-alikes that lose it read alike. Then the whole name cut inside its words, then the mark leading, then the whole name
  * cut to its tail; and where not even the mark fits, no line. Without `further`, only the plain words are
  * cut, and once: no line where that does not fit and a word is held.
  */
@@ -474,11 +477,12 @@ function lastResort(name: string, words: readonly string[], box: NameBox, holds:
     return charCut(name, box, false) ?? charCut(name, box, true) ?? (runWidth(CUT_MARK, box) <= box.width ? [CUT_MARK] : []);
   }
 
+  // Around the distinguishing word a typed word may go: two look-alikes that lose that word read alike.
   const told = holds.includes(DISTINCT);
   return cutInside(words, box, holds, PLAIN, NUMBER, HEAD, MOST_MARKS)
-    ?? (told ? cutInside(words, box, holds, PLAIN, NUMBER, AROUND, MOST_MARKS) : null)
+    ?? (told ? cutInside(words, box, holds, PLAIN, NUMBER, AROUND, MOST_MARKS, true) : null)
     ?? cutInside(words, box, holds, DISTINCT, DISTINCT, HEAD, MOST_MARKS)
-    ?? (told ? cutInside(words, box, holds, DISTINCT, DISTINCT, AROUND, MOST_MARKS) : null)
+    ?? (told ? cutInside(words, box, holds, DISTINCT, DISTINCT, AROUND, MOST_MARKS, true) : null)
     ?? charCut(name, box, false)
     ?? (told ? null : cutInside(words, box, holds, PLAIN, DISTINCT, LEAD, MOST_MARKS))
     ?? charCut(name, box, true)

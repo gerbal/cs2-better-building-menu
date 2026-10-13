@@ -325,6 +325,23 @@ describe("the base game's names in a plate's room", () => {
     }
   });
 
+  it("keeps the distinguishing word over a typed word at large text, so the parking roads draw apart under \"ro\"", () => {
+    const words = new Map(names);
+    const parking = [...words.keys()].filter((name) => /(Angled|Perpendicular) Parking Road$/u.test(name));
+
+    assert.ok(parking.length >= 8, parking.join(" | "));
+    for (const textScale of [1.3, 1.5]) {
+      const box = roomOf(textScale, "moreBuildings");
+      const plans = parking.map((name) => planName(name, box, { keep: [words.get(name) ?? ""], typed: ["ro"] }).lines.join(" "));
+
+      parking.forEach((name, at) => {
+        const tokens = plans[at].split(" ").map((token) => token.replace(/^…|…$/gu, ""));
+        assert.ok(tokens.includes(words.get(name) ?? ""), `${name} at ${textScale}: ${plans[at]}`);
+        assert.ok(planFits([plans[at]], box), `${name} at ${textScale}: ${plans[at]}`);
+      });
+    }
+  });
+
   it("never draws a line wider than its room, nor more than two marks in one, with or without a search", () => {
     for (const [textScale, atLargeText] of forms) {
       const grid = bodyGrid({ body: "list", boxWidth: 706, bodyHeight: ASSET_MENU_DEFAULT_HEIGHT, textScale, atLargeText, tileSize: 64, plateHeight: 27.25, nameLines: 0 });

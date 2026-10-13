@@ -1483,7 +1483,9 @@ so the renders and the game draw the same lines. In order:
    distinguishing word is cut inside, it is kept whole: with the first word and a mark after each ("One…
    Perpendicular…", "Narrow… Concrete…"), which tells two families' look-alikes apart, or with the mark
    first, the head dropped and the words after it where they must be ("…01 1x1 Agr…ture"), whichever
-   keeps more of what is held, then the first word: look-alikes that lose it read alike. Where neither
+   keeps more of what is held, then the first word: look-alikes that lose it read alike. Here a typed
+   word may go where the distinguishing word cannot stay beside it: under a search for "ro" at 150% the
+   parking roads draw "…Perpendicular…" and "…Angled…", never both "Four-La…ng Road". Where neither
    the first word nor more fits, rows of two families can still read alike ("…Perpendicular…"). Only where none of these fits is the whole name cut inside its words, then the mark
    put first; where not even the mark fits, no line is drawn. The planner never draws a line wider than
    its room, so a one-word name never runs into the numbers beside it.
