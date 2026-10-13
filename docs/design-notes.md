@@ -1529,8 +1529,9 @@ space (`nameRuns`, `AFTER_SPAN`), which keeps it.
 its lines and cut once, keeping the words that tell it apart, with "…" where words were dropped.
 
 **Look-alike tags.** On the tiles drawn, those that share a first word, whatever its case, are a run of
-look-alikes, whose pictures alone do not tell them apart (the theme and density families of Zones: "NA
-Low Density Housing", "NA Low Density Waterfront Housing"); a family's members are one run by their
+look-alikes, whose pictures alone do not tell them apart (the base game's Electricity: Small Coal Power
+Plant is tagged "Coal" beside Small Wind Turbine's "Wind", and Coal Power Plant, whose first word no
+other tile there shares, draws no tag); a family's members are one run by their
 family's first word, glued tokens too ("BeachRaft01", "BeachRaft02"). Every member gets a tag at its top
 left, in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first of these that fits
 the tag and no other tag says: its whole name; a family member's word ("#02", "2x2"); its distinguishing
@@ -1627,7 +1628,7 @@ field's.
   counts them (`wholeLines`: the last line needs no gap below it, and a device pixel of shortfall is forgiven, since
   the scroller reports its height in whole pixels), so lines land on the top edge as
   they were (the cards' whole rows and the gap between them, `bodyLines`; a one-line plate's lines
-  inside the rem its picture overhangs into at both ends, see "Slots"), held inside its ends
+  inside the rem its picture overhangs into at both ends, see "The bodies"), held inside its ends
   (`pageScrollTop`); a page that reaches the end lets the window load more, as scrolling there does.
 
 **This changes 0.2.x:** in the search field Up and Down now move Enter's target and no longer move the
