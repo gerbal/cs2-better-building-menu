@@ -1116,27 +1116,27 @@ does not grow. Above 100% text the rule is the same at the large-text form's thr
 lines, and a grown one-line plate with room for two name lines takes them. The tiles and the cards do
 not grow. The Small menus grow knob turns it off, to compare.
 
-**A small menu's list draws no groups unless picked.** The growth is the point of a small menu, and
-its labels take the slots it grows into: Garbage's 7 rows under its four development branches take 11
-slots, three lines of small plates where its rows alone take two lines of the big form. So a small
-menu (one that opens on All, below) with no tabs of its own, drawn as a list with Small menus grow on,
-groups by none (`BuildingCatalogGrouping.DefaultDimension`): Garbage, Water and Electricity, whose
-development branches add little in a menu of one category. The UI names these menus too
-(`menusDrawingNoGroups`, `SetMenusDrawingNoGroups`), since which body a menu draws is its rule; C#
-counts each menu's tabs with its share (`MenuShare.Tabs`), and the open menu redraws when it joins or
-leaves them. C# counts a menu's share with its first page, so on a menu's first open the UI names it
-only once that page has arrived grouped by its default; the body drawn before holds over that one page
-(`useAwaitsNoGroups`, `useHeld`) until the page without groups arrives a frame later, so the menu's first
-frame is its grown form, never its labels over small plates. The held body keeps its buildings' clicks,
-so a press in that one round trip places a building from the menu just left. A second grouped page draws, so nothing
-waits on C# twice. A small menu with two tabs or more keeps All's labels naming them, as All names each
-tab, and their slots count toward the screen it must fit. A GROUP pick of the player's still applies,
-and its labels take their slots, so the list grows less or not at all; its dot shows only for a pick
-other than "No groups", which these menus draw unpicked. The set is judged at 100% text and the first
-Width step, as the menus that open on All are, so a menu in it that Auto draws as cards or tiles at a
-wider step or larger text draws no groups there either. In the tiles at 100% text, or with the knob
-off, the menu's own grouping stands. **This changes 0.2.x:** 0.2.x grouped these menus by their
-development branches by default.
+**A small menu's list draws no groups unless picked.** The growth is the point of a small menu, and its
+labels take the slots it grows into: Garbage's 7 rows under its four development branches take 11 slots,
+three lines of small plates where its rows alone take two lines of the big form. So a small menu (one
+that opens on All, below) with no tabs of its own, drawn as a list with Small menus grow on, groups by
+none (`BuildingCatalogGrouping.DefaultDimension`): Garbage, Water and Electricity, whose development
+branches add little in a menu of one category. The UI names these menus too (`menusDrawingNoGroups`,
+`SetMenusDrawingNoGroups`), since which body a menu draws is its rule; C# counts each menu's tabs with
+its share (`MenuShare.Tabs`), and the open menu redraws when it joins or leaves them. C# counts a menu's
+share with its first page, so on a menu's first open the UI names it only once that page has arrived
+grouped by its default; the body drawn before holds over that one page (`useAwaitsNoGroups`, `useHeld`)
+until the page without groups arrives a frame later, so the menu's first frame is its grown form, never
+its labels over small plates. The held body keeps its buildings' clicks, so a press in that one round
+trip places a building from the menu just left. A second grouped page draws, so nothing waits on C#
+twice. A small menu with two tabs or more keeps All's labels naming them, as All names each tab, and
+their slots count toward the screen it must fit. A GROUP pick of the player's still applies, and its
+labels take their slots, so the list grows less or not at all; its dot shows only for a pick other than
+"No groups", which these menus draw unpicked. The set is judged at 100% text and the first Width step, as
+the menus that open on All are, so a menu in it that Auto draws as cards or tiles at a wider step or
+larger text draws no groups there either. In the tiles at 100% text, or with the knob off, the menu's own
+grouping stands. **This changes 0.2.x:** 0.2.x grouped these menus by their development branches by
+default.
 
 **The window holds a screen.** The UI tells C# how many buildings one screen of the drawn body holds
 (`SetCatalogScreen`); the cards say how many the packer puts in a screen's rows. The window reaches two
@@ -1394,8 +1394,8 @@ tile's tag is short of room the number loses its decimals, then closes up the sp
 (`compactUnitForms`), since two such figures bare side by side read as one scale; a unit already a
 thousand of another (kt) says no thousands of it. Where no form fits, as a battery's 500 MWh at 130% and
 150% on the smallest tile by the estimate, which errs wide, the tile draws no tag, as for a money figure:
-a clipped "500MW" would read as power. The cards and the tiles' name line read their figures through the same
-functions.
+a clipped "500MW" would read as power. The cards and the tiles' name line read their figures through the
+same functions.
 
 A network's cost is said per cell (`formatCostPerCell`): the index carries a kilometre's worth, 125
 cells, and a row divides it back, "¢44/c", short enough to leave a road's name the room for two whole
@@ -1438,17 +1438,17 @@ the readout now says it once and only the rows that differ print it.
 ## Names
 
 **The distinguishing word.** Each row of a page carries the word that tells it apart from its nearest
-look-alike (`DistinctWords`, beside `DuplicateNameNumbering`, whose numbers it reads): the nearest is
-the row of the whole result that shares the most leading words with it, which in name order is a
-neighbour, and the row's word is the one after those. "Pedestrian" against Covered Bicycle Bridge; "2"
-for Four-Lane Road 2. A word of marks alone ("—") is passed over for the word after it ("Curvable"), as a
-lone dash tells nothing apart and the planner never keeps one. A row with no look-alike, or that is all of
-what it shares, or only marks after it, has none. Words match
-whatever their case and however many spaces part them. C# finds it over the whole result, as a
-look-alike past the window still decides which word a cut name keeps, and counts each run of leading
-words once in one pass over the rows' words, so a refresh sorts nothing more. A page only counted, the
-count of a scoped search's matches elsewhere and the menu shares' All, carries not the words, the
-families or the view's facts (`WithFacts`), as nobody reads its rows.
+look-alike (`DistinctWords`, beside `DuplicateNameNumbering`, whose numbers it reads): the nearest is the
+row of the whole result that shares the most leading words with it, which in name order is a neighbour,
+and the row's word is the one after those. "Pedestrian" against Covered Bicycle Bridge; "2" for Four-Lane
+Road 2. A word of marks alone ("—") is passed over for the word after it ("Curvable"), as a lone dash
+tells nothing apart and the planner never keeps one. A row with no look-alike, or that is all of what it
+shares, or only marks after it, has none. Words match whatever their case and however many spaces part
+them. C# finds it over the whole result, as a look-alike past the window still decides which word a cut
+name keeps, and counts each run of leading words once in one pass over the rows' words, so a refresh
+sorts nothing more. A page only counted, the count of a scoped search's matches elsewhere and the menu
+shares' All, carries not the words, the families or the view's facts (`WithFacts`), as nobody reads its
+rows.
 
 **Families.** Names that differ only in a trailing variant token are a family where three rows or more
 of the result share the stem before it (`Families`): "Boulder 01" to "Boulder 08". A variant token is a
@@ -1498,15 +1498,15 @@ so the renders and the game draw the same lines. In order:
    put first; where not even the mark fits, no line is drawn. The planner never draws a line wider than
    its room, so a one-word name never runs into the numbers beside it.
 
-**Plates told apart over the page.** The planner cuts each name alone, so two names can cut alike
-("NA… Aluminum…" for NA Low and NA Tall Aluminum Fence at 150%) and read as one building. The list makes
-one pass over its page, beside the tiles' look-alike tags (`wordsApart`): each plate drawn as another plate
+**Plates told apart over the page.** The planner cuts each name alone, so two names can cut alike ("NA…
+Aluminum…" for NA Low and NA Tall Aluminum Fence at 150%) and read as one building. The list makes one
+pass over its page, beside the tiles' look-alike tags (`wordsApart`): each plate drawn as another plate
 of a different name draws is planned again keeping, beside its distinguishing word, the first word that
 tells its name from theirs ("…Tall Aluminum…"); else with the mark leading, its first word dropped
-(`leads`: "…Angled…" beside "Two… Angled…"); else both. The first plan that keeps its distinguishing
-word as whole as before and draws apart from every plate stands, so the pass never draws alike two plates
-that were not, and each plan is the planner's, with every guarantee it gives. Where no such plan fits
-(the Perpendicular Parking Roads at 130% and 150%, whose "…Perpendicular…" leaves no room for more), the
+(`leads`: "…Angled…" beside "Two… Angled…"); else both. The first plan that keeps its distinguishing word
+as whole as before and draws apart from every plate stands, so the pass never draws alike two plates that
+were not, and each plan is the planner's, with every guarantee it gives. Where no such plan fits (the
+Perpendicular Parking Roads at 130% and 150%, whose "…Perpendicular…" leaves no room for more), the
 plates still read alike. The pass plans each plate in its estimate's room, as the plate first plans it,
 so it finds each plan kept and plans again only the few drawn alike, each kept by its hints, and a Load
 more or a view switch plans no name twice; a plate's room as drawn may still cut it otherwise.
@@ -1596,9 +1596,10 @@ Any other stored value reads as beside the pointer, on every load.
   once the pointer has rested the Hover delay knob's time on one building (150 ms as it ships), and goes
   at once when it leaves, to nothing or to the next cell: React sends a cell's leave and the next one's
   enter from one mouseout, so a card kept up until the next had rested would name a building the pointer
-  has left; a building the pointer comes back to before the next has rested waits the delay again. A cell that goes from under a resting pointer (typing turns the tiles into the list, a page
-  changes) sends no leave, so each cell takes its own building away as it unmounts; nothing is pointed
-  at once the menu closes.
+  has left; a building the pointer comes back to before the next has rested waits the delay again. A cell
+  that goes from under a resting pointer (typing turns the tiles into the list, a page changes) sends no
+  leave, so each cell takes its own building away as it unmounts; nothing is pointed at once the menu
+  closes.
 - **One card, a child of the box's root,** so it takes the look's tokens and the interface style with them,
   as the popovers do, drawing above the box from inside it. It takes no pointer, and hides while a list is
   open. Its panel is the popovers' own (`popover-panel`, shared), dark under every style, so its inks are
@@ -1620,14 +1621,15 @@ Any other stored value reads as beside the pointer, on every load.
   (`cellsInField`, read by `drawnCells`): a cell scrolled out of the body is still in the page, under the
   top row and over the box where the card's first place is, and counted it would push the card down over
   the cells shown. The cells are read only where no place above the box fits inside its span, as a place
-  above the box covers none: up to a window's worth of rectangles, which every wheel would read otherwise. The scroller is found by walking up from a row (`listScroller`), as the game's
-  Scrollable drops any marker. Each card says the building as the page has it now, and places itself
-  again, against the pointed cell where it is drawn then, when the page changes, when the screen, the
-  box or the card change size, on a wheel over the box and on a key: Cohtml sends no scroll event, a
-  wheel is what scrolls the body, and PageUp, PageDown and Enter's reveal scroll it from the keys
-  (`useAfterLayout`). Where the pointed cell no longer lies under the pointer then (where it last moved
-  over the box, else the middle of the cell it entered), the building is pointed at no more and the card
-  goes (`stillPointed`): content that moves under a resting pointer may send no leave, and a card that
+  above the box covers none: up to a window's worth of rectangles, which every wheel would read
+  otherwise. The scroller is found by walking up from a row (`listScroller`), as the game's Scrollable
+  drops any marker. Each card says the building as the page has it now, and places itself again, against
+  the pointed cell where it is drawn then, when the page changes, when the screen, the box or the card
+  change size, on a wheel over the box and on a key: Cohtml sends no scroll event, a wheel is what
+  scrolls the body, and PageUp, PageDown and Enter's reveal scroll it from the keys (`useAfterLayout`).
+  Where the pointed cell no longer lies under the pointer then (where it last moved over the box, else
+  the middle of the cell it entered), the building is pointed at no more and the card goes
+  (`stillPointed`): content that moves under a resting pointer may send no leave, and a card that
   followed its building would name one the pointer has left. The next building's card shows once the
   pointer enters a cell. Under Status line only the readout's building goes the same way. Both cards
   share this measure and place (`usePlacedCard`), and neither carries a cell's marks, so neither is read
@@ -1635,34 +1637,36 @@ Any other stored value reads as beside the pointer, on every load.
 - **The game's detail slot.** A wide card above the box, 706 wide and at most 191 tall, its bottom 6 rem
   over the box, where the game's own detail shows (`placeSlotCard`): at the first Width step at the box's
   left edge; in a wider box centred over the pointed cell and held inside the box's span, and on screen;
-  raised over any HUD piece it meets, so at the widest steps it clears the chirper. Where a box dragged tall
-  leaves no room above it, it sits over the box, its bottom 6 rem over the pointed cell, else its top 6 rem
-  under it, so it never hides the building it describes. It draws the game's own
-  card's lines (`HoverCardContent`: the description, the game's figures and BBM's, every condition a locked
-  building waits on, the footprints) beside a 150 picture, then the building's packs, in the look's inks on
-  the popovers' panel, a figure that cannot be afforded or falls short keeping the upgrades panel's red or
-  green, and its label with it. Its content has the slot's height less its padding (`SLOT_ROOM`). Cohtml has no line clamp, so
-  the card is drawn unseen with every row, measured two frames on, then drawn with only the leading rows
-  whose bottoms fit (`slotRowsKept`) and placed as drawn: a long card drops its last rows whole, the packs
-  first, its order kept, and the clip never cuts a row. A drawn row that grows (a line too long for its
-  half takes the row) drops more, never fewer, so it settles. What the card says keys the measure (the
-  building's row, the card's words, the text scale): a page that brings the building back unchanged keeps
-  the card drawn and placed, and a change measures every row again, so rows dropped come back. It is placed against the pointed cell
-  alone, and reads no other. Who made a mod's building waits for the mod facet, which names it.
+  raised over any HUD piece it meets, so at the widest steps it clears the chirper. Where a box dragged
+  tall leaves no room above it, it sits over the box, its bottom 6 rem over the pointed cell, else its
+  top 6 rem under it, so it never hides the building it describes. It draws the game's own card's lines
+  (`HoverCardContent`: the description, the game's figures and BBM's, every condition a locked building
+  waits on, the footprints) beside a 150 picture, then the building's packs, in the look's inks on the
+  popovers' panel, a figure that cannot be afforded or falls short keeping the upgrades panel's red or
+  green, and its label with it. Its content has the slot's height less its padding (`SLOT_ROOM`). Cohtml
+  has no line clamp, so the card is drawn unseen with every row, measured two frames on, then drawn with
+  only the leading rows whose bottoms fit (`slotRowsKept`) and placed as drawn: a long card drops its
+  last rows whole, the packs first, its order kept, and the clip never cuts a row. A drawn row that grows
+  (a line too long for its half takes the row) drops more, never fewer, so it settles. What the card says
+  keys the measure (the building's row, the card's words, the text scale): a page that brings the
+  building back unchanged keeps the card drawn and placed, and a change measures every row again, so rows
+  dropped come back. It is placed against the pointed cell alone, and reads no other. Who made a mod's
+  building waits for the mod facet, which names it.
 - **Status line only.** No card: the readout at the tabs' right end names the building on its first line,
-  planned to the room the tabs leave it and cut once where it runs over, and says its figures on the second
-  with their units in words (`statusLine`): a locked building's milestone, the cost, the upkeep, the key
-  number, the lot. Short of room the lot goes first, then the upkeep, then the key number, then the cost;
-  the milestone stays; a key number that is a bare count is named ("Capacity 400"), since the readout
-  draws no glyph beside it. The room is what the tab row leaves its readout (`readoutRoom`, the one number
-  `planTabRow` reads too), so the tabs never move. While the readout names a building the rows keep the
-  blanks the legend said: blanks that followed the pointer would flicker with every crossing, so the
-  legend, with the readout's own text, comes back when the pointer leaves. The readout's two lines fit the
-  row only at 100% text, so above it the status line is one line, as the readout's own is: the name, cut
-  to the room less a locked building's milestone, then the figures that fit after it, a "·" before each,
-  by the same order, so a larger text shows fewer figures. The tab row reads the pointed building, and
-  works the room out, only under this form (`useStatusLine`), so under the other two it never draws again
-  as the pointer crosses cells.
+  planned to the room the tabs leave it and cut once where it runs over, and says its figures on the
+  second with their units in words (`statusLine`): a locked building's milestone, the cost, the upkeep,
+  the key number, the lot. Short of room the lot goes first, then the upkeep, then the key number, then
+  the cost; the milestone stays; a key number that is a bare count is named ("Capacity 400"), since the
+  readout draws no glyph beside it. The room is what the tab row leaves its readout (`readoutRoom`, the
+  one number `planTabRow` reads too), so the tabs never move. While the readout names a building the rows
+  keep the blanks the legend said: blanks that followed the pointer would flicker with every crossing, so
+  the legend, with the readout's own text, comes back when the pointer leaves. The readout's two lines
+  fit the row only at 100% text, so above it the status line is one line, as the readout's own is: the
+  name, cut to the room less a locked building's milestone, then the figures that fit after it, a "·"
+  before each, by the same order, so a larger text shows fewer figures (`StatusLine.oneLine`). The tab
+  row reads the pointed building, and works the room out, only under this form: it hands the room over as
+  a function, `useStatusLine(room: () => number, keyKind)`, which is called only then, so under the other
+  two it never draws again as the pointer crosses cells.
 
 **This changes 0.2.x:** pointing at a building drew the game's tooltip over that building alone, its
 description, every figure, the footprints; one card now says the building beside the pointer in a few
