@@ -14,7 +14,8 @@ const PANE = "mods/ControlPane/controlPane.module.scss";
 const ASSET_MENU = "mods/BuildingMenu/assetMenu.module.scss";
 const TOP_ROW = "mods/TopRow/topRow.module.scss";
 const TOP_EDGE = "mods/TopEdge/topEdge.module.scss";
-const GROUPS = "mods/GroupedResults/groupedResults.module.scss";
+const LABELS = "mods/Bodies/labelPlate.module.scss";
+const CARDS = "mods/Bodies/cardsBody.module.scss";
 const CARD = "mods/BuildingHoverCard/buildingHoverCard.module.scss";
 const PICKER = "mods/ExtensionMenu/extensionMenu.module.scss";
 const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
@@ -27,36 +28,37 @@ const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
 
 const catalog = (selector: string) => declarationsOf(CATALOG, selector);
 const pane = (selector: string) => declarationsOf(PANE, selector);
-const groups = (selector: string) => declarationsOf(GROUPS, selector);
+const labels = (selector: string) => declarationsOf(LABELS, selector);
+const cards = (selector: string) => declarationsOf(CARDS, selector);
 const card = (selector: string) => declarationsOf(CARD, selector);
 const picker = (selector: string) => declarationsOf(PICKER, selector);
 const resize = (selector: string) => declarationsOf(RESIZE, selector);
 
 describe("Asset menu stylesheet contracts", () => {
-  it("sizes a group to its tiles and keeps the heading to one line inside it", () => {
-    // The heading is cut to the width the tiles occupy, rather than the tiles
-    // being spread to the width the heading wants: reserving label room buys
-    // readable headings at the price of mostly-empty groups. Never a second
-    // line, which costs every group in the row a line of tiles.
-    assert.equal(groups(".group")["min-width"], undefined);
-    assert.equal(groups(".groupLabel")["white-space"], "nowrap");
-    assert.equal(groups(".groupLabel").overflow, "hidden");
-    // A band sizes to its content rather than claiming the whole line: one
-    // that is wider than the row still fills it, via max-width and its own
-    // children wrapping, while a narrow one lets a sibling share the line.
-    assert.equal(groups(".groupBand").flex, "0 1 auto");
-    // No heading, no row reserved for one.
-    assert.equal(groups(".groupUnlabeled")["padding-top"], "0");
+  it("keeps a label plate's name to its slot, on one line, and never cuts its count", () => {
+    // The slot is the plate's size, so a long name is cut inside it rather than widening it;
+    // the count says how many the label holds, so it gives way last.
+    assert.equal(labels(".labelWords")["white-space"], "nowrap");
+    assert.equal(labels(".labelText").overflow, "hidden");
+    assert.equal(labels(".labelCount").flex, "0 0 auto");
+    assert.equal(labels(".label").overflow, "hidden");
   });
 
-  it("keeps the heading out of flow so it cannot widen the group", () => {
-    // The whole reason the reserve is measured in JS rather than being the
-    // heading's own height: an in-flow heading sets the group's intrinsic
-    // width. GroupRow reserves the row's tallest heading instead.
-    assert.equal(groups(".groupHeading").position, "absolute");
-    // Against a wrapping label the count sits on the first line, not the
-    // middle of the stack.
-    assert.equal(groups(".groupHeading")["align-items"], "flex-start");
+  it("keeps each card's name and facts on one line each, inside the card", () => {
+    // The packer sizes each card from these two lines, so a second line would draw past it.
+    assert.equal(cards(".name")["white-space"], "nowrap");
+    assert.equal(cards(".facts")["white-space"], "nowrap");
+    assert.equal(cards(".card").overflow, "hidden");
+    assert.equal(cards(".card")["box-sizing"], "border-box");
+  });
+
+  it("lets every body's scroller fill the body and no more, and the body shrink below its content", () => {
+    // A scroller with no cap outgrows the box, and a body that cannot shrink lays its rows out
+    // below the screen, present in the DOM and never drawn.
+    for (const sheet of ["mods/Bodies/listBody.module.scss", "mods/Bodies/tilesBody.module.scss", CARDS]) {
+      assert.equal(declarationsOf(sheet, ".body")["min-height"], "0", sheet);
+      assert.equal(declarationsOf(sheet, ".scroller.scroller")["max-height"], "100%", sheet);
+    }
   });
 
   it("pairs the hover card's figures two across, and lets a list take the row", () => {
@@ -439,20 +441,14 @@ describe("the catalog's floor is one row of cards", () => {
   // The player drags the height; the floor is where the drag stops. C# owns
   // it, the TS clamp reads the generated copy, and the stylesheet states it
   // again as a min-height; this keeps the stylesheet honest.
-  it("is one card row under two headings: the deepest grouping a menu draws", () => {
-    // Zones groups two levels deep (Residential Zones > Low Density), so its
-    // first row of cards sits under two heading reserves; a floor for one
-    // would clip that row by a heading's height in the menu the floor is
-    // most used in.
-    const vertical = (shorthand: string | undefined) => rem(sides(shorthand)[0]) + rem(sides(shorthand)[2]);
-    const catalogPadding = vertical(catalog(".catalog").padding);
-    const groupReserve = rem(groups(".group")["padding-top"]);
-    const listPadding = vertical(declarationsOf(LIST, ".list").padding);
-    // Every card is also an .item, which carries the border.
-    const border = rem(declarationsOf(LIST, ".item").border.split(/\s+/)[0]);
-    const cardHeight = rem(declarationsOf(LIST, ".itemCard")["min-height"]) + 2 * border;
+  it("is a floor guard: it holds a row of the tallest card and a line of the shipped tiles, every body placing its own cells", () => {
+    // The catalog adds nothing around a body; the floor holds one row of the Card height knob's
+    // taller 50 rem cards, and one line of 64 rem tiles.
+    const floor = rem(declarationsOf(ASSET_MENU, ".content")["min-height"]);
 
-    assert.equal(ASSET_MENU_MIN_HEIGHT, catalogPadding + 2 * groupReserve + listPadding + cardHeight);
+    assert.equal(catalog(".catalog").padding, "0");
+    assert.equal(floor, ASSET_MENU_MIN_HEIGHT);
+    assert.ok(floor >= 50 && floor >= 64, `${floor}`);
   });
 
   it("states the same floor in the stylesheet", () => {

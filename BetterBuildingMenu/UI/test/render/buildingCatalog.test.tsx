@@ -101,14 +101,16 @@ describe("the catalog container", () => {
     assert.match(render(), /class="empty"/);
   });
 
-  it("draws the Locked label, not the empty line, for a tab whose rows are all locked and folded away", () => {
-    showBody("list");
-    page({ items: [], totalCount: 5, visibleCount: 0, sections: [{ id: "locked", kind: "locked", label: "", labelId: "", start: 0, count: 5, collapsed: true }] });
-    const html = render();
+  for (const body of BODIES) {
+    it(`draws the Locked label, not the empty line, for a tab whose rows are all locked and folded away, in the ${body} body`, () => {
+      showBody(body);
+      page({ items: [], totalCount: 5, visibleCount: 0, sections: [{ id: "locked", kind: "locked", label: "", labelId: "", start: 0, count: 5, collapsed: true }] });
+      const html = render();
 
-    assert.match(html, /data-bbm-label="locked"/);
-    assert.doesNotMatch(html, /class="empty"/);
-  });
+      assert.match(html, /data-bbm-label="locked"/);
+      assert.doesNotMatch(html, /class="empty"/);
+    });
+  }
 
   it("offers to load only the rows a fold leaves, never the folded ones", () => {
     showBody("list");
@@ -128,7 +130,7 @@ describe("the catalog container", () => {
     showBody("cards");
     page();
 
-    assert.match(render(), /class="item itemCard"/);
+    assert.match(render(), /data-bbm-view="cards"/);
   });
 
   it("draws Default view's body for a menu with no pick of its own", () => {
@@ -136,7 +138,7 @@ describe("the catalog container", () => {
     setBinding("BetterBuildingMenu", "AssetMenuDefaultView", "cards");
     page();
 
-    assert.match(render(), /class="item itemCard"/);
+    assert.match(render(), /data-bbm-view="cards"/);
   });
 
   it("draws the look's Auto for a menu with no pick under Default view's Auto", () => {
@@ -145,7 +147,7 @@ describe("the catalog container", () => {
     page();
     const html = render();
 
-    assert.doesNotMatch(html, /itemCard/);
+    assert.doesNotMatch(html, /data-bbm-view="cards"/);
     assert.doesNotMatch(html, /data-bbm-view="list"/);
   });
 
@@ -162,7 +164,7 @@ describe("the catalog container", () => {
     setBinding("BetterBuildingMenu", "CurrentSearch", "four");
     page();
 
-    assert.match(render(), /class="item itemCard"/);
+    assert.match(render(), /data-bbm-view="cards"/);
   });
 
   it("draws no control chrome of its own", () => {

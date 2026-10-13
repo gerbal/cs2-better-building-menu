@@ -5,9 +5,9 @@ import classNames from "classnames";
 import { memo } from "react";
 
 import { groupDigits } from "domain/assetMenuMetricFormat";
+import { sectionLabel } from "domain/bodyCells";
 import type { CatalogSection } from "domain/buildingCatalog";
 import { setSectionCollapsedCommand } from "domain/buildingCatalogContracts";
-import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { send } from "mods/bindings";
 import styles from "./labelPlate.module.scss";
 import { useNumberSeparators, useStateWords } from "./useBodyWords";
@@ -32,7 +32,7 @@ export const LabelPlate = memo(function LabelPlate({ section, place, stacked }: 
   const stateWords = useStateWords();
   const separators = useNumberSeparators();
   const locked = section.kind === "locked";
-  const text = locked ? stateWords.locked : resolveVanillaLabel(vanillaCategoryNameKeys(section.labelId), (key) => translate(key, null), section.label);
+  const text = sectionLabel(section, (key) => translate(key, null), stateWords.locked);
   // Inline, over the game's Button and its own square: the slot is the plate's place and size.
   const style = { left: `${place.left}rem`, top: `${place.top}rem`, width: `${place.width}rem`, height: `${place.height}rem` };
   const content = (

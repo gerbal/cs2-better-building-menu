@@ -1061,8 +1061,9 @@ the lines are the body's height.
   13 / 16 / 19 / 22 across at the wider steps; 68 gives 9 × 2, and 72 one line of 9.
 
 **The window holds a screen.** The UI tells C# how many buildings one screen of the drawn body holds
-(`SetCatalogScreen`); the cards, which pack their own rows, say 0. The window reaches two screens past
-its first row where a screen holds more than half a step, a step otherwise (`BuildingCatalogQuery.Reach`):
+(`SetCatalogScreen`); the cards say how many the packer puts in a screen's rows. The window reaches two
+screens past its first row where a screen holds more than half a step, a step otherwise
+(`BuildingCatalogQuery.Reach`):
 a fresh result's first window, and an anchored start's from its row. So a body dragged tall with small
 tiles (22 × 14 = 308 a screen) always has rows below its screen to scroll to, and the poll that loads
 more can see the bottom coming. A screen is no predicate and no start: it only grows the window.
@@ -1090,7 +1091,8 @@ one hook each (`useStateWords`, `useNumberSeparators`), for every body that plac
 slots.
 
 **Labels.** The list and the tiles draw a label plate in a slot of its own before each section's
-first building: the groups' names in All, and "Locked N" in a half-locked tab (see "Label plates").
+first building, and the cards a plate in the rows among them: the groups' names in All, and "Locked
+N" in a half-locked tab (see "Label plates").
 
 **Markers.** The live check and the render tests count what a body shows through these markers:
 `data-bbm-view` on the visible region, and on each building `data-bbm-item`, with `data-bbm-pic`,
@@ -1112,7 +1114,10 @@ one cut in its unit. A sorted value whose unit does not fit beside it
 keeps its whole number and drops the unit ("1 000", not "1 000 stu…"), which the Sort control names;
 a tag never shows a cut word. The fit is judged from the glyph advances of the
 game's own fonts, the wider of Overpass and Noto Sans per character, so it errs toward the short form;
-anything else too wide is bounded to the tile and cut with an ellipsis.
+anything else too wide is bounded to the tile and cut with an ellipsis. The advances are the one table
+the cards are sized from (`textWidth`, see "The cards"), so every letter of a unit counts its own
+measured width rather than a flat 0.65 em: a figure with narrow letters can fit whole where a flat
+width would shorten it, and one with a wide letter ("W") takes a short form sooner.
 
 A locked tile draws a padlock that is a raster, since a masked vector is what Cohtml cannot draw. A unique
 carries the game's own mark (`UniqueMark`, and the `unique-mark-states` mixin the list shares), sized
@@ -1130,13 +1135,45 @@ at the line's own font. Look-alike tags wait for the name planner.
 and its tag, and the name is the line's under the tiles, for the tile pointed at or armed. Under a sort by
 the lot Grid said the lot on each tile; the tag says the cost there, and the lot is the name line's.
 
-**The cards.** 0.2.4's card, under the headings of the grouping that orders them (`GroupedResults`):
-All under its tabs, a 40 rem picture, the whole name, the lot, cost and capacity, the sorted value's
-column, the unique and built marks. Its root is the region the markers are counted in.
+**The cards** draw each building on a card as wide as its words (see "The cards").
 
 **This changes 0.2.x:** one view, picked in VIEW, drew every menu, and every session opened in Cards
 (0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid
 and Table are gone, Grid's place taken by Tiles and Table's by List.
+
+## The cards
+
+The Cards body draws each building on a card in the look's tokens: a 40 rem picture, the whole name on
+one line at the game's `fontSizeS` (cut only past the list's longest name), and under it one facts line
+at `fontSizeXS`, the lot, the cost and the capacity where the building has each, a "·" between; under a
+sort by a number, the lot and the cost among them, the value sorted by in a column at the card's right,
+so the order reads down the rows. A locked card keeps its cost and says its milestone beside a padlock
+("MS 4" while the city has not reached it, else the locked word, `lockedFact`, in the milestone's ink);
+a unique carries the game's mark and one the city holds the built mark; Enter's target carries "↵" on a
+dark badge at the picture's top left; the armed card is filled. Its face, fills and inks are the list's
+plate's (`cell-face`, `cell-lit`, `tName`, `tNum2`, `tCost`, `bodyMilestone`).
+
+**Placed by a packer.** Each card is as wide as its name or its facts line, whichever is longer, with
+its picture and padding, so the rows end ragged. Cohtml lays out no flex-wrap a body can trust, so each
+card is placed from the widths its words draw at (`cardText`, `cardWidth`, `packCards`): the widths
+come from each character's advance in the game's own fonts (`textWidth`, measured from Overpass and Noto
+Sans), never from the drawn card, so the packer is pure and no frame re-packs. A character the table
+lacks counts 0.65 em, an ideograph or a syllable block a whole em. A card a few rem wider than its words
+costs nothing; one narrower would cut its last letter, so the estimate keeps 2 rem of slack. The tiles'
+tag judges its fit from the same table, the wider of the two fonts.
+
+**Its height** is the Card height knob's: 46 rem, three rows in the game's own 144.25 body a little over
+3 apart; or 50, two rows 4 apart, the block centred. Above 100% text a card grows where its two lines
+need more. The rows a screen shows are counted as the list's lines are (`wholeLines`, a device pixel
+forgiven), then spread at most 4 apart. The labels (see "Label plates") sit in the rows with the cards,
+at a card's height, each as wide as the words its plate draws (`sectionLabel`, so the game's word in the
+player's language sizes its own plate); under the Block labels knob's own line a label takes a row of
+its own. The catalog lays the cards out (`useCardsLayout`) and tells C# how many buildings a screen's
+rows hold; the cards fill the rows the packer gives them, so a screen holds more short names than long.
+
+**This changes 0.2.x:** 0.2.4's cards were 50 rem tall in two rows, under headings that took a row of
+their own; they are 46 tall in three rows, the headings label plates in the rows. The Card height knob
+keeps 0.2.4's 50 to compare.
 
 ## Label plates
 
@@ -1161,8 +1198,9 @@ are collapsed). Two kinds:
   folded, the page's `VisibleCount` is its total less the locked rows: the window, Load more and
   Enter's target count over it, and `TotalCount` still counts every row.
 
-**The plates.** The list and the tiles place their cells with `bodyCells`, from the page's sections
-rather than the window's own headings (`bodyOrder` is the one interleave): a label goes in the slot
+**The plates.** The list and the tiles place their cells with `bodyCells`, and the cards with their
+packer, from the page's sections rather than the window's own headings (`bodyOrder` is the one
+interleave): a label goes in the slot
 before its section's first row once the window has reached that row, and every building after it moves
 a slot on. A section's start counts from the result's first row, so it is read less the page's offset:
 a section that ends before the window draws nothing, and the one the window starts inside draws first.
@@ -1170,7 +1208,7 @@ After the window's last row only a collapsed section's label is drawn, which is 
 group whose first row the window has not reached waits for it, so no label sits above Load more with
 nothing under it. A tab whose rows are all locked and folded draws its Locked label alone, never the
 empty line. A plate says the group's name, in the game's words where the game has one
-(`resolveVanillaLabel`, from the section's label id), or the locked word, in caps at 10 rem, then the
+(`sectionLabel`, from the section's label id), or the locked word, in caps at 10 rem, then the
 count. The name sits in a box of its own inside the room the count leaves, cut on its one line with an
 ellipsis where it runs past the plate: Cohtml draws no ellipsis on a flex item. The plate's fill
 (`labBg`) follows an interface style, and so do its inks, body inks (`bodyWord`, `bodyChipDim`; Locked

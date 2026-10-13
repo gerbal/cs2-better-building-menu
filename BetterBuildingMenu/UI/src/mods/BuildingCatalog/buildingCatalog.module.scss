@@ -14,13 +14,9 @@
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  padding: 8rem;
-  color: var(--menuTitleNormal);
-}
-
-// A body that places its own slots takes the whole height, and its own side margins.
-.catalog.slotted {
+  // Every body places its own cells, inside side margins of its own, and takes the whole height.
   padding: 0;
+  color: var(--menuTitleNormal);
 }
 
 // The end of the feed, inside the scroll. As wide as the count beside it allows,

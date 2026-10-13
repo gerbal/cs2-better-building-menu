@@ -115,7 +115,7 @@ export interface BuildingCatalogEntry {
   /**
    * The headings this entry falls under for the page's effective grouping,
    * outermost first. C# stamps it on every page item when the page is
-   * grouped; empty when it is not. See groupTreeFromPaths.
+   * grouped; empty when it is not. The bodies label groups from the page's sections.
    */
   groupPath?: string[];
   /** The game's own id behind the outer heading, where there is one; "" otherwise. */

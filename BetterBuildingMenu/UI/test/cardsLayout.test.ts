@@ -1,0 +1,116 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
+import { cardGeometry, cardText, cardWidth, CARD_GAP, labelWidth, packCards } from "../src/domain/cardsLayout";
+import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
+import { textWidth } from "../src/domain/textWidth";
+import { declarationsOf, rem, sides } from "./harness/compiledCss";
+
+const CARDS = "mods/Bodies/cardsBody.module.scss";
+const separators = { group: ",", decimal: "." };
+const lot = formatLotDimensions(4, 3);
+const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
+const entry = (over: Partial<BuildingCatalogEntry> = {}) => ({
+  id: 1, name: "Small Clinic", prefabName: "SmallClinic", category: "ServiceBuildings", subCategory: "ServiceBuildings_Health",
+  lotWidth: 4, lotDepth: 3, constructionCost: 5000, capacity: 20, isLocked: false, unlockMilestone: 0, costIsPerDistance: false,
+  ...over,
+}) as BuildingCatalogEntry;
+
+describe("the cards' geometry", () => {
+  it("makes a card 46 tall, three rows in the game's own body a little over 3 apart", () => {
+    assert.deepEqual(cardGeometry(46, 144.25, 1), { height: 46, lines: 3, rowGap: 3.125, y0: 0, pitchY: 49.125 });
+  });
+
+  it("makes the Card height knob's 50 two rows, 4 apart, the block centred in the body", () => {
+    assert.deepEqual(cardGeometry(50, 144.25, 1), { height: 50, lines: 2, rowGap: 4, y0: 20.12, pitchY: 54 });
+  });
+
+  it("grows a card at large text when its name and facts lines need more than its height", () => {
+    const large = cardGeometry(46, 144.25, 1.3);
+
+    assert.ok(large.height > 46, `${large.height}`);
+    assert.equal(large.lines, 2);
+  });
+
+  it("forgives the device pixel the game's scroller reports short, as the list and the tiles do", () => {
+    // Three rows of 46 and two gaps of 2 need 142; a body a fifth of a rem short keeps them within a pixel.
+    assert.equal(cardGeometry(46, 141.8, 1).lines, 2);
+    assert.equal(cardGeometry(46, 141.8, 1, 0.25).lines, 3);
+  });
+});
+
+describe("a card's words", () => {
+  it("are the whole name, then the lot, the cost and the capacity", () => {
+    assert.deepEqual(cardText(entry(), null, separators, "Locked", 0), { name: "Small Clinic", facts: [lot, "¢5,000", "20 patients"], locked: null, sorted: null });
+  });
+
+  it("leave out a lot a road does not have and a capacity of nothing", () => {
+    assert.deepEqual(cardText(entry({ lotWidth: 0, lotDepth: 0, capacity: 0 }), null, separators, "Locked", 0).facts, ["¢5,000"]);
+  });
+
+  it("say a locked card's milestone beside its lock, and keep its cost; the locked word once the city is past it", () => {
+    const locked = entry({ isLocked: true, unlockMilestone: 4 });
+
+    assert.equal(cardText(locked, null, separators, "Locked", 0).locked, "MS 4");
+    assert.deepEqual(cardText(locked, null, separators, "Locked", 0).facts, [lot, "¢5,000", "20 patients"]);
+    assert.equal(cardText(locked, null, separators, "Locked", 4).locked, "Locked");
+  });
+
+  it("carry the value sorted by under a sort by a number, the lot's too", () => {
+    assert.equal(cardText(entry(), "capacity", separators, "Locked", 0).sorted, "20 patients");
+    assert.equal(cardText(entry(), "lot", separators, "Locked", 0).sorted, lot);
+    assert.equal(cardText(entry({ upkeep: null }), "upkeep", separators, "Locked", 0).sorted, null);
+  });
+});
+
+describe("a card's width", () => {
+  it("is its picture and padding, and its name or its facts line, whichever is longer, as the stylesheet draws them", () => {
+    const text = cardText(entry({ name: "A Very Long Hospital Name Indeed" }), null, separators, "Locked", 0);
+    const name = textWidth(text.name, 14);
+    // The card's padding, its picture and the gap after it, read from the sheet the card draws with.
+    const [, padRight, , padLeft] = sides(declarationsOf(CARDS, ".card").padding).map(rem);
+    const picture = rem(declarationsOf(CARDS, ".artwork").width);
+    const pictureGap = rem(declarationsOf(CARDS, ".artwork")["margin-right"]);
+
+    near(cardWidth(text, 1), padLeft + picture + pictureGap + name + 2 + padRight);
+  });
+
+  it("adds the sorted value's column", () => {
+    const plain = cardText(entry(), null, separators, "Locked", 0);
+    const sorted = cardText(entry(), "capacity", separators, "Locked", 0);
+
+    near(cardWidth(sorted, 1) - cardWidth(plain, 1), rem(declarationsOf(CARDS, ".sorted")["padding-left"]) + textWidth("20 patients", 14));
+  });
+
+  it("grows with the text scale", () => {
+    const text = cardText(entry(), null, separators, "Locked", 0);
+
+    assert.ok(cardWidth(text, 1.3) > cardWidth(text, 1));
+  });
+
+  it("puts a label's name and count in caps on a plate of their own", () => {
+    assert.ok(labelWidth("Small Roads", "66", 1) > textWidth("SMALL ROADS", 10));
+  });
+});
+
+describe("the cards' rows", () => {
+  it("packs each card after the last, a gap apart, and wraps one that would pass the row's end", () => {
+    assert.deepEqual(packCards([{ width: 300 }, { width: 300 }, { width: 100 }], 700), [
+      { left: 0, row: 0, width: 300 },
+      { left: 300 + CARD_GAP, row: 0, width: 300 },
+      { left: 0, row: 1, width: 100 },
+    ]);
+  });
+
+  it("holds a card wider than the row to the row", () => {
+    assert.deepEqual(packCards([{ width: 900 }], 700), [{ left: 0, row: 0, width: 700 }]);
+  });
+
+  it("starts an own-line cell on a fresh row and gives it the whole of it", () => {
+    assert.deepEqual(packCards([{ width: 100 }, { width: 50, ownLine: true }, { width: 100 }], 700), [
+      { left: 0, row: 0, width: 100 },
+      { left: 0, row: 1, width: 700 },
+      { left: 0, row: 2, width: 100 },
+    ]);
+  });
+});

@@ -15,12 +15,13 @@ import { setCatalogScreenCommand } from "domain/buildingCatalogContracts";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchorKey, setAssetMenuAnchor } from "domain/assetMenuViewStore";
 import { useMenuBody } from "mods/useMenuBody";
-import { GroupedResults } from "mods/GroupedResults/GroupedResults";
 import { type GroupDimensionId } from "domain/buildingGroups";
 import { useCatalogWindow } from "./useCatalogWindow";
+import { CardsBody } from "mods/Bodies/CardsBody";
 import { ListBody } from "mods/Bodies/ListBody";
 import { TilesBody } from "mods/Bodies/TilesBody";
 import { useBodyGrid } from "./useBodyGrid";
+import { useCardsLayout } from "./useCardsLayout";
 import { useRevealEnterTarget } from "./useRevealEnterTarget";
 import { useScrollAnchor } from "./useScrollAnchor";
 import { useSearchFieldKeys } from "./useSearchFieldKeys";
@@ -47,15 +48,16 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // docs/design-notes.md, "The bodies".
   const body = useMenuBody().drawn;
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
-  // Where the body draws each building, and so how many one screen holds, which C#'s window reaches past.
-  const grid = useBodyGrid(body);
-  const slots = grid === null ? 0 : screenSlots(grid);
-  useEffect(() => send(setCatalogScreenCommand(slots)), [slots]);
-
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
   const { items, totalCount, visibleCount, offset, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, sections, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
+  // Where the body draws each building, and so how many one screen holds, which C#'s window reaches past:
+  // the slots of the list and the tiles, or the cards the packer places in a screen's rows.
+  const grid = useBodyGrid(body);
+  const cards = useCardsLayout(body, items, sections, offset);
+  const slots = grid !== null ? screenSlots(grid) : cards?.screen ?? 0;
+  useEffect(() => send(setCatalogScreenCommand(slots)), [slots]);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
@@ -229,8 +231,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   }, [hasMore, capped, items.length, totalCount, remaining, translate, separators, loadMore]);
 
   return (
-    // Cards pack their own rows under the root, which is then the region a body's markers are counted in.
-    <div ref={rootRef} className={classNames(styles.catalog, grid !== null && styles.slotted)} data-bbm-view={grid === null ? "cards" : undefined}>
+    <div ref={rootRef} className={styles.catalog}>
       {/* No controls here: Sort, Filter, Group and View are the top row's, and the
           control pane's while it shows, so this component draws results and nothing else. */}
       {scopeNoticeBlock}
@@ -245,11 +246,11 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
               // about it; a second line would say it twice and contradict it.
               ? null
               : <div className={styles.empty}>{emptyStateMessage}</div>)
-          : grid !== null
-            ? (grid.form === "tile"
-                ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
-                : <ListBody entries={items} grid={grid} sections={sections} offset={offset} enterId={enterId} onPlace={activate} footer={catalogFooter} />)
-            : <GroupedResults entries={items} onPlace={activate} footer={catalogFooter} />}
+          : cards !== null
+            ? <CardsBody layout={cards} enterId={enterId} onPlace={activate} footer={catalogFooter} />
+            : grid !== null && grid.form === "tile"
+              ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
+              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
     </div>
   );
 });

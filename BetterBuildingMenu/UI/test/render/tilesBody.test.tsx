@@ -6,7 +6,6 @@ import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { bodyGrid, type BodyGridInput } from "../../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
 import { TilesBody } from "../../src/mods/Bodies/TilesBody";
-import { GroupedResults } from "../../src/mods/GroupedResults/GroupedResults";
 
 const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
   body: "tiles", boxWidth: 706, bodyHeight: 144.25, textScale: 1, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0, ...over,
@@ -192,18 +191,5 @@ describe("the tiles' name line under the pointer", () => {
 
     act(() => tile.props.onMouseLeave());
     assert.deepEqual(named(), ["Building 1"]);
-  });
-});
-
-describe("the cards", () => {
-  beforeEach(() => resetBindings());
-
-  it("mark each card for the live check and the render tests: its picture, its name with the whole name's length, its facts", () => {
-    const html = renderHtml(<GroupedResults entries={[entry(1, { thumbnail: "a.png" }), entry(2, { thumbnail: "b.png" })]} onPlace={() => undefined} />);
-
-    assert.equal(count(html, /data-bbm-item="true"/), 2);
-    assert.equal(count(html, /data-bbm-pic="true"/), 2);
-    assert.match(html, /data-bbm-name="10">Building 1</);
-    assert.equal(count(html, /data-bbm-fact="true"/), 2);
   });
 });

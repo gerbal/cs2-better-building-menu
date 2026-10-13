@@ -43,13 +43,14 @@ describe("the screen the catalog tells C#", () => {
     assert.deepEqual(screens(), [20]);
   });
 
-  it("is told again when the screen changes, and nothing for Cards, which have no slots", () => {
+  it("is told again when the screen changes, and for Cards the cards a screen's rows hold", () => {
     showBody("list");
     mount();
     act(() => setBinding("options", "textScale", 1.3));
     act(() => setBinding("BetterBuildingMenu", "AssetMenuViews", [{ menu: "Roads", value: "cards" }]));
 
-    assert.deepEqual(screens(), [20, 18, 0]);
+    // The page's two cards both sit in the first of the rows a screen shows.
+    assert.deepEqual(screens(), [20, 18, 2]);
   });
 
   it("follows the body's height: a body dragged taller holds more lines", () => {

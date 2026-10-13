@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { declarationsOf, everyDeclaration, rem, sides } from "./harness/compiledCss.ts";
+import { BODY_SIDE_MARGIN } from "../src/domain/assetMenuLayout.ts";
+import { declarationsOf, everyDeclaration, rem } from "./harness/compiledCss.ts";
 
 const HEIGHT = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const WIDTH = "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
-const CATALOG = "mods/BuildingCatalog/buildingCatalog.module.scss";
 const fill = (sheet: string, selector: string) => declarationsOf(sheet, selector)["background-color"];
 const topFill = (selector: string) => declarationsOf(HEIGHT, selector)["background-image"] ?? "";
 
@@ -17,10 +17,6 @@ describe("the grab strips", () => {
   const reach = declarationsOf(WIDTH, ".widthReach");
   const content = declarationsOf("mods/BuildingMenu/assetMenu.module.scss", ".content");
   const pane = declarationsOf("mods/ControlPane/controlPane.module.scss", ".pane");
-  const rightPadding = (selector: string) => {
-    const rule = declarationsOf(CATALOG, selector);
-    return rem(rule["padding-right"] ?? sides(rule.padding)[1]);
-  };
 
   it("paint nothing down the catalog's side until the mouse is on them", () => {
     for (const property of ["background", "background-color", "background-image", "backdrop-filter"]) {
@@ -63,8 +59,8 @@ describe("the grab strips", () => {
     }
   });
 
-  it("fit the catalog's right margin, so the catalog keeps its width", () => {
-    assert.ok(rem(strip.width) <= rightPadding(".catalog"), `.catalog: ${strip.width} over ${rightPadding(".catalog")}rem`);
+  it("fit the bodies' side margin, so the catalog keeps its width", () => {
+    assert.ok(rem(strip.width) <= BODY_SIDE_MARGIN, `${strip.width} over the bodies' ${BODY_SIDE_MARGIN}rem`);
     assert.equal(content["padding-right"], undefined, "the catalog is not pushed in");
   });
 

@@ -120,8 +120,6 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
               data-locked={isEntryLocked(entry) ? "true" : undefined}
               data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
               data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
-              // A card is a building the live check and the render tests count; the upgrades panel's are not.
-              data-bbm-item={cards ? "true" : undefined}
             >
               {/* The picture and its badge share a box, as the tiles' do, so
                   the mark sits ON the building. Sized from base.scss's ratio,
@@ -130,7 +128,6 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
                 ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
                     <img
                       className={classNames(styles.icon, cards && styles.iconLarge)}
-                      data-bbm-pic={cards ? "true" : undefined}
                       src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
                       onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
                       alt=""
@@ -153,12 +150,12 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
                   </span>
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
-                <span className={styles.name} data-bbm-name={cards ? fullName.length : undefined}>{label}</span>
+                <span className={styles.name}>{label}</span>
                 {/* A zone's own figures arrive as service facts and are drawn
                     on the hover card, where there is room for a phrase. This
                     row stays size, cost and one key number. */}
                 {cards && (
-                  <span className={styles.facts} data-bbm-fact="true">
+                  <span className={styles.facts}>
                     {/* Footprint first, and always: whether the thing fits the
                         gap in front of you is asked before anything else. */}
                     {/* Separators are characters, not spacing: the dot is

@@ -57,6 +57,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["bodyMilestone", "plateLocked"], ["bodyEntMark", "plate"],
   // The label plates: a group's name, its count, and Locked.
   ["bodyWord", "labBg"], ["bodyChipDim", "labBg"], ["bodyMilestone", "labBg"],
+  // The cards: Enter's mark on its badge.
+  ["entMark", "badgeBg"],
 ];
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */
@@ -126,6 +128,19 @@ describe("the looks' tokens", () => {
     assert.equal(declarationsOf(labels, ".labelCount").color, "var(--bbm-bodyChipDim)");
     assert.equal(declarationsOf(labels, ".lockedLabel .labelText").color, "var(--bbm-bodyMilestone)");
     for (const selector of FOLLOW) assert.equal(tokens(selector).labBg, "var(--menuPanel2)", selector);
+  });
+
+  it("draw the cards in the plates' inks, the milestone in the body's, and Enter's mark on a badge no style turns light", () => {
+    const cards = "mods/Bodies/cardsBody.module.scss";
+
+    assert.equal(declarationsOf(cards, ".card")["background-color"], "var(--bbm-plate)");
+    assert.equal(declarationsOf(cards, ".name").color, "var(--bbm-tName)");
+    assert.equal(declarationsOf(cards, ".facts").color, "var(--bbm-tNum2)");
+    assert.equal(declarationsOf(cards, ".sorted").color, "var(--bbm-tCost)");
+    assert.equal(declarationsOf(cards, ".milestone").color, "var(--bbm-bodyMilestone)");
+    assert.equal(declarationsOf(cards, ".enterBadge")["background-color"], "var(--bbm-badgeBg)");
+    assert.equal(declarationsOf(cards, ".enterMark")["background-color"], "var(--bbm-entMark)");
+    for (const selector of [STANDARD, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).badgeBg), selector);
   });
 
   it("draw the tiles' milestone in the look's amber on the tag, whose dark ground no style turns light", () => {

@@ -8,6 +8,11 @@ import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenuAtLargeText$, AssetMenuHeight$, AssetMenuTileSize$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 
+/** A device pixel in rem on this screen, the shortfall a body's line forgives; none where there is no screen. */
+export function screenPixelRem(): number {
+  return deviceRem(typeof window === "undefined" ? 0 : window.innerHeight);
+}
+
 /**
  * The slots of the body the menu draws, at the box's width, the body's height, the text scale and the
  * settings that size them; null for Cards, which packs its own rows.
@@ -21,7 +26,7 @@ export function useBodyGrid(body: DrawnBody): BodyGrid | null {
   const tuning = useValue(AssetMenuTuning$);
   const plateHeight = tuning.listPlateHeight ?? SHIPPED_TUNING.listPlateHeight;
   const nameLines = tuning.nameLines ?? SHIPPED_TUNING.nameLines;
-  const pixelRem = deviceRem(typeof window === "undefined" ? 0 : window.innerHeight);
+  const pixelRem = screenPixelRem();
 
   return useMemo(
     () => (body === "cards"
