@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { getNumberSeparators } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
+import { textWidth } from "../src/domain/textWidth";
 import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords } from "../src/domain/hoverCard";
 import { hoverCardLabels } from "../src/domain/hoverCardLines";
 
@@ -84,5 +85,56 @@ describe("what Status line only says in the readout", () => {
 
   it("cuts a name too long for the readout's room once", () => {
     assert.match(say(building({ name: "Wide Quay With Four-Lane Road Over A Canal" }), 90).name, /…/);
+  });
+
+  it("names a bare capacity by its word, since the readout has no glyph to say what the number counts", () => {
+    const plain = building({ category: "Other", subCategory: "Other", buildingType: "Thing" });
+
+    assert.equal(say(plain, 400).parts.find((part) => part.endsWith("400")), "Capacity 400");
+    assert.ok(say(building({}), 400).parts.includes("400 students"));
+  });
+
+  it("shortens sooner at a larger text scale, the same figures in the same order", () => {
+    const school = building({ isLocked: true, unlockMilestone: 6 } as Partial<BuildingCatalogEntry>);
+    const big = { name: 16.5, line: 15, sep: 12 };
+    const room = 150;
+
+    assert.ok(statusLine(school, "capacity", separators, words, 0, room, big).parts.length < say(school, room).parts.length);
+    assert.equal(statusLine(school, "capacity", separators, words, 0, room, big).parts[0], "MS 6");
+  });
+
+  describe("in one line, above 100% text", () => {
+    const school = building({ isLocked: true, unlockMilestone: 6 } as Partial<BuildingCatalogEntry>);
+    const one = (room: number, entry = school) => statusLine(entry, "capacity", separators, words, 0, room, fonts, true);
+    const figures = say(school, 1_000).parts;
+    const [milestone, cost, , key] = figures;
+    const name = textWidth("Elementary School", fonts.name);
+    const w = (text: string) => textWidth(text, fonts.line);
+    // The name, then a "·" before each figure.
+    const fits = (...parts: string[]) => name + parts.length * fonts.sep + parts.reduce((sum, part) => sum + w(part), 0);
+
+    it("names the building first, then every figure that fits, a dot before each", () => {
+      const line = one(fits(...figures) + 0.5);
+
+      assert.equal(line.oneLine, true);
+      assert.equal(line.name, "Elementary School");
+      assert.deepEqual(line.parts, figures);
+      assert.equal(say(school, 400).oneLine, false);
+    });
+
+    it("drops the figures by the same order, the milestone kept", () => {
+      assert.deepEqual(one(fits(milestone, cost, key) + 0.5).parts, [milestone, cost, key]);
+      assert.deepEqual(one(fits(milestone, cost, key) - 0.5).parts, [milestone, cost]);
+      assert.deepEqual(one(fits(milestone, cost) - 0.5).parts, [milestone]);
+      assert.equal(one(fits(milestone, cost) - 0.5).name, "Elementary School");
+    });
+
+    it("cuts the name once, leaving the milestone its room, when the name alone runs over", () => {
+      const line = one(60);
+
+      assert.match(line.name, /…/);
+      assert.deepEqual(line.parts, [milestone]);
+      assert.deepEqual(one(60, building({})).parts, []);
+    });
   });
 });

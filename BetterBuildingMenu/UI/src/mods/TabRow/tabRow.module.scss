@@ -199,6 +199,21 @@ $icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
   white-space: nowrap;
 }
 
+// What Status line only says: the building's name, in the place line's look, and its figures, in the range's.
+.statusName {
+  color: var(--bbm-tRead1);
+  font-size: calc(#{$tab-name-size} * var(--fontScale));
+  line-height: 13rem;
+  white-space: nowrap;
+}
+
+.statusFigure {
+  color: var(--bbm-tRead2);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
+  white-space: nowrap;
+}
+
 // A value said once, or the key kind named: its glyph beside its words, in the place line's brighter ink.
 .said {
   display: flex;

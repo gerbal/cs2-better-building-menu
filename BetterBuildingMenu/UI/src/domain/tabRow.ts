@@ -243,10 +243,15 @@ export const READOUT_GLYPH = 9;
 export const READOUT_GLYPH_GAP = 2;
 export const READOUT_SEP_PADDING = 3;
 
+/** The room a "·" takes between two parts of the readout's second line, in that line's font. */
+export function readoutSepWidth(font: number): number {
+  return textWidth("·", font) + 2 * READOUT_SEP_PADDING;
+}
+
 /** A legend's width on the range's line: each part's glyph, which scales with the text, its words, then a "·". */
 function legendWidth(parts: readonly LegendPart[], scale: number): number {
   const font = TAB_COUNT_SIZE * scale;
-  const sep = textWidth("·", font) + 2 * READOUT_SEP_PADDING;
+  const sep = readoutSepWidth(font);
 
   return parts.reduce((sum, part) => sum + (part.glyph === null ? 0 : READOUT_GLYPH * scale + READOUT_GLYPH_GAP) + textWidth(part.text, font) + sep, 0);
 }

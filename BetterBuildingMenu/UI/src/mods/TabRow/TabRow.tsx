@@ -169,7 +169,7 @@ export const TabRow = ({ width }: { width: number }) => {
   const legend = legends[plan.legend] ?? [];
   // Status line only: the building pointed at, in the readout's room. The rows keep the blanks the legend
   // said, and the legend comes back when the pointer leaves. See docs/design-notes.md, "The hover card".
-  const status = useStatusLine(readoutRoom(row.items, width, textScale, format, form), keyKind);
+  const status = useStatusLine(() => readoutRoom(row.items, width, textScale, format, form), keyKind);
   // The rows leave blank only what the readout says: a legend short of room says nothing, and they print it.
   // Before the paint, so the rows' blanks and the legend change on the same frame.
   const said = plan.legend === "none" ? NOTHING_SAID : stated;
@@ -222,12 +222,14 @@ export const TabRow = ({ width }: { width: number }) => {
         <div className={styles.spacer} />
         {status !== null ? (
           <div className={styles.readout} data-readout="status">
-            <span className={styles.place}>{status.name}</span>
+            {/* Two lines at 100% text, the name over the figures; above it one, the name then its figures. */}
+            {!status.oneLine && <span className={styles.statusName}>{status.name}</span>}
             <span className={styles.line}>
+              {status.oneLine && <span className={styles.statusName}>{status.name}</span>}
               {status.parts.map((part, index) => (
                 <Fragment key={index}>
-                  {index > 0 && <span className={styles.sep}>·</span>}
-                  <span className={styles.range}>{part}</span>
+                  {(index > 0 || status.oneLine) && <span className={styles.sep}>·</span>}
+                  <span className={styles.statusFigure}>{part}</span>
                 </Fragment>
               ))}
             </span>

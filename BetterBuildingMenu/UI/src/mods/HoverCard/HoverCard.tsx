@@ -12,8 +12,7 @@ import { hoverCardLabels } from "domain/hoverCardLines";
 import { placePointerCard, placeSlotCard, remRect, SLOT_ROOM, slotRowsKept, type Rect } from "domain/hoverCardPlace";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
 import type { KeyKind } from "domain/rowNumbers";
-import { READOUT_SEP_PADDING } from "domain/tabRow";
-import { textWidth } from "domain/textWidth";
+import { readoutSepWidth } from "domain/tabRow";
 import { LAYOUT_HEIGHT } from "domain/sharedContracts.generated";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
@@ -74,10 +73,11 @@ function useCardWords(): PointerCardWords {
 /**
  * Status line only: what the readout says of the building pointed at, in the room the tabs leave it, the
  * tabs never moving; null while nothing is pointed at, or the Hover card row picks another form. It reads
- * the pointed building only under that form, and says it as the page has it now.
+ * the pointed building, and works the room out, only under that form, and says the building as the page
+ * has it now. Above 100% text the readout's two lines do not fit the row, so it draws one.
  * See docs/design-notes.md, "The hover card".
  */
-export function useStatusLine(room: number, keyKind: KeyKind): StatusLine | null {
+export function useStatusLine(room: () => number, keyKind: KeyKind): StatusLine | null {
   const status = hoverCardForm(useValue(AssetMenuHoverCard$)) === "status";
   const pointed = usePointedAfterDelay(status);
   const page = useValue(BuildingCatalog$);
@@ -90,11 +90,11 @@ export function useStatusLine(room: number, keyKind: KeyKind): StatusLine | null
 
   const entry = pageRow(page, pointed);
   const line = TAB_COUNT_SIZE * textScale;
-  return statusLine(entry, keyKind, separators, words, achievedMilestone, room, {
+  return statusLine(entry, keyKind, separators, words, achievedMilestone, room(), {
     name: TAB_NAME_SIZE * textScale,
     line,
-    sep: textWidth("·", line) + 2 * READOUT_SEP_PADDING,
-  });
+    sep: readoutSepWidth(line),
+  }, textScale > 1);
 }
 
 interface CardProps {

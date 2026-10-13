@@ -308,6 +308,15 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(declarationsOf(TAB_ROW, ".sep")["font-size"], range);
   });
 
+  it("draws the status line's name and figures in the place line's and the range's looks", () => {
+    // statusLine budgets the name in the name's font and the figures in the count's, as planTabRow does.
+    for (const [status, own] of [[".statusName", ".place"], [".statusFigure", ".range"]]) {
+      for (const property of ["color", "font-size", "line-height", "white-space"]) {
+        assert.equal(declarationsOf(TAB_ROW, status)[property], declarationsOf(TAB_ROW, own)[property], `${status} ${property}`);
+      }
+    }
+  });
+
   it("draws a tab's picture whole at its own aspect, without measuring it", () => {
     // Cohtml has no object-fit and reports no natural size for a picture, and a mod's picture
     // need not be square: drawn as a background, contained and centred, it keeps its shape.

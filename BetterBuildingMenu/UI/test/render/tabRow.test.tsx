@@ -53,10 +53,10 @@ class FakeImage {
 }
 
 /** The row mounted, as the game mounts it. */
-function mount(): ReactTestRenderer {
+function mount(width = 706): ReactTestRenderer {
   let root: ReactTestRenderer | undefined;
   act(() => {
-    root = create(<TabRow width={706} />);
+    root = create(<TabRow width={width} />);
   });
   return root!;
 }
@@ -437,6 +437,52 @@ describe("the readout under Status line only", () => {
     act(() => clearPointed(9));
     assert.notEqual(readout().props["data-readout"], "status");
   });
+
+  const road = (cost: number) =>
+    entry(9, { name: "Four-Lane Road", category: "Networks", constructionCost: cost, upkeep: 120, costIsPerDistance: true, speedLimit: 100, capacity: null, lotWidth: 0, lotDepth: 0 });
+  const pointAtRoad = (cost = 5_500) => {
+    act(() => setPointed({ entry: road(cost), cell: { x: 0, y: 0, w: 171, h: 27.25 } }));
+    act(() => timers.splice(0).forEach((run) => run()));
+  };
+  const named = () => root!.root.findAll((node) => node.type === "span" && node.props.className === "statusName");
+
+  it("says the building as the page has it now, the pointed entry where the page no longer holds it", () => {
+    set("BuildingCatalog", { items: [road(7_000)], totalCount: 34, facts: { sharedValues: [], keyKind: "speed" } });
+    pointAtRoad(5_500);
+
+    assert.match(text(readout()), /7\D000/);
+    assert.doesNotMatch(text(readout()), /5\D500/);
+  });
+
+  it("leaves the rows their blanks while the building is named", () => {
+    act(() => root!.unmount());
+    const items = [1, 2, 3, 4].map((id) => ({ ...road(5_000 + id), id, speedLimit: id === 3 ? 80 : 100 }));
+    set("BuildingCatalog", { items, totalCount: 34, facts: { sharedValues: [{ kind: "speed", value: 100, depth: 0 }], keyKind: "speed" } });
+    root = mount(1091);
+    const said = getAssetMenuView().said;
+    assert.equal(said.length, 1);
+
+    act(() => setPointed({ entry: items[0], cell: { x: 0, y: 0, w: 171, h: 27.25 } }));
+    act(() => timers.splice(0).forEach((run) => run()));
+
+    assert.equal(readout().props["data-readout"], "status");
+    assert.deepEqual(getAssetMenuView().said, said);
+  });
+
+  for (const scale of [1, 1.3, 1.5]) {
+    it(`draws the name over the figures at ${scale * 100}% text only where the two lines fit, else the name and the figures that fit in one line`, () => {
+      setBinding("options", "textScale", scale);
+      act(() => root!.unmount());
+      root = mount(1091);
+      pointAtRoad();
+
+      assert.equal(readout().props["data-readout"], "status");
+      assert.equal(named().length, 1);
+      assert.equal(named()[0].parent!.props.className, scale > 1 ? "line" : "readout");
+      assert.match(text(readout()), /^Four-Lane Road/);
+      assert.match(text(readout()), /\/km/);
+    });
+  }
 
   it("keeps the readout's own text under the other forms", () => {
     set("AssetMenuHoverCard", "pointer");

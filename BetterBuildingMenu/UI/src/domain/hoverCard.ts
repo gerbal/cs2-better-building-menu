@@ -83,11 +83,13 @@ export function pointerCardText(entry: BuildingCatalogEntry, kind: KeyKind, sepa
   return { rows: rows.filter((row): row is CardRow => row !== null), unlock };
 }
 
-/** What Status line only says in the readout: the name on its first line, then its figures in words. */
+/** What Status line only says in the readout: the name, then its figures in words. */
 export interface StatusLine {
   name: string;
   /** In order: a locked building's milestone, the cost, the upkeep, the key number, the lot; those that fit. */
   parts: string[];
+  /** The name and the figures share one line, as the readout does above 100% text, where two lines do not fit the row. */
+  oneLine: boolean;
 }
 
 /** The readout's two lines' fonts at the text scale, and the room each "·" between two figures takes: tabRow.module.scss. */
@@ -97,32 +99,62 @@ export interface StatusFonts {
   sep: number;
 }
 
+/** A key number that is a bare count, with no unit in words and, in the readout, no glyph to say what it counts. */
+const BARE_NUMBER = /^[\d\s.,'\u2019\u00A0\u202F]+$/;
+
 /**
  * Status line only: the pointed building's name, planned to the readout's room and cut once where it runs
  * over; then its figures with their units in words ("100 km/h"), a network's money per kilometre. Short of
  * room the lot goes first, then the upkeep, then the key number, then the cost; a locked building's
- * milestone stays.
+ * milestone stays. In one line (above 100% text) the name comes first and keeps its room less the
+ * milestone's, and the figures that fit follow it by the same order.
  */
-export function statusLine(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, words: PointerCardWords, achievedMilestone: number, room: number, fonts: StatusFonts): StatusLine {
+export function statusLine(
+  entry: BuildingCatalogEntry,
+  kind: KeyKind,
+  separators: NumberSeparators,
+  words: PointerCardWords,
+  achievedMilestone: number,
+  room: number,
+  fonts: StatusFonts,
+  oneLine = false,
+): StatusLine {
   const card = pointerCardText(entry, kind, separators, words, achievedMilestone);
   const figure = (key: string): string | null => card.rows.find((row) => row.key === key)?.value ?? null;
   const lot = figure("lot");
+  const key = card.rows.find((row) => row.key === "key");
   // Each figure by its drop order: the highest goes first, the milestone never.
   const all: { text: string | null; drop: number }[] = [
     { text: isEntryLocked(entry) ? lockedFact(entry, words.lockedWord, achievedMilestone) : null, drop: 0 },
     { text: figure("cost"), drop: 1 },
     { text: figure("upkeep"), drop: 3 },
-    { text: figure("key"), drop: 2 },
+    // The card says a bare count by a glyph; the readout has none, so the word goes with it.
+    { text: key === undefined ? null : BARE_NUMBER.test(key.value) ? `${key.label} ${key.value}` : key.value, drop: 2 },
     { text: lot === null ? null : `${words.labels.lot} ${lot}`, drop: 4 },
   ];
   let kept = all.filter((part): part is { text: string; drop: number } => part.text !== null);
-  const width = (parts: readonly { text: string }[]) =>
-    parts.reduce((sum, part) => sum + textWidth(part.text, fonts.line), 0) + Math.max(0, parts.length - 1) * fonts.sep;
-  while (width(kept) > room && kept.some((part) => part.drop > 0)) {
+  const texts = (parts: readonly { text: string }[]) => parts.reduce((sum, part) => sum + textWidth(part.text, fonts.line), 0);
+  const width = (parts: readonly { text: string }[]) => texts(parts) + Math.max(0, parts.length - 1) * fonts.sep;
+  const fullName = entry.name || entry.prefabName || "";
+  const keep = entry.distinctWord ? [entry.distinctWord] : [];
+  const nameIn = (width: number) => planName(fullName, { width, lines: 1, font: fonts.name }, { keep }).lines[0] ?? "";
+
+  if (!oneLine) {
+    while (width(kept) > room && kept.some((part) => part.drop > 0)) {
+      const top = Math.max(...kept.map((part) => part.drop));
+      kept = kept.filter((part) => part.drop !== top);
+    }
+    return { name: nameIn(room), parts: kept.map((part) => part.text), oneLine };
+  }
+
+  // One line: the name, then a "·" before each figure. The name is planned in what the milestone leaves it.
+  const milestone = kept.filter((part) => part.drop === 0);
+  const name = nameIn(Math.max(0, room - (milestone.length > 0 ? width(milestone) + fonts.sep : 0)));
+  const line = () => textWidth(name, fonts.name) + texts(kept) + kept.length * fonts.sep;
+  while (line() > room && kept.some((part) => part.drop > 0)) {
     const top = Math.max(...kept.map((part) => part.drop));
     kept = kept.filter((part) => part.drop !== top);
   }
-  const name = planName(entry.name || entry.prefabName, { width: room, lines: 1, font: fonts.name }, { keep: [entry.distinctWord ?? ""] });
 
-  return { name: name.lines[0] ?? "", parts: kept.map((part) => part.text) };
+  return { name, parts: kept.map((part) => part.text), oneLine };
 }
