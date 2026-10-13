@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it, beforeEach } from "node:test";
 import {
   ASSET_MENU_DISCLOSURE_KEYS,
+  clearPointed,
   getAssetMenuAnchor,
   getAssetMenuAnchorKey,
   getAssetMenuDisclosure,
@@ -14,15 +15,31 @@ import {
   setAssetMenuListStart,
   setAssetMenuSlotLeft,
   setAssetMenuView,
+  setPointed,
   setReadoutSaid,
   subscribeAssetMenuView,
 } from "../src/domain/assetMenuViewStore.ts";
+import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
 
 describe("Asset menu view store", () => {
   beforeEach(() => resetAssetMenuView());
 
   it("starts with nothing chosen", () => {
-    assert.deepEqual(getAssetMenuView(), { disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null });
+    assert.deepEqual(getAssetMenuView(), { disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null, pointed: null });
+  });
+
+  it("takes the pointed building away only on its own cell's leave, or on any where none is named", () => {
+    const pointed = (id: number) => ({ entry: { id } as BuildingCatalogEntry, cell: { x: 0, y: 0, w: 44, h: 44 } });
+
+    setPointed(pointed(2));
+    // A leave the engine sends for the last cell after the next one's enter takes nothing away.
+    clearPointed(1);
+    assert.equal(getAssetMenuView().pointed?.entry.id, 2);
+    clearPointed(2);
+    assert.equal(getAssetMenuView().pointed, null);
+    setPointed(pointed(3));
+    clearPointed();
+    assert.equal(getAssetMenuView().pointed, null);
   });
 
   it("says the readout's values again where only a value's basis or unit moves, and not where nothing does", () => {

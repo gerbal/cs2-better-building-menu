@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useLayoutEffect, type ReactNode } from "react";
+import { memo, useEffect, useLayoutEffect, type ReactNode } from "react";
 
 import enterMark from "images/enter.svg";
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
@@ -20,7 +20,8 @@ import { useTextScale } from "domain/textScaleSetting";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuView } from "mods/useAssetMenuView";
-import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { clearPointed } from "domain/assetMenuViewStore";
+import { pointAt } from "mods/HoverCard/pointing";
 import { LabelPlate } from "./LabelPlate";
 import styles from "./listBody.module.scss";
 import { PlannedName } from "./PlannedName";
@@ -49,7 +50,6 @@ interface PlateProps {
   separators: NumberSeparators;
   stateWords: StateWords;
   achievedMilestone: number;
-  hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
 
@@ -58,13 +58,15 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, typed, dim, textScale, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, typed, dim, textScale, separators, stateWords, achievedMilestone, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
   const both = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said);
   // A one-line plate is one number tall: two would be cut at its top and foot.
   const numbers = grid.form === "plate1" ? oneLineNumber(entry, both, sortedMetric, said) : both;
   const { left, top } = slotPosition(grid, slot);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
+  // A cell that goes from under the pointer sends no leave: it takes its own building away as it goes.
+  useEffect(() => () => clearPointed(entry.id), [entry.id]);
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
   const big = grid.form === "big";
@@ -109,38 +111,38 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
   );
 
   return (
-    <BuildingHoverCard entry={entry} context={hoverCard}>
-      <Button
-        className={classNames(styles.plate, (grid.form === "plate1" || grid.form === "plateWhole") && styles.largeText, big && styles.big, armed && styles.armed, locked && styles.locked, built && styles.built)}
-        // Inline, over the game's Button and its own square: the slot is the plate's place and size.
-        style={{ left: `${left}rem`, top: `${top}rem`, width: `${grid.cellWidth}rem`, height: `${grid.cellHeight}rem` }}
-        variant="flat"
-        focusKey={FOCUS_DISABLED}
-        onSelect={() => onPlace(entry)}
-        aria-label={word ? `${name} — ${word}` : name}
-        aria-disabled={locked || built ? "true" : undefined}
-        data-catalog-entry={entry.id}
-        data-bbm-item="true"
-      >
-        {/* The picture and its mark share a box, so the game's unique and already-built marks sit on the
-            building, as 0.2.x's list drew them. */}
-        <span className={styles.artwork} style={picture}>
-          <img
-            className={styles.picture}
-            src={lockedThumbnail(entry, locked || built)}
-            onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-            style={picture}
-            alt=""
-            aria-hidden="true"
-            data-bbm-pic="true"
-          />
-          <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
-        </span>
-        {/* A big plate stacks its name over its numbers beside the picture; the others line all three
-            up. */}
-        {big ? <span className={styles.bigWords}>{words}</span> : words}
-      </Button>
-    </BuildingHoverCard>
+    <Button
+      className={classNames(styles.plate, (grid.form === "plate1" || grid.form === "plateWhole") && styles.largeText, big && styles.big, armed && styles.armed, locked && styles.locked, built && styles.built)}
+      // Inline, over the game's Button and its own square: the slot is the plate's place and size.
+      style={{ left: `${left}rem`, top: `${top}rem`, width: `${grid.cellWidth}rem`, height: `${grid.cellHeight}rem` }}
+      variant="flat"
+      focusKey={FOCUS_DISABLED}
+      onSelect={() => onPlace(entry)}
+      onMouseEnter={(event: { currentTarget: Element }) => pointAt(entry, event.currentTarget)}
+      onMouseLeave={() => clearPointed(entry.id)}
+      aria-label={word ? `${name} — ${word}` : name}
+      aria-disabled={locked || built ? "true" : undefined}
+      data-catalog-entry={entry.id}
+      data-bbm-item="true"
+    >
+      {/* The picture and its mark share a box, so the game's unique and already-built marks sit on the
+          building, as 0.2.x's list drew them. */}
+      <span className={styles.artwork} style={picture}>
+        <img
+          className={styles.picture}
+          src={lockedThumbnail(entry, locked || built)}
+          onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+          style={picture}
+          alt=""
+          aria-hidden="true"
+          data-bbm-pic="true"
+        />
+        <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
+      </span>
+      {/* A big plate stacks its name over its numbers beside the picture; the others line all three
+          up. */}
+      {big ? <span className={styles.bigWords}>{words}</span> : words}
+    </Button>
   );
 });
 
@@ -176,7 +178,6 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   const stateWords = useStateWords();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const armedId = useValue(ActivePrefabId$);
-  const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
   const textScale = useTextScale();
@@ -214,7 +215,6 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
               separators={separators}
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}
-              hoverCard={hoverCard}
               onPlace={onPlace}
             />
           ))}

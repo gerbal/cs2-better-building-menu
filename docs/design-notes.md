@@ -1537,6 +1537,39 @@ the render tests count the tags drawn.
 which kept two look-alikes from reading alike; a tile with a look-alike drawn beside it now says only
 what tells it apart.
 
+## The hover card
+
+Pointing at a building shows one card for the whole menu, in the form Options › Hover card picks (`HoverCard`,
+`AssetMenuHoverCard`): Beside the pointer, as it ships; the game's detail slot; or the status line only.
+Any other stored value reads as beside the pointer, on every load.
+
+- **What is pointed at.** A body's cell says the pointer entered it and left it (`pointAt`,
+  `clearPointed`), from its mouse enter and leave, the only events real input sends; the view store holds
+  the building and its cell on screen, in rem. A leave takes the building away only while it is still the
+  one pointed at, so a leave the engine sends after the next cell's enter takes nothing. The card shows
+  once the pointer has rested the Hover delay knob's time on one building (150 ms as it ships), and goes
+  at once when it leaves; nothing is pointed at once the menu closes.
+- **One card, a child of the box's root,** so it takes the look's tokens and the interface style with them,
+  as the popovers do, drawing above the box from inside it. It takes no pointer, and hides while a list is
+  open. Its panel is the popovers', dark under every style, so its inks are the look's own.
+- **Beside the pointer.** A 60 picture on its plate; the whole name, planned over three lines; a table of the
+  cost, the upkeep, the view's key number under its word and by its glyph (a home's households where the
+  view keys none), and the lot where the name does not say it; for a locked building the milestone it
+  waits for ("Unlocks at milestone n"), else the locked word. A network's money reads per kilometre there,
+  as the game's own panels state it, while the bodies read it per cell. The card is drawn unseen, measured
+  two frames later (never in the render's own tick, where Cohtml reports the last layout), then placed
+  (`placePointerCard`): above the box, its bottom 6 rem over the box's top, on the pointed cell's left
+  edge, else flipped to its right edge, each raised over any HUD piece it would meet (the chirper at the
+  right end); then beside the cell, right, then left. Of the places on screen, 4 rem clear of the HUD and
+  off the pointed cell, the one covering the fewest other cells wins, then one inside the box's span. With
+  no place fitting, the first place, held on screen. The HUD is the game's at its own layout: the bottom
+  bar, and the chirper, the social column and the top-right buttons measured from the screen's right edge
+  (`hudPieces`).
+
+**This changes 0.2.x:** pointing at a building drew the game's tooltip over that building alone, its
+description, every figure, the footprints; one card now says the building beside the pointer in a few
+lines, and Options › Hover card › The game's detail slot draws the fuller card.
+
 ## The search field's keys
 
 The game masks its keyboard while a text field has focus, so while the search field has focus the

@@ -29,6 +29,9 @@ describe("the icons", () => {
     // No name, cost or tag: the hover card says them.
     assert.equal(count(html, /data-bbm-name=/), 0);
     assert.equal(count(html, /data-bbm-fact=/), 0);
+    assert.equal(count(html, /data-tooltip/), 0);
+    // Cohtml never draws a title.
+    assert.doesNotMatch(html, / title="/);
   });
 
   it("put a family member's varying word on a pill at its foot, and alternate the plate's tone with each family run", () => {

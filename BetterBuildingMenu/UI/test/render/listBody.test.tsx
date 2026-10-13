@@ -36,6 +36,8 @@ describe("the list", () => {
     // Slot 5 starts the second line, one plate and a gap down.
     assert.match(html, /left:0rem;top:29\.25rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="5"/);
     assert.match(html, /left:519rem;top:0rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="4"/);
+    // The menu's one hover card says each building: no plate carries a tooltip of its own.
+    assert.equal(count(html, /data-tooltip/), 0);
   });
 
   it("marks the region the live check counts in, and every picture, name and number inside each plate", () => {

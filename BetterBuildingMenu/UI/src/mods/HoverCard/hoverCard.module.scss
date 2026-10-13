@@ -1,0 +1,132 @@
+@use "../../base.scss" as _base;
+
+// The hover card beside the pointer: a picture on its plate, the whole name, a table of figures, the
+// milestone a locked building waits for. A child of the box's root, so it takes the look's tokens; it
+// takes no pointer. Its panel is the popovers', dark under every interface style, so its inks are the
+// look's own. See docs/design-notes.md, "The hover card".
+
+// Border-box, as Cohtml lays out every box, so Chromium lays the card out alike.
+.card {
+  position: absolute;
+  box-sizing: border-box;
+  z-index: 45;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 8rem;
+  pointer-events: none;
+  border-top-left-radius: 6rem;
+  border-top-right-radius: 6rem;
+  border-bottom-left-radius: 6rem;
+  border-bottom-right-radius: 6rem;
+  background-color: var(--bbm-popBg);
+  box-shadow: var(--bbm-popRing);
+  color: var(--bbm-tStateSet);
+}
+
+// Drawn where it cannot be seen until a frame has measured it and placed it.
+.unplaced {
+  left: 0;
+  top: 0;
+  visibility: hidden;
+}
+
+.plate {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64rem;
+  height: 64rem;
+  margin-right: 10rem;
+  border-top-left-radius: 4rem;
+  border-top-right-radius: 4rem;
+  border-bottom-left-radius: 4rem;
+  border-bottom-right-radius: 4rem;
+  background-color: var(--bbm-plate);
+}
+
+.picture {
+  position: absolute;
+  left: 2rem;
+  top: 2rem;
+  width: 60rem;
+  height: 60rem;
+}
+
+.lockGlyph {
+  position: absolute;
+  right: 3rem;
+  top: 3rem;
+  width: 16rem;
+  height: 16rem;
+}
+
+// Its width is the widest of its lines, the name's room at the least.
+.column {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+// HoverCard.tsx plans the name in this font.
+.name {
+  font-size: calc(13rem * var(--fontScale));
+  line-height: calc(17rem * var(--fontScale));
+  font-weight: 600;
+  color: var(--bbm-tStateSet);
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  margin-top: 3rem;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  white-space: nowrap;
+  line-height: calc(15rem * var(--fontScale));
+}
+
+.label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-right: 8rem;
+  font-size: calc(10rem * var(--fontScale));
+  color: var(--bbm-tWord);
+}
+
+// The key number's glyph, a sibling of its word in a box of its own.
+.glyph {
+  @include _base.mask-glyph(9rem);
+  margin-right: 3rem;
+  background-color: var(--bbm-tWord);
+}
+
+.value {
+  flex: 0 0 auto;
+  font-size: calc(11rem * var(--fontScale));
+  font-weight: 600;
+  color: var(--bbm-tStateSet);
+}
+
+// A locked building's milestone, by the lock, in the look's amber.
+.unlock {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 3rem;
+  white-space: nowrap;
+  font-size: calc(11rem * var(--fontScale));
+  color: var(--bbm-amber);
+}
+
+.unlockGlyph {
+  width: 11rem;
+  height: 11rem;
+  margin-right: 5rem;
+}

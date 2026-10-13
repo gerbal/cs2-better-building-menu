@@ -5,6 +5,7 @@ import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { bodyGrid, type BodyGridInput } from "../../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
+import { getAssetMenuView, resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { TilesBody } from "../../src/mods/Bodies/TilesBody";
 
 const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
@@ -26,6 +27,8 @@ describe("the tiles", () => {
     assert.match(html, /left:16rem;top:0rem;width:64rem;height:64rem[^>]*data-catalog-entry="1"/);
     assert.match(html, /left:16rem;top:66rem;width:64rem;height:64rem[^>]*data-catalog-entry="11"/);
     assert.match(html, /data-bbm-view="tiles"/);
+    // The menu's one hover card says each building: no tile carries a tooltip of its own.
+    assert.equal(count(html, /data-tooltip/), 0);
   });
 
   it("draw the picture inset 2 on every side", () => {
@@ -205,6 +208,7 @@ describe("the tiles' name line under the pointer", () => {
 
   beforeEach(() => {
     resetBindings();
+    resetAssetMenuView();
     saved = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
     globals.requestAnimationFrame = () => 0;
     globals.cancelAnimationFrame = () => undefined;
@@ -216,16 +220,19 @@ describe("the tiles' name line under the pointer", () => {
     Object.assign(globals, saved);
   });
 
-  it("names the tile the pointer is on over the armed one, and the armed one again once it leaves", () => {
+  it("names the tile the pointer is on over the armed one, and the armed one again once it leaves, as the hover card reads it", () => {
     setBinding("BetterBuildingMenu", "ActivePrefabId", 1);
     act(() => { root = create(body(rows(3))); });
     const named = () => root!.root.findAll((node) => node.props.className === "line").map((node) => node.children.join(""));
-    const tile = root!.root.find((node) => node.props["data-catalog-entry"] === 3 && typeof node.props.onMouseEnter === "function");
+    // The tile, and the element the stub draws for it, which the enter reaches too: the tile's own.
+    const [tile] = root!.root.findAll((node) => node.props["data-catalog-entry"] === 3 && typeof node.props.onMouseEnter === "function");
 
-    act(() => tile.props.onMouseEnter());
+    act(() => tile.props.onMouseEnter({ currentTarget: null }));
     assert.deepEqual(named(), ["Building 3"]);
+    assert.equal(getAssetMenuView().pointed?.entry.id, 3);
 
     act(() => tile.props.onMouseLeave());
     assert.deepEqual(named(), ["Building 1"]);
+    assert.equal(getAssetMenuView().pointed, null);
   });
 });

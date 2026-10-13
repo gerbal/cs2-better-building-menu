@@ -99,6 +99,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<string> _AssetMenuDefaultView = null!;
 		// Above 100% text, the list's form: more buildings, or whole names.
 		private ValueBindingHelper<string> _AssetMenuAtLargeText = null!;
+		// What shows when the pointer rests on a building: the UI draws the form.
+		private ValueBindingHelper<string> _AssetMenuHoverCard = null!;
 		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
 		private ValueBindingHelper<TuningValues> _AssetMenuTuning = null!;
 		// The Said once at share as Options last applied it: a change redraws the open menu, as only C# counts it.
@@ -218,6 +220,7 @@ namespace BetterBuildingMenu.Systems
 			_publishedMenuViews = Mod.Settings.MenuViews;
 			_AssetMenuDefaultView = CreateBinding("AssetMenuDefaultView", BodyViews.SanitizeDefault(Mod.Settings.DefaultView));
 			_AssetMenuAtLargeText = CreateBinding("AssetMenuAtLargeText", LargeText.Sanitize(Mod.Settings.AtLargeText));
+			_AssetMenuHoverCard = CreateBinding("AssetMenuHoverCard", HoverCards.Sanitize(Mod.Settings.HoverCard));
 			// The open menu's own VIEW, from the VIEW list; "" goes back to Default view.
 			CreateTrigger<string>("SetAssetMenuView", SetAssetMenuView);
 			_AssetMenuTuning = CreateBinding("AssetMenuTuning", CurrentTuning());
@@ -405,6 +408,7 @@ namespace BetterBuildingMenu.Systems
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);
 			_AssetMenuAtLargeText.Value = LargeText.Sanitize(Mod.Settings.AtLargeText);
+			_AssetMenuHoverCard.Value = HoverCards.Sanitize(Mod.Settings.HoverCard);
 			_AssetMenuTuning.Value = CurrentTuning();
 			if (!string.Equals(_publishedMenuViews, Mod.Settings.MenuViews, StringComparison.Ordinal))
 			{

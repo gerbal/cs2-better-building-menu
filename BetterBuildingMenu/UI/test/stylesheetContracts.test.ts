@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
 import { LARGE_PICTURE } from "../src/domain/bodyGeometry.ts";
@@ -32,6 +33,7 @@ const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
 const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
 const PLANNED = "mods/Bodies/plannedName.module.scss";
 const ICONS = "mods/Bodies/iconsBody.module.scss";
+const HOVER = "mods/HoverCard/hoverCard.module.scss";
 
 const catalog = (selector: string) => declarationsOf(CATALOG, selector);
 const pane = (selector: string) => declarationsOf(PANE, selector);
@@ -582,6 +584,16 @@ describe("an icon's pill and name band are the sizes the UI budgets them at", ()
 
     assert.equal(band["font-size"], "calc(10rem * var(--fontScale))");
     assert.equal(rem(band.left) + rem(band.right) + rem(left) + rem(right), 4);
+  });
+});
+
+describe("the hover card's name is the size the UI plans it at", () => {
+  it("draws the name in the font HoverCard plans it by", () => {
+    const source = readFileSync(new URL("../src/mods/HoverCard/HoverCard.tsx", import.meta.url), "utf8");
+    const font = Number(/^const NAME_FONT = (\d+);$/m.exec(source)?.[1]);
+
+    assert.ok(font > 0, "HoverCard.tsx's NAME_FONT");
+    assert.equal(declarationsOf(HOVER, ".name")["font-size"], `calc(${font}rem * var(--fontScale))`);
   });
 });
 

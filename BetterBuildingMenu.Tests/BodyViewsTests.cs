@@ -112,6 +112,17 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Theory]
+		[InlineData("pointer", "pointer")]
+		[InlineData("slot", "slot")]
+		[InlineData("status", "status")]
+		[InlineData(null, "pointer")]
+		[InlineData("Slot", "pointer")]
+		public void HoverCardKeepsItsThreeValuesAndReadsAnythingElseAsBesideThePointer(string? value, string read)
+		{
+			Assert.Equal(read, HoverCards.Sanitize(value));
+		}
+
+		[Theory]
 		[InlineData("moreBuildings", "moreBuildings")]
 		[InlineData("wholeNames", "wholeNames")]
 		[InlineData(null, "moreBuildings")]
@@ -125,6 +136,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			new object[] { nameof(BetterBuildingMenuSettings.DefaultView), BodyViews.DefaultViews, OptionRows.DefaultViewLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.AtLargeText), LargeText.Values, OptionRows.AtLargeTextLabelIds },
+			new object[] { nameof(BetterBuildingMenuSettings.HoverCard), HoverCards.Values, OptionRows.HoverCardLabelIds },
 		};
 
 		[Theory]
@@ -151,7 +163,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void DefaultViewSitsAfterWidthAndAtLargeTextAfterTileSize()
+		public void DefaultViewSitsAfterWidthAtLargeTextAfterTileSizeAndHoverCardAfterIt()
 		{
 			var order = typeof(BetterBuildingMenuSettings)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -166,6 +178,7 @@ namespace BetterBuildingMenu.Tests
 					nameof(BetterBuildingMenuSettings.DefaultView),
 					nameof(BetterBuildingMenuSettings.AssetMenuTileSize),
 					nameof(BetterBuildingMenuSettings.AtLargeText),
+					nameof(BetterBuildingMenuSettings.HoverCard),
 					nameof(BetterBuildingMenuSettings.ControlPaneShown),
 					nameof(BetterBuildingMenuSettings.ResetBuildMenu),
 				},
@@ -179,6 +192,7 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Contains($"bindValue<number>(mod.id, \"AssetMenuTileSize\", {SettingsDefaults.TileSize})", bindings);
 			Assert.Contains($"bindValue<string>(mod.id, \"AssetMenuAtLargeText\", \"{SettingsDefaults.AtLargeText}\")", bindings);
+			Assert.Contains($"bindValue<string>(mod.id, \"AssetMenuHoverCard\", \"{SettingsDefaults.HoverCard}\")", bindings);
 		}
 
 		[Fact]
@@ -186,6 +200,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			Assert.Equal("Default view", ModSource.English("Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DefaultView]"));
 			Assert.Equal("At large text", ModSource.English("Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AtLargeText]"));
+			Assert.Equal("Hover card", ModSource.English("Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HoverCard]"));
 			Assert.Equal(
 				"Sizes the Tiles view. 64 shows 2 rows of 10, 68 shows 2 rows of 9; above 68 the menu shows one row unless you drag it taller.",
 				ModSource.English("Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AssetMenuTileSize]"));

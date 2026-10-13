@@ -30,6 +30,8 @@ describe("the cards", () => {
     assert.equal(count(html, /data-bbm-pic="true"/), 3);
     assert.match(html, /<span class="name" data-bbm-name="10">Building 1<\/span>/);
     assert.equal(count(html, /data-bbm-fact="true"/), 3);
+    // The menu's one hover card says each building: no card carries a tooltip of its own.
+    assert.equal(count(html, /data-tooltip/), 0);
   });
 
   it("place each card after the last, a gap apart, and start the next row a row's pitch down, in whole thousandths of a rem", () => {

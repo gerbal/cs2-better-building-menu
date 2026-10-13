@@ -5,6 +5,7 @@ import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { Notch } from "mods/Notch/Notch";
 import { ControlPane } from "mods/ControlPane/ControlPane";
 import { ControlPopover } from "mods/ControlPopover/ControlPopover";
+import { HoverCard } from "mods/HoverCard/HoverCard";
 import { TabRow } from "mods/TabRow/TabRow";
 import { useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 import { TopEdge } from "mods/TopEdge/TopEdge";
@@ -143,6 +144,9 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             anchor={popoverAnchor(drawnBoxHeight(catalogHeight))}
             onClose={closeList}
           />
+          {/* The building pointed at, above the box, inside its root so it takes the look, hidden while a
+              list is open. See docs/design-notes.md, "The hover card". */}
+          <HoverCard boxRef={root} hidden={list !== null} />
           {/* Last, so it paints over the top row's upper edge, under the popovers. See
               docs/design-notes.md, "The top edge". */}
           <TopEdge active={isResizing} onBeginResize={(event) => beginResize(event, TOP_EDGE_HEIGHT)} />

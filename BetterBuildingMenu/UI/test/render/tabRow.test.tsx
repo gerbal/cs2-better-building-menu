@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { Profiler } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
-import { getAssetMenuView, resetAssetMenuView, setDrawnForm } from "../../src/domain/assetMenuViewStore";
+import { clearPointed, getAssetMenuView, resetAssetMenuView, setDrawnForm, setPointed } from "../../src/domain/assetMenuViewStore";
+import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { TabRow } from "../../src/mods/TabRow/TabRow";
 
 const set = (name: string, value: unknown) => setBinding("BetterBuildingMenu", name, value);
@@ -341,4 +343,38 @@ describe("the readout", () => {
     assert.doesNotMatch(html, / here</);
     assert.match(html, /aria-label="SmallRoads"/);
   });
+});
+
+describe("the tab row as the pointer crosses the cells", () => {
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+  });
+
+  for (const form of ["pointer", "slot"]) {
+    it(`draws nothing again as the pointer crosses cell after cell under the hover card's ${form} form`, () => {
+      // Only Status line only says the pointed building in the row; under the others the row never reads it.
+      seedRoads();
+      set("AssetMenuHoverCard", form);
+      let commits = 0;
+      let root: ReactTestRenderer | undefined;
+      act(() => {
+        root = create(
+          <Profiler id="tabRow" onRender={() => { commits += 1; }}>
+            <TabRow width={706} />
+          </Profiler>,
+        );
+      });
+      const mounted = commits;
+
+      for (const id of [1, 2, 3]) {
+        act(() => setPointed({ entry: { id } as BuildingCatalogEntry, cell: { x: 612 + id * 66, y: 805, w: 64, h: 64 } }));
+        act(() => clearPointed(id));
+      }
+
+      assert.ok(mounted > 0);
+      assert.equal(commits, mounted);
+      act(() => root!.unmount());
+    });
+  }
 });

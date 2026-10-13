@@ -33,6 +33,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>Above 100% text, the list keeps more buildings and shortens long names.</summary>
 		public const string AtLargeText = LargeText.MoreBuildings;
 
+		/// <summary>Pointing at a building shows a small card beside the pointer.</summary>
+		public const string HoverCard = HoverCards.Pointer;
+
 		/// <summary>Every stored setting back to how it ships.</summary>
 		/// <remarks>
 		/// Not the settings version, which records the migration, nor the legacy width and view, which
@@ -44,6 +47,7 @@ namespace BetterBuildingMenu.Domain
 			values.AssetMenuWidthStep = WidthSteps.DefaultStep;
 			values.DefaultView = DefaultView;
 			values.AtLargeText = AtLargeText;
+			values.HoverCard = HoverCard;
 			values.MenuGroups = NoPicks;
 			values.MenuViews = NoPicks;
 			values.Upgrader = false;

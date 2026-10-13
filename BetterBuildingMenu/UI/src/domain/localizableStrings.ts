@@ -34,6 +34,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("SortDirectionAscending"), english: "ascending", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionDescending"), english: "descending", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewIcons"), english: "Icons", source: "ViewList", plumbed: true },
+  { key: key("UnlocksAtMilestone"), english: "Unlocks at milestone {0}", source: "HoverCard", plumbed: true },
   { key: key("ViewIconsNamed"), english: "Icons with names", source: "ViewList", plumbed: true },
   { key: key("ViewTiles"), english: "Tiles", source: "ViewList", plumbed: true },
   // VIEW's first row: the body Default view gives this menu, ticked while the menu has no pick of its own.

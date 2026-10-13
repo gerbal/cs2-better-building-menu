@@ -146,6 +146,14 @@ namespace BetterBuildingMenu
 		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AtLargeTextDescription))]
 		public string AtLargeText { get; set; } = Domain.SettingsDefaults.AtLargeText;
 
+		/// <summary>What shows when the pointer rests on a building: a card beside it, a wide card in the game's detail slot, or the readout alone.</summary>
+		/// <remarks>See <see cref="Domain.HoverCards"/>.</remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(HoverCardItems))]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(HoverCardDescription))]
+		public string HoverCard { get; set; } = Domain.SettingsDefaults.HoverCard;
+
 		/// <summary>Whether the control pane beside the build menu shows Sort, Filter, Group and View again.</summary>
 		/// <remarks>
 		/// Starts shown, 0.2.4's default, so a file without the key reads shown, as 0.2.4 reads it. A new
@@ -374,6 +382,8 @@ namespace BetterBuildingMenu
 
 		private LocalizedString AtLargeTextDescription() => RowDescription(nameof(AtLargeText));
 
+		private LocalizedString HoverCardDescription() => RowDescription(nameof(HoverCard));
+
 		/// <summary>The Width row's choices: the five steps, by their labels.</summary>
 		/// <remarks>Static, so a test reads it without building the settings class.</remarks>
 		private static DropdownItem<int>[] WidthStepItems() =>
@@ -387,6 +397,9 @@ namespace BetterBuildingMenu
 
 		/// <summary>The At large text row's two choices, by their labels.</summary>
 		private static DropdownItem<string>[] AtLargeTextItems() => StringItems(Domain.LargeText.Values, Domain.OptionRows.AtLargeTextLabelIds);
+
+		/// <summary>The Hover card row's three choices, by their labels.</summary>
+		private static DropdownItem<string>[] HoverCardItems() => StringItems(Domain.HoverCards.Values, Domain.OptionRows.HoverCardLabelIds);
 
 		private static DropdownItem<string>[] WhatCountsItems() => StringItems(Domain.Tuning.WhatCountsValues, Domain.OptionRows.WhatCountsLabelIds);
 

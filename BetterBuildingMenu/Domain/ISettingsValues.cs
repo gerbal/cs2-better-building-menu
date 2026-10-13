@@ -23,6 +23,8 @@ namespace BetterBuildingMenu.Domain
 
 		string AtLargeText { get; set; }
 
+		string HoverCard { get; set; }
+
 		string MenuGroups { get; set; }
 
 		string MenuViews { get; set; }

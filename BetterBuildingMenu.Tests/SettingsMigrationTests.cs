@@ -498,14 +498,15 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void AnUnknownDefaultViewOrAtLargeTextReadsAsShippedOnEveryLoad()
+		public void AnUnknownDefaultViewAtLargeTextOrHoverCardReadsAsShippedOnEveryLoad()
 		{
-			var values = new FakeSettings { SettingsVersion = SettingsMigration.Current, DefaultView = "grid", AtLargeText = "z" };
+			var values = new FakeSettings { SettingsVersion = SettingsMigration.Current, DefaultView = "grid", AtLargeText = "z", HoverCard = "y" };
 			var result = SettingsMigration.Migrate(values, Array.Empty<string>(), StampOnly, SixteenNine);
 
 			Assert.Equal(BodyViews.Auto, values.DefaultView);
 			Assert.Equal(LargeText.MoreBuildings, values.AtLargeText);
-			Assert.Equal(new[] { "DefaultView grid -> auto", "AtLargeText z -> moreBuildings" }, result.Changes);
+			Assert.Equal(HoverCards.Pointer, values.HoverCard);
+			Assert.Equal(new[] { "DefaultView grid -> auto", "AtLargeText z -> moreBuildings", "HoverCard y -> pointer" }, result.Changes);
 		}
 
 		[Fact]

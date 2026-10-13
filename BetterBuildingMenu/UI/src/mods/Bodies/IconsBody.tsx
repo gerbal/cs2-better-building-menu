@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useMemo, type ReactNode } from "react";
+import { memo, useEffect, useMemo, type ReactNode } from "react";
 
 import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, labelSlots, slotPosition, slotsHeight, type BodyGrid } from "domain/bodyGeometry";
@@ -13,7 +13,8 @@ import { familyTones, pillText } from "domain/iconFamilies";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$ } from "mods/bindings";
-import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { clearPointed } from "domain/assetMenuViewStore";
+import { pointAt } from "mods/HoverCard/pointing";
 import styles from "./iconsBody.module.scss";
 import { LabelPlate } from "./LabelPlate";
 import { PlannedName } from "./PlannedName";
@@ -40,7 +41,6 @@ interface IconProps {
   textScale: number;
   stateWords: StateWords;
   achievedMilestone: number;
-  hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
 
@@ -49,63 +49,65 @@ interface IconProps {
  * locked one dark, its lock over why it waits. Its name and numbers are the hover card's. The live check
  * and the render tests count what a body shows through the data-bbm markers.
  */
-const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textScale, stateWords, achievedMilestone, hoverCard, onPlace }: IconProps) {
+const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textScale, stateWords, achievedMilestone, onPlace }: IconProps) {
   const name = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
   const { left, top } = slotPosition(grid, slot);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
+  // A cell that goes from under the pointer sends no leave: it takes its own building away as it goes.
+  useEffect(() => () => clearPointed(entry.id), [entry.id]);
   const pill = named ? "" : pillText(entry, grid.cellWidth, textScale);
   // Inset a rem on every side; inline, as Icon size sizes it.
   const picture = { width: `${grid.picture}rem`, height: `${grid.picture}rem` };
 
   return (
-    <BuildingHoverCard entry={entry} context={hoverCard}>
-      <Button
-        className={classNames(styles.icon, tone === 1 && styles.alt, armed && styles.armed, (locked || built) && styles.unplaceable)}
-        // Inline, over the game's Button and its own square: the slot is the icon's place and size.
-        style={{ left: `${left}rem`, top: `${top}rem`, width: `${grid.cellWidth}rem`, height: `${grid.cellHeight}rem` }}
-        variant="flat"
-        focusKey={FOCUS_DISABLED}
-        onSelect={() => onPlace(entry)}
-        aria-label={word ? `${name} — ${word}` : name}
-        aria-disabled={locked || built ? "true" : undefined}
-        data-catalog-entry={entry.id}
-        data-bbm-item="true"
-        // Always written, both ways: the silhouette rule keys off "false", as Cohtml rejects :not().
-        data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
-      >
-        <span className={styles.artwork} style={picture}>
-          <img
-            className={styles.picture}
-            src={lockedThumbnail(entry, locked || built)}
-            onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-            style={picture}
-            alt=""
-            aria-hidden="true"
-            data-bbm-pic="true"
-          />
-          <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
+    <Button
+      className={classNames(styles.icon, tone === 1 && styles.alt, armed && styles.armed, (locked || built) && styles.unplaceable)}
+      // Inline, over the game's Button and its own square: the slot is the icon's place and size.
+      style={{ left: `${left}rem`, top: `${top}rem`, width: `${grid.cellWidth}rem`, height: `${grid.cellHeight}rem` }}
+      variant="flat"
+      focusKey={FOCUS_DISABLED}
+      onSelect={() => onPlace(entry)}
+      onMouseEnter={(event: { currentTarget: Element }) => pointAt(entry, event.currentTarget)}
+      onMouseLeave={() => clearPointed(entry.id)}
+      aria-label={word ? `${name} — ${word}` : name}
+      aria-disabled={locked || built ? "true" : undefined}
+      data-catalog-entry={entry.id}
+      data-bbm-item="true"
+      // Always written, both ways: the silhouette rule keys off "false", as Cohtml rejects :not().
+      data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
+    >
+      <span className={styles.artwork} style={picture}>
+        <img
+          className={styles.picture}
+          src={lockedThumbnail(entry, locked || built)}
+          onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+          style={picture}
+          alt=""
+          aria-hidden="true"
+          data-bbm-pic="true"
+        />
+        <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
+      </span>
+      {locked && (
+        <span className={classNames(styles.locked, named && styles.lockedRow)}>
+          {/* A raster, because a masked vector is what this engine cannot draw. */}
+          <img className={styles.lockGlyph} src="coui://betterbuildingmenu/LockRaster.png" alt="" aria-hidden="true" />
+          <span className={styles.milestone} data-bbm-fact="true">{lockedFact(entry, stateWords.locked, achievedMilestone)}</span>
         </span>
-        {locked && (
-          <span className={classNames(styles.locked, named && styles.lockedRow)}>
-            {/* A raster, because a masked vector is what this engine cannot draw. */}
-            <img className={styles.lockGlyph} src="coui://betterbuildingmenu/LockRaster.png" alt="" aria-hidden="true" />
-            <span className={styles.milestone} data-bbm-fact="true">{lockedFact(entry, stateWords.locked, achievedMilestone)}</span>
-          </span>
-        )}
-        {pill !== "" && (
-          <span className={styles.pill}>
-            <span className={styles.pillWord} data-bbm-pill="true">{pill}</span>
-          </span>
-        )}
-        {named && (
-          <span className={styles.nameBand}>
-            <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={2} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} />
-          </span>
-        )}
-      </Button>
-    </BuildingHoverCard>
+      )}
+      {pill !== "" && (
+        <span className={styles.pill}>
+          <span className={styles.pillWord} data-bbm-pill="true">{pill}</span>
+        </span>
+      )}
+      {named && (
+        <span className={styles.nameBand}>
+          <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={2} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} />
+        </span>
+      )}
+    </Button>
   );
 });
 
@@ -135,7 +137,6 @@ export const IconsBody = memo(function IconsBody({ entries, grid, sections = NO_
   const span = labelSlots(grid);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, undefined, span);
   const tones = useMemo(() => familyTones(entries), [entries]);
-  const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
 
@@ -158,7 +159,6 @@ export const IconsBody = memo(function IconsBody({ entries, grid, sections = NO_
               textScale={textScale}
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}
-              hoverCard={hoverCard}
               onPlace={onPlace}
             />
           ))}

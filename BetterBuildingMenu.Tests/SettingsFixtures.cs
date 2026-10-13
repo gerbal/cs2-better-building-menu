@@ -28,6 +28,8 @@ namespace BetterBuildingMenu.Tests
 
 		public string AtLargeText { get; set; } = SettingsDefaults.AtLargeText;
 
+		public string HoverCard { get; set; } = SettingsDefaults.HoverCard;
+
 		public string MenuGroups { get; set; } = SettingsDefaults.NoPicks;
 
 		public string MenuViews { get; set; } = SettingsDefaults.NoPicks;

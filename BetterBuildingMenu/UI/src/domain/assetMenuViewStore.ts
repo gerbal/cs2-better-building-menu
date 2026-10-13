@@ -1,5 +1,6 @@
 import type { ListForm } from "./bodyGeometry";
-import type { SharedValue } from "./buildingCatalog";
+import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
+import type { Rect } from "./hoverCardPlace";
 
 /**
  * The one store for the asset menu's visual state, which has to outlive a React
@@ -20,6 +21,14 @@ export interface AssetMenuView {
   said: readonly SharedValue[];
   /** The form the list draws its plates in, which decides the numbers the readout may say; null while no list draws. */
   drawnForm: ListForm | null;
+  /** The building the pointer rests on and its cell on screen, in rem, which the hover card says; null for none. */
+  pointed: Pointed | null;
+}
+
+/** A building pointed at, and where its cell sits on screen, in rem. */
+export interface Pointed {
+  entry: BuildingCatalogEntry;
+  cell: Rect;
 }
 
 /** Where the game's slot starts, in rem, on a window of this size in pixels. */
@@ -29,7 +38,7 @@ export interface SlotReading {
   left: number;
 }
 
-const initial = (): AssetMenuView => ({ disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null });
+const initial = (): AssetMenuView => ({ disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null, pointed: null });
 
 let state: AssetMenuView = initial();
 
@@ -170,4 +179,17 @@ export function setReadoutSaid(said: readonly SharedValue[]): void {
 /** Says which form the list draws its plates in; null once it draws none. */
 export function setDrawnForm(form: ListForm | null): void {
   setAssetMenuView({ drawnForm: form });
+}
+
+/** Says the pointer rests on this building's cell. */
+export function setPointed(pointed: Pointed): void {
+  setAssetMenuView({ pointed });
+}
+
+/**
+ * Says the pointer left this building's cell: only while it is still the one pointed at, so a leave the
+ * engine sends after the next cell's enter takes nothing away; with no id, whatever is pointed at.
+ */
+export function clearPointed(id?: number): void {
+  if (state.pointed !== null && (id === undefined || state.pointed.entry.id === id)) setAssetMenuView({ pointed: null });
 }

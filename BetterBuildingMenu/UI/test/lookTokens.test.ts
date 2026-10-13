@@ -61,6 +61,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["bodyWord", "labBg"], ["bodyChipDim", "labBg"], ["bodyMilestone", "labBg"],
   // The cards: Enter's mark on its badge.
   ["entMark", "badgeBg"],
+  // The hover card: its name and figures, their words and the key number's glyph, a locked building's milestone.
+  ["tStateSet", "popBg"], ["tWord", "popBg"], ["amber", "popBg"],
 ];
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */

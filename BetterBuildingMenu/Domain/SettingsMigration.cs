@@ -99,6 +99,7 @@ namespace BetterBuildingMenu.Domain
 				Set(nameof(ISettingsValues.AssetMenuWidthStep), values.AssetMenuWidthStep, WidthSteps.Sanitize(values.AssetMenuWidthStep), value => values.AssetMenuWidthStep = value, changes);
 				Set(nameof(ISettingsValues.DefaultView), values.DefaultView, BodyViews.SanitizeDefault(values.DefaultView), value => values.DefaultView = value, changes);
 				Set(nameof(ISettingsValues.AtLargeText), values.AtLargeText, LargeText.Sanitize(values.AtLargeText), value => values.AtLargeText = value, changes);
+				Set(nameof(ISettingsValues.HoverCard), values.HoverCard, HoverCards.Sanitize(values.HoverCard), value => values.HoverCard = value, changes);
 			}
 
 			if (from < target)

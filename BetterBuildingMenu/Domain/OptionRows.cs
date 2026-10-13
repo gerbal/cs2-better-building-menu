@@ -36,6 +36,14 @@ namespace BetterBuildingMenu.Domain
 			"Options.LABEL[BetterBuildingMenu.AtLargeTextWholeNames]",
 		};
 
+		/// <summary>The Hover card row's labels, one per value of <see cref="HoverCards.Values"/>.</summary>
+		public static readonly IReadOnlyList<string> HoverCardLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.HoverCardPointer]",
+			"Options.LABEL[BetterBuildingMenu.HoverCardSlot]",
+			"Options.LABEL[BetterBuildingMenu.HoverCardStatus]",
+		};
+
 		/// <summary>The What counts knob's labels, one per value of <see cref="Tuning.WhatCountsValues"/>.</summary>
 		public static readonly IReadOnlyList<string> WhatCountsLabelIds = new[]
 		{
