@@ -24,9 +24,14 @@ const press = (event: KeyEvent) => act(() => page.keydown(event));
 const enter = (target?: unknown) => press({ key: "Enter", target });
 const armed = () => triggers.filter((call) => call.name === "SetCurrentPrefab").map((call) => call.args[0]);
 
-/** The search field, focused, counting its blurs. */
+/** The search field, focused, counting its blurs; a blur takes the page's focus off it, as in the game. */
 function focusSearchField() {
   const field = fakeSearchField();
+  const blur = field.blur;
+  field.blur = () => {
+    blur();
+    page.document.activeElement = null;
+  };
   page.document.activeElement = field;
   return field;
 }
@@ -196,6 +201,23 @@ describe("Enter in the catalog", () => {
 
     assert.equal(field.blurred, 1);
     assert.deepEqual(armed(), []);
+  });
+
+  it("gives the camera its keys back once on a held Enter from the field, at the press", () => {
+    // Pressed inside the search debounce: the field lets go while Enter waits for the page.
+    groupedPage("", null);
+    typed("clinic");
+    mount();
+    const field = focusSearchField();
+
+    enter(field);
+    assert.equal(field.blurred, 1);
+    assert.deepEqual(armed(), []);
+
+    groupedPage("clinic", 1);
+    rerender();
+    assert.deepEqual(armed(), [1]);
+    assert.equal(field.blurred, 1);
   });
 
   it("gives the camera its keys back once on Enter from the field that arms", () => {

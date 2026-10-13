@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
 import { setBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { bindValue, useValue, trigger } from "cs2/api";
+import { useLayoutEffect } from "react";
 import { Button } from "cs2/ui";
 import styles from "../../src/mods/BuildingCatalog/buildingCatalog.module.scss";
 import sizes from "../../src/domain/assetMenuLayout.module.scss";
@@ -41,6 +42,42 @@ describe("the render harness", () => {
     assert.match(html, /<button [^>]*aria-label="Do"/);
     assert.match(html, /data-refused="true"/);
     assert.match(html, /data-has-select="true"/);
+  });
+
+  it("drops only React's server warning about a layout effect, and lets every other error through", () => {
+    const saved = console.error;
+    const printed: string[] = [];
+    const recorder = (...args: unknown[]) => printed.push(args.map(String).join(" "));
+    console.error = recorder;
+    const Effects = () => {
+      useLayoutEffect(() => undefined);
+      console.error("another warning");
+      return <span />;
+    };
+
+    try {
+      renderHtml(<Effects />);
+      assert.deepEqual(printed, ["another warning"]);
+      assert.equal(console.error, recorder, "console.error comes back after the render");
+    } finally {
+      console.error = saved;
+    }
+  });
+
+  it("puts console.error back when the render throws", () => {
+    const saved = console.error;
+    const recorder = () => undefined;
+    console.error = recorder;
+    const Throws = () => {
+      throw new Error("render failed");
+    };
+
+    try {
+      assert.throws(() => renderHtml(<Throws />), /render failed/);
+      assert.equal(console.error, recorder);
+    } finally {
+      console.error = saved;
+    }
   });
 
   it("builds an entry the components accept", () => {
