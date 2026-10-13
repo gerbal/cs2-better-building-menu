@@ -85,10 +85,10 @@ describe("the grab strips", () => {
     assert.equal(strip.width, "6rem");
   });
 
-  it("lie clear of the tab row's readout: the band's right padding is at least the strip's width", () => {
+  it("lie clear of the tab row's readout: the band's right padding is the strip's width", () => {
     const band = declarationsOf("mods/TabRow/tabRow.module.scss", ".band");
 
-    assert.ok(rem(band["padding-right"]) >= rem(strip.width), `${band["padding-right"]} under ${strip.width}`);
+    assert.equal(band["padding-right"], strip.width);
   });
 
   it("carry a side pill as long as the top one, half as thick", () => {

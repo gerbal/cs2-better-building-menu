@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { arrivedCount, cellsOf, planTabRow, readoutRange, TAB_PLACEHOLDER, tabRow, type TabRowInput } from "../src/domain/tabRow.ts";
+import { TAB_CELL_GAP, TAB_COUNT_SIZE, TAB_ROW_INSET, TAB_ROW_INSET_RIGHT } from "../src/domain/assetMenuLayout.ts";
+import { arrivedCount, cellsOf, planTabRow, readoutRange, TAB_PLACEHOLDER, tabRow, textWidth, type TabRowInput } from "../src/domain/tabRow.ts";
 import { NO_TIER_BRACKET } from "../src/domain/menuProgression.ts";
 
 const ROADS_ICON = "Media/Game/Icons/Roads.svg";
@@ -242,6 +243,16 @@ describe("the row at the first step", () => {
     const levels = tabRow(education()).items;
 
     assert.deepEqual(planTabRow(levels, { place: "Elementary School", range: "1–22 of 22" }, 706, 1, plain), { readout: "full", clipped: false });
+  });
+
+  it("budgets the row's two insets, 4 rem on the left and the width strip's 6 on the right", () => {
+    // With no tabs the range alone is in the row: it fits from its width plus both insets and the two gaps.
+    const range = textWidth(readout.range, TAB_COUNT_SIZE);
+    const fits = range + TAB_ROW_INSET + TAB_ROW_INSET_RIGHT + 2 * TAB_CELL_GAP;
+
+    assert.equal(TAB_ROW_INSET + TAB_ROW_INSET_RIGHT, 10);
+    assert.equal(planTabRow([], readout, fits + 1e-6, 1, plain).clipped, false);
+    assert.equal(planTabRow([], readout, fits - 0.01, 1, plain).clipped, true);
   });
 
   it("budgets a count that has not arrived as blank", () => {

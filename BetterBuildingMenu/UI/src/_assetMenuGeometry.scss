@@ -58,6 +58,8 @@ $top-band-pad: 2rem;
 $top-row-height: 28rem;
 $top-band-gap: 4rem;
 $top-band: $top-band-pad + $top-row-height + $top-band-gap;
+// Where the width strip and its reach start: under the top row, so close keeps its presses.
+$width-handle-top: $top-band-pad + $top-row-height;
 // The top row sits this far inside the box's side edges.
 $top-row-inset: 4rem;
 

@@ -210,6 +210,18 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(body["background-image"], undefined);
   });
 
+  it("sizes the clear button itself, over the game's Button and its background", () => {
+    // The clear button is the game's icon Button, whose one class pins its size and paints a
+    // background: two classes outrank it whichever sheet loads last.
+    const clear = [["field"], ["clear"]];
+
+    for (const [prop, value] of [["width", "22rem"], ["height", "22rem"], ["background-color", "transparent"]]) {
+      const winner = winnerOn(TOP_ROW, clear, prop);
+      assert.equal(winner?.value, value, prop);
+      assert.ok((winner?.classes ?? 0) >= 2 || winner?.important, `${prop}: ${JSON.stringify(winner)}`);
+    }
+  });
+
   it("sizes a tab cell itself, over the game's Button and its square", () => {
     // A cell is the game's Button, whose one class pins 24 x 24. The cell's own size outranks it
     // with two classes whichever sheet loads last, so a cell is as wide as its picture or its name.

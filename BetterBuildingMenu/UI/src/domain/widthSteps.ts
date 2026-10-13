@@ -174,9 +174,17 @@ function widthWithEdgeAt(edge: number, screen: WidthStepScreen): number {
 }
 
 /**
+ * How far the pointer must travel, in rem, before the box leaves the width it was pressed at. Short
+ * of it a release keeps the step the box draws: where two steps share a right edge, a nudge of a few
+ * pixels would otherwise take the wider or the narrower one.
+ */
+export const WIDTH_DRAG_DEAD_ZONE = 12;
+
+/**
  * The width a drag from `startX` to `currentX` shows, held between the narrowest and the widest
- * step the edge snaps to: the box whose drawn right edge sits under the pointer, as far from it as
- * the press was. `pxPerRem` is measured off the strip as it was pressed.
+ * step the edge snaps to. Short of the dead zone it is the width pressed; past it, the box whose
+ * drawn right edge sits under the pointer, as far from it as the press was. `pxPerRem` is measured
+ * off the strip as it was pressed.
  */
 export function draggedStepWidth(
   startWidth: number,
@@ -186,9 +194,10 @@ export function draggedStepWidth(
   screen: WidthStepScreen,
   pxPerRem?: number
 ): number {
+  const travelled = dragDistanceRem(startX, currentX, pxPerRem);
   const startEdge = boxPlacement(startWidth, screen).left + startWidth;
-  const raw = widthWithEdgeAt(startEdge + dragDistanceRem(startX, currentX, pxPerRem), screen);
-  if (!Number.isFinite(raw) || snaps.length === 0) return startWidth;
+  const raw = widthWithEdgeAt(startEdge + travelled, screen);
+  if (!Number.isFinite(raw) || snaps.length === 0 || Math.abs(travelled) < WIDTH_DRAG_DEAD_ZONE) return startWidth;
 
   const widths = snaps.map((snap) => snap.width);
   return Math.min(Math.max(...widths), Math.max(Math.min(...widths), raw));

@@ -6,8 +6,7 @@
 
 .widthHandle {
   position: absolute;
-  // Under the top row, so close keeps its presses.
-  top: $top-band-pad + $top-row-height;
+  top: $width-handle-top;
   bottom: 0;
   right: 0;
   width: $width-handle-width;
@@ -60,7 +59,7 @@
 // strip runs: nothing until the mouse is on it, so the gap still shows the city.
 .widthReach {
   position: absolute;
-  top: $top-band-pad + $top-row-height;
+  top: $width-handle-top;
   bottom: 0;
   right: -$width-handle-reach;
   width: $width-handle-reach;

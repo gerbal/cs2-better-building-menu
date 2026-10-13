@@ -6,6 +6,7 @@ import {
   CHIRPER_CLEARANCE_OFFSET,
   REFERENCE_ASPECT,
   boxPlacement,
+  WIDTH_DRAG_DEAD_ZONE,
   draggedStepWidth,
   drawnStep,
   drawnStepWidth,
@@ -248,6 +249,30 @@ describe("the right edge's drag", () => {
       const width = draggedStepWidth(706, 500, 500 + travelled, hidden, open, 1);
       near(edgeAt(width), 1313 + travelled, `${travelled} rem on`);
     }
+  });
+
+  it("keeps the drawn right edge under the pointer beside the shown pane too, up to the third step's", () => {
+    // Beside the pane the third step's edge is the pane's limit, 1,487: step 2 already sits there.
+    const beside = screen({ paneShown: true });
+    const besideSnaps = snapTargets(beside);
+    const edgeAt = (width: number) => boxPlacement(width, beside).left + width;
+
+    for (const travelled of [50, 100, 150, 174]) {
+      near(edgeAt(draggedStepWidth(706, 500, 500 + travelled, besideSnaps, beside, 1)), 1313 + travelled, `${travelled} rem on`);
+    }
+    assert.equal(draggedStepWidth(706, 500, 500 + 300, besideSnaps, beside, 1), 1091, "held at the widest step");
+  });
+
+  it("keeps the drawn width until the pointer has travelled the dead zone, in either direction", () => {
+    const open = screen();
+    const hidden = snapTargets(open);
+    const inside = WIDTH_DRAG_DEAD_ZONE - 0.5;
+
+    for (const travelled of [inside, -inside, 3, -3]) {
+      assert.equal(draggedStepWidth(1091, 900, 900 + travelled, hidden, open, 1), 1091, `${travelled} rem`);
+    }
+    assert.ok(draggedStepWidth(1091, 900, 900 - WIDTH_DRAG_DEAD_ZONE, hidden, open, 1) < 1091, "followed from the dead zone's edge");
+    assert.ok(draggedStepWidth(1091, 900, 900 + WIDTH_DRAG_DEAD_ZONE, hidden, open, 1) > 1091, "followed from the dead zone's edge, wider");
   });
 
   it("starts from where the box is drawn, so a drag from step 3 follows its edge too", () => {

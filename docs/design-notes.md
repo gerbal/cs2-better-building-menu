@@ -152,17 +152,20 @@ scale.
   the game's own text size, steps 4 and 5 draw as step 3, which is 0.2.4's own row: the box to
   1,487 and the pane to 1,872.
 
-**The right edge snaps.** A drag shows the box following the pointer, between the narrowest and
-the widest step the edge can snap to; beside the pane those are only the steps that fit. The
-release snaps to the nearest step, a tie to the narrower, and sends one `SetAssetMenuWidthStep`,
-which C# keeps and saves only when it changes. A release on the step the box already draws sends
-nothing: beside the pane a stored step 4 or 5 draws as 3, and a nudge of the edge would otherwise
-store 3 over the step the pane keeps for later. A menu closed mid-drag follows the same rule. The
-box keeps the snapped width until the stored
-step comes back from C#, so it does not flash the old width for the round trip. The dragged box is
-the one whose drawn right edge is under the pointer, as far from it as the press was: where the box
-grows left with its edge fixed, as between steps 2 and 3 on 16:9, no width moves the edge, so a
-pointer at that edge or past it takes the widest box that holds it. The drag is the hook's own state, so the catalog's table, which budgets its columns from the stored step, moves
+**The right edge snaps.** A drag shows the box following the pointer, between the narrowest and the
+widest step the edge can snap to; beside the pane those are only the steps that fit. Until the
+pointer has travelled 12 rem from the press, in either direction, the box keeps the width it was
+pressed at, so a release there sends nothing: where two steps share a right edge, a nudge of a few
+pixels would otherwise take the wider or the narrower. Past 12 rem the dragged box is the one whose
+drawn right edge is under the pointer, as far from it as the press was; where the box grows left
+with its edge fixed, as between steps 2 and 3 on 16:9, no width moves the edge, so a pointer at that
+edge or past it takes the widest box that holds it. The release snaps by width to the nearest step,
+a tie to the narrower, and sends one `SetAssetMenuWidthStep`, which C# keeps and saves only when it
+changes. A release on the step the box already draws sends nothing: beside the pane a stored step 4
+or 5 draws as 3, and a drag back onto 3 would otherwise store 3 over the step the pane keeps for
+later. A menu closed mid-drag follows the same rule. The box keeps the snapped width until the
+stored step comes back from C#, so it does not flash the old width for the round trip. The drag is
+the hook's own state, so the catalog's table, which budgets its columns from the stored step, moves
 its columns at the release.
 
 **The width strip runs down the box's right edge.** A 6 rem strip from under the top row, so close

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH } from "../../src/domain/assetMenuLayout";
-import { snapTargets, type WidthSnap, type WidthStepScreen } from "../../src/domain/widthSteps";
+import { WIDTH_DRAG_DEAD_ZONE, drawnStep as drawnStepOf, drawnStepWidth, snapTargets, type WidthSnap, type WidthStepScreen } from "../../src/domain/widthSteps";
 import {
   AssetMenuWidthHandle,
   AssetMenuWidthReach,
@@ -176,10 +176,10 @@ describe("dragging the build menu's right edge", () => {
     move(650);
     release();
     press(500);
-    move(490);
+    move(480);
     nextFrame();
 
-    assert.equal(drag.liveWidth, 870, "from the snapped 893, whose edge is at 1,487, not the stored 706");
+    assert.equal(drag.liveWidth, 860, "from the snapped 893, whose edge is at 1,487, not the stored 706");
   });
 
   it("puts the drawn right edge under the pointer, where the box grows left to hold its edge", () => {
@@ -274,6 +274,44 @@ describe("dragging the build menu's right edge", () => {
     root = undefined;
 
     assert.deepEqual(names(), []);
+  });
+
+  describe("a nudge at the widest drawn step", () => {
+    // Under the dead zone the box keeps the step it draws, either way, at 100% and 130% text.
+    const widest: Array<[string, number, boolean, number]> = [
+      ["a stored 5 drawn as 3 beside the pane", 5, true, 1],
+      ["step 3 beside the pane", 3, true, 1],
+      ["step 3 with the pane hidden", 3, false, 1],
+      ["a stored 5 drawn as 3 beside the pane at 130% text", 5, true, 1.3],
+      ["step 3 with the pane hidden at 130% text", 3, false, 1.3],
+    ];
+
+    for (const [name, stored, paneShown, textScale] of widest) {
+      const screen: WidthStepScreen = { aspect: 16 / 9, textScale, paneShown };
+      const drawnStep = drawnStepOf(stored, screen);
+      const nudge = (travelled: number) => {
+        mount(drawnStepWidth(drawnStep, screen), stored, snapTargets(screen), drawnStep, screen);
+        press();
+        move(500 + travelled);
+        release();
+      };
+
+      it(`keeps ${name} under a ${WIDTH_DRAG_DEAD_ZONE} rem nudge either way`, () => {
+        for (const travelled of [-(WIDTH_DRAG_DEAD_ZONE - 1), -3, 3, WIDTH_DRAG_DEAD_ZONE - 1]) {
+          nudge(travelled);
+          assert.deepEqual(steps(), [], `${travelled} rem`);
+          assert.equal(drag.liveWidth, null);
+          act(() => root!.unmount());
+          root = undefined;
+        }
+      });
+
+      it(`follows ${name} once the pointer is past the dead zone`, () => {
+        nudge(-WIDTH_DRAG_DEAD_ZONE - 1);
+
+        assert.deepEqual(steps(), [2]);
+      });
+    }
   });
 
   it("leaves a press with any button but the left alone", () => {
