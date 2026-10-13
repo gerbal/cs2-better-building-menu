@@ -1573,10 +1573,15 @@ Any other stored value reads as beside the pointer, on every load.
   the building and its cell on screen, in rem. A leave takes the building away only while it is still the
   one pointed at, so a leave the engine sends after the next cell's enter takes nothing. The card shows
   once the pointer has rested the Hover delay knob's time on one building (150 ms as it ships), and goes
-  at once when it leaves; nothing is pointed at once the menu closes.
+  at once when it leaves, to nothing or to the next cell: React sends a cell's leave and the next one's
+  enter from one mouseout, so a card kept up until the next had rested would name a building the pointer
+  has left. A cell that goes from under a resting pointer (typing turns the tiles into the list, a page
+  changes) sends no leave, so each cell takes its own building away as it unmounts; nothing is pointed
+  at once the menu closes.
 - **One card, a child of the box's root,** so it takes the look's tokens and the interface style with them,
   as the popovers do, drawing above the box from inside it. It takes no pointer, and hides while a list is
-  open. Its panel is the popovers', dark under every style, so its inks are the look's own.
+  open. Its panel is the popovers' own (`popover-panel`, shared), dark under every style, so its inks are
+  the look's own.
 - **Beside the pointer.** A 60 picture on its plate; the whole name, planned over three lines; a table of the
   cost, the upkeep, the view's key number under its word and by its glyph (a home's households where the
   view keys none), and the lot where the name does not say it; for a locked building the milestone it
@@ -1590,6 +1595,14 @@ Any other stored value reads as beside the pointer, on every load.
   no place fitting, the first place, held on screen. The HUD is the game's at its own layout: the bottom
   bar, and the chirper, the social column and the top-right buttons measured from the screen's right edge
   (`hudPieces`).
+- **The cells drawn, and when it places itself again.** Only the cells meeting the body's scroller count
+  (`cellsInField`, read by `drawnCells`): a cell scrolled out of the body is still in the page, under the
+  top row and over the box where the card's first place is, and counted it would push the card down over
+  the cells shown. The scroller is found by walking up from a row (`listScroller`), as the game's
+  Scrollable drops any marker. The card says the building as the page has it now, and places itself
+  again, against the pointed cell where it is drawn then, when the page changes, when the screen, the
+  box or the card change size, and on a wheel over the box: Cohtml sends no scroll event, and a wheel is
+  what scrolls the body.
 
 **This changes 0.2.x:** pointing at a building drew the game's tooltip over that building alone, its
 description, every figure, the footprints; one card now says the building beside the pointer in a few

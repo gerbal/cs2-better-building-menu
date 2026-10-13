@@ -70,7 +70,8 @@ export function pointerCardText(entry: BuildingCatalogEntry, kind: KeyKind, sepa
       : null,
     present(entry.upkeep) ? { key: "upkeep", label: labels.upkeep, value: formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance), glyph: null } : null,
     keyRow(entry, kind, separators, labels),
-    hasFootprint(entry.lotWidth, entry.lotDepth) && !nameHoldsLot(entry.name ?? "", entry.lotWidth, entry.lotDepth)
+    // Read off the name the card draws, the prefab's where the building has none.
+    hasFootprint(entry.lotWidth, entry.lotDepth) && !nameHoldsLot(entry.name || entry.prefabName || "", entry.lotWidth, entry.lotDepth)
       ? { key: "lot", label: labels.lot, value: formatLotDimensions(entry.lotWidth, entry.lotDepth), glyph: null }
       : null,
   ];

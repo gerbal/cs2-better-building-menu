@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { declarationsOf } from "../harness/compiledCss";
+import { assertCellsTellThePointer } from "../harness/pointing";
 import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
@@ -28,6 +29,10 @@ const LABELS = "mods/Bodies/labelPlate.module.scss";
 
 describe("the list", () => {
   beforeEach(() => resetBindings());
+
+  it("tells the hover card the plate the pointer enters and leaves, and the plate that goes from under it", () => {
+    assertCellsTellThePointer((entries) => body(entries));
+  });
 
   it("draws each building on a plate at its slot, four across and five down the game's own box", () => {
     const html = render(rows(21));

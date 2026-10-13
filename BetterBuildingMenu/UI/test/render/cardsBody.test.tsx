@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import { assertCellsTellThePointer } from "../harness/pointing";
 import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
@@ -21,6 +22,10 @@ const group = (start: number, label: string, count: number, labelId = ""): Catal
 
 describe("the cards", () => {
   beforeEach(() => resetBindings());
+
+  it("tell the hover card the card the pointer enters and leaves, and the card that goes from under it", () => {
+    assertCellsTellThePointer((entries) => <Cards entries={entries} />);
+  });
 
   it("draw each card where the packer puts it, 46 tall, and mark it for the live check", () => {
     const html = render(rows(3));

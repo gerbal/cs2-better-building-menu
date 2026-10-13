@@ -39,6 +39,10 @@ describe("what the hover card beside the pointer says", () => {
     assert.deepEqual(lines(building({ capacity: null, households: 12 }), "").rows.find((row) => row.key === "key")?.label, "Households");
   });
 
+  it("reads the lot off the name the card draws, the prefab's where the building has no name", () => {
+    assert.deepEqual(lines(building({ name: "", prefabName: "Parking Lot 5x4" })).rows.map((row) => row.key), ["cost", "upkeep", "key"]);
+  });
+
   it("says the milestone a locked building waits for, and the locked word once the city has reached it", () => {
     assert.equal(lines(building({ isLocked: true, unlockMilestone: 6 } as Partial<BuildingCatalogEntry>)).unlock, "Unlocks at milestone 6");
     assert.equal(lines(building({ isLocked: true, unlockMilestone: 6 } as Partial<BuildingCatalogEntry>), "capacity", 6).unlock, "Locked");

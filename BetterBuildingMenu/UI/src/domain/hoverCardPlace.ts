@@ -54,6 +54,14 @@ export function overlap(a: Rect, b: Rect): number {
   return across > 0 && down > 0 ? across * down : 0;
 }
 
+/**
+ * The cells the body draws: those meeting its field, the scroller's rectangle. A cell scrolled out of the
+ * field is still in the page, above or below the body, where no card should give way to it.
+ */
+export function cellsInField(cells: readonly Rect[], field: Rect): Rect[] {
+  return cells.filter((cell) => overlap(cell, field) > TOUCH);
+}
+
 /** Whether a rectangle comes within the margin of a HUD piece. */
 const meets = (rect: Rect, piece: Rect): boolean =>
   rect.x < piece.x + piece.w + MARGIN && rect.x + rect.w > piece.x - MARGIN && rect.y < piece.y + piece.h + MARGIN && rect.y + rect.h > piece.y - MARGIN;

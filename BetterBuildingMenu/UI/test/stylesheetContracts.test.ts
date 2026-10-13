@@ -608,6 +608,23 @@ describe("the hover card's name is the size the UI plans it at", () => {
     assert.ok(font > 0, "HoverCard.tsx's NAME_FONT");
     assert.equal(declarationsOf(HOVER, ".name")["font-size"], `calc(${font}rem * var(--fontScale))`);
   });
+
+  it("draws the card on the popovers' own surface, shared, not copied", () => {
+    const card = declarationsOf(HOVER, ".card");
+    const popover = declarationsOf(POPOVER, ".popover");
+
+    for (const property of ["border-radius", "background-color", "box-shadow"]) assert.equal(card[property], popover[property], property);
+  });
+
+  it("draws its words in the look's inks the look tokens pin on that surface", () => {
+    // The pairs in lookTokens.test.ts hold these inks to the popovers' panel; this holds the card to them.
+    const ink = (selector: string, property = "color") => declarationsOf(HOVER, selector)[property];
+
+    assert.deepEqual(
+      [ink(".name"), ink(".value"), ink(".label"), ink(".glyph", "background-color"), ink(".unlock")],
+      ["var(--bbm-tStateSet)", "var(--bbm-tStateSet)", "var(--bbm-tWord)", "var(--bbm-tWord)", "var(--bbm-amber)"],
+    );
+  });
 });
 
 describe("a planned name's boxes", () => {

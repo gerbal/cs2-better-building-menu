@@ -17,7 +17,8 @@
 
 @include cell-lit(".icon");
 
-// A building that cannot be placed, locked or a unique the city holds: dark, apart from both tones.
+// A building that cannot be placed, locked or a unique the city holds: a plate apart from both tones,
+// bare under the interface styles.
 .unplaceable,
 .unplaceable:hover {
   background-color: var(--bbm-iconLocked);

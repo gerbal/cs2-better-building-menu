@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import { assertCellsTellThePointer } from "../harness/pointing";
 import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { bodyGrid, type BodyGridInput } from "../../src/domain/bodyGeometry";
@@ -17,6 +18,10 @@ const boulder = (id: number): Partial<BuildingCatalogEntry> => ({ name: `Boulder
 
 describe("the icons", () => {
   beforeEach(() => resetBindings());
+
+  it("tell the hover card the icon the pointer enters and leaves, and the icon that goes from under it", () => {
+    assertCellsTellThePointer((entries) => <IconsBody entries={entries} grid={grid()} onPlace={() => undefined} />);
+  });
 
   it("draw each building's picture alone on a 44 plate at its slot, fifteen across from 1 in and three down, 4.125 from the top", () => {
     const html = render(rows(46));

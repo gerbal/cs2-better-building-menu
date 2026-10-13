@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { hudPieces, overlap, placePointerCard, remRect, type Rect } from "../src/domain/hoverCardPlace";
+import { cellsInField, hudPieces, overlap, placePointerCard, remRect, type Rect } from "../src/domain/hoverCardPlace";
 
 const SCREEN = { w: 1920, h: 1080 };
 /** The box at the first Width step and at the fifth, on 16:9: its top at 746, 208 tall. */
@@ -43,6 +43,21 @@ describe("the hover card beside the pointer", () => {
 
     assert.equal(large.fitted && icon.fitted, true);
     assert.equal([...cells, ...icons].filter((cell) => overlap(cell, large) > 0 || overlap(cell, icon) > 0).length, 0);
+  });
+
+  it("counts only the cells the body draws, so a scrolled list keeps the card above the box", () => {
+    // Ten lines of plates scrolled six down: the six above sit under the top row and over the box, out of the field.
+    const field: Rect = { x: STEP1.x, y: STEP1.y + 59, w: STEP1.w, h: 144.25 };
+    const scrolled = Array.from({ length: 40 }, (_, at) => ({ x: STEP1.x + 8 + (at % 4) * 173, y: field.y + (Math.floor(at / 4) - 6) * 29.25, w: 171, h: 27.25 }));
+    const drawn = cellsInField(scrolled, field);
+    const pointed = scrolled[(6 + 2) * 4 + 1];
+    const place = placePointerCard({ cell: pointed, card: CARD, box: STEP1, screen: SCREEN, cells: drawn });
+
+    assert.equal(drawn.length, 16);
+    assert.ok(drawn.every((cell) => cell.y >= field.y && cell.y < field.y + field.h), JSON.stringify(drawn));
+    assert.deepEqual([place.how, place.x, place.y], ["above", pointed.x, 746 - 6 - 98]);
+    // Counted whole, the cells scrolled away above the body would move it.
+    assert.notEqual(placePointerCard({ cell: pointed, card: CARD, box: STEP1, screen: SCREEN, cells: scrolled }).how, "above");
   });
 
   it("sits beside the cell where a box dragged tall leaves no room above it", () => {

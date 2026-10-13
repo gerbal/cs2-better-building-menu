@@ -2,7 +2,7 @@ import { useValue } from "cs2/api";
 import { milestone } from "cs2/bindings";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { clearPointed, type Pointed } from "domain/assetMenuViewStore";
 import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
@@ -19,6 +19,7 @@ import { UNIT_GLYPHS } from "mods/Bodies/unitGlyphs";
 import { useNumberSeparators, useStateWords } from "mods/Bodies/useBodyWords";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import styles from "./hoverCard.module.scss";
+import { drawnCells } from "./pointing";
 
 /** The name's font at 100% text, and the room it is planned in: hoverCard.module.scss's `.name`. */
 const NAME_FONT = 13;
@@ -28,7 +29,8 @@ const NAME_LINES = 3;
 
 /**
  * The building the pointer rests on, once it has rested the Hover delay knob's time; null at once when it
- * leaves. A move from one cell to the next shows the first until the next has rested as long.
+ * leaves. A move from one cell to the next takes the first away at once, and shows the next once it has
+ * rested as long.
  */
 export function usePointedAfterDelay(): Pointed | null {
   const pointed = useAssetMenuView((view) => view.pointed);
@@ -44,12 +46,7 @@ export function usePointedAfterDelay(): Pointed | null {
     return () => clearTimeout(timer);
   }, [pointed, delay]);
 
-  return pointed === null ? null : shown;
-}
-
-/** The view's key kind, which the card names the key number by; capacity before a page has said. */
-function useKeyKind(): KeyKind {
-  return (useValue(BuildingCatalog$)?.facts?.keyKind ?? "capacity") as KeyKind;
+  return pointed !== null && shown !== null && shown.entry.id === pointed.entry.id ? pointed : null;
 }
 
 interface PointerCardProps {
@@ -59,15 +56,19 @@ interface PointerCardProps {
 
 /**
  * The card beside the pointer: drawn unseen first, then, two frames on, measured and placed by
- * `placePointerCard` against the box, the screen's HUD and the cells drawn, in the box's own rem.
+ * `placePointerCard` against the box, the screen's HUD and the cells drawn, in the box's own rem. It says
+ * the building as the page has it now, and places itself again when the page, the screen, the box or the
+ * card change size, and on a wheel over the box.
  */
-function PointerCard({ pointed, boxRef }: PointerCardProps) {
-  const { entry } = pointed;
+const PointerCard = memo(function PointerCard({ pointed, boxRef }: PointerCardProps) {
+  const page = useValue(BuildingCatalog$);
+  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
   const { translate } = useLocalization();
   const separators = useNumberSeparators();
   const stateWords = useStateWords();
   const textScale = useTextScale();
-  const keyKind = useKeyKind();
+  // The view's key kind, which the card names the key number by; capacity before a page has said.
+  const keyKind = (page?.facts?.keyKind ?? "capacity") as KeyKind;
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
   const cardRef = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<{ id: number; left: number; top: number } | null>(null);
@@ -80,32 +81,51 @@ function PointerCard({ pointed, boxRef }: PointerCardProps) {
   const locked = isEntryLocked(entry);
 
   useEffect(() => {
-    // Never in the tick of the render: Cohtml reports the previous layout's sizes then.
-    let inner = 0;
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => {
-        const card = cardRef.current;
-        const box = boxRef.current;
-        if (!card || !box) return;
-        const height = window.innerHeight;
-        const boxRect = remRect(box.getBoundingClientRect(), height);
-        const drawn = remRect(card.getBoundingClientRect(), height);
-        const cells = Array.from(box.querySelectorAll("[data-bbm-item]")).map((cell) => remRect(cell.getBoundingClientRect(), height));
-        const at = placePointerCard({
-          cell: pointed.cell,
-          card: { w: drawn.w, h: drawn.h },
-          box: boxRect,
-          screen: { w: (window.innerWidth * LAYOUT_HEIGHT) / height, h: LAYOUT_HEIGHT },
-          cells,
-        });
-        setPlace({ id: entry.id, left: at.x - boxRect.x, top: at.y - boxRect.y });
+    const card = cardRef.current;
+    const box = boxRef.current;
+    if (!card || !box) return undefined;
+    const id = pointed.entry.id;
+    const place = () => {
+      const height = window.innerHeight;
+      const drawn = drawnCells(box, id, height);
+      const size = remRect(card.getBoundingClientRect(), height);
+      const at = placePointerCard({
+        // Where the cell is drawn now, or where the pointer entered it while it is not.
+        cell: drawn.cell ?? pointed.cell,
+        card: { w: size.w, h: size.h },
+        box: drawn.box,
+        screen: { w: (window.innerWidth * LAYOUT_HEIGHT) / height, h: LAYOUT_HEIGHT },
+        cells: drawn.cells,
       });
-    });
+      const left = at.x - drawn.box.x;
+      const top = at.y - drawn.box.y;
+      setPlace((last) => (last !== null && last.id === id && last.left === left && last.top === top ? last : { id, left, top }));
+    };
+    // Never in the tick of a render or an event: Cohtml reports the previous layout's sizes then.
+    let outer = 0;
+    let inner = 0;
+    const schedule = () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+      outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(place);
+      });
+    };
+    // Cohtml sends no scroll event: a wheel over the box is what scrolls its body.
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(schedule) : null;
+    observer?.observe(box);
+    observer?.observe(card);
+    box.addEventListener("wheel", schedule);
+    window.addEventListener("resize", schedule);
+    schedule();
     return () => {
+      observer?.disconnect();
+      box.removeEventListener("wheel", schedule);
+      window.removeEventListener("resize", schedule);
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, [pointed, boxRef, entry.id]);
+  }, [pointed, boxRef, page]);
 
   const placed = place !== null && place.id === entry.id ? place : null;
 
@@ -150,7 +170,7 @@ function PointerCard({ pointed, boxRef }: PointerCardProps) {
       </span>
     </div>
   );
-}
+});
 
 export interface HoverCardProps {
   /** The box, which the card places itself against and finds the cells drawn in. */
