@@ -54,7 +54,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const { items, totalCount, visibleCount, offset, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, sections, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
   // Where the body draws each building, and so how many one screen holds, which C#'s window reaches past:
   // the slots of the list and the tiles, or the cards the packer places in a screen's rows.
-  const grid = useBodyGrid(body);
+  const grid = useBodyGrid(body, items, sections, offset);
   const cards = useCardsLayout(body, items, sections, offset);
   const slots = grid !== null ? screenSlots(grid) : cards?.screen ?? 0;
   useEffect(() => send(setCatalogScreenCommand(slots)), [slots]);

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { bodyCells, type BlockLabels } from "../src/domain/bodyCells";
 import { bodyGrid, deviceRem, listForm, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
+import type { BuildingCatalogEntry, CatalogSection } from "../src/domain/buildingCatalog";
 import { CATALOG_WINDOW_SCROLL_THRESHOLD, CATALOG_WINDOW_STEP, shouldLoadMore } from "../src/domain/catalogWindow";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { REFERENCE_ASPECT, widthStepWidths } from "../src/domain/widthSteps";
@@ -259,6 +261,15 @@ describe("a small menu's list", () => {
     assert.deepEqual([garbage.form, garbage.picture], ["big", 66]);
   });
 
+  it("draws the big form above 100% text where a body dragged tall gives it the room", () => {
+    // Two lines at 130%, each as tall as the big form's floor there: two name and number lines and 10 to spare.
+    const floor = 2 * (12.5 + 12) * 1.3 + 10;
+    const tall = grown({ menuRows: 3, textScale: 1.3, bodyHeight: 2 * floor + 2.01 });
+
+    assert.deepEqual([tall.form, tall.lines, tall.nameLines, tall.picture], ["big", 2, 2, 66]);
+    assert.equal(grown({ menuRows: 3, textScale: 1.3, bodyHeight: 2 * floor + 1.9 }).form, "plate1");
+  });
+
   it("draws the big form from two of the stylesheet's name lines and number lines and 10 rem to spare", () => {
     // Two lines of plates as tall as the big form's floor, and a sixteenth short of it.
     const floor = 2 * (scaled(".name", "line-height") + scaled(".numbers", "line-height")) + 10;
@@ -277,3 +288,45 @@ function scaled(selector: string, prop: string): number {
   assert.ok(factor, `${selector} ${prop} is ${value}`);
   return Number(factor[1]);
 }
+
+describe("a small menu's list with labels", () => {
+  const rows = (n: number) => Array.from({ length: n }, (_, at) => ({ id: at + 1 }) as BuildingCatalogEntry);
+  const locked = (start: number, count: number): CatalogSection =>
+    ({ id: "locked", kind: "locked", label: "", labelId: "", start, count, collapsed: false });
+  /** The grid for a menu of these rows, with the slots its body draws at its columns, labels included. */
+  const drawn = (count: number, sections: CatalogSection[], blockLabels: BlockLabels, over: Partial<BodyGridInput> = {}) => {
+    const plain = bodyGrid(input({ smallMenusGrow: true, menuRows: count, ...over }));
+    const slots = bodyCells(rows(count), sections, plain.cols, blockLabels).slots;
+    return { grid: bodyGrid(input({ smallMenusGrow: true, menuRows: count, drawnSlots: slots, ...over })), slots };
+  };
+
+  it("gains the line a label's slot needs, so Water's 16 and its Locked label stay inside the body", () => {
+    const { grid, slots } = drawn(16, [locked(8, 8)], "inline");
+
+    assert.equal(slots, 17);
+    assert.equal(grid.lines, 5);
+    assert.ok(slotsHeight(grid, slots) <= ASSET_MENU_DEFAULT_HEIGHT, `${slotsHeight(grid, slots)}`);
+    for (const pixelRem of [deviceRem(1080), deviceRem(720)]) {
+      const { grid: atScreen } = drawn(16, [locked(8, 8)], "inline", { pixelRem });
+      assert.ok(slotsHeight(atScreen, slots) <= 144, `${pixelRem}: ${slotsHeight(atScreen, slots)}`);
+    }
+  });
+
+  it("gains the lines own-line labels take: Garbage's 7 with its Locked label on a line of its own", () => {
+    // Three buildable rows, the label's line, then four locked rows: twelve slots at four across.
+    const { grid, slots } = drawn(7, [locked(3, 4)], "ownLine");
+
+    assert.equal(slots, 12);
+    assert.deepEqual([grid.lines, grid.cellHeight, grid.form], [3, 46.75, "plate2"]);
+    assert.ok(slotsHeight(grid, slots) <= ASSET_MENU_DEFAULT_HEIGHT);
+  });
+
+  it("keeps a menu's own growth where its labels fit the lines it grew to, and the form's own where they need more", () => {
+    const garbage = drawn(7, [locked(4, 3)], "inline").grid;
+    // More slots than the form's own lines show: the list scrolls, as it does for a menu that never grew.
+    const past = bodyGrid(input({ smallMenusGrow: true, menuRows: 16, drawnSlots: 21 }));
+
+    assert.deepEqual([garbage.lines, garbage.form], [2, "big"]);
+    assert.deepEqual([past.lines, past.cellHeight], [5, 27.25]);
+  });
+});

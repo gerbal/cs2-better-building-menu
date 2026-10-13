@@ -5,6 +5,8 @@ import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
+import { drawnBodyHeight } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_DEFAULT_HEIGHT } from "../../src/domain/sharedContracts.generated";
 
 const page = (over: Record<string, unknown> = {}) =>
   setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], over));
@@ -55,6 +57,24 @@ describe("the catalog container", () => {
       assert.ok(html.indexOf('class="loadMoreRow"') > html.indexOf('data-scrollable="true"'), body);
     });
   }
+
+  it("grows a small menu's list to hold its Locked label too, its slots no taller than the body", () => {
+    // Water's 16 in its tab, the locked half after D24's label: 17 slots, more than 4 grown lines hold.
+    const menu = "Water & Sewage";
+    showBody("list", menu);
+    setBinding("BetterBuildingMenu", "MenuShares", [{ menu, rows: 16, costOrCapacity: 16, capacity: 16, locked: 8 }]);
+    page({
+      items: Array.from({ length: 16 }, (_, at) => entry(at + 1)),
+      totalCount: 16,
+      sections: [{ id: "locked", kind: "locked", label: "", labelId: "", start: 8, count: 8, collapsed: false }],
+    });
+    const html = render();
+    const slots = Number(/class="slots" style="height:([\d.]+)rem"/.exec(html)?.[1]);
+
+    assert.equal((html.match(/data-bbm-item="true"/g) ?? []).length, 16);
+    assert.match(html, /data-bbm-label="locked"/);
+    assert.ok(slots > 0 && slots <= drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT), `${slots}`);
+  });
 
   it("groups the digits of the cap line's count like every other number in the asset menu", () => {
     // Built by hand, the count reads "Showing 2000 of 4206" beside cells that

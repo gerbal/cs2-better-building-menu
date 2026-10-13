@@ -57,12 +57,14 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
   const picture = big ? { width: `${grid.picture}rem`, height: `${grid.picture}rem` } : undefined;
   const words = (
     <>
-      {/* Plain text, no spans: Cohtml drops the space after an inline element, and never breaks at a hyphen. */}
+      {/* Plain text, no spans: Cohtml drops the space after an inline element, and never breaks at a
+          hyphen. */}
       <p className={classNames(styles.name, grid.nameLines === 1 && styles.oneLine)} data-bbm-name={name.length} {...{ cohinline: "" }}>
         {name}
       </p>
       <div className={styles.numbers} data-bbm-fact="true">
-        {/* The mark and the number each in their own box: no bare text beside an element in a flex row. */}
+        {/* The mark and the number each in their own box: no bare text beside an element in a flex
+            row. */}
         <span className={styles.firstLine}>
           {enter && <img className={styles.enterMark} style={{ maskImage: `url(${enterMark})` }} alt="" aria-hidden="true" />}
           <span className={classNames(styles.first, numbers.locked && styles.milestone)}>{numbers.first}</span>
@@ -100,7 +102,8 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
           />
           <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
         </span>
-        {/* A big plate stacks its name over its numbers beside the picture; the others line all three up. */}
+        {/* A big plate stacks its name over its numbers beside the picture; the others line all three
+            up. */}
         {big ? <span className={styles.bigWords}>{words}</span> : words}
       </Button>
     </BuildingHoverCard>

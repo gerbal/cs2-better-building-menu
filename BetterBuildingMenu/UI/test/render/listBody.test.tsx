@@ -228,6 +228,23 @@ describe("the list", () => {
     assert.match(render(rows(1)), /<span class="artwork"><img class="picture" src="" alt=""/);
   });
 
+  it("draws the big form above 100% text with none of the one-line plate's sizes, its picture inline", () => {
+    // Three rows at 130% in a body dragged tall: two lines, each past the big form's floor there.
+    const html = render(rows(3), { over: { menuRows: 3, smallMenusGrow: true, textScale: 1.3, bodyHeight: 200 } });
+
+    assert.equal(count(html, /class="plate big"/), 3);
+    assert.equal(count(html, /largeText/), 0);
+    assert.match(html, /<span class="artwork" style="width:66rem;height:66rem"><img class="picture" src="" style="width:66rem;height:66rem"/);
+    assert.equal(count(html, /class="second"/), 3);
+    // Whatever the large-text artwork sets, the big one sets for itself: its size inline, the rest in its rule.
+    const sheet = "mods/Bodies/listBody.module.scss";
+    const [large, big, plain] = [".largeText .artwork", ".big .artwork", ".artwork"].map((selector) => declarationsOf(sheet, selector));
+    for (const prop of Object.keys(large)) {
+      assert.ok(prop === "width" || prop === "height" || prop in big || large[prop] === plain[prop], prop);
+    }
+    assert.equal(big.flex, "0 0 auto");
+  });
+
   it("gives the big form both numbers and Enter's mark, and a grown one-line plate one number on two name lines", () => {
     const facts = () => ({ constructionCost: 85000, capacity: 400 });
     const big = render(rows(7, facts), { enterId: 2, over: { menuRows: 7, smallMenusGrow: true } });
