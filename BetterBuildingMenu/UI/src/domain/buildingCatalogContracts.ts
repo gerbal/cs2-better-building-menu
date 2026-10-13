@@ -37,7 +37,7 @@ export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>
   createTriggerCommand("ClearBuildingCatalogMetricRanges");
 export const searchChangedCommand = (value: string): TriggerCommand => createTriggerCommand("SearchChanged", value);
 // A row a press, down for 1: C# walks the rows that can be placed and stops at the list's ends, so a
-// key held past one is harmless.
+// key held past one leaves the target at the end. Each press is a refresh, so the keys send one at a time.
 export const moveEnterTargetCommand = (direction: 1 | -1): TriggerCommand => createTriggerCommand("MoveEnterTarget", direction);
 
 /** Whether a sort's first click puts the highest first, which C# says per sort (SortDefaults). */

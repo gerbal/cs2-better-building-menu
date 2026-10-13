@@ -97,7 +97,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, status, hasMore, capped, bestMatchId, searchText: pageSearch, anchorId, anchorIndex, listStart, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
+  const { items, totalCount, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -238,8 +238,9 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   useScrollAnchor(rootRef, anchorKey, { listStart, anchorId, anchorIndex, itemCount: items.length });
 
   // Up, Down, PageUp and PageDown while the search field has the keys; Up and Down only once the
-  // field names a target, the page answering the query in it.
-  useSearchFieldKeys(rootRef, bestMatchId !== null && pageAnswers({ searchText: pageSearch }, currentSearch ?? ""));
+  // field names a target, the page answering the query in it. A move is answered by a new step or
+  // by a page for a new query.
+  useSearchFieldKeys(rootRef, bestMatchId !== null && pageAnswers({ searchText: pageSearch }, currentSearch ?? ""), `${pageSearch}\n${enterStep}`);
 
   // Enter arms the backend's best match by id, wherever its row is, so a search
   // can be finished without leaving the keyboard. One listener for every view, on

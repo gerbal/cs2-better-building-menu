@@ -31,6 +31,8 @@ export interface CatalogWindow {
   bestMatchId: number | null;
   /** The search this page answers, which trails the box by a debounce. */
   searchText: string;
+  /** Where Enter's target sits past the best match, as the page serves it; see BuildingCatalogPage. */
+  enterStep: number;
   /** The row the list starts at, and its place in the result; see BuildingCatalogPage. */
   anchorId: number;
   anchorIndex: number;
@@ -59,6 +61,7 @@ export function useCatalogWindow(
   const capped = page?.capped ?? false;
   const bestMatchId = page?.bestMatchId ?? null;
   const searchText = page?.searchText ?? "";
+  const enterStep = page?.enterStep ?? 0;
   const anchorId = page?.anchorId ?? 0;
   const anchorIndex = page?.anchorIndex ?? -1;
   const listStart = page?.listStart ?? null;
@@ -138,5 +141,5 @@ export function useCatalogWindow(
     };
   }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, anchorId, anchorIndex, listStart, loadMore };
+  return { items, totalCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, enterStep, anchorId, anchorIndex, listStart, loadMore };
 }

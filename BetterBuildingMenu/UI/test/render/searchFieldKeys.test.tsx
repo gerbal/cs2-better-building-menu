@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import type { RefObject } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { fakeField, fakeSearchField, keysPage, type KeysPage } from "../harness/fakeKeys";
@@ -38,8 +38,8 @@ function press(key: string, keyCode: number, target: unknown = fakeSearchField()
 
 const moves = () => triggers.filter((call) => call.name === "MoveEnterTarget").map((call) => call.args[0]);
 
-const Probe = ({ list, canMove }: { list: RefObject<HTMLElement>; canMove: boolean }) => {
-  useSearchFieldKeys(list, canMove);
+const Probe = ({ list, canMove, answered }: { list: RefObject<HTMLElement>; canMove: boolean; answered: string }) => {
+  useSearchFieldKeys(list, canMove, answered);
   return null;
 };
 
@@ -61,17 +61,68 @@ describe("the search field's keys", () => {
 
   const mount = (list: ReturnType<typeof fakeList>, canMove = true) =>
     act(() => {
-      root = create(<Probe list={list.ref} canMove={canMove} />);
+      root = create(<Probe list={list.ref} canMove={canMove} answered="rail\n0" />);
     });
 
+  /** The page answers: what the box was given to tell one page from the next changes. */
+  const answer = (list: ReturnType<typeof fakeList>, answered: string) =>
+    act(() => root?.update(<Probe list={list.ref} canMove answered={answered} />));
+
   it("moves Enter's target a row down on Down and up on Up, from the search field", () => {
-    mount(fakeList(50));
+    const list = fakeList(50);
+    mount(list);
 
     const down = press("ArrowDown", 40);
+    answer(list, "rail\n1");
     press("", 38);
 
     assert.deepEqual(moves(), [1, -1]);
     assert.equal(down.prevented, true, "the one-line field has no use for it");
+  });
+
+  it("sends one move while a key repeats before the page answers, and the next once it has", () => {
+    const list = fakeList(50);
+    mount(list);
+
+    const repeats = [press("ArrowDown", 40), press("ArrowDown", 40), press("ArrowDown", 40)];
+    assert.deepEqual(moves(), [1], "one move in flight");
+    assert.ok(repeats.every((event) => event.prevented), "the dropped repeats still keep the caret in place");
+
+    answer(list, "rail\n1");
+    press("ArrowDown", 40);
+    press("ArrowDown", 40);
+
+    assert.deepEqual(moves(), [1, 1]);
+  });
+
+  it("takes the next move once a page lands for a new query", () => {
+    const list = fakeList(50);
+    mount(list);
+
+    press("ArrowDown", 40);
+    answer(list, "railw\n0");
+    press("ArrowUp", 38);
+
+    assert.deepEqual(moves(), [1, -1]);
+  });
+
+  it("takes the next move after a moment when the page never changes, as when a move ran past an end", () => {
+    mock.timers.enable({ apis: ["setTimeout"] });
+
+    try {
+      mount(fakeList(50));
+
+      press("ArrowDown", 40);
+      press("ArrowDown", 40);
+      assert.deepEqual(moves(), [1]);
+
+      act(() => mock.timers.tick(300));
+      press("ArrowUp", 38);
+
+      assert.deepEqual(moves(), [1, -1]);
+    } finally {
+      mock.timers.reset();
+    }
   });
 
   it("moves nothing while there is no target to move", () => {

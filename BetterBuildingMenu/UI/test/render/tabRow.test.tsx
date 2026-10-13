@@ -183,6 +183,22 @@ describe("the tab row", () => {
     assert.doesNotMatch(html, /<span class="name">Education<\/span>/);
   });
 
+  it("keeps each picture over its count at a wide step while the developer knob says Never", () => {
+    seedRoads();
+    set("AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: false });
+    const html = renderHtml(<TabRow width={893} />);
+
+    assert.match(html, /data-tab-form="stack"/);
+    assert.doesNotMatch(html, /<span class="name">SmallRoads<\/span>/);
+  });
+
+  it("reads a tuning without the knob as names on", () => {
+    seedRoads();
+    set("AssetMenuTuning", { developerMode: true, interfaceStyles: true });
+
+    assert.match(renderHtml(<TabRow width={893} />), /data-tab-form="named"/);
+  });
+
   it("keeps each picture over its count at the first step", () => {
     seedRoads();
     const html = render();
