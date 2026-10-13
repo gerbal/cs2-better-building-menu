@@ -1227,12 +1227,17 @@ sets the side; the text scale leaves it. The picture is 42, a rem inside the pla
   pill's tokens; a word too wide for the icon is left off, never cut. The plate's tone alternates with
   each run of one family's members (`familyTones`), a class, as Cohtml has no `:nth-child(an+b)`, so a run
   reads as one: icons in no family keep the tone of the run they stand in.
-- **A locked icon** is dark, its lock over the milestone it waits for ("MS n", else the locked word);
-  the armed one is solid.
+- **A locked icon** is dark, on a plate of its own (`--bbm-iconLocked`), apart from both family tones,
+  so a lock never reads as a run's edge: under the game's styles, whose panels give the tones and the
+  lit plate, it is bare. Its lock stands over the milestone it waits for ("MS n", else the locked word),
+  the word left off where it is wider than the icon at the text scale, never cut. Nothing meets the
+  lock at any text scale (`iconPlate.ts`): a pill that would gives way. The armed icon is solid.
 - **A label** takes two icons' slots, 90 × 44, its name over its count, and starts the next line rather
-  than split across two (`bodyCells`' label span, `labelSlots`).
+  than split across two (`bodyCells`' label span, `labelSlots`). Its name takes the lines the plate's
+  height holds with the count's (`labelNameBox`): two at 100% text, one above it.
 - **The icons with names**, a developer's VIEW pick (`iconsNamed`), draw each name planned over two lines
-  in a band over the icon's foot, in place of the pill: the body the timed check compares with the icons.
+  in a band over the icon's foot, in place of the pill, the lock and its word side by side above it; the
+  band gives up a line where it would meet them.
 
 A small menu drawn as icons opens on All where its rows and labels fit the 45 (see "Opening on the
 building's tab").

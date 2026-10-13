@@ -72,6 +72,44 @@ describe("the icons", () => {
     assert.match(html, /left:93rem;top:50\.125rem;width:44rem;height:44rem[^>]*data-catalog-entry="13"/);
   });
 
+  it("plan a label's name in the lines its plate holds over its count: one at 125% and 150% text", () => {
+    const sections: CatalogSection[] = [{ id: "group:0", kind: "group", label: "Props Nature", labelId: "", start: 0, count: 2, collapsed: false }];
+
+    for (const scale of [1.25, 1.5]) {
+      setBinding("options", "textScale", scale);
+      assert.match(render(rows(2), { sections }), /<span class="planned labelText"><span class="line">[^<]*<\/span><\/span><span class="labelCount">2<\/span>/, `at ${scale}`);
+    }
+  });
+
+  it("keep a locked family member's lock clear of its pill, its word whole or left off, at every text scale", () => {
+    const locked = (id: number, milestone: number) => entry(id, { ...boulder(id), isLocked: true, unlockMilestone: milestone } as Partial<BuildingCatalogEntry>);
+    const at = (scale: number) => {
+      setBinding("options", "textScale", scale);
+      return render([locked(1, 4), locked(2, 0)]);
+    };
+
+    const normal = at(1);
+    assert.equal(count(normal, /data-bbm-pill="true"/), 2);
+    assert.match(normal, /<span class="milestone" data-bbm-fact="true">Locked<\/span>/);
+    for (const scale of [1.25, 1.5]) {
+      const large = at(scale);
+      // The pill gives way to the lock and "MS 4"; "Locked" is wider than the icon, so that lock stands
+      // alone, and the pill under it clears it.
+      assert.equal(count(large, /data-bbm-pill="true"/), 1, `at ${scale}`);
+      assert.match(large, /data-catalog-entry="2"[^>]*>(?:(?!<\/button>).)*data-bbm-pill="true">02</, `at ${scale}`);
+      assert.match(large, /<span class="milestone" data-bbm-fact="true">MS 4<\/span>/, `at ${scale}`);
+      assert.equal(count(large, /data-bbm-fact="true"/), 1, `at ${scale}`);
+      assert.equal(count(large, /LockRaster\.png/), 2, `at ${scale}`);
+    }
+  });
+
+  it("give up a band line under a locked icon's lock row at 150% text, for the icons with names", () => {
+    setBinding("options", "textScale", 1.5);
+    const html = render([entry(1, { ...boulder(1), isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>)], { named: true });
+
+    assert.match(html, /<span class="nameBand"><span class="planned"[^>]*>(<span class="line">[^<]*<\/span>){1}<\/span><\/span>/);
+  });
+
   it("draw each name planned over two lines in place of the pill, for the icons with names", () => {
     const html = render([1, 2, 3].map((id) => entry(id, boulder(id))), { named: true });
 

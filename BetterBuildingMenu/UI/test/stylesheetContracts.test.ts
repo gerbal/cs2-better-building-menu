@@ -585,6 +585,19 @@ describe("an icon's pill and name band are the sizes the UI budgets them at", ()
     assert.equal(band["font-size"], "calc(10rem * var(--fontScale))");
     assert.equal(rem(band.left) + rem(band.right) + rem(left) + rem(right), 4);
   });
+
+  it("stacks a locked icon's plate as iconPlate.ts and pillText measure it: the lock, its word, the pill, the band", () => {
+    const icons = (selector: string) => declarationsOf(ICONS, selector);
+
+    assert.deepEqual([icons(".locked").top, icons(".lockedRow").top], ["4rem", "2rem"]);
+    assert.deepEqual([icons(".lockGlyph").width, icons(".lockGlyph").height], ["13rem", "13rem"]);
+    assert.equal(icons(".milestone")["font-size"], "calc(10rem * var(--fontScale))");
+    assert.equal(icons(".milestone")["line-height"], "calc(11rem * var(--fontScale))");
+    assert.equal(icons(".pill").bottom, "2rem");
+    assert.equal(icons(".pillWord").height, "calc(12rem * var(--fontScale))");
+    assert.equal(icons(".nameBand").bottom, "1rem");
+    assert.equal(icons(".nameBand")["line-height"], "calc(12rem * var(--fontScale))");
+  });
 });
 
 describe("the hover card's name is the size the UI plans it at", () => {

@@ -37,6 +37,8 @@ $standard: (
   icon: rgba(98, 128, 138, 0.34),
   iconAlt: rgba(98, 128, 138, 0.21),
   iconAlt2: rgba(98, 128, 138, 0.21),
+  // A locked icon's plate, apart from both family tones, so a lock never reads as a run's edge.
+  iconLocked: rgba(255, 255, 255, 0.08),
   radiusItem: 4rem,
   radiusTile: 6rem,
   labBg: ink(0.06),
@@ -134,6 +136,8 @@ $standard-follow: (
   icon: var(--menuPanel1),
   iconAlt: var(--menuPanel2),
   iconAlt2: var(--menuPanel2),
+  // The style's panels give the two tones and the lit plate: a locked icon's plate is bare, on the body.
+  iconLocked: transparent,
   track: var(--menuPanel2),
   thumb: var(--menuText2Normal),
   tName: var(--menuText1Normal),

@@ -17,10 +17,10 @@
 
 @include cell-lit(".icon");
 
-// A building that cannot be placed, locked or a unique the city holds: dark.
+// A building that cannot be placed, locked or a unique the city holds: dark, apart from both tones.
 .unplaceable,
 .unplaceable:hover {
-  background-color: var(--bbm-tileLocked);
+  background-color: var(--bbm-iconLocked);
 }
 
 // The one armed building: solid.
@@ -52,7 +52,8 @@
 }
 
 // Why a locked icon waits: its lock over "MS n", in the body's milestone ink, which turns dark on a
-// plate a style makes light, in the picture's upper part, clear of a pill at its foot.
+// plate a style makes light, in the picture's upper part. iconPlate.ts places it and keeps the pill and
+// the band clear of it.
 .locked {
   position: absolute;
   left: 0;

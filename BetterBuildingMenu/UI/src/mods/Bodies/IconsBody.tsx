@@ -10,6 +10,7 @@ import { labelPlace, labelSlots, slotPosition, slotsHeight, type BodyGrid } from
 import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedFact, lockedThumbnail } from "domain/buildingLockState";
 import { familyTones, pillText } from "domain/iconFamilies";
+import { bandLines, lockedBlock } from "domain/iconPlate";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$ } from "mods/bindings";
@@ -57,7 +58,11 @@ const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textSca
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   // A cell that goes from under the pointer sends no leave: it takes its own building away as it goes.
   useEffect(() => () => clearPointed(entry.id), [entry.id]);
-  const pill = named ? "" : pillText(entry, grid.cellWidth, textScale);
+  // The lock, then the pill or the band under it, each giving way where it would meet what is over it.
+  const lock = locked ? lockedBlock(lockedFact(entry, stateWords.locked, achievedMilestone), grid.cellWidth, textScale, named) : null;
+  const over = lock?.foot ?? 0;
+  const pill = named ? "" : pillText(entry, grid.cellWidth, textScale, over);
+  const nameLines = named ? bandLines(grid.cellWidth, textScale, over) : 0;
   // Inset a rem on every side; inline, as Icon size sizes it.
   const picture = { width: `${grid.picture}rem`, height: `${grid.picture}rem` };
 
@@ -90,11 +95,11 @@ const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textSca
         />
         <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
       </span>
-      {locked && (
+      {lock !== null && (
         <span className={classNames(styles.locked, named && styles.lockedRow)}>
           {/* A raster, because a masked vector is what this engine cannot draw. */}
           <img className={styles.lockGlyph} src="coui://betterbuildingmenu/LockRaster.png" alt="" aria-hidden="true" />
-          <span className={styles.milestone} data-bbm-fact="true">{lockedFact(entry, stateWords.locked, achievedMilestone)}</span>
+          {lock.word !== "" && <span className={styles.milestone} data-bbm-fact="true">{lock.word}</span>}
         </span>
       )}
       {pill !== "" && (
@@ -102,9 +107,9 @@ const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textSca
           <span className={styles.pillWord} data-bbm-pill="true">{pill}</span>
         </span>
       )}
-      {named && (
+      {nameLines > 0 && (
         <span className={styles.nameBand}>
-          <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={2} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} />
+          <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={nameLines} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} />
         </span>
       )}
     </Button>

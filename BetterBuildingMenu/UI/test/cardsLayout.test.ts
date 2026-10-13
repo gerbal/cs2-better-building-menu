@@ -176,10 +176,24 @@ describe("the room a held card's or a label's name is planned in", () => {
     const [, padding] = sides(plate.padding).map(rem);
     const [, stacked] = sides(declarationsOf(LABELS, ".stacked").padding).map(rem);
 
-    assert.deepEqual(labelNameBox("66", 171, false, 1), { width: 171 - 2 * padding - rem(plate.gap) - textWidth("66", font) - 2 * tracking, lines: 1, font, tracking });
-    assert.deepEqual(labelNameBox("62", 64, true, 1.3), { width: 64 - 2 * stacked, lines: 2, font: font * 1.3, tracking });
+    assert.deepEqual(labelNameBox("66", 171, false, 1, 27), { width: 171 - 2 * padding - rem(plate.gap) - textWidth("66", font) - 2 * tracking, lines: 1, font, tracking });
+    assert.deepEqual(labelNameBox("62", 64, true, 1.3, 64), { width: 64 - 2 * stacked, lines: 2, font: font * 1.3, tracking });
     // A plate sized from its words holds them whole.
-    assert.ok(planName("SMALL ROADS", labelNameBox("66", labelWidth("Small Roads", "66", 1), false, 1)).whole);
+    assert.ok(planName("SMALL ROADS", labelNameBox("66", labelWidth("Small Roads", "66", 1), false, 1, 27)).whole);
+  });
+
+  it("plans an icons label's name in the lines its 44 plate holds over its count, so no scale clips it", () => {
+    const line = rem(/calc\(([\d.]+rem)/.exec(declarationsOf(LABELS, ".label")["line-height"])![1]);
+    const held = [1, 1.25, 1.5].map((scale) => {
+      const box = labelNameBox("12", 90, true, scale, 44);
+      const plan = planName("PROPS NATURE", box);
+      assert.ok((plan.lines.length + 1) * line * scale <= 44, `${plan.lines.length} lines and the count at ${scale}`);
+      return box.lines;
+    });
+
+    assert.deepEqual(held, [2, 1, 1]);
+    // A tile's square holds two lines over its count at 150%.
+    assert.equal(labelNameBox("12", 64, true, 1.5, 64).lines, 2);
   });
 });
 

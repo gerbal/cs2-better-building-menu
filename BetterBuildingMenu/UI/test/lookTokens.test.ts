@@ -55,8 +55,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["bodyChipText", "bodyChipBg"], ["bodyChipDim", "bodyChipBg"], ["bodyWord", "bodyChipBg"],
   ["bodyCtlText", "bodyCtl"], ["bodyCtlDim", "bodyCtl"], ["bodyLabel", "body"],
   ["bodyMilestone", "plateLocked"], ["bodyEntMark", "plate"],
-  // The icons: a locked icon's "MS n" on its dark plate.
-  ["bodyMilestone", "tileLocked"],
+  // The icons: a locked icon's "MS n" on its own plate, bare under the styles, so on the body.
+  ["bodyMilestone", "body"],
   // The label plates: a group's name, its count, and Locked.
   ["bodyWord", "labBg"], ["bodyChipDim", "labBg"], ["bodyMilestone", "labBg"],
   // The cards: Enter's mark on its badge.
@@ -160,10 +160,21 @@ describe("the looks' tokens", () => {
     const icons = "mods/Bodies/iconsBody.module.scss";
 
     assert.equal(declarationsOf(icons, ".milestone").color, "var(--bbm-bodyMilestone)");
-    assert.equal(declarationsOf(icons, ".unplaceable")["background-color"], "var(--bbm-tileLocked)");
+    assert.equal(declarationsOf(icons, ".unplaceable")["background-color"], "var(--bbm-iconLocked)");
     assert.equal(declarationsOf(icons, ".pillWord")["background-color"], "var(--bbm-pillBg)");
     assert.equal(declarationsOf(icons, ".pillWord").color, "var(--bbm-pillText)");
     for (const selector of [STANDARD, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).pillBg), selector);
+  });
+
+  it("give a locked icon a plate apart from both family tones and the lit plate, in the look and under every style", () => {
+    for (const selector of [STANDARD, ...FOLLOW]) {
+      const map = tokens(selector);
+
+      assert.ok(map.iconLocked, `${selector}: no iconLocked`);
+      // Bare, or a plate no style turns light, so "MS n" stands on what the body pair above pins.
+      assert.ok(map.iconLocked === "transparent" || !turnsLight(map.iconLocked), selector);
+      for (const other of ["icon", "iconAlt", "plateHover"]) assert.notEqual(map.iconLocked, map[other], `${selector}: iconLocked and ${other}`);
+    }
   });
 
   it("draw the tiles' milestone in the look's amber on the tag, whose dark ground no style turns light", () => {

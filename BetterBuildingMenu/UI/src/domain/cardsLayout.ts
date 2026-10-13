@@ -45,10 +45,11 @@ const SORTED_GAP = 8;
 const TEXT_SLACK = 2;
 
 /**
- * A label plate's caps at 100% text, their tracking per character, its padding each side and the gap
- * to its count; in a tile's square, its padding each side: labelPlate.module.scss.
+ * A label plate's caps and line at 100% text, their tracking per character, its padding each side and
+ * the gap to its count; in a tile's square, its padding each side: labelPlate.module.scss.
  */
 const LABEL_FONT = 10;
+const LABEL_LINE = 12;
 const LABEL_TRACKING = 0.4;
 const LABEL_PADDING = 6;
 const LABEL_GAP = 4;
@@ -137,12 +138,16 @@ export function cardNameBox(text: CardText, width: number, textScale: number): N
 }
 
 /**
- * The box a label plate's name is planned in, its caps tracked: beside its count on one line, or in a
- * tile's square over two lines, its count under it.
+ * The box a label plate's name is planned in, its caps tracked: beside its count on one line, or stacked
+ * over its count in a tile's square or two icons, over the two lines the plate's height holds with the
+ * count's, else one.
  */
-export function labelNameBox(count: string, width: number, stacked: boolean, textScale: number): NameBox {
+export function labelNameBox(count: string, width: number, stacked: boolean, textScale: number, height: number): NameBox {
   const font = LABEL_FONT * textScale;
-  if (stacked) return { width: width - 2 * STACKED_PADDING, lines: 2, font, tracking: LABEL_TRACKING };
+  if (stacked) {
+    const lines = Math.max(1, Math.min(2, Math.floor(height / (LABEL_LINE * textScale)) - 1));
+    return { width: width - 2 * STACKED_PADDING, lines, font, tracking: LABEL_TRACKING };
+  }
 
   return { width: width - 2 * LABEL_PADDING - LABEL_GAP - textWidth(count, font) - count.length * LABEL_TRACKING, lines: 1, font, tracking: LABEL_TRACKING };
 }

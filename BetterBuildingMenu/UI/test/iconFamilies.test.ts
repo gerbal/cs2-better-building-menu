@@ -16,6 +16,17 @@ describe("the icons' families", () => {
   it("leave off a pill too wide for its icon rather than cut it", () => {
     assert.equal(pillText(icon(1, "Wall", "1000x1000"), 44, 1), "");
     assert.equal(pillText(icon(2, "Boulder", "05"), 44, 1.5), "05");
+    // A word that fits at 100% text grows past the icon at 150%.
+    assert.equal(pillText(icon(3, "Wall", "2x10"), 44, 1), "2x10");
+    assert.equal(pillText(icon(3, "Wall", "2x10"), 44, 1.5), "");
+  });
+
+  it("leave off a pill that would meet what stands over it, a locked icon's lock", () => {
+    // The pill's top is 2 + 12 × the scale from the icon's foot.
+    assert.equal(pillText(icon(1, "Boulder", "05"), 44, 1, 30), "05");
+    assert.equal(pillText(icon(1, "Boulder", "05"), 44, 1, 30.5), "");
+    assert.equal(pillText(icon(1, "Boulder", "05"), 44, 1.5, 24), "05");
+    assert.equal(pillText(icon(1, "Boulder", "05"), 44, 1.5, 24.5), "");
   });
 
   it("alternate the plate's tone with each family run, the icons in no family keeping theirs", () => {
