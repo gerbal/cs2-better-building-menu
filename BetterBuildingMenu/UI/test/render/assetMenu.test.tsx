@@ -307,6 +307,52 @@ describe("the asset menu's look", () => {
     assert.equal(box.style["--bbm-a-popBg"], "0.604");
   });
 
+  it("draws the look the settings hold, Standard for one not finished, and says which", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    const plates = render();
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "glass");
+    const glass = render();
+
+    assert.ok(boxOf(plates).classes.includes("plates") && boxOf(plates).classes.includes("followStyle"), boxOf(plates).classes.join(" "));
+    assert.ok(!boxOf(plates).classes.includes("standard"));
+    assert.match(plates, /data-bbm-look="plates"/);
+    assert.ok(boxOf(glass).classes.includes("standard"), boxOf(glass).classes.join(" "));
+    assert.match(glass, /data-bbm-look="standard"/);
+  });
+
+  it("switches the look in place: the box takes the new class and mounts nothing again", () => {
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const saved = { document: globals.document, frame: globals.requestAnimationFrame, cancel: globals.cancelAnimationFrame };
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+    let boxes = 0;
+    let root: ReactTestRenderer | undefined;
+
+    try {
+      act(() => {
+        root = create(<AssetMenu onClose={() => {}} />, {
+          createNodeMock: (element) => {
+            if (String(element.props.className ?? "").split(" ").includes("toolContainer")) boxes += 1;
+            return null;
+          },
+        });
+      });
+      const box = () => root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("toolContainer"));
+
+      act(() => setBinding("BetterBuildingMenu", "AssetMenuLook", "plates"));
+      assert.ok(String(box().props.className).split(" ").includes("plates"));
+      act(() => setBinding("BetterBuildingMenu", "AssetMenuLook", "standard"));
+      assert.ok(String(box().props.className).split(" ").includes("standard"));
+      assert.equal(boxes, 1, "the box mounted once");
+    } finally {
+      act(() => root?.unmount());
+      globals.document = saved.document;
+      globals.requestAnimationFrame = saved.frame;
+      globals.cancelAnimationFrame = saved.cancel;
+    }
+  });
+
   it("keeps the look's own colours under every style while the knob says so", () => {
     setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: false });
     const box = boxOf(render());

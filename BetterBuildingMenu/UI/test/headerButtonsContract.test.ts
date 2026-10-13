@@ -6,10 +6,11 @@ import { declarationsOf, everyDeclaration } from "./harness/compiledCss.ts";
 // and press, its glyph in the look's light ink, 4 rem after what comes before it.
 const TOP_ROW = "mods/TopRow/topRow.module.scss";
 const LOOKS = "looks/looks.module.scss";
-const STYLES = [
-  ":global(.style--bright-blue) .standard.followStyle",
-  ":global(.style--dark-grey-orange) .standard.followStyle",
-];
+const STYLES = ["standard", "plates"].flatMap((look) => [
+  `.${look}`,
+  `:global(.style--bright-blue) .${look}.followStyle`,
+  `:global(.style--dark-grey-orange) .${look}.followStyle`,
+]);
 
 describe("the top row's close", () => {
   const close = declarationsOf(TOP_ROW, ".menuClose");

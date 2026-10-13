@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { releasedLooks } from "../src/domain/looks.ts";
 import { declarationsOf, everyDeclaration, moduleSheets } from "./harness/compiledCss.ts";
 
 /**
@@ -8,10 +9,12 @@ import { declarationsOf, everyDeclaration, moduleSheets } from "./harness/compil
  */
 const LOOKS = "looks/looks.module.scss";
 const STANDARD = ".standard";
-const FOLLOW = [
-  ":global(.style--bright-blue) .standard.followStyle",
-  ":global(.style--dark-grey-orange) .standard.followStyle",
-];
+/** Every finished look's own rule, and its rule under each of the game's two other interface styles. */
+const OWN = releasedLooks().map((look) => `.${look.id}`);
+const FOLLOW = releasedLooks().flatMap((look) => [
+  `:global(.style--bright-blue) .${look.id}.followStyle`,
+  `:global(.style--dark-grey-orange) .${look.id}.followStyle`,
+]);
 /** The sheets that declare or read the tokens: each sheet that starts reading them joins. */
 const TOKEN_SHEETS = moduleSheets().filter((sheet) =>
   everyDeclaration(sheet).some(({ prop, value }) => prop.startsWith("--bbm-") || value.includes("var(--bbm-")));
@@ -71,15 +74,29 @@ const turnsLight = (value: string): boolean => /--panelColorNormal|--menuPanel/.
 const styleInk = (value: string): boolean => /--menuText|--menuTitle/.test(value);
 
 describe("the looks' tokens", () => {
-  it("give every interface style the keys the look declares, and no others", () => {
+  it("give every look and every interface style the keys Standard declares, and no others", () => {
     const keys = Object.keys(tokens(STANDARD)).sort();
 
     assert.ok(keys.length >= 70, `the look declares ${keys.length} keys`);
-    for (const selector of FOLLOW) assert.deepEqual(Object.keys(tokens(selector)).sort(), keys, selector);
+    assert.deepEqual(OWN, [".standard", ".plates"]);
+    for (const selector of [...OWN, ...FOLLOW]) assert.deepEqual(Object.keys(tokens(selector)).sort(), keys, selector);
+  });
+
+  it("draw Plates as Standard but for its tiles, its pills, tags and bands, and its plated tabs", () => {
+    const standard = tokens(STANDARD);
+    const plates = tokens(".plates");
+    const moved = Object.keys(standard).filter((key) => plates[key] !== standard[key]).sort();
+
+    // Its name bands' ground is the one Standard declares.
+    assert.deepEqual(moved, ["pillBg", "tabHover", "tabUnlit", "tagBg", "tile"]);
+    assert.equal(plates.tile, "rgba(98, 128, 138, 0.34)");
+    for (const key of ["bandBg", "pillBg", "tagBg"]) assert.equal(plates[key], "rgba(20, 27, 34, 0.66)", key);
+    assert.equal(plates.tabUnlit, "rgba(98, 128, 138, 0.2)");
+    assert.equal(plates.tabHover, "rgba(98, 128, 138, 0.3)");
   });
 
   it("hold one kind of value per key, in the look and under every style", () => {
-    for (const selector of [STANDARD, ...FOLLOW]) {
+    for (const selector of [...OWN, ...FOLLOW]) {
       for (const [key, value] of Object.entries(tokens(selector))) {
         const kind = KIND[key] ?? "colour";
         assert.match(value, PATTERN[kind], `${selector} --bbm-${key} is not a ${kind}`);
@@ -88,7 +105,7 @@ describe("the looks' tokens", () => {
   });
 
   it("never put light ink on a panel a style turns light, nor a style's ink on the look's own panel", () => {
-    for (const selector of [STANDARD, ...FOLLOW]) {
+    for (const selector of [...OWN, ...FOLLOW]) {
       const map = tokens(selector);
 
       for (const [ink, surface] of INK_ON) {
@@ -116,8 +133,10 @@ describe("the looks' tokens", () => {
 
     assert.equal(declarationsOf(list, ".milestone").color, "var(--bbm-bodyMilestone)");
     assert.equal(declarationsOf(list, ".enterMark")["background-color"], "var(--bbm-bodyEntMark)");
-    assert.equal(tokens(STANDARD).bodyMilestone, tokens(STANDARD).amber);
-    assert.equal(tokens(STANDARD).bodyEntMark, tokens(STANDARD).entMark);
+    for (const own of OWN) {
+      assert.equal(tokens(own).bodyMilestone, tokens(own).amber, own);
+      assert.equal(tokens(own).bodyEntMark, tokens(own).entMark, own);
+    }
     for (const selector of FOLLOW) {
       assert.equal(tokens(selector).bodyMilestone, "var(--menuText1Normal)", selector);
       assert.equal(tokens(selector).bodyEntMark, "var(--menuText1Normal)", selector);
@@ -125,7 +144,7 @@ describe("the looks' tokens", () => {
   });
 
   it("draw a dimmed typed word in the style's own second ink on its plates, the look's dim ink in the look", () => {
-    assert.equal(tokens(STANDARD).tTyped, tokens(STANDARD).tDim);
+    for (const own of OWN) assert.equal(tokens(own).tTyped, tokens(own).tDim, own);
     for (const selector of FOLLOW) assert.equal(tokens(selector).tTyped, "var(--menuText2Normal)", selector);
   });
 
@@ -158,7 +177,7 @@ describe("the looks' tokens", () => {
     assert.equal(declarationsOf(cards, ".milestone").color, "var(--bbm-bodyMilestone)");
     assert.equal(declarationsOf(cards, ".enterBadge")["background-color"], "var(--bbm-badgeBg)");
     assert.equal(declarationsOf(cards, ".enterMark")["background-color"], "var(--bbm-entMark)");
-    for (const selector of [STANDARD, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).badgeBg), selector);
+    for (const selector of [...OWN, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).badgeBg), selector);
   });
 
   it("draw the icons' milestone in the body's ink on the locked plate a style can turn light, a family's word on its dark pill", () => {
@@ -168,11 +187,11 @@ describe("the looks' tokens", () => {
     assert.equal(declarationsOf(icons, ".unplaceable")["background-color"], "var(--bbm-iconLocked)");
     assert.equal(declarationsOf(icons, ".pillWord")["background-color"], "var(--bbm-pillBg)");
     assert.equal(declarationsOf(icons, ".pillWord").color, "var(--bbm-pillText)");
-    for (const selector of [STANDARD, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).pillBg), selector);
+    for (const selector of [...OWN, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).pillBg), selector);
   });
 
   it("give a locked icon a plate apart from both family tones and the lit plate, in the look and under every style", () => {
-    for (const selector of [STANDARD, ...FOLLOW]) {
+    for (const selector of [...OWN, ...FOLLOW]) {
       const map = tokens(selector);
 
       assert.ok(map.iconLocked, `${selector}: no iconLocked`);
@@ -187,7 +206,7 @@ describe("the looks' tokens", () => {
 
     assert.equal(declarationsOf(tiles, ".milestone").color, "var(--bbm-amber)");
     assert.equal(declarationsOf(tiles, ".tag")["background-color"], "var(--bbm-tagBg)");
-    for (const selector of [STANDARD, ...FOLLOW]) {
+    for (const selector of [...OWN, ...FOLLOW]) {
       const map = tokens(selector);
       assert.ok(!turnsLight(map.tagBg) && !styleInk(map.amber), selector);
     }
@@ -209,11 +228,12 @@ describe("the looks' tokens", () => {
   });
 
   it("take each panel's alpha from the root, and the game's own panels under a style", () => {
-    const own = tokens(STANDARD);
-
-    assert.match(own.head, /var\(--bbm-a-head\)/);
-    assert.match(own.body, /var\(--bbm-a-body\)/);
-    assert.match(own.popBg, /var\(--bbm-a-popBg\)/);
+    for (const look of OWN) {
+      const own = tokens(look);
+      assert.match(own.head, /var\(--bbm-a-head\)/, look);
+      assert.match(own.body, /var\(--bbm-a-body\)/, look);
+      assert.match(own.popBg, /var\(--bbm-a-popBg\)/, look);
+    }
     for (const selector of FOLLOW) {
       assert.equal(tokens(selector).head, "var(--panelColorDark)", selector);
       assert.equal(tokens(selector).body, "var(--panelColorNormal)", selector);

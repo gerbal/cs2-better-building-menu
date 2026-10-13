@@ -142,6 +142,8 @@ describe("the control pane", () => {
     const pane = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("pane"));
 
     assert.deepEqual(String(pane.props.className).split(" ").sort(), ["followStyle", "pane", "standard"]);
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuLook", "plates"));
+    assert.deepEqual(String(pane.props.className).split(" ").sort(), ["followStyle", "pane", "plates"]);
     assert.equal(pane.props.style["--bbm-a-head"], "0.96");
     assert.equal(pane.props.style["--bbm-a-body"], "0.92");
     assert.equal(pane.props.style["--bbm-a-popBg"], "0.97");

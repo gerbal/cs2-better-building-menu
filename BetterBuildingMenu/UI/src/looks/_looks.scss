@@ -120,9 +120,25 @@ $standard: (
   notchLine: transparent,
 );
 
-// Under the game's Bright blue and Dark grey-orange: the list and its plates, the ink on them and
-// the accents from the style's own tokens, which each style redefines. The head and the popovers
-// take the style's dark panel, which stays dark under both, so their ink stays the look's.
+// Plates: Standard's plates and box, with plain tiles, its pills (lighter than Standard's) and tags
+// (darker) in the one shade its name bands have, and plated tabs. Its panels are Standard's, so it
+// takes Standard's alphas.
+$plates-alphas: $standard-alphas;
+
+$plates: map.merge(
+  $standard,
+  (
+    tile: rgba(98, 128, 138, 0.34),
+    pillBg: rgba(20, 27, 34, 0.66),
+    tagBg: rgba(20, 27, 34, 0.66),
+    tabUnlit: rgba(98, 128, 138, 0.2),
+    tabHover: rgba(98, 128, 138, 0.3),
+  )
+);
+
+// Under the game's Bright blue and Dark grey-orange, in every look: the list and its plates, the ink on
+// them and the accents from the style's own tokens, which each style redefines. The head and the
+// popovers take the style's dark panel, which stays dark under both, so their ink stays the look's.
 $standard-follow: (
   head: var(--panelColorDark),
   popBg: var(--panelColorDark),

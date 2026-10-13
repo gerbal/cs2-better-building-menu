@@ -351,10 +351,12 @@ moves the setting: every player starts on Standard.
 
 A look is one class of `--bbm-*` custom properties on the build menu's root (`looks/looks.module.scss`,
 built from the maps in `looks/_looks.scss`). The menu's sheets read the tokens, not the game's own
-colours, so a look change is a class change and nothing remounts. Standard is the first look; the
-tab row and its readout, the top row and the box's body read it, and the other sheets move to it as
-their increment restyles them. The per-look geometry table waits for the increments that add the other
-looks; only Standard's tokens are written here.
+colours, so a look change is a class change and nothing remounts. Each finished look has its class:
+Standard's map, and Plates', which is Standard's but for its plain tiles, its pills and tags (the
+pills lighter than Standard's, the tags darker, both in its name bands' shade), and its plated tabs;
+both declare the same keys, and the same panel alphas. The root carries the class of the look the
+settings hold, read in BBM's own components (`useLookRoot`), never in a wrapper around the game's, and
+names it in `data-bbm-look` for the live check.
 
 - **One kind of value per key.** Each key holds a colour, a gradient, a shadow, a length or a filter
   in every look and every style, and is read by one longhand: a gradient by `background-image`, a
@@ -375,8 +377,9 @@ looks; only Standard's tokens are written here.
   `bodyCtl*`), which follow to `--menuPanel*` and `--menuText*`, while the FILTER popover's chips
   keep the look's light ink. The armed fill and the lit tab's gradient are game tokens no style
   changes (`--selectedColor`, `--gradientHighlight*`). The map leaves the entity ring to the look,
-  and its selector names the two style classes without `body`, which the game puts them on. Plates
-  under each interface style are settled with the restyle of the list.
+  and its selector names the two style classes without `body`, which the game puts them on. Every
+  look takes the one follow map, so under a style Plates' plates and tiles follow the style as
+  Standard's do, while its pills, tags and bands keep their dark ground and light ink.
 - **The game's interface transparency.** The game sets `--panelOpacityNormal` and
   `--panelOpacityDark` from its slider, and its own panels carry them. A look's panels would draw far
   lighter than designed if they took those values as they are, so `surfaceAlphas` scales each

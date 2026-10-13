@@ -44,12 +44,20 @@ describe("a look's panels under the game's transparency", () => {
     assert.deepEqual(surfaceAlphaStyle(0.5), { "--bbm-a-head": "0.96", "--bbm-a-body": "0.92", "--bbm-a-popBg": "0.97" });
   });
 
-  it("start at the alphas the stylesheet declares, before the root says", () => {
-    const standard = declarationsOf("looks/looks.module.scss", ".standard");
+  it("start at the alphas each look's stylesheet declares, before the root says", () => {
+    for (const look of releasedLooks()) {
+      const own = declarationsOf("looks/looks.module.scss", `.${look.id}`);
 
-    for (const [surface, alpha] of Object.entries(STANDARD_SURFACE_ALPHAS)) {
-      assert.equal(Number(standard[`--bbm-a-${surface}`]), alpha, surface);
+      for (const [surface, alpha] of Object.entries(look.alphas)) {
+        assert.equal(Number(own[`--bbm-a-${surface}`]), alpha, `${look.id} ${surface}`);
+      }
     }
+  });
+
+  it("scale a look's own alphas, Plates' as Standard's", () => {
+    assert.deepEqual(lookOf("plates").alphas, STANDARD_SURFACE_ALPHAS);
+    assert.deepEqual(surfaceAlphas(0.5, { head: 0.9, body: 0.8, popBg: 0.95 }), { head: 0.9, body: 0.8, popBg: 0.95 });
+    assert.deepEqual(surfaceAlphaStyle(0, lookOf("plates").alphas), { "--bbm-a-head": "1", "--bbm-a-body": "1", "--bbm-a-popBg": "1" });
   });
 });
 

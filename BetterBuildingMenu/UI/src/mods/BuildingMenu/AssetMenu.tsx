@@ -92,11 +92,13 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           of the row lies beside the box to take the mouse. */}
       <div ref={row} className={styles.assetMenuRow} style={{ width: `${WIDTH_STEP_VANILLA}rem`, left: `${placement.offset}rem` }}>
         {/* The box carries the look: its tokens, the game's interface style followed, and its
-            panels' alphas under the game's transparency. See docs/design-notes.md, "The looks' tokens". */}
+            panels' alphas under the game's transparency; its marker names the look for the live check.
+            See docs/design-notes.md, "The looks' tokens". */}
         <div
           ref={root}
           className={classNames(styles.toolContainer, look.className)}
           style={{ width: `${shownWidth}rem`, ...look.style } as CSSProperties}
+          data-bbm-look={look.id}
         >
           {/* The search field, the controls, the hosted tab-bar buttons and close, along the box's
               top edge. See docs/design-notes.md, "The top row". */}
