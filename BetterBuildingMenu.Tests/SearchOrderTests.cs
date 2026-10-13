@@ -66,7 +66,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var refresh = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs"), "private void RefreshBuildingCatalog(");
 
-			Assert.Contains("BuildingCatalogGrouping.WhileSearching(", refresh);
+			Assert.Contains("built.GroupFor(_assetMenu.Query.GroupBy, _assetMenu.Query.SearchText)", refresh);
 			Assert.Contains("_menuDefaultGroup = view.DefaultGroupBy;", refresh);
 		}
 

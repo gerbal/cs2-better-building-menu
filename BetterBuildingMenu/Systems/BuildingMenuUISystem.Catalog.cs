@@ -44,14 +44,11 @@ namespace BetterBuildingMenu.Systems
 
 			// One view, built once; every publish below reads it. See CatalogView.
 			var menu = _assetMenu.Menu;
-			var menuHasCategories = source.Index.GetMenuCategories(menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
 				source,
 				_assetMenu.Query,
 				_toolbarSelection,
-				built => BuildingCatalogGrouping.WhileSearching(
-					BuildingCatalogGrouping.Effective(_assetMenu.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions),
-					_assetMenu.Query.SearchText));
+				built => built.GroupFor(_assetMenu.Query.GroupBy, _assetMenu.Query.SearchText));
 			BuildingCatalogPage page = view.Page;
 			// What a GROUP pick is compared with: the menu's own grouping, which takes a menu's own pick away.
 			_menuDefaultGroup = view.DefaultGroupBy;

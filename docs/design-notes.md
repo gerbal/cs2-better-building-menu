@@ -892,7 +892,7 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
   - **Auto at large text** (the look's own, as it ships, the list, or the tiles): from 110% text, the
     body Roads and Parks draw.
   - **Cards from width** (never, as it ships, or steps 2 to 5): the step from which Auto draws Cards.
-  - **List plate height** (23 to 34, step 0.25, ships 27.25): the two-line plate's height at 100% text.
+  - **List plate height** (23 to 34, step 0.25, ships 27.25): the list plate's height at 100% text.
   - **Name lines** (the form's own, as it ships, or 1 or 2): the lines a list name takes.
   - **Tile name line** (on, as it ships, or off): the line naming the pointed or armed tile under the
     tiles.
@@ -1011,7 +1011,9 @@ another's.
   of its own (`MenuPicks`; a line splits on its last `=`, since menu names hold spaces and `&`). A pick
   saves once, and a pick of the menu's own default grouping takes the menu's pick away, so the control
   marks only a grouping set away from how the menu opens (its dot). An open sets the menu's own, or its
-  default (`OpenMenu`'s `MenuMemory`). `AssetMenuGroups` carries the picks to the UI.
+  default (`OpenMenu`'s `MenuMemory`). `AssetMenuGroups` carries the picks to the UI. The default is
+  read over the whole menu, not the open tab (`CatalogView.GroupFor`), so a menu with no pick draws
+  one grouping on every tab, and a pick means the same on each.
 - **SORT** is kept per menu for the session (`SessionSorts`): an open brings back the sort the menu last
   had, and every launch starts each at the game's own order. A sort picked while a query is typed is
   the search's, and is not kept; nor is Match, which only a query gives meaning. Reset the build menu… leaves this session's sorts; they end with it.

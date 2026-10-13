@@ -306,6 +306,13 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevPickLogger));
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevInterfaceStyles));
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevTabNames));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevListShare));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevWhatCounts));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevAutoLargeText));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevCardsFrom));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevListPlateHeight));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevNameLines));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevTileNameLine));
 			Assert.All(knobs, knob =>
 			{
 				Assert.Equal(BetterBuildingMenuSettings.TUNING, knob.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup);

@@ -77,7 +77,14 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>The grouping this menu opens with when it has no pick of its own, held to the dimensions it offers.</summary>
 		/// <remarks>Read over the whole menu, so it is the same whichever tab is open; a pick is compared with it.</remarks>
-		public string DefaultGroupBy => BuildingCatalogGrouping.Effective(string.Empty, _menuCategories is { Count: > 0 }, WholeMenuAxis, _educationMenu, GroupDimensions);
+		public string DefaultGroupBy => GroupFor(string.Empty, null);
+
+		/// <summary>The grouping a page is ordered by: the pick, else the menu's default, and none while a query is typed.</summary>
+		/// <remarks>The default is read over the whole menu, so a menu with no pick draws one grouping on every tab.</remarks>
+		public string GroupFor(string? pick, string? searchText) =>
+			BuildingCatalogGrouping.WhileSearching(
+				BuildingCatalogGrouping.Effective(pick, _menuCategories is { Count: > 0 }, WholeMenuAxis, _educationMenu, GroupDimensions),
+				searchText);
 
 		/// <summary>Whether the view stands in for one of the game's menus; without one the row draws All alone.</summary>
 		private bool Scoped => !string.IsNullOrWhiteSpace(_query.UiMenu);

@@ -459,6 +459,26 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void AMenuWithNoPickDrawsItsDefaultGroupingOnEveryTab()
+		{
+			var all = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed"));
+			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.NotEqual(all.StripAxis, tab.StripAxis);
+			Assert.Equal(all.GroupFor(string.Empty, null), tab.GroupFor(string.Empty, null));
+			Assert.Equal(all.DefaultGroupBy, tab.GroupFor(string.Empty, null));
+		}
+
+		[Fact]
+		public void APickIsKeptAndATypedQueryPutsTheGroupsAside()
+		{
+			var view = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.Equal(BuildingCatalogGrouping.Development, view.GroupFor(BuildingCatalogGrouping.Development, "  "));
+			Assert.Equal(BuildingCatalogGrouping.None, view.GroupFor(BuildingCatalogGrouping.Development, "wind"));
+		}
+
+		[Fact]
 		public void AMenusDefaultGroupingFollowsTheAxisItsWholeCutsBest()
 		{
 			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));

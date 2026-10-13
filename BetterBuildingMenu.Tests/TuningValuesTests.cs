@@ -46,18 +46,18 @@ namespace BetterBuildingMenu.Tests
 				ModSource.Text("Systems/BuildingMenuUISystem.cs"));
 		}
 
-		// Each body knob ships as the constant the UI falls back to, and is read through the one rule.
+		// Each body knob is read through the one rule and handed to its own field by name, so a swap of two of a type fails.
 		[Theory]
-		[InlineData("DevListShare", "Tuning.ListShare")]
-		[InlineData("DevWhatCounts", "Tuning.WhatCounts")]
-		[InlineData("DevAutoLargeText", "Tuning.AutoLargeText")]
-		[InlineData("DevCardsFrom", "Tuning.CardsFrom")]
-		[InlineData("DevListPlateHeight", "Tuning.ListPlateHeight")]
-		[InlineData("DevNameLines", "Tuning.NameLines")]
-		[InlineData("DevTileNameLine", "Tuning.TileNameLine")]
-		public void EachBodyKnobIsReadThroughTheOneRule(string knob, string shipped)
+		[InlineData("ListShare", "Tuning.ListShareOf(Knobs.Value(settings => settings.DevListShare, Tuning.ListShare))")]
+		[InlineData("WhatCounts", "Tuning.OneOf(Tuning.WhatCountsValues, Knobs.Value(settings => settings.DevWhatCounts, Tuning.WhatCounts), Tuning.WhatCounts)")]
+		[InlineData("AutoLargeText", "Tuning.OneOf(Tuning.AutoLargeTextValues, Knobs.Value(settings => settings.DevAutoLargeText, Tuning.AutoLargeText), Tuning.AutoLargeText)")]
+		[InlineData("CardsFrom", "Tuning.OneOf(Tuning.CardsFromValues, Knobs.Value(settings => settings.DevCardsFrom, Tuning.CardsFrom), Tuning.CardsFrom)")]
+		[InlineData("ListPlateHeight", "Tuning.ListPlateHeightOf(Knobs.Value(settings => settings.DevListPlateHeight, Tuning.ListPlateHeight))")]
+		[InlineData("NameLines", "Tuning.OneOf(Tuning.NameLinesValues, Knobs.Value(settings => settings.DevNameLines, Tuning.NameLines), Tuning.NameLines)")]
+		[InlineData("TileNameLine", "Knobs.Value(settings => settings.DevTileNameLine, Tuning.TileNameLine)")]
+		public void EachBodyKnobIsReadThroughTheOneRuleIntoItsOwnField(string field, string read)
 		{
-			Assert.Contains($"Knobs.Value(settings => settings.{knob}, {shipped})", ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private static TuningValues CurrentTuning()"));
+			Assert.Contains($"{field}: {read}", ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private static TuningValues CurrentTuning()"));
 		}
 
 		[Fact]
