@@ -210,6 +210,16 @@ namespace BetterBuildingMenu.Domain
 				? this
 				: this with { Query = Query with { EnterStep = Query.EnterStep + Math.Sign(direction) } };
 
+		/// <summary>A click on the Locked label: a half-locked tab's locked rows leave the window, or come back.</summary>
+		/// <remarks>
+		/// No start: the list stays where it is. Only the locked rows collapse; any other section is a
+		/// label alone. A new start or a narrowing shows them again. See docs/design-notes.md, "Label plates".
+		/// </remarks>
+		public AssetMenuState CollapseSection(string? id, bool collapsed) =>
+			!string.Equals(id, CatalogSection.LockedId, StringComparison.Ordinal) || Query.LockedCollapsed == collapsed
+				? this
+				: this with { Query = Query with { LockedCollapsed = collapsed } };
+
 		/// <summary>The step the page serves, which stops at the list's ends, so a key pressed past one moves back at once.</summary>
 		public AssetMenuState KeepEnterStep(int served) =>
 			Query.EnterStep == served ? this : this with { Query = Query with { EnterStep = served } };
@@ -376,9 +386,9 @@ namespace BetterBuildingMenu.Domain
 			&& a.SchoolTier == b.SchoolTier
 			&& (a.StripTabs ?? Array.Empty<string>()).SequenceEqual(b.StripTabs ?? Array.Empty<string>(), StringComparer.Ordinal);
 
-		/// <summary>Navigating or reordering starts the list over, even onto what is already shown, and Enter's target with it.</summary>
+		/// <summary>Navigating or reordering starts the list over, even onto what is already shown, and Enter's target and the locked rows with it.</summary>
 		private static BuildingCatalogQuery ResetWindow(BuildingCatalogQuery query) =>
-			query with { Offset = 0, Limit = query.FirstWindow, EnterStep = 0 };
+			query with { Offset = 0, Limit = query.FirstWindow, EnterStep = 0, LockedCollapsed = false };
 
 		/// <summary>A narrowing that changed the result set starts the window over; one that did not keeps it.</summary>
 		/// <remarks>

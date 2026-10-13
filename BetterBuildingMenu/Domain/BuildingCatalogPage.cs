@@ -56,8 +56,18 @@ namespace BetterBuildingMenu.Domain
 		int ListStart = 0,
 		/// <summary>How many rows that can be placed Enter's target sits past the best match, as the engine walks it.</summary>
 		/// <remarks>It stops at the list's ends, so the state keeps this, not the presses. See BuildingCatalogQuery.EnterStep.</remarks>
-		int EnterStep = 0) : IJsonWritable
+		int EnterStep = 0,
+		/// <summary>The labels over the whole result, each with its true count; empty when the result draws none.</summary>
+		/// <remarks>Over the whole result, not the window, so a label counts rows the window has not reached. See CatalogSection.</remarks>
+		IReadOnlyList<CatalogSection>? Sections = null) : IJsonWritable
 	{
+		/// <summary>The labels, none when the page was built without any.</summary>
+		public IReadOnlyList<CatalogSection> Sections { get; init; } = Sections ?? System.Array.Empty<CatalogSection>();
+
+		/// <summary>How many rows the window can reach: the total, less the locked rows while their label is collapsed.</summary>
+		/// <remarks>What Load more counts against, so it never offers folded rows; the total still counts them. See docs/design-notes.md, "Label plates".</remarks>
+		public int VisibleCount { get; init; } = TotalCount;
+
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
@@ -81,6 +91,8 @@ namespace BetterBuildingMenu.Domain
 
 			writer.PropertyName("totalCount");
 			writer.Write(TotalCount);
+			writer.PropertyName("visibleCount");
+			writer.Write(VisibleCount);
 			writer.PropertyName("offset");
 			writer.Write(Offset);
 			writer.PropertyName("limit");
@@ -105,6 +117,13 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(ListStart);
 			writer.PropertyName("enterStep");
 			writer.Write(EnterStep);
+			writer.PropertyName("sections");
+			writer.ArrayBegin((uint)Sections.Count);
+			foreach (var section in Sections)
+			{
+				section.Write(writer);
+			}
+			writer.ArrayEnd();
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

@@ -67,9 +67,11 @@ namespace BetterBuildingMenu.Services
 			return entries.Where(entry => Matches(entry, query));
 		}
 
+		/// <param name="labelsOf">A row's headings under the page's grouping, which name its groups' labels; null names each by its key.</param>
 		public static BuildingCatalogPage Query(
 			IEnumerable<BuildingCatalogEntry> entries,
-			BuildingCatalogQuery query)
+			BuildingCatalogQuery query,
+			Func<BuildingCatalogEntry, BuildingCatalogGrouping.GroupLabels>? labelsOf = null)
 		{
 			if (entries is null)
 			{
@@ -90,21 +92,35 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 			var totalCount = matching.Length;
 			// The whole result in display order: the window is a slice of it, and Enter's target
-			// is chosen from all of it, wherever its row is.
+			// is chosen from all of it, wherever its row is. A half-locked tab lists its locked rows last.
 			var ordered = Order(matching, query).ToArray();
+			var lockedLast = ListsLockedLast(ordered, query);
+			var lockedCount = lockedLast ? ordered.Count(entry => entry.IsLocked) : 0;
+
+			if (lockedLast)
+			{
+				// OrderBy is stable, so rows of one milestone keep the game's order.
+				ordered = ordered.Where(entry => !entry.IsLocked).Concat(ordered.Where(entry => entry.IsLocked).OrderBy(entry => entry.UnlockMilestone)).ToArray();
+			}
+
+			// What the window slices: the order, less the locked rows while their label is collapsed.
+			var visible = lockedLast && query.LockedCollapsed ? ordered.Take(ordered.Length - lockedCount).ToArray() : ordered;
+			var sections = lockedLast
+				? new[] { new CatalogSection(CatalogSection.LockedId, CatalogSection.Locked, string.Empty, string.Empty, ordered.Length - lockedCount, lockedCount, query.LockedCollapsed) }
+				: GroupSections(visible, query.GroupBy, labelsOf);
 			// The anchored row's place in that order, and a window that holds it, so the list can open
 			// on it. See docs/design-notes.md, "Opening on the building's tab".
-			var anchorIndex = query.AnchorId > 0 ? Array.FindIndex(ordered, entry => entry.Id == query.AnchorId) : -1;
+			var anchorIndex = query.AnchorId > 0 ? Array.FindIndex(visible, entry => entry.Id == query.AnchorId) : -1;
 			var limit = query.CoveringAnchor(anchorIndex).EffectiveLimit;
-			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
-			var items = ordered
+			var offset = ClampOffset(query.EffectiveOffset, visible.Length, limit);
+			var items = visible
 				.Skip(offset)
 				.Take(limit)
 				.ToArray();
 			// Both halves, because the window has a ceiling as well as an end. At MaxLimit
 			// growing it is a guaranteed no-op, and a Load more button that stays lit and does
 			// nothing is worse than none; the readout states the window.
-			var hasMore = offset + items.Length < totalCount
+			var hasMore = offset + items.Length < visible.Length
 				&& limit < BuildingCatalogQuery.MaxLimit;
 
 			// Over `matching`, not over `items`: the question is whether the sort can order
@@ -114,7 +130,7 @@ namespace BetterBuildingMenu.Services
 
 			// Enter's target: the best match, moved by Up and Down through the rows that can be placed.
 			// See docs/design-notes.md, "The search field's keys".
-			var target = StepTarget(ordered, FindBestMatch(ordered, query.SearchText), query.EnterStep, out var enterStep);
+			var target = StepTarget(visible, FindBestMatch(visible, query.SearchText), query.EnterStep, out var enterStep);
 
 			return new BuildingCatalogPage(
 				items,
@@ -128,10 +144,77 @@ namespace BetterBuildingMenu.Services
 				BestMatch: target,
 				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && target is null,
 				// At the ceiling with rows past it, Load more cannot reach them: the UI says so instead.
-				Capped: limit >= BuildingCatalogQuery.MaxLimit && offset + items.Length < totalCount,
+				Capped: limit >= BuildingCatalogQuery.MaxLimit && offset + items.Length < visible.Length,
 				AnchorId: query.AnchorId,
 				AnchorIndex: anchorIndex,
-				EnterStep: enterStep);
+				EnterStep: enterStep,
+				Sections: sections)
+			{
+				VisibleCount = visible.Length,
+			};
+		}
+
+		/// <summary>
+		/// Whether a tab lists its buildable rows first, then its locked rows by milestone: a tab, not
+		/// All; the game's own order, no search; half its rows or more locked; and no groups of its own to
+		/// split, so the locked label is the only one.
+		/// </summary>
+		/// <remarks>
+		/// A sort the player picked keeps its order, and a search ranks locked matches in place, dimmed.
+		/// See docs/design-notes.md, "Label plates".
+		/// </remarks>
+		public static bool ListsLockedLast(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogQuery query)
+		{
+			var inTab = !string.IsNullOrWhiteSpace(query.UiCategory) || query.StripTabs is { Count: > 0 } || query.SchoolTier >= 0;
+
+			if (ordered.Count == 0
+				|| !inTab
+				|| !string.IsNullOrWhiteSpace(query.SearchText)
+				|| query.Descending
+				|| !string.Equals(query.EffectiveSortColumn, BuildingCatalogQuery.DefaultSort, StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+
+			if (BuildingCatalogGrouping.IsGrouped(query.GroupBy)
+				&& ordered.Select(entry => BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy)).Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any())
+			{
+				return false;
+			}
+
+			return ordered.Count(entry => entry.IsLocked) * 2 >= ordered.Count;
+		}
+
+		/// <summary>One label per group of the page's grouping, each with where it starts and its true count; none for fewer than two groups.</summary>
+		/// <remarks>The outer level only: a group's tiers keep their order under it without labels of their own.</remarks>
+		private static CatalogSection[] GroupSections(
+			IReadOnlyList<BuildingCatalogEntry> visible,
+			string? groupBy,
+			Func<BuildingCatalogEntry, BuildingCatalogGrouping.GroupLabels>? labelsOf)
+		{
+			if (!BuildingCatalogGrouping.IsGrouped(groupBy) || visible.Count == 0)
+			{
+				return Array.Empty<CatalogSection>();
+			}
+
+			var sections = new List<CatalogSection>();
+			var start = 0;
+
+			for (var index = 1; index <= visible.Count; index++)
+			{
+				if (index < visible.Count
+					&& string.Equals(BuildingCatalogGrouping.PrimaryKey(visible[index], groupBy), BuildingCatalogGrouping.PrimaryKey(visible[start], groupBy), StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				var labels = labelsOf?.Invoke(visible[start]);
+				var label = labels is { Path.Length: > 0 } named ? named.Path[0] : BuildingCatalogGrouping.PrimaryKey(visible[start], groupBy);
+				sections.Add(new CatalogSection("group:" + sections.Count, CatalogSection.Group, label, labels?.LabelId ?? string.Empty, start, index - start, false));
+				start = index;
+			}
+
+			return sections.Count < 2 ? Array.Empty<CatalogSection>() : sections.ToArray();
 		}
 
 		/// <summary>

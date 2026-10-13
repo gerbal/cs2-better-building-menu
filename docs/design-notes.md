@@ -1138,6 +1138,31 @@ column, the unique and built marks. Its root is the region the markers are count
 (0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid
 and Table are gone, Grid's place taken by Tiles and Table's by List.
 
+## Label plates
+
+A page carries its labels as `Sections`, counted over the whole result rather than the window, so a
+label says its true count whatever the window has reached (`CatalogSection`: an id, a kind, the
+group's heading and the game's id behind it, where its rows start, how many it holds, and whether they
+are collapsed). Two kinds:
+
+- **A group**, one per group of the grouping the page is ordered by, where the result holds two or
+  more; one group names nothing the tab does not. Only the outer level: a tab's tiers (its milestones,
+  branches or densities) keep their order under it with no label of their own. So All, grouped by tab,
+  names each tab with its count, and a tab names nothing but its locked rows.
+- **The locked rows.** In a tab (not All), in the game's own order with no search, where half the
+  rows or more are locked and the tab has no groups to split, the buildable rows come first, then a
+  "Locked N" label, then the locked rows by milestone, each milestone in the game's order
+  (`BuildingCatalogQueryEngine.ListsLockedLast`). Elsewhere locked rows keep their place, dimmed: a sort
+  the player picked keeps its order, and a search ranks a locked match where it falls. A click on the
+  label collapses the locked rows out of the window (`SetCatalogSectionCollapsed`, kept in
+  `BuildingCatalogQuery.LockedCollapsed`); the label stays, with its count, and any new start or
+  narrowing shows them again. A fold is no start: the list keeps its place and its anchor. While
+  folded, the page's `VisibleCount` is its total less the locked rows: the window, Load more and
+  Enter's target count over it, and `TotalCount` still counts every row.
+
+**This changes 0.2.x:** a half-locked tab listed its rows in the game's order, locked among buildable;
+its buildable rows now come first.
+
 ## The search field's keys
 
 The game masks its keyboard while a text field has focus, so while the search field has focus the

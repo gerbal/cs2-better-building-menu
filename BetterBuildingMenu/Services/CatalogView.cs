@@ -182,7 +182,10 @@ namespace BetterBuildingMenu.Services
 			.Matching(MenuSet, _query with { StripTabs = null })
 			.ToArray();
 
-		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(MenuSet, _query with { GroupBy = EffectiveGroupBy }));
+		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(
+			MenuSet,
+			_query with { GroupBy = EffectiveGroupBy },
+			entry => BuildingCatalogGrouping.Labels(entry, EffectiveGroupBy, _milestoneNames, _schoolTierNames)));
 
 		/// <summary>Stamps the page's items with their headings. The page only — a hundred entries, not the set.</summary>
 		private BuildingCatalogPage WithGroupLabels(BuildingCatalogPage page)

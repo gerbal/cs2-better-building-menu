@@ -65,7 +65,10 @@ namespace BetterBuildingMenu.Domain
 		// How many buildings one screen of the drawn body holds, which the UI says; 0 before it has. The
 		// window always holds more than a screen, so the list can scroll to load more. Not a predicate.
 		// See docs/design-notes.md, "The bodies".
-		int ScreenSlots = 0)
+		int ScreenSlots = 0,
+		// Whether a half-locked tab's locked rows are left out of the window, their label alone showing. Any
+		// new start or narrowing shows them again. See docs/design-notes.md, "Label plates".
+		bool LockedCollapsed = false)
 	{
 		/// <summary>
 		/// The sort fields the picker offers, in its order.
@@ -156,8 +159,9 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>
 		/// A fresh predicate is a fresh set, so it restarts at <see cref="FirstWindow"/>, and a step
 		/// counted over the old set means nothing in it. Whole queries are compared rather than named
-		/// fields, so a new predicate is covered by default; Offset, Limit, EnterStep and ScreenSlots are
-		/// masked out so Load more, the keys and the body's screen survive.
+		/// fields, so a new predicate is covered by default; Offset, Limit, EnterStep, ScreenSlots and
+		/// LockedCollapsed are masked out so Load more, the keys, the body's screen and a collapsed label
+		/// survive; a fresh set shows its locked rows again.
 		/// </remarks>
 		public BuildingCatalogQuery ResetWindowIfPredicatesChanged(BuildingCatalogQuery previous)
 		{
@@ -166,10 +170,10 @@ namespace BetterBuildingMenu.Domain
 				return this;
 			}
 
-			return (this with { Offset = 0, Limit = DefaultLimit, EnterStep = 0, ScreenSlots = 0 })
-				== (previous with { Offset = 0, Limit = DefaultLimit, EnterStep = 0, ScreenSlots = 0 })
+			return (this with { Offset = 0, Limit = DefaultLimit, EnterStep = 0, ScreenSlots = 0, LockedCollapsed = false })
+				== (previous with { Offset = 0, Limit = DefaultLimit, EnterStep = 0, ScreenSlots = 0, LockedCollapsed = false })
 					? this
-					: this with { Offset = 0, Limit = FirstWindow, EnterStep = 0 };
+					: this with { Offset = 0, Limit = FirstWindow, EnterStep = 0, LockedCollapsed = false };
 		}
 	}
 }
