@@ -83,6 +83,13 @@ On a developed save:
      brings them back;
    - Garbage shows its buildings bigger, two lines of them, and opens on All;
    - at Width 3, type in Roads: the fifth result sits under the first, not along the row;
+   - Education's list shows each school's cost over its capacity by a person symbol, and the right end
+     of the tabs names Capacity by the same symbol; Roads › Medium Roads at the widest Width says
+     100 km/h unless shown there, and only the roads at another speed show theirs; a road's cost reads
+     per cell (¢44/c);
+   - a name too long for its plate is cut once, with …, keeping the words that tell it apart, and never
+     runs into its cost; at 130% text no plate shows part of a third name line, and each picture is
+     whole; Zones' tiles that look alike carry a tag saying what tells them apart;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
    time, and a click elsewhere closes it. Pick List, Tiles and Cards in View: the menu keeps
@@ -99,7 +106,8 @@ On a developed save:
    same Sort, Filter, Group and View, and View › More options… opens this page.
    With Replace the vanilla build menu off, every other row is greyed out and
    says why. Reset the build menu… asks first, then puts the options, the
-   width, the height and each menu's View and Group back.
+   width, the height and each menu's View and Group back; a menu open and
+   grouped by Cost goes back to its own grouping at once.
 7. **An upgrader.** Start from a settings file 0.2.4 wrote, with the pane shown in
    it: the pane stays shown, and the menu opens at the Width step nearest the
    width it had, in Cards, on All.
