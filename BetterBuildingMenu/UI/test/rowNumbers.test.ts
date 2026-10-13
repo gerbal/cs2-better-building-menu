@@ -2,13 +2,20 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FALLBACK_SEPARATORS, formatCapacity, formatLotDimensions, UnitSystem } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { keepsUnit, keyFigure, nameHoldsLot, sortedText } from "../src/domain/rowNumbers";
+import { costText, keepsUnit, keyFigure, nameHoldsLot, sortedText } from "../src/domain/rowNumbers";
 
 const row = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry => ({
   id: 1, name: "Building", category: "ServiceBuildings", subCategory: "ServiceBuildings_Health", buildingType: "Hospital",
   constructionCost: 85_000, capacity: 400, workers: 20, lotWidth: 4, lotDepth: 6, costIsPerDistance: false, ...over,
 } as BuildingCatalogEntry);
 const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+describe("a row's cost", () => {
+  it("says a building's none as the game's Free, and a network's 0 per cell", () => {
+    assert.equal(costText(row({ constructionCost: 0 }), FALLBACK_SEPARATORS), "Free");
+    assert.equal(costText(row({ constructionCost: 0, costIsPerDistance: true }), FALLBACK_SEPARATORS), "¢0/c");
+  });
+});
 
 describe("a row's key number", () => {
   it("is a speed's digits in the player's unit by a gauge, the readout naming the unit", () => {

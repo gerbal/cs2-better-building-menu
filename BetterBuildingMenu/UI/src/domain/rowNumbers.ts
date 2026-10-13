@@ -42,7 +42,10 @@ export function isPerCell(entry: BuildingCatalogEntry): boolean {
   return entry.costIsPerDistance;
 }
 
-/** A cost in the game's own template, "Free" for none, a network's per cell; null where it is not known. */
+/**
+ * A cost in the game's own template, a building's "Free" for none; a network's per cell, "¢0/c" at 0,
+ * a figure like its neighbours' rather than a word; null where it is not known.
+ */
 export function costText(entry: BuildingCatalogEntry, separators: NumberSeparators): string | null {
   if (isPerCell(entry) && typeof entry.constructionCost === "number" && Number.isFinite(entry.constructionCost)) {
     return formatCostPerCell(entry.constructionCost, separators);
