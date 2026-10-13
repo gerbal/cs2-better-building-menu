@@ -379,9 +379,18 @@ function nameIndex(entries: readonly BuildingCatalogEntry[]): NameIndex {
   return index;
 }
 
+/** How many loaded names the bands have been checked against, a whole name's count as one. */
+let compared = 0;
+
+/** How many loaded names the bands have been checked against: a test seam, which holds a page's check to its few candidates, never the page's square. */
+export function namesCompared(): number {
+  return compared;
+}
+
 /** Whether a band could be another loaded tile's name: that name whole, or one its head opens and its tail closes. */
 function couldBeAnother(index: NameIndex, id: number, band: Band): boolean {
   const { head, tail } = band;
+  compared += 1;
   if (!band.cut) return (index.whole.get(head) ?? 0) > (index.names.get(id) === head ? 1 : 0);
 
   // A name the cut could be opens with the head's first word and closes with the tail's last: the fewer of the two.
@@ -390,6 +399,7 @@ function couldBeAnother(index: NameIndex, id: number, band: Band): boolean {
   const among = opening === undefined ? closing ?? [] : closing === undefined || opening.length <= closing.length ? opening : closing;
 
   return among.some((other) => {
+    compared += 1;
     const name = index.names.get(other)!;
     return other !== id && name.length >= head.length + tail.length
       && (head === "" || name === head || name.startsWith(`${head} `))

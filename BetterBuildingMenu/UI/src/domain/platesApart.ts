@@ -50,6 +50,14 @@ function holdsWhole(lines: readonly string[], word: string): boolean {
 /** The most plans a pass asks for with hints: a page of thousands drawn alike tells its first plates apart, never costing a plan each. */
 const MOST_TRIES = 600;
 
+/** How many words the passes have weighed, each counted into its group's holders or read back out. */
+let weighed = 0;
+
+/** How many words the passes have weighed: a test seam, which holds a pass to its groups' words, never their square. */
+export function wordsWeighed(): number {
+  return weighed;
+}
+
 /** The last pass, by what it was worked out from: the plates' names, kept words, line counts, fonts and texts drawn alone. */
 let last: { key: string; found: ReadonlyMap<number, ApartHints> } | null = null;
 
@@ -61,6 +69,7 @@ let last: { key: string; found: ReadonlyMap<number, ApartHints> } | null = null;
 function rarestWord(words: readonly string[], lower: readonly string[], holders: ReadonlyMap<string, number>, names: number): string | null {
   let best: string | null = null;
   let fewest = names;
+  weighed += words.length;
   words.forEach((word, at) => {
     const held = holders.get(lower[at]) ?? names;
     if (held < fewest && tells(word)) {
@@ -113,7 +122,9 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
     if (names.size < 2) continue;
     const holders = new Map<string, number>();
     for (const { lower } of names.values()) {
-      for (const word of new Set(lower)) holders.set(word, (holders.get(word) ?? 0) + 1);
+      const own = new Set(lower);
+      weighed += own.size;
+      for (const word of own) holders.set(word, (holders.get(word) ?? 0) + 1);
     }
 
     for (const [index, at] of ats.entries()) {

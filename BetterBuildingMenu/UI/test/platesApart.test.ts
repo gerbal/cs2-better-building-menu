@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { bodyGrid } from "../src/domain/bodyGeometry";
 import { NAME_FONT, plateNameRoom } from "../src/domain/listPlate";
 import { CUT_MARK, planFits, planName, plansWorkedOut, type NameBox } from "../src/domain/namePlan";
-import { planApart, wordsApart, type PlateName } from "../src/domain/platesApart";
+import { planApart, wordsApart, wordsWeighed, type PlateName } from "../src/domain/platesApart";
 import { ASSET_MENU_DEFAULT_HEIGHT } from "../src/domain/sharedContracts.generated";
 
 /** The base game's names, each with its distinguishing word in its menu. */
@@ -90,12 +90,14 @@ describe("the list's plates told apart over the page", () => {
         // Each name planned once alone, and a bounded number planned again.
         assert.ok(plansWorkedOut() - planned <= 2_000 + 600, `${plansWorkedOut() - planned} plans`);
 
-        // Again over the same plans, another page in between: bounded, not a group's square.
+        // Again over the same plans, another page in between: no plan worked out again, and each name's words
+        // weighed a bounded number of times, not a group's square.
         wordsApart(page(at150, [["Elementary School", ""]]), [""]);
-        const started = performance.now();
+        const words = plates.reduce((sum, plate) => sum + plate.name.split(" ").length, 0);
+        const [plannedBefore, weighedBefore] = [plansWorkedOut(), wordsWeighed()];
         wordsApart(plates, [""]);
-        const took = performance.now() - started;
-        assert.ok(took < 100, `${took.toFixed(1)} ms`);
+        assert.equal(plansWorkedOut(), plannedBefore);
+        assert.ok(wordsWeighed() - weighedBefore <= 2 * words, `${wordsWeighed() - weighedBefore} words weighed of ${words}`);
       });
     }
 

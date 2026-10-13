@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { bandWidth, lookAlikeKey, lookAlikeTags, tileBands } from "../src/domain/lookAlikeTags";
-import { CUT_MARK } from "../src/domain/namePlan";
+import { bandWidth, lookAlikeKey, lookAlikeTags, namesCompared, tileBands } from "../src/domain/lookAlikeTags";
+import { CUT_MARK, plansWorkedOut } from "../src/domain/namePlan";
 import { textWidth } from "../src/domain/textWidth";
 import { TAG_FONT, TAG_PADDING, tagFits, tagRoom } from "../src/domain/tileTag";
 
@@ -345,17 +345,12 @@ describe("Plates' name bands", () => {
           // The same tiles pushed again, a new array of new rows: the bands kept.
           assert.equal(tileBands(page.map((entry) => ({ ...entry })), tagged, 64, textScale), first);
           // A page whose tags were worked out again, as a Load more or a keystroke does, every name already
-          // cut: once the first such pushes have run, the best of five, so a busy machine reads the pass and
-          // not its own load.
-          for (let push = 0; push < 3; push += 1) tileBands([...page], new Map(tagged), 64, textScale);
-          const took = Math.min(...[1, 2, 3, 4, 5].map(() => {
-            const again = new Map(tagged);
-            const started = performance.now();
-            tileBands([...page], again, 64, textScale);
-            return performance.now() - started;
-          }));
+          // cut: no name planned again, and each band checked against a few loaded names, not the page.
+          const [plannedBefore, comparedBefore] = [plansWorkedOut(), namesCompared()];
+          tileBands([...page], new Map(tagged), 64, textScale);
 
-          assert.ok(took < 10, `${took.toFixed(1)} ms at ${textScale}`);
+          assert.equal(plansWorkedOut(), plannedBefore, `plans at ${textScale}`);
+          assert.ok(namesCompared() - comparedBefore <= 4 * tagged.size, `${namesCompared() - comparedBefore} names compared for ${tagged.size} bands at ${textScale}`);
         }
       });
     }
