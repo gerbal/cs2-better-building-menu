@@ -443,7 +443,7 @@ scale the game offers, the name going from 110% and the last tabs clipping from 
 folds the last tabs into a list, is increment 20's. The All count, like the others, draws blank
 until C# sends it: its binding starts negative.
 
-**Named tabs.** Above the first Width step, the box drawn wider than the game's 706, where every tab
+**Named tabs.** Above the first Width step, the box drawn wider than the first step's 706, where every tab
 fits with its name and the readout's range still fits beside them (`tabForm`, on the same estimate
 as the rest of the row), each picture cell draws its picture, its name and its count in a line: the
 row's 5 rem padding, the picture in a slot as wide as it is, 4, the name at the worded cells' size,
@@ -966,9 +966,12 @@ field's.
   keeps, so a key held past an end moves back on the first press the other way. Any new result
   (typing on, a filter, a sort, a grouping, a tab, an open) puts the target back on the best match;
   Load more and an index refresh keep it. The keys send nothing until the field names a target, the
-  page answering the query in it. A move is no start: the window and the list's place stay. The field
-  names the moved target and Enter arms it, by id, wherever its row is; no row is marked and the list
-  does not scroll to the target.
+  page answering the query in it. One move is in flight: a key held down sends the next move only once
+  the page answers the last (its step changes, or a page lands for a new query), or after a quarter
+  of a second when a move past an end changes no page; the repeats in between are dropped, and still
+  kept from the caret, so a held key moves at the refresh's pace. A move is no start: the window and
+  the list's place stay. The field names the moved target and Enter arms it, by id, wherever its row
+  is; no row is marked and the list does not scroll to the target.
 - **PageUp and PageDown** scroll the list a screen, held inside its ends (`pageScrollTop`); a page that
   reaches the end lets the window load more, as scrolling there does.
 
