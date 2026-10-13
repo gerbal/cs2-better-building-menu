@@ -112,16 +112,17 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Theory]
-		[InlineData(nameof(BetterBuildingMenuSettings.DevIconsAbove), Tuning.IconsAboveMin, Tuning.IconsAboveMax, Tuning.IconsAbove)]
-		[InlineData(nameof(BetterBuildingMenuSettings.DevIconSize), Tuning.IconSizeMin, Tuning.IconSizeMax, Tuning.IconSize)]
-		[InlineData(nameof(BetterBuildingMenuSettings.DevHoverDelay), Tuning.HoverDelayMin, Tuning.HoverDelayMax, Tuning.HoverDelay)]
-		public void EachSliderKnobRunsOverItsRangeWithItsShippedValueOnAStep(string name, int min, int max, int shipped)
+		[InlineData(nameof(BetterBuildingMenuSettings.DevIconsAbove), Tuning.IconsAboveMin, Tuning.IconsAboveMax, 100, Tuning.IconsAbove)]
+		[InlineData(nameof(BetterBuildingMenuSettings.DevIconSize), Tuning.IconSizeMin, Tuning.IconSizeMax, 2, Tuning.IconSize)]
+		[InlineData(nameof(BetterBuildingMenuSettings.DevHoverDelay), Tuning.HoverDelayMin, Tuning.HoverDelayMax, 50, Tuning.HoverDelay)]
+		public void EachSliderKnobRunsOverItsRangeByItsStepWithItsShippedValueOnAStep(string name, int min, int max, int step, int shipped)
 		{
 			var slider = typeof(BetterBuildingMenuSettings).GetProperty(name)!.GetCustomAttribute<SettingsUISliderAttribute>();
 
 			Assert.True(slider is not null, name + " is not a slider");
 			Assert.Equal((float)min, slider!.min);
 			Assert.Equal((float)max, slider.max);
+			Assert.Equal((float)step, slider.step);
 			// A player who nudged the slider gets back to the shipped value.
 			Assert.Equal(0f, (shipped - min) % slider.step);
 		}

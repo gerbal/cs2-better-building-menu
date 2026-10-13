@@ -15,14 +15,15 @@ namespace BetterBuildingMenu.Domain
 				StringComparer.Ordinal);
 
 		/// <summary>Whether a menu opens on All: the UI names it, or its view is Cards, by its own pick or by Default view.</summary>
-		public static bool For(string? menu, IReadOnlyCollection<string> small, string? menuViews, string? defaultView)
+		/// <remarks>In developer mode an icons-with-names pick is the menu's own, as the UI reads it.</remarks>
+		public static bool For(string? menu, IReadOnlyCollection<string> small, string? menuViews, string? defaultView, bool developerMode = false)
 		{
 			if (string.IsNullOrWhiteSpace(menu))
 			{
 				return false;
 			}
 
-			var pick = BodyViews.SanitizePick(MenuPicks.Get(menuViews, menu));
+			var pick = BodyViews.SanitizePick(MenuPicks.Get(menuViews, menu), developerMode);
 
 			return small.Contains(menu!)
 				|| pick == BodyViews.Cards

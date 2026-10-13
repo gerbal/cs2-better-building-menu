@@ -185,7 +185,7 @@ namespace BetterBuildingMenu.Systems
 			// and its SORT this session; All for a menu in Cards or one the UI names small. See CatalogView.Opening.
 			var armed = ArmedEntryId();
 			var memory = _sessionSorts.For(menuName, MenuPicks.Get(Mod.Settings.MenuGroups, menuName));
-			var onAll = OpensOnAll.For(menuName, _menusOpeningOnAll, Mod.Settings.MenuViews, Mod.Settings.DefaultView);
+			var onAll = OpensOnAll.For(menuName, _menusOpeningOnAll, Mod.Settings.MenuViews, Mod.Settings.DefaultView, Knobs.DeveloperMode);
 			_assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed, onAll), memory);
 			// Vanilla drops a category's highlight as its selection moves off it; the asset menu never
 			// moves that selection, so an open clears the menu's highlights, whichever tab it opens on.

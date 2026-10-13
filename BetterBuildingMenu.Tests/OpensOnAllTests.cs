@@ -47,6 +47,14 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void AnIconsWithNamesPickCountsAsAPickInDeveloperModeOnly()
+		{
+			// In developer mode the pick draws the icons, so Default view's Cards no longer opens the menu on All.
+			Assert.False(OpensOnAll.For("Roads", OpensOnAll.Parse(null), "Roads=iconsNamed", BodyViews.Cards, developerMode: true));
+			Assert.True(OpensOnAll.For("Roads", OpensOnAll.Parse(null), "Roads=iconsNamed", BodyViews.Cards));
+		}
+
+		[Fact]
 		public void TheSystemKeepsTheUisSmallListsAndRedrawsTheOpenMenuWhenItsOwnChanges()
 		{
 			// The UI names a small menu's list once C# has counted the menu, which is while it is open.
@@ -65,7 +73,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var takeover = ModSource.Text("Systems/BuildingMenuUISystem.MenuTakeover.cs");
 
-			Assert.Contains("OpensOnAll.For(menuName, _menusOpeningOnAll, Mod.Settings.MenuViews, Mod.Settings.DefaultView)", takeover);
+			Assert.Contains("OpensOnAll.For(menuName, _menusOpeningOnAll, Mod.Settings.MenuViews, Mod.Settings.DefaultView, Knobs.DeveloperMode)", takeover);
 			Assert.Contains(".Opening(armed, onAll)", takeover);
 		}
 	}

@@ -19,7 +19,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>0.2.4's card, which only a pick shows: Auto never does.</summary>
 		public const string Cards = "cards";
 
-		/// <summary>The icons with each name under its picture: a developer's pick, for the timed check against the icons.</summary>
+		/// <summary>The icons with each name under its picture: a developer's pick.</summary>
 		public const string IconsNamed = "iconsNamed";
 
 		/// <summary>What a menu's own pick can be.</summary>

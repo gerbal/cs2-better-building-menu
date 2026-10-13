@@ -1019,13 +1019,12 @@ inherits another's.
 - **VIEW** is kept in the hidden setting `MenuViews`, a `Menu=kind` line per menu with a pick of its
   own, the kind one of `list`, `icons`, `tiles` and `cards` (`BodyViews.SanitizePick`), or in developer
   mode `iconsNamed`, the icons with each name under its picture, which reads as none outside it, so a
-  player never meets it. VIEW's first row, "Default
-  view · <body>", names the body Default view gives the menu and is lit while the menu has no pick; a
-  press on it takes the menu's pick away (`SetAssetMenuView("")`). A press on a body keeps it as the
-  menu's pick, saved once; the save re-pushes `AssetMenuViews`, which redraws the body. The control
-  names the body drawn, with its dot while the menu has a pick of its own. With no menu open, as under
-  Search everything, VIEW lists no body, since no menu would keep the pick. Reset the build menu… takes
-  every menu's pick away.
+  player never meets it. VIEW's first row, "Default view · <body>", names the body Default view gives
+  the menu and is lit while the menu has no pick; a press on it takes the menu's pick away
+  (`SetAssetMenuView("")`). A press on a body keeps it as the menu's pick, saved once; the save
+  re-pushes `AssetMenuViews`, which redraws the body. The control names the body drawn, with its dot
+  while the menu has a pick of its own. With no menu open, as under Search everything, VIEW lists no
+  body, since no menu would keep the pick. Reset the build menu… takes every menu's pick away.
 - **SORT** is kept per menu for the session (`SessionSorts`): an open brings back the sort the menu last
   had, and every launch starts each at the game's own order. A sort picked while a query is typed is
   the search's, and is not kept; nor is Match, which only a query gives meaning. Reset the build menu… leaves this session's sorts; they end with it.
