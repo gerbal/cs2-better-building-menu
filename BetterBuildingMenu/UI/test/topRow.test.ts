@@ -10,6 +10,7 @@ import {
   gameMenuOpen,
   isWithin,
   planControls,
+  placeholderWords,
   planField,
   popoverAnchor,
   popoverLeft,
@@ -147,6 +148,45 @@ describe("the controls' plan", () => {
   it("asks nothing past the field's floor without a query and a target", () => {
     assert.equal(fieldNeeds("", "Four-Lane Road 2", 1), 0);
     assert.equal(fieldNeeds("four", null, 1), 0);
+  });
+});
+
+describe("the words the search field's placeholder is made of", () => {
+  const SEARCH_MENU = "Tooltip.LABEL[BetterBuildingMenu.SearchMenu]";
+  const ROADS_AND_NETWORKS = "Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]";
+  // The game fills a gap in German from English, so our English answers for every key of ours.
+  const german: Record<string, string> = {
+    [SEARCH_MENU]: "Search {0}",
+    [ROADS_AND_NETWORKS]: "Roads & Networks",
+    "Services.NAME[Roads]": "Straßen",
+    "Services.NAME[Electricity]": "Strom",
+    "Editor.SEARCH_PLACEHOLDER": "Suchen …",
+  };
+  const translate = (strings: Record<string, string>) => (key: string) => strings[key] ?? null;
+
+  it("are the game's own where the active language has no translation of ours", () => {
+    const words = placeholderWords("Electricity", [SEARCH_MENU, ROADS_AND_NETWORKS], translate(german));
+
+    assert.equal(words.template, null);
+    assert.equal(words.gameFallback, "Suchen …");
+    assert.equal(searchPlaceholder(words.template, words.gameFallback, words.menuLabel, 500, FONT), "Suchen …");
+  });
+
+  it("name the game's menu, not ours, where only our menu name is untranslated", () => {
+    const strings = { ...german, [SEARCH_MENU]: "{0} durchsuchen" };
+    const words = placeholderWords("Roads", [ROADS_AND_NETWORKS], translate(strings));
+
+    assert.equal(words.menuLabel, "Straßen");
+    assert.equal(searchPlaceholder(words.template, words.gameFallback, words.menuLabel, 500, FONT), "Straßen durchsuchen");
+  });
+
+  it("are ours where the active language has them, as in English", () => {
+    const english = { [SEARCH_MENU]: "Search {0}", [ROADS_AND_NETWORKS]: "Roads & Networks", "Services.NAME[Roads]": "Roads" };
+    const words = placeholderWords("Roads", [], translate(english));
+
+    assert.equal(words.template, "Search {0}");
+    assert.equal(words.menuLabel, "Roads & Networks");
+    assert.equal(words.gameFallback, "Search...");
   });
 });
 

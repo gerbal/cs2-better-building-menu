@@ -11,9 +11,8 @@ import { CLOSE_GAP, CLOSE_SIZE, TOP_ROW_INSET } from "domain/assetMenuLayout";
 import { searchChangedCommand } from "domain/buildingCatalogContracts";
 import { textInputText } from "domain/textInput";
 import { useTextScale } from "domain/textScaleSetting";
-import { enterTarget, fieldNeeds, planControls, planField, type ControlKind } from "domain/topRow";
-import { resolveVanillaLabel, vanillaMenuNameKeys } from "domain/vanillaServiceLabels";
-import { AssetMenu$, BuildingCatalog$, CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
+import { enterTarget, fieldNeeds, placeholderWords, planControls, planField, type ControlKind } from "domain/topRow";
+import { AssetMenu$, BuildingCatalog$, CurrentSearch$, IsSearchLoading$, send, UntranslatedKeys$ } from "mods/bindings";
 import { GameTextInput } from "mods/gameModules";
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { ControlsStrip, useControlCells } from "./ControlsStrip";
@@ -44,6 +43,7 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
   const query = useValue(CurrentSearch$) ?? "";
   const menu = useValue(AssetMenu$) ?? "";
   const page = useValue(BuildingCatalog$);
+  const untranslated = useValue(UntranslatedKeys$) ?? [];
   const scale = useTextScale();
   const cells = useControlCells();
 
@@ -63,10 +63,8 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
   const plan = planField({
     field: controls.field,
     scale,
-    menuLabel: resolveVanillaLabel(vanillaMenuNameKeys(menu), (key) => translate(key, null), menu),
-    // Null in a language with no string of ours, where the game's own word serves.
-    template: translate("Tooltip.LABEL[BetterBuildingMenu.SearchMenu]"),
-    gameFallback: label("Editor.SEARCH_PLACEHOLDER", "Search..."),
+    // The game's own words where the player's language has no translation of ours.
+    ...placeholderWords(menu, untranslated, (key) => translate(key, null)),
     query,
     target: targetText,
   });

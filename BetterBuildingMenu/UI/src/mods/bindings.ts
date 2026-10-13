@@ -26,6 +26,8 @@ export type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: Buildi
 export const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage | null>(mod.id, "BuildingCatalog", null);
 export const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch", "");
 export const IsSearchLoading$ = bindValue<boolean>(mod.id, "IsSearchLoading", false);
+/** The keys of ours the player's language has no translation of: the game answers them in English. */
+export const UntranslatedKeys$ = bindValue<string[]>(mod.id, "UntranslatedKeys", []);
 export const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 // The order and the grouping live in the backend query, which outlives every
 // component, so reading them back keeps each remount honest.

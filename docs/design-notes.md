@@ -448,7 +448,12 @@ control sits over it (`topRowRightInset`).
 - **The field** takes what the row leaves. It is the game's `TextInput`, drawn bare inside a field
   of the look's `fieldBg` and `fieldRing`. Its placeholder names the menu ("Search Roads &
   Networks"), then the menu's first word, then the word alone, whichever fits; in a language with
-  no string of ours, the game's own word for a search field. While a query is typed it names, at
+  no translation of ours, the game's own word for a search field, and where only our menu name is
+  untranslated ("Roads & Networks"), the game's name for the menu (`placeholderWords`). The game
+  fills a language's gaps from English, so a key of ours answers in English everywhere; C#
+  publishes the keys the active language lacks (`UntranslatedKeys`, from
+  `LocaleFallback.UntranslatedKeys`, at load and at each language change), and those count as
+  missing. While a query is typed it names, at
   its right, the building Enter will arm, once the page answers the query: the mark and the name
   ("↵ Four-Lane Road 2"), or "All matches locked". The target is cut, to one "…", only when the
   query leaves it no room. Widths are the tab row's estimate, 0.55 em a character, erring wide.

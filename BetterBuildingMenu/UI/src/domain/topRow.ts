@@ -28,6 +28,7 @@ import {
 import { LAYOUT_HEIGHT } from "./sharedContracts.generated";
 import type { BuildingCatalogPage } from "./buildingCatalog";
 import { pageAnswers } from "./buildingSearchRank";
+import { resolveVanillaLabel, vanillaMenuNameKeys } from "./vanillaServiceLabels";
 import { textWidth } from "./tabRow";
 
 /** The one mark a cut text ends on. */
@@ -62,6 +63,34 @@ export function searchPlaceholder(template: string | null, gameFallback: string,
   }
 
   return template.replace("{0}", "").trim();
+}
+
+const SEARCH_MENU_KEY = "Tooltip.LABEL[BetterBuildingMenu.SearchMenu]";
+const GAME_SEARCH_PLACEHOLDER_KEY = "Editor.SEARCH_PLACEHOLDER";
+
+/** The words the search field's placeholder is made of, before it is cut to its room. */
+export interface PlaceholderWords {
+  /** Ours, "Search {0}", or null where the player's language has no translation of it. */
+  template: string | null;
+  /** The open menu's name: ours where translated, else the game's. */
+  menuLabel: string;
+  /** The game's own placeholder, in the player's language. */
+  gameFallback: string;
+}
+
+/**
+ * The placeholder's words for a menu. The game answers a key of ours its language lacks in English,
+ * so `untranslated`, C#'s list of those keys, decides: where ours is untranslated, the game's own
+ * words serve, its placeholder and its menu's name. `translate` answers null for a missing key.
+ */
+export function placeholderWords(menu: string, untranslated: readonly string[], translate: (key: string) => string | null): PlaceholderWords {
+  const lookup = (key: string): string | null => (untranslated.includes(key) ? null : translate(key));
+
+  return {
+    template: lookup(SEARCH_MENU_KEY),
+    menuLabel: resolveVanillaLabel(vanillaMenuNameKeys(menu), lookup, menu),
+    gameFallback: translate(GAME_SEARCH_PLACEHOLDER_KEY) ?? "Search...",
+  };
 }
 
 /** What Enter arms while a query is typed: a building by its name, or nothing armable. */

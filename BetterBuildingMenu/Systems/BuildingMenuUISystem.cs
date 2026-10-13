@@ -275,6 +275,8 @@ namespace BetterBuildingMenu.Systems
 			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
 			// VIEW's More options.
 			CreateTrigger("OpenModOptions", OpenModOptions);
+			// Which of our strings the player's language lacks, for the game's words in their place.
+			CreateLocaleBindings();
 
 			// A gamepad cannot reach BBM's menu: the game's own stands in while one is used.
 			// Last, so the handler never runs before the bindings it reads exist.
@@ -303,6 +305,8 @@ namespace BetterBuildingMenu.Systems
 			{
 				input.EventControlSchemeChanged -= OnControlSchemeChanged;
 			}
+
+			DestroyLocaleBindings();
 
 			base.OnDestroy();
 		}

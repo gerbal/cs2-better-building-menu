@@ -51,6 +51,35 @@ describe("the top row's search field", () => {
     assert.match(render(), /placeholder="Search\.\.\."/);
   });
 
+  it("shows the game's own words in a language with no translation of ours, though the game answers ours in English", () => {
+    // The game fills German's gaps from English: only C#'s list says our strings are not German.
+    setTranslation("Tooltip.LABEL[BetterBuildingMenu.SearchMenu]", "Search {0}");
+    setTranslation("Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]", "Roads & Networks");
+    setTranslation("Editor.SEARCH_PLACEHOLDER", "Suchen …");
+    set("UntranslatedKeys", ["Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]", "Tooltip.LABEL[BetterBuildingMenu.SearchMenu]"]);
+    set("AssetMenu", "Roads");
+
+    assert.match(render(), /placeholder="Suchen …"/);
+  });
+
+  it("names the game's menu where only our menu name is untranslated", () => {
+    setTranslation("Tooltip.LABEL[BetterBuildingMenu.SearchMenu]", "{0} durchsuchen");
+    setTranslation("Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]", "Roads & Networks");
+    setTranslation("Services.NAME[Roads]", "Straßen");
+    set("UntranslatedKeys", ["Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]"]);
+    set("AssetMenu", "Roads");
+
+    assert.match(render(), /placeholder="Straßen durchsuchen"/);
+  });
+
+  it("keeps our words in English", () => {
+    setTranslation("Tooltip.LABEL[BetterBuildingMenu.SearchMenu]", "Search {0}");
+    setTranslation("Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]", "Roads & Networks");
+    set("AssetMenu", "Roads");
+
+    assert.match(render(), /placeholder="Search Roads &amp; Networks"/);
+  });
+
   it("names the building Enter will arm once the page answers the query, beside its mark", () => {
     seedSearch();
     const html = render();
