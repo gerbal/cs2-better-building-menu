@@ -193,6 +193,20 @@ describe("a name planned in its box", () => {
     assert.deepEqual(again, plan);
   });
 
+  it("never draws a name every word of which is cut wider than its room at 150%, and says each cut with \"…\"", () => {
+    // Variants of a base-game bridge: against the plain bridge their distinguishing word is the dash.
+    const box = { width: 153, lines: 1, font: NAME_FONT * 1.5 };
+    for (const name of ["Covered Pedestrian Bridge — Bendable & Floodlighted", "Pedestrian Arch Bridge — Bendable & Floodlighted"]) {
+      for (const keep of ["—", "", "Bendable", "&", "Bridge"]) {
+        const plan = planName(name, box, { keep: [keep] });
+        const said = `${name} keeping "${keep}": ${plan.lines.join(" / ")}`;
+
+        assert.ok(plan.lines.length === 1 && planFits(plan.lines, box), said);
+        assert.ok(plan.whole || plan.lines[0].includes(CUT_MARK), said);
+      }
+    }
+  });
+
   it("draws nothing for an empty name", () => {
     assert.deepEqual(planName("  ", plate(95)), { lines: [], whole: true });
   });
