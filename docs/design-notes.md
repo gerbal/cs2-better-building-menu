@@ -348,20 +348,21 @@ on the player's own city; only one of Look's and Width's lists shows beside it a
 moves the setting: every player starts on Standard.
 
 What a look draws apart from its tokens is one entry in `LOOKS`, read by BBM's own components: its
-panels' alphas, how its key numbers mark their unit (see "Numbers said once"), and its tiles.
-Standard's tiles tag a look-alike at its top and name the pointed or armed tile on a line under them.
-Plates' tiles sit centred in the body with no line under them (`tileNameLine`), and name a look-alike
-on a band across its top (`tileBands`): the name whole, or cut once between whole words with its
-distinguishing word kept, else, where no such cut fits, where the cut could be another loaded tile's
-name, or where it reads as another band or tag, the tile's tag, which is unique on the screen. The
-band's room is the tag's (`bandWidth`, from the picture's inset to the tile's edge, on a locked tile to
-its lock glyph), and its text is measured as the tag's, in the wider of the game's two fonts, so the tag
-it falls back to always fits it and no band is clipped: a clipped "#02" reads as "#0", another tile's
-number. A band spans its tile, so on a look-alike unique or built tile it covers the top of the game's
-mark, where a tag, only as wide as its text, does not. Each tile's band is worked out once for its
-name, room and lock, and checked only against the loaded names that open and close as its cut does, so
-a push of the same tiles costs a lookup each. Its cost tag keeps the tag's place and room and rounds
-its ends.
+panels' alphas, how its key numbers mark their unit (see "Numbers said once"), and its tiles. Standard's
+tiles tag a look-alike at its top and name the pointed or armed tile on a line under them. Plates' tiles
+sit centred in the body with no line under them (`tileNameLine`), and name a look-alike on a band across
+its top (`tileBands`): the name whole, or cut once between whole words keeping the word its tag tells it
+apart by, even the word after a "with", which the band asks the name planner to hold, or a single
+letter, which the planner never holds, so a cut without it is refused; else the tile's tag, which is
+unique on the screen, where no such cut fits, where the cut could be another loaded tile's name, or
+where it reads as another band or as any loaded tile's tag. The band's room is the tag's (`bandWidth`,
+from the picture's inset to the tile's edge, on a locked tile to its lock glyph), and its text is
+measured as the tag's, in the wider of the game's two fonts, so the tag it falls back to always fits it
+and no band is clipped: a clipped "#02" reads as "#0", another tile's number. A band spans its tile, so
+on a look-alike unique or built tile it covers the top of the game's mark, where a tag, only as wide as
+its text, does not. Each tile's band is worked out once for its name, room and lock, and checked only
+against the loaded names that open and close as its cut does, so a push of the same tiles costs a lookup
+each. Its cost tag keeps the tag's place and room and rounds its ends.
 
 The upgrades panel follows the Look too. It mounts outside the build menu, so its own root carries the
 look's class, read in the panel (`ExtensionMenuPanel`), never in the wrapper around the game's panel,

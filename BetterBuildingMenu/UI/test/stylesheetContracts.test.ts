@@ -6,7 +6,7 @@ import { LARGE_PICTURE } from "../src/domain/bodyGeometry.ts";
 import { cardGeometry } from "../src/domain/cardsLayout.ts";
 import { SLOT_MAX_HEIGHT, SLOT_PADDING, SLOT_ROOM, SLOT_WIDTH } from "../src/domain/hoverCardPlace.ts";
 import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
-import { bandWidth } from "../src/domain/lookAlikeTags.ts";
+import { bandWidth } from "../src/domain/tileBands.ts";
 import { TAG_FONT, TAG_PADDING, tagRoom } from "../src/domain/tileTag.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
