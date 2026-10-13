@@ -157,7 +157,7 @@ describe("a tile's tag", () => {
     assert.equal(gameTag(row({ upkeep: 16_500 }), 1.5, "upkeep"), "¢16.5k");
   });
 
-  it("keeps a sorted capacity's whole number and drops its unit where both do not fit, at 100% and 130% text", () => {
+  it("keeps a sorted capacity's whole number and drops its unit where both do not fit, at 100% and 130% text, and draws no tag where the number alone does not fit", () => {
     const school = row({ subCategory: "ServiceBuildings_Education", buildingType: "School", capacity: 1_000 });
     const whole = formatCapacity(1_000, "ServiceBuildings", "ServiceBuildings_Education", "School", FALLBACK_SEPARATORS);
 
@@ -165,7 +165,10 @@ describe("a tile's tag", () => {
       assert.ok(!tagFits(whole, 64, scale), `${whole} at ${scale}`);
       assert.equal(tag(school, scale, "capacity").text, groupDigits(1_000, FALLBACK_SEPARATORS), `${scale}`);
     }
-    assert.equal(tag(row({ capacity: 123_456_789 }), 1.3, "capacity").text, groupDigits(123_456_789, FALLBACK_SEPARATORS));
+    // A bare number too long for the tag is left off, never clipped to read as a smaller one.
+    assert.equal(tag(row({ capacity: 1_234_567 }), 1, "capacity").text, groupDigits(1_234_567, FALLBACK_SEPARATORS));
+    assert.equal(tag(row({ capacity: 1_234_567 }), 1.3, "capacity").text, "");
+    assert.equal(tag(row({ capacity: 123_456_789 }), 1.3, "capacity").text, "");
   });
 
   it("keeps a sorted value's unit where it fits", () => {

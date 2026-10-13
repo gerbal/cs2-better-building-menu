@@ -78,10 +78,11 @@ export function tileTag(
   }
 
   // Any other sorted value keeps its whole number and drops its unit, which the Sort control names: a
-  // cut word reads as noise. A word, the locked word, that still runs over is cut by the name planner,
-  // with "…".
+  // cut word reads as noise, and a number too long for the tag is not said, as a clipped one reads as a
+  // smaller one. A word, the locked word, that still runs over is cut by the name planner, with "…".
   const number = bySort ? leadingNumber(text) : null;
-  return { text: number ?? cutToTag(text, tileWidth, textScale), locked };
+  if (number !== null) return { text: tagFits(number, tileWidth, textScale) ? number : "", locked };
+  return { text: cutToTag(text, tileWidth, textScale), locked };
 }
 
 /**
