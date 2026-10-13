@@ -7,8 +7,8 @@ import { CATALOG_WINDOW_STEP } from "./sharedContracts.generated";
 
 /**
  * How close to the bottom counts as "nearly there" — a few rows of runway, so
- * the round trip through C# lands first. Smaller than the shortest catalog
- * viewport, or the band would already be satisfied at scrollTop 0.
+ * the round trip through C# lands first. It can be taller than a short body,
+ * so only a scroll arms it: shouldLoadMore refuses at scrollTop 0.
  */
 export const CATALOG_WINDOW_SCROLL_THRESHOLD = 280;
 

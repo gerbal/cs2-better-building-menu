@@ -7,6 +7,7 @@ import {
   setBuildingCatalogMetricRangeCommand,
   loadMoreCatalogCommand,
   moveEnterTargetCommand,
+  setCatalogScreenCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "../src/domain/buildingCatalogContracts.ts";
@@ -23,6 +24,14 @@ describe("BetterBuildingMenu UI binding contracts", () => {
   it("names the target's move after its trigger, a row down or up a press", () => {
     assert.deepEqual(moveEnterTargetCommand(1), { method: "MoveEnterTarget", args: [1] });
     assert.deepEqual(moveEnterTargetCommand(-1), { method: "MoveEnterTarget", args: [-1] });
+  });
+
+  it("names the screen after its trigger, and sends a whole count of 0 or more", () => {
+    assert.deepEqual(setCatalogScreenCommand(20), { method: "SetCatalogScreen", args: [20] });
+    // C# reads an int: a body measured before its stylesheet loads must not send NaN or a fraction.
+    for (const [slots, sent] of [[Number.NaN, 0], [Number.POSITIVE_INFINITY, 0], [-5, 0], [20.7, 20]]) {
+      assert.deepEqual(setCatalogScreenCommand(slots).args, [sent], `${slots}`);
+    }
   });
 
   it("names the window command after its trigger", () => {

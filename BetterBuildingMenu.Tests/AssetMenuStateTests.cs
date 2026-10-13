@@ -1035,11 +1035,39 @@ public sealed class AssetMenuScreenTests
     }
 
     [Fact]
-    public void TheScreenReachesTheStateThroughItsTrigger()
+    public void AScreenThatLeavesTheWindowAloneServesNoOtherWindow()
     {
-        Assert.Contains(
-            "private void SetCatalogScreen(int slots) => Apply(_assetMenu.SetScreenSlots(slots));",
-            ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"));
+        var grown = AssetMenuState.Initial.SetScreenSlots(20).LoadMoreTo(200).LoadMoreTo(300);
+
+        Assert.False(AssetMenuState.Initial.SetScreenSlots(20).ServesAnotherWindow(AssetMenuState.Initial, -1));
+        Assert.False(grown.SetScreenSlots(60).ServesAnotherWindow(grown, -1));
+        Assert.False(grown.SetScreenSlots(0).ServesAnotherWindow(grown, -1));
+        Assert.True(AssetMenuState.Initial.SetScreenSlots(308).ServesAnotherWindow(AssetMenuState.Initial, -1));
+    }
+
+    // The page covers the anchor again at the reach of the day, so a start served before the screen
+    // arrived grows past its row once it does, though the stored window does not move.
+    [Fact]
+    public void AnAnchoredStartServedBeforeTheScreenGrowsOnceTheScreenArrives()
+    {
+        var served = AssetMenuState.Initial.OpenMenu("Roads", _ => OnHighways).CoverAnchor(600);
+
+        var screened = served.SetScreenSlots(308);
+
+        Assert.Equal(served.Query.Limit, screened.Query.Limit);
+        Assert.True(screened.ServesAnotherWindow(served, 600));
+        Assert.Equal(600 + 1 + 616, screened.Query.CoveringAnchor(600).EffectiveLimit);
+    }
+
+    [Fact]
+    public void TheScreenReachesTheStateThroughItsTriggerAndBuildsAPageOnlyForAnotherWindow()
+    {
+        var trigger = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SetCatalogScreen(int slots)");
+
+        Assert.Contains("var next = _assetMenu.SetScreenSlots(slots);", trigger);
+        Assert.Contains("if (next.ServesAnotherWindow(_assetMenu, _BuildingCatalogBinding.Value?.AnchorIndex ?? -1))", trigger);
+        Assert.Contains("Apply(next);", trigger);
+        Assert.Contains("_assetMenu = next;", trigger);
         Assert.Contains("CreateTrigger<int>(\"SetCatalogScreen\", SetCatalogScreen);", ModSource.Text("Systems/BuildingMenuUISystem.cs"));
     }
 }

@@ -33,8 +33,9 @@ import styles from "./buildingCatalog.module.scss";
 
 /**
  * Memoised, and takes no props: it re-renders on its own bindings only, not on
- * every height-drag echo or keystroke that re-renders the asset menu around it.
- * A width step does re-render it, since the Auto rule reads the step.
+ * every keystroke that re-renders the asset menu around it. A width step and a
+ * height-drag echo do re-render it, since the Auto rule reads the step and the
+ * slots read both; the memoised body below them is spared.
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();

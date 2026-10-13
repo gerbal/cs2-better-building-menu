@@ -122,8 +122,8 @@ describe("the line count", () => {
   });
 });
 
-// Guards: the window rule (two screens past a screen of more than half a step, a step otherwise)
-// read at the shortest body the box allows.
+// Guards at the shortest body the box allows. The window rule itself is C#'s (BuildingCatalogQuery.Reach),
+// held by AssetMenuScreenTests; these hold what the UI's side of it stands on.
 describe("the shortest body", () => {
   it("asks for more only after a scroll, though the load-more band is taller than it", () => {
     const clientHeight = ASSET_MENU_MIN_HEIGHT;
@@ -133,7 +133,9 @@ describe("the shortest body", () => {
     assert.equal(shouldLoadMore({ scrollTop: 1, clientHeight, scrollHeight }), true);
   });
 
-  it("shows at most half a step at every 16:9 Width step, so its first window is the step and holds two screens", () => {
+  // A geometry fact, not the window rule. 32:9's widest step is outside it: there the shortest body
+  // already shows more than half a step, and the window is two screens rather than the step.
+  it("shows at most half a step a screen at every 16:9 Width step under the shipped knobs", () => {
     const bodies: Array<Partial<BodyGridInput>> = [
       { body: "list" },
       { body: "list", textScale: 1.3 },

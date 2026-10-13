@@ -138,7 +138,20 @@ namespace BetterBuildingMenu.Systems
 		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_assetMenu.LoadMoreTo(requestedLimit));
 
 		/// <summary>How many buildings one screen of the drawn body holds: the window reaches past it.</summary>
-		private void SetCatalogScreen(int slots) => Apply(_assetMenu.SetScreenSlots(slots));
+		/// <remarks>A page only for another window: the same rows again would cost a projection for nothing.</remarks>
+		private void SetCatalogScreen(int slots)
+		{
+			var next = _assetMenu.SetScreenSlots(slots);
+
+			if (next.ServesAnotherWindow(_assetMenu, _BuildingCatalogBinding.Value?.AnchorIndex ?? -1))
+			{
+				Apply(next);
+				return;
+			}
+
+			// The same rows: the screen is kept for the next start, and no page is built.
+			_assetMenu = next;
+		}
 
 		/// <summary>Up or Down in the search field: Enter's target a row that can be placed further down, or up.</summary>
 		private void MoveEnterTarget(int direction) => Apply(_assetMenu.MoveEnterTarget(direction));

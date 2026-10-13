@@ -233,6 +233,14 @@ namespace BetterBuildingMenu.Domain
 			return this with { Query = screened with { Limit = Math.Max(Query.Limit, screened.FirstWindow) } };
 		}
 
+		/// <summary>Whether this state serves another window than <paramref name="before"/> at the anchor the page holds.</summary>
+		/// <remarks>
+		/// The anchor is covered again at every page with the reach of the day, so a start served before the
+		/// screen arrived grows once it does, though the stored window may not move.
+		/// </remarks>
+		public bool ServesAnotherWindow(AssetMenuState before, int anchorIndex) =>
+			Query.CoveringAnchor(anchorIndex).EffectiveLimit != before.Query.CoveringAnchor(anchorIndex).EffectiveLimit;
+
 		// --- Narrowing -----------------------------------------------------------
 
 		public AssetMenuState ToggleFacet(string facetId, string optionId)
