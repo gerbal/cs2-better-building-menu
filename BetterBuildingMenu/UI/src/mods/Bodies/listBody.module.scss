@@ -70,19 +70,6 @@
   }
 }
 
-// A one-line plate is shorter than 24, so its picture draws at 22, whole, rather than cut at top and foot.
-.oneLinePlate .artwork {
-  @include _base.artwork-box(22rem);
-
-  .picture {
-    @include _base.artwork-picture(22rem);
-  }
-
-  .mark {
-    @include _base.unique-mark(22rem);
-  }
-}
-
 @include unique-mark-states(".plate");
 
 .name {

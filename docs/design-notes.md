@@ -1060,8 +1060,7 @@ a fresh result's first window, and an anchored start's from its row. So a body d
 tiles (22 × 14 = 308 a screen) always has rows below its screen to scroll to, and the poll that loads
 more can see the bottom coming. A screen is no predicate and no start: it only grows the window.
 
-**The list.** Each building on a plate: its picture, 25 rem (24 above 100% text, and 22 on a
-one-line plate, which is shorter than 24); its name, as plain
+**The list.** Each building on a plate: its picture, 25 rem (24 above 100% text); its name, as plain
 text in an inline paragraph (`<p cohinline>`), on up to two lines at 100% text and one under More
 buildings, cut where it runs past them; and a right-aligned number column, the cost over the capacity,
 or under a sort by a number the value sorted by, so the order reads down the column (`plateNumbers`),
