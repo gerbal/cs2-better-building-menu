@@ -148,6 +148,21 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void AnArmedBuildingInATabTheRowDoesNotDrawOpensOnAllAnchoredOnIt()
+		{
+			// A mod's asset can name a category its menu does not list: no cell draws it, so All opens, holding the row.
+			const string Parks = "Parks & Recreation";
+			var parks = new[] { Entry(41, Parks, "ParksParks"), Entry(42, Parks, "ParksPlazas"), Entry(43, Parks, "ParksStray") };
+			var tabs = new[] { "ParksParks", "ParksPlazas" };
+
+			var opening = Opening(parks, In(Parks), armed: 43, tabs);
+			var page = new CatalogView(parks, In(Parks) with { UiCategory = opening.Category, AnchorId = opening.Anchor }, menuCategories: tabs).Page;
+
+			Assert.Equal(new MenuOpening(string.Empty, -1, 43), opening);
+			Assert.True(page.AnchorIndex >= 0);
+		}
+
+		[Fact]
 		public void AMenuStillBeingIndexedOpensOnAllWithNoAnchor()
 		{
 			// During a load the index holds nothing yet: no tab has rows and the armed building is not found.

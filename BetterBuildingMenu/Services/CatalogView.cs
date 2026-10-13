@@ -111,8 +111,9 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>
 		/// Where this menu opens, asked of a view of it as it opens (no tab, no search): the armed
-		/// building's tab when the menu holds it, else Education's first level with rows, else the
-		/// menu's first tab with rows; All where the row draws fewer than two tabs.
+		/// building's tab when the menu holds it (All, anchored on it, when the row draws no such tab),
+		/// else Education's first level with rows, else the menu's first tab with rows; All where the
+		/// row draws fewer than two tabs.
 		/// </summary>
 		/// <param name="armed">The prefab the game has armed, as the index's id, or 0 for none.</param>
 		/// <remarks>See docs/design-notes.md, "Opening on the building's tab".</remarks>
@@ -124,7 +125,9 @@ namespace BetterBuildingMenu.Services
 
 			if (held is not null)
 			{
-				var tab = tabs.Count > 0 ? TabOf(held) : string.Empty;
+				// A tab the row draws no cell for would narrow the list under an All readout: All, still anchored.
+				var own = TabOf(held);
+				var tab = tabs.Any(count => string.Equals(count.Id, own, StringComparison.Ordinal)) ? own : string.Empty;
 
 				return new MenuOpening(tab, LevelOf(held, tab), armed);
 			}
