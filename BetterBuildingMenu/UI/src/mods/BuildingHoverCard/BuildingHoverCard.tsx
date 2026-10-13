@@ -102,6 +102,7 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
     <div
       ref={lineRef}
       data-line={line.key}
+      data-card-row={line.key}
       className={classNames(
         styles.cardLine,
         (stacked || overflowed) && styles.cardLineWide,
@@ -127,31 +128,44 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
  * One card body, shared by the upgrades panel's tooltip and the build menu's detail slot, rendered only
  * when it is shown. Its own component ON PURPOSE: React does not invoke the function until then, so the
  * lines are worked out on hover, not once per tile. `onPanel` draws it on the build menu's own dark panel,
- * in the look's inks.
+ * in the look's inks. `rows` draws only its first rows, in their order (each marked `data-card-row`): the
+ * name, the description, the game's lines, BBM's, the footprints.
  */
 export const HoverCardContent = ({
   entry,
   context,
   onPanel = false,
+  rows = Number.POSITIVE_INFINITY,
 }: {
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
   onPanel?: boolean;
+  rows?: number;
 }) => {
   const label = entry.name || entry.prefabName;
+  let left = rows;
+  /** The leading items of the next rows, while rows are left to draw. */
+  const take = <T,>(items: readonly T[]): T[] => {
+    const kept = items.slice(0, Math.max(0, left));
+    left -= kept.length;
+    return kept;
+  };
+  const [name] = take([label]);
   // What the thing IS, before every line that is a number about it — the same
   // sentence vanilla shows on selection.
-  const description = context.describe(entry.prefabName);
-  const { vanilla: vanillaTier, extra: extraTier } = hoverCardTiers(entry, context);
-  const footprints = entry.footprints ?? [];
+  const [description] = take([context.describe(entry.prefabName)].filter((said): said is string => !!said));
+  const tiers = hoverCardTiers(entry, context);
+  const vanillaTier = take(tiers.vanilla);
+  const extraTier = take(tiers.extra);
+  const [footprints = []] = take([entry.footprints ?? []].filter((shapes) => shapes.length > 0));
   const footprintOverflow = entry.footprintOverflow ?? 0;
 
   const renderLine = (line: TileTooltipLine) => <CardLine key={line.key} line={line} />;
 
   return (
     <div className={classNames(styles.card, onPanel && styles.onPanel)}>
-      <div className={styles.cardName}>{label}</div>
-      {description && <div className={styles.cardDescription}>{description}</div>}
+      {name !== undefined && <div className={styles.cardName} data-card-row="name">{name}</div>}
+      {description && <div className={styles.cardDescription} data-card-row="description">{description}</div>}
       {/* Two across where they fit, so short figures do not each take a whole
           row. A line too long for its half gets a row to itself: see CardLine. */}
       {/* With the game's tier empty, ours IS the card: normal weight, no
@@ -182,7 +196,7 @@ export const HoverCardContent = ({
           against a block on the map, and a picture of the lot is closer to
           that than "2–4 wide" is. */}
       {footprints.length > 0 && (
-        <div className={styles.glyphs}>
+        <div className={styles.glyphs} data-card-row="footprints">
           {footprints.map((footprint) => (
             <FootprintGlyph key={`${footprint.width}x${footprint.depth}`} footprint={footprint} />
           ))}

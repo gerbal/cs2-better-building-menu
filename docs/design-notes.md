@@ -1607,11 +1607,17 @@ Any other stored value reads as beside the pointer, on every load.
   cell's marks, so neither is read as a cell.
 - **The game's detail slot.** A wide card above the box, 706 wide and at most 191 tall, its bottom 6 rem
   over the box, where the game's own detail shows (`placeSlotCard`): at the first Width step at the box's
-  left edge; in a wider box centred over the pointed cell and held inside the box's span; raised over any
-  HUD piece it meets, so at the widest steps it clears the chirper. It draws the game's own card's lines
-  (`HoverCardContent`: the description, the game's figures and BBM's, every condition a locked building
-  waits on, the footprints) beside a 150 picture, then the building's packs, in the look's inks on the
-  popovers' panel. Who made a mod's building waits for the mod facet, which names it.
+  left edge; in a wider box centred over the pointed cell and held inside the box's span, and on screen;
+  raised over any HUD piece it meets, so at the widest steps it clears the chirper. It draws the game's own
+  card's lines (`HoverCardContent`: the description, the game's figures and BBM's, every condition a locked
+  building waits on, the footprints) beside a 150 picture, then the building's packs, in the look's inks on
+  the popovers' panel, a figure that cannot be afforded or falls short keeping the upgrades panel's red or
+  green. Its content has the slot's height less its padding (`SLOT_ROOM`). Cohtml has no line clamp, so
+  the card is drawn unseen with every row, measured two frames on, then drawn with only the leading rows
+  whose bottoms fit (`slotRowsKept`) and placed as drawn: a long card drops its last rows whole, the packs
+  first, its order kept, and the clip never cuts a row. A drawn row that grows (a line too long for its
+  half takes the row) drops more, never fewer, so it settles. It is placed against the pointed cell
+  alone, and reads no other. Who made a mod's building waits for the mod facet, which names it.
 - **Status line only.** No card: the readout at the tabs' right end names the building on its first line,
   planned to the room the tabs leave it and cut once where it runs over, and says its figures on the second
   with their units in words (`statusLine`): a locked building's milestone, the cost, the upkeep, the key

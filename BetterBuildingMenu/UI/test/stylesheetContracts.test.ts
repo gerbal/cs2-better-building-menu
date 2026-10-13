@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
 import { LARGE_PICTURE } from "../src/domain/bodyGeometry.ts";
 import { cardGeometry } from "../src/domain/cardsLayout.ts";
-import { SLOT_MAX_HEIGHT, SLOT_WIDTH } from "../src/domain/hoverCardPlace.ts";
+import { SLOT_MAX_HEIGHT, SLOT_PADDING, SLOT_ROOM, SLOT_WIDTH } from "../src/domain/hoverCardPlace.ts";
 import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
 import { tagRoom } from "../src/domain/tileTag.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
@@ -638,6 +638,35 @@ describe("the game's detail slot is the size placeSlotCard places it at", () => 
     const slot = declarationsOf(HOVER, ".slot");
 
     assert.deepEqual([rem(slot.width), rem(slot["max-height"]), slot.overflow], [SLOT_WIDTH, SLOT_MAX_HEIGHT, "hidden"]);
+  });
+
+  it("holds the slot's content in a box of SLOT_ROOM inside its padding, which SlotCard drops whole rows to fit", () => {
+    const column = declarationsOf(HOVER, ".slotColumn");
+
+    assert.deepEqual(sides(declarationsOf(HOVER, ".slot").padding).map(rem), [SLOT_PADDING, SLOT_PADDING, SLOT_PADDING, SLOT_PADDING]);
+    assert.deepEqual([rem(column["max-height"]), column.overflow], [SLOT_ROOM, "hidden"]);
+    assert.equal(SLOT_ROOM, SLOT_MAX_HEIGHT - 2 * SLOT_PADDING);
+  });
+
+  it("caps the game's card on the panel at the slot's width, so its column sets the width", () => {
+    assert.equal(rem(card(".onPanel")["max-width"]), SLOT_WIDTH);
+  });
+
+  it("draws the game's card on the panel in the look's inks, its warn and good figures in the tones the upgrades panel draws them in", () => {
+    const on = (...path: string[][]) => resolvedOn(CARD, [["card", "onPanel"], ...path], "color");
+    const off = (...path: string[][]) => resolvedOn(CARD, [["card"], ...path], "color");
+
+    assert.deepEqual(
+      [on(["cardName"]), on(["cardLine"], ["cardValue"]), on(["cardDescription"]), on(["cardLine"]), on(["cardLines", "cardLinesExtra"])],
+      ["var(--bbm-tStateSet)", "var(--bbm-tStateSet)", "var(--bbm-tStateSet)", "var(--bbm-tWord)", "var(--bbm-tWord)"],
+    );
+    for (const tone of ["cardWarn", "cardGood"]) {
+      const value = off(["cardLine", tone], ["cardValue"]);
+
+      assert.match(String(value), /^rgb\(/, tone);
+      assert.equal(on(["cardLine", tone], ["cardValue"]), value, tone);
+      assert.equal(on(["cardLines", "cardLinesExtra"], ["cardLine", tone], ["cardValue"]), value, `${tone} in the extra tier`);
+    }
   });
 });
 

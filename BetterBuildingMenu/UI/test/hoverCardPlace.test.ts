@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cellsInField, hudPieces, overlap, placePointerCard, placeSlotCard, remRect, type Rect } from "../src/domain/hoverCardPlace";
+import { cellsInField, hudPieces, overlap, placePointerCard, placeSlotCard, remRect, slotRowsKept, type Rect } from "../src/domain/hoverCardPlace";
 
 const SCREEN = { w: 1920, h: 1080 };
 /** The box at the first Width step and at the fifth, on 16:9: its top at 746, 208 tall. */
@@ -96,6 +96,22 @@ describe("the hover card beside the pointer", () => {
     assert.equal(end.x + end.w, STEP5.x + STEP5.w);
     assert.equal(end.y, chirper.y - 4 - 191);
     assert.equal(overlap(end, chirper), 0);
+  });
+
+  it("holds the slot on screen across, where a box narrower than the slot meets the screen's right edge", () => {
+    const narrow: Rect = { x: SCREEN.w - 500, y: 746, w: 500, h: 208 };
+    const place = placeSlotCard({ cell: { x: SCREEN.w - 180, y: 805, w: 171, h: 27.25 }, height: 191, box: narrow, screen: SCREEN, hud: [] });
+
+    assert.deepEqual([place.x, place.x + place.w], [SCREEN.w - 4 - 706, SCREEN.w - 4]);
+  });
+
+  it("keeps the slot's leading rows whose bottoms fit its room, and the first always", () => {
+    assert.equal(slotRowsKept([17, 40, 55, 80], 60), 3);
+    assert.equal(slotRowsKept([17, 40, 55, 80], 80), 4);
+    // A row that runs over drops every row after it, however short: the order holds.
+    assert.equal(slotRowsKept([17, 70, 20], 60), 1);
+    assert.equal(slotRowsKept([200], 167), 1);
+    assert.equal(slotRowsKept([], 167), 0);
   });
 
   it("keeps the HUD at the screen's right edge on a wider screen", () => {

@@ -22,15 +22,22 @@ export interface DrawnCells {
 /**
  * Reads the box as drawn, for a card to place itself against: only the cells meeting the body's
  * scroller, as a cell scrolled out of it sits above or below the body. A body that fits scrolls none out.
+ * With `withCells` false it reads the box and the pointed cell alone, for a card that gives way to no cell.
  */
-export function drawnCells(box: HTMLElement, pointedId: number, innerHeight: number): DrawnCells {
-  const all = Array.from(box.querySelectorAll("[data-bbm-item]")).map((cell) => remRect(cell.getBoundingClientRect(), innerHeight));
-  const scroller = listScroller(box);
+export function drawnCells(box: HTMLElement, pointedId: number, innerHeight: number, withCells = true): DrawnCells {
   const pointed = lastCatalogRow(box, pointedId);
 
   return {
     box: remRect(box.getBoundingClientRect(), innerHeight),
-    cells: scroller === null ? all : cellsInField(all, remRect(scroller.getBoundingClientRect(), innerHeight)),
+    cells: withCells ? cellsDrawn(box, innerHeight) : [],
     cell: pointed === null ? null : remRect(pointed.getBoundingClientRect(), innerHeight),
   };
+}
+
+/** The cells meeting the body's scroller, in screen rem. */
+function cellsDrawn(box: HTMLElement, innerHeight: number): Rect[] {
+  const all = Array.from(box.querySelectorAll("[data-bbm-item]")).map((cell) => remRect(cell.getBoundingClientRect(), innerHeight));
+  const scroller = listScroller(box);
+
+  return scroller === null ? all : cellsInField(all, remRect(scroller.getBoundingClientRect(), innerHeight));
 }

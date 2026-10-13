@@ -5,6 +5,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry, showBody } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { clearPointed, getAssetMenuView, resetAssetMenuView, setPointed } from "../../src/domain/assetMenuViewStore";
+import { SLOT_ROOM } from "../../src/domain/hoverCardPlace";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { HoverCard } from "../../src/mods/HoverCard/HoverCard";
 
@@ -44,7 +45,7 @@ describe("the hover card", () => {
 
   const mount = (hidden = false) =>
     act(() => {
-      root = create(<HoverCard boxRef={boxRef} hidden={hidden} />, { createNodeMock: () => ({ getBoundingClientRect: () => rect(0, 0, 240, 98), children: [], clientWidth: 0 }) });
+      root = create(<HoverCard boxRef={boxRef} hidden={hidden} />, { createNodeMock: () => ({ getBoundingClientRect: () => rect(0, 0, 240, 98), children: [], clientWidth: 0, querySelectorAll: () => [] }) });
     });
   /** Runs the timers due by this many milliseconds; it runs no frame, which `frame` does, one at a time. */
   const wait = (ms: number) =>
@@ -215,6 +216,9 @@ describe("the hover card", () => {
 
   it("draws the game's detail slot, the game's card beside a 150 picture, above the box at its left edge", () => {
     setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "slot");
+    const queried: string[] = [];
+    const query = box.querySelectorAll;
+    box.querySelectorAll = (selector: string) => { queried.push(selector); return query(selector); };
     mount();
     point();
     wait(150);
@@ -222,12 +226,19 @@ describe("the hover card", () => {
 
     assert.equal(slot().length, 1);
     assert.equal(root!.root.findAll((node) => node.props.className === "cardName")[0].children.join(""), "Elementary School");
+    // Two frames to measure its rows, two more to place it as drawn.
+    frame();
+    frame();
     frame();
     frame();
     // The node mock draws it 98 tall: its bottom 6 rem over the box, at the box's left edge.
     assert.deepEqual(slot()[0].props.style, { left: "0rem", top: "-104rem" });
     // No cell's marks, which the drawn-cells reading and the body's scroller walk find cells by.
     assert.equal(slot()[0].findAll((node) => node.props["data-catalog-entry"] !== undefined || node.props["data-bbm-item"] !== undefined).length, 0);
+    // The slot reads the pointed cell alone: it gives way to no other cell, so it walks none.
+    box.querySelectorAll = query;
+    assert.ok(queried.length > 0);
+    assert.deepEqual([...new Set(queried)], ['[data-catalog-entry="1"]']);
   });
 
   it("draws a slot card's footprints and packs with no title, which Cohtml never draws", () => {
@@ -242,7 +253,60 @@ describe("the hover card", () => {
     assert.equal(root!.root.findAll((node) => typeof node.props["aria-label"] === "string" && node.props["aria-label"] === "2 by 3").length, 1);
     assert.match(says(), /Modern Architecture/);
     assert.equal(root!.root.findAll((node) => typeof node.props.title === "string").length, 0);
+    // On the panel, in the look's inks.
+    assert.equal(root!.root.findAll((node) => node.type === "div" && node.props.className === "card onPanel").length, 1);
   });
+
+  for (const scale of [1, 1.3]) {
+    it(`drops a long slot card's trailing rows whole at ${scale * 100}% text, the packs first, its order kept and no row cut`, () => {
+      setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "slot");
+      setBinding("options", "textScale", scale);
+      // The layout stand-in: each of the card's rows on a line of its own under the column's top, taller with the text.
+      let pitch = 24 * scale;
+      const rows = () => root!.root.findAll((node) => typeof node.type === "string" && node.props["data-card-row"] !== undefined);
+      const mock = (element: { props: Record<string, unknown> }) => (element.props.className === "slotColumn"
+        ? { getBoundingClientRect: () => rect(12, 12, 518, SLOT_ROOM), querySelectorAll: () => rows().map((_, at) => ({ getBoundingClientRect: () => rect(12, 12 + at * pitch, 518, pitch) })) }
+        : { getBoundingClientRect: () => rect(0, 0, 706, 191), children: [], clientWidth: 0 });
+      act(() => {
+        root = create(<HoverCard boxRef={boxRef} hidden={false} />, { createNodeMock: mock });
+      });
+      act(() => setPointed({
+        entry: entry(1, {
+          name: "Elementary School",
+          assetPacks: ["Modern Architecture"],
+          footprints: [{ width: 2, depth: 3 }, { width: 3, depth: 3 }],
+        }),
+        cell: { x: 612, y: 805, w: 171, h: 27.25 },
+      }));
+      wait(150);
+      const slot = () => root!.root.findAll((node) => node.type === "div" && node.props["data-bbm-hovercard"] === "slot")[0];
+      const every = rows().map((row) => row.props["data-card-row"]);
+      assert.ok(every.length * pitch > SLOT_ROOM, `${every.join(", ")}`);
+      assert.equal(every.at(-1), "packs");
+      assert.match(String(slot().props.className), /unplaced/);
+
+      // Two frames on, measured: the rows that fit, whole, in their order.
+      frame();
+      frame();
+      const kept = rows().map((row) => row.props["data-card-row"]);
+      assert.deepEqual(kept, every.slice(0, Math.floor(SLOT_ROOM / pitch)));
+      assert.ok(kept.length * pitch <= SLOT_ROOM);
+      assert.doesNotMatch(says(), /Modern Architecture/);
+      assert.match(String(slot().props.className), /unplaced/);
+
+      // Two more, placed as drawn.
+      frame();
+      frame();
+      assert.doesNotMatch(String(slot().props.className), /unplaced/);
+
+      // A row that grows once drawn, as a line too long for its half takes the row, drops more, two frames on.
+      pitch = 40 * scale;
+      act(() => observers.forEach((run) => run()));
+      frame();
+      frame();
+      assert.deepEqual(rows().map((row) => row.props["data-card-row"]), every.slice(0, Math.floor(SLOT_ROOM / pitch)));
+    });
+  }
 
   it("draws no card for Status line only, whose readout says the building", () => {
     setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "status");
@@ -264,7 +328,7 @@ describe("the hover card", () => {
           <BuildingCatalogComponent />
           <HoverCard boxRef={boxRef} hidden={false} />
         </div>,
-        { createNodeMock: () => ({ getBoundingClientRect: () => rect(0, 0, 240, 98), children: [], clientWidth: 0 }) },
+        { createNodeMock: () => ({ getBoundingClientRect: () => rect(0, 0, 240, 98), children: [], clientWidth: 0, querySelectorAll: () => [] }) },
       );
     });
     const [tile] = root!.root.findAll((node) => node.props["data-catalog-entry"] === 2 && typeof node.props.onMouseEnter === "function");

@@ -20,8 +20,8 @@
   color: var(--bbm-tStateSet);
 }
 
-// The game's detail slot: as wide as the game's box, at most 191 tall, a 150 picture beside the card's
-// lines, then the building's packs.
+// The game's detail slot: SLOT_WIDTH wide, at most SLOT_MAX_HEIGHT tall, SLOT_PADDING all round
+// (hoverCardPlace.ts), a large picture beside the card's lines, then the building's packs.
 .slot {
   width: 706rem;
   max-height: 191rem;
@@ -42,9 +42,12 @@
   height: 150rem;
 }
 
+// SLOT_ROOM tall at most: SlotCard draws only the rows that fit it whole, so the clip cuts none.
 .slotColumn {
   flex: 1 1 0;
   min-width: 0;
+  max-height: 167rem;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }

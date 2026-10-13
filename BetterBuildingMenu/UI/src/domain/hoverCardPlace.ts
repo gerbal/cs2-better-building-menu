@@ -87,6 +87,19 @@ export interface CardPlace extends Rect {
 /** The game's detail slot: as wide as the game's own box, and at most this tall. */
 export const SLOT_WIDTH = 706;
 export const SLOT_MAX_HEIGHT = 191;
+/** The slot's padding, all round, and the room its content has inside it, which it drops whole rows to fit. */
+export const SLOT_PADDING = 12;
+export const SLOT_ROOM = SLOT_MAX_HEIGHT - 2 * SLOT_PADDING;
+
+/**
+ * How many of the slot's rows it draws: the leading rows whose bottoms, measured from the content's top,
+ * come within its room, the first always. A row that runs over drops every row after it, so the order holds
+ * and no row is cut.
+ */
+export function slotRowsKept(bottoms: readonly number[], room: number): number {
+  const over = bottoms.findIndex((bottom) => bottom > room + TOUCH);
+  return over === -1 ? bottoms.length : Math.max(1, over);
+}
 
 export interface SlotCardInput {
   cell: Rect;
@@ -98,14 +111,15 @@ export interface SlotCardInput {
 }
 
 /**
- * The game's detail slot: 706 wide, its bottom 6 rem above the box, centred over the pointed cell and
- * held inside the box's span, so at the first Width step it is the box's own left edge; raised over any
- * HUD piece it would meet (the chirper at the widest steps).
+ * The game's detail slot: `SLOT_WIDTH` wide, its bottom `CARD_GAP` above the box, centred over the pointed
+ * cell and held inside the box's span, so at the first Width step it is the box's own left edge, and on
+ * screen; raised over any HUD piece it would meet (the chirper at the widest steps).
  */
 export function placeSlotCard({ cell, height, box, screen, hud = hudPieces(screen.w) }: SlotCardInput): Rect {
   const w = Math.min(SLOT_WIDTH, screen.w - 2 * MARGIN);
   const h = Math.min(height, SLOT_MAX_HEIGHT);
-  const x = Math.min(Math.max(box.x, cell.x + cell.w / 2 - w / 2), Math.max(box.x, box.x + box.w - w));
+  const inBox = Math.min(Math.max(box.x, cell.x + cell.w / 2 - w / 2), Math.max(box.x, box.x + box.w - w));
+  const x = Math.min(Math.max(MARGIN, inBox), screen.w - MARGIN - w);
   const y = raisedOver({ x, y: box.y - CARD_GAP - h, w, h }, hud);
 
   return { x, y: Math.max(MARGIN, y), w, h };

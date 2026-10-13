@@ -9,7 +9,8 @@ import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buil
 import { TAB_COUNT_SIZE, TAB_NAME_SIZE } from "domain/assetMenuLayout";
 import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type StatusLine } from "domain/hoverCard";
 import { hoverCardLabels } from "domain/hoverCardLines";
-import { placePointerCard, placeSlotCard, remRect, type Rect } from "domain/hoverCardPlace";
+import { placePointerCard, placeSlotCard, remRect, SLOT_ROOM, slotRowsKept, type Rect } from "domain/hoverCardPlace";
+import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
 import type { KeyKind } from "domain/rowNumbers";
 import { READOUT_SEP_PADDING } from "domain/tabRow";
 import { textWidth } from "domain/textWidth";
@@ -54,6 +55,10 @@ export function usePointedAfterDelay(active = true): Pointed | null {
   return pointed !== null && shown !== null && shown.entry.id === pointed.entry.id ? pointed : null;
 }
 
+/** The pointed building as the page has it now, or as it was pointed at while the page holds it no more. */
+const pageRow = (page: BuildingCatalogPage | null | undefined, pointed: Pointed): BuildingCatalogEntry =>
+  page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
+
 /** The words the card and the status line say beyond the figures: the hover card's labels, the unlock line, the locked word. */
 function useCardWords(): PointerCardWords {
   const { translate } = useLocalization();
@@ -83,7 +88,7 @@ export function useStatusLine(room: number, keyKind: KeyKind): StatusLine | null
 
   if (!status || pointed === null) return null;
 
-  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
+  const entry = pageRow(page, pointed);
   const line = TAB_COUNT_SIZE * textScale;
   return statusLine(entry, keyKind, separators, words, achievedMilestone, room, {
     name: TAB_NAME_SIZE * textScale,
@@ -100,15 +105,26 @@ interface CardProps {
 /** Where a card goes, in screen rem, from its drawn size, the box as drawn with the pointed cell in it, and the screen. */
 type Placer = (card: Rect, drawn: DrawnCells & { cell: Rect }, screen: { w: number; h: number }) => Rect;
 
+interface PlacedCard {
+  cardRef: RefObject<HTMLDivElement>;
+  /** Where the card goes in the box's rem; null until placed for the building pointed at, as drawn. */
+  placed: { left: number; top: number } | null;
+  page: BuildingCatalogPage | null | undefined;
+  /** The pointed building as the page has it now. */
+  entry: BuildingCatalogEntry;
+}
+
 /**
  * A card drawn unseen first, then, two frames on, measured and placed against the box, in the box's own
  * rem: never in the tick of a render or an event, where Cohtml reports the previous layout's sizes. It
  * places itself again when the page, the screen, the box or the card change size, and on a wheel over the
- * box. Null until placed for the building pointed at.
+ * box, and waits for a new place when `drawn` (what the card draws) changes. `withCells` false reads no
+ * cell but the pointed one, for a card that gives way to none.
  */
-function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, page: unknown, placer: Placer): { cardRef: RefObject<HTMLDivElement>; placed: { left: number; top: number } | null } {
+function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, placer: Placer, drawn: unknown = null, withCells = true): PlacedCard {
+  const page = useValue(BuildingCatalog$);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [place, setPlace] = useState<{ id: number; left: number; top: number } | null>(null);
+  const [place, setPlace] = useState<{ id: number; drawn: unknown; left: number; top: number } | null>(null);
   const placerRef = useRef(placer);
   placerRef.current = placer;
 
@@ -119,16 +135,16 @@ function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, page: u
     const id = pointed.entry.id;
     const place = () => {
       const height = window.innerHeight;
-      const drawn = drawnCells(box, id, height);
+      const cells = drawnCells(box, id, height, withCells);
       const at = placerRef.current(
         remRect(card.getBoundingClientRect(), height),
         // Where the cell is drawn now, or where the pointer entered it while it is not.
-        { ...drawn, cell: drawn.cell ?? pointed.cell },
+        { ...cells, cell: cells.cell ?? pointed.cell },
         { w: (window.innerWidth * LAYOUT_HEIGHT) / height, h: LAYOUT_HEIGHT },
       );
-      const left = at.x - drawn.box.x;
-      const top = at.y - drawn.box.y;
-      setPlace((last) => (last !== null && last.id === id && last.left === left && last.top === top ? last : { id, left, top }));
+      const left = at.x - cells.box.x;
+      const top = at.y - cells.box.y;
+      setPlace((last) => (last !== null && last.id === id && last.drawn === drawn && last.left === left && last.top === top ? last : { id, drawn, left, top }));
     };
     let outer = 0;
     let inner = 0;
@@ -153,9 +169,14 @@ function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, page: u
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, [pointed, boxRef, page]);
+  }, [pointed, boxRef, page, drawn, withCells]);
 
-  return { cardRef, placed: place !== null && place.id === pointed.entry.id ? place : null };
+  return {
+    cardRef,
+    placed: place !== null && place.id === pointed.entry.id && place.drawn === drawn ? place : null,
+    page,
+    entry: pageRow(page, pointed),
+  };
 }
 
 /**
@@ -163,16 +184,14 @@ function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, page: u
  * cells drawn. It says the building as the page has it now.
  */
 const PointerCard = memo(function PointerCard({ pointed, boxRef }: CardProps) {
-  const page = useValue(BuildingCatalog$);
-  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
+  const { cardRef, placed, page, entry } = usePlacedCard(pointed, boxRef, (card, drawn, screen) =>
+    placePointerCard({ cell: drawn.cell, card: { w: card.w, h: card.h }, box: drawn.box, screen, cells: drawn.cells }));
   const separators = useNumberSeparators();
   const words = useCardWords();
   const textScale = useTextScale();
   // The view's key kind, which the card names the key number by; capacity before a page has said.
   const keyKind = (page?.facts?.keyKind ?? "capacity") as KeyKind;
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
-  const { cardRef, placed } = usePlacedCard(pointed, boxRef, page, (card, drawn, screen) =>
-    placePointerCard({ cell: drawn.cell, card: { w: card.w, h: card.h }, box: drawn.box, screen, cells: drawn.cells }));
   const text = pointerCardText(entry, keyKind, separators, words, achievedMilestone);
   const locked = isEntryLocked(entry);
 
@@ -219,24 +238,75 @@ const PointerCard = memo(function PointerCard({ pointed, boxRef }: CardProps) {
   );
 });
 
+/** The rows a slot card draws, measured for one building as the page has it, at one text scale. */
+interface SlotRows {
+  entry: BuildingCatalogEntry;
+  textScale: number;
+  /** The leading rows that fit the slot's room. */
+  rows: number;
+  /** Whether every row fits, the packs, which come last, among them. */
+  all: boolean;
+}
+
 /**
  * The game's detail slot: a wide card above the box, placed by `placeSlotCard` over the pointed cell, the
- * game's own card's lines beside a 150 picture, then the building's packs. It says the building as the
- * page has it now.
+ * game's own card's lines beside a large picture, then the building's packs. It is drawn unseen with every
+ * row, measured two frames on, then drawn with the leading rows that fit `SLOT_ROOM` whole (`slotRowsKept`)
+ * and placed as drawn, so a long card drops its last rows, the packs first, and never cuts one.
  */
 const SlotCard = memo(function SlotCard({ pointed, boxRef }: CardProps) {
-  const page = useValue(BuildingCatalog$);
-  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
   const context = useHoverCardContext();
-  const { cardRef, placed } = usePlacedCard(pointed, boxRef, page, (card, drawn, screen) =>
-    placeSlotCard({ cell: drawn.cell, height: card.h, box: drawn.box, screen }));
+  const textScale = useTextScale();
+  const columnRef = useRef<HTMLSpanElement>(null);
+  const [measured, setMeasured] = useState<SlotRows | null>(null);
+  const { cardRef, placed, entry } = usePlacedCard(pointed, boxRef, (card, drawn, screen) =>
+    placeSlotCard({ cell: drawn.cell, height: card.h, box: drawn.box, screen }), measured, false);
+  const rows = measured !== null && measured.entry === entry && measured.textScale === textScale ? measured : null;
   const packs = (entry.assetPacks ?? []).join(" · ");
+
+  useEffect(() => {
+    const column = columnRef.current;
+    if (!column) return undefined;
+    const measure = () => {
+      const height = window.innerHeight;
+      const top = remRect(column.getBoundingClientRect(), height).y;
+      const bottoms = Array.from(column.querySelectorAll("[data-card-row]")).map((row) => {
+        const at = remRect(row.getBoundingClientRect(), height);
+        return at.y + at.h - top;
+      });
+      const kept = slotRowsKept(bottoms, SLOT_ROOM);
+      // With every row drawn, the rows that fit; with fewer, fewer again only where a drawn row grew (a line
+      // too long for its half takes the row), so it settles.
+      if (rows === null) setMeasured({ entry, textScale, rows: kept, all: kept === bottoms.length });
+      else if (kept < bottoms.length) setMeasured({ entry, textScale, rows: kept, all: false });
+    };
+    // Never in the tick of a render: Cohtml reports the previous layout's sizes then.
+    let outer = 0;
+    let inner = 0;
+    const schedule = () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+      outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(measure);
+      });
+    };
+    // The column is capped, so its content is what grows.
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(schedule) : null;
+    observer?.observe(column);
+    if (column.firstElementChild) observer?.observe(column.firstElementChild);
+    schedule();
+    return () => {
+      observer?.disconnect();
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [rows, entry, textScale]);
 
   return (
     <div
       ref={cardRef}
-      className={classNames(styles.card, styles.slot, placed === null && styles.unplaced)}
-      style={placed === null ? undefined : { left: `${placed.left}rem`, top: `${placed.top}rem` }}
+      className={classNames(styles.card, styles.slot, (rows === null || placed === null) && styles.unplaced)}
+      style={rows === null || placed === null ? undefined : { left: `${placed.left}rem`, top: `${placed.top}rem` }}
       data-bbm-hovercard="slot"
     >
       <span className={styles.slotPlate}>
@@ -248,9 +318,9 @@ const SlotCard = memo(function SlotCard({ pointed, boxRef }: CardProps) {
           aria-hidden="true"
         />
       </span>
-      <span className={styles.slotColumn}>
-        <HoverCardContent entry={entry} context={context} onPanel />
-        {packs !== "" && <span className={styles.packs}>{packs}</span>}
+      <span ref={columnRef} className={styles.slotColumn}>
+        <HoverCardContent entry={entry} context={context} onPanel rows={rows === null || rows.all ? undefined : rows.rows} />
+        {packs !== "" && (rows === null || rows.all) && <span className={styles.packs} data-card-row="packs">{packs}</span>}
       </span>
     </div>
   );
