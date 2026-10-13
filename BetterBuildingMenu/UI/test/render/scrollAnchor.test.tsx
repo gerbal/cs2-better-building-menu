@@ -152,6 +152,20 @@ describe("where the list goes when a page lands", () => {
     assert.equal(list.scroller.scrollTop, 600);
   });
 
+  it("carries a start's move on when a page of the same start lands mid-move without the anchor", () => {
+    // A search or a filter typed while the list is still moving clears the anchor and starts nothing.
+    const list = fakeList(250);
+
+    mount(list, { listStart: 1, anchorId: 150, anchorIndex: 149, itemCount: 250 });
+    tick();
+    land(list, { listStart: 1, anchorId: 0, anchorIndex: -1, itemCount: 250 });
+    flush();
+
+    assert.equal(list.offsetOf(150), 0);
+    assert.equal(getAssetMenuListStart(), 1);
+    assert.equal(getAssetMenuAnchor(KEY), 150);
+  });
+
   it("brings the kept row back once on a remount, then leaves the list to the player", () => {
     const list = fakeList(250);
     setAssetMenuListStart(3);

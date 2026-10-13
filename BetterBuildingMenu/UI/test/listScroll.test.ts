@@ -12,6 +12,7 @@ describe("where the list goes when a page lands", () => {
     itemCount: 250,
     stored: null,
     settled: false,
+    underWay: null,
     ...over,
   });
 
@@ -29,8 +30,22 @@ describe("where the list goes when a page lands", () => {
   });
 
   it("starts at the top when the anchored row is past the rows the window holds", () => {
-    // Past the 2,000-row ceiling: the list says it stops, and starts at its first row.
-    assert.deepEqual(planListScroll(page({ anchorIndex: 2499, itemCount: 2000 })), { kind: "top", start: 2 });
+    // At or past the 2,000-row ceiling the window stays the first chunk, and the list starts at its first row.
+    assert.deepEqual(planListScroll(page({ anchorIndex: 2499, itemCount: 100 })), { kind: "top", start: 2 });
+  });
+
+  it("carries on the move under way when a later page of its start drops the anchor", () => {
+    // A search typed mid-move clears the anchor without a new start: the start's first page decided the move.
+    const underWay = { kind: "lineOne", start: 2, id: 150 } as const;
+
+    assert.deepEqual(planListScroll(page({ anchorId: 0, anchorIndex: -1, underWay })), underWay);
+    assert.deepEqual(planListScroll(page({ anchorId: 0, anchorIndex: -1, itemCount: 100, underWay })), underWay);
+  });
+
+  it("plans a new start afresh whatever move is under way", () => {
+    const underWay = { kind: "lineOne", start: 2, id: 150 } as const;
+
+    assert.deepEqual(planListScroll(page({ listStart: 3, anchorId: 0, anchorIndex: -1, underWay })), { kind: "top", start: 3 });
   });
 
   it("leaves the list alone for a page with no new start once this mount is in place", () => {

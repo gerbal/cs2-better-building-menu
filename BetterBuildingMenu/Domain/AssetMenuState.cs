@@ -142,13 +142,14 @@ namespace BetterBuildingMenu.Domain
 			Query.Descending == descending ? this : Started(Query with { Descending = descending, AnchorId = 0 });
 
 		/// <summary>The player's grouping choice; empty means the menu's default.</summary>
+		/// <remarks>Not a start: the anchor goes, as a narrowing's does, so the window is the first chunk.</remarks>
 		public AssetMenuState SetGroupBy(string? groupBy)
 		{
 			var next = (groupBy ?? string.Empty).Trim();
 
 			return string.Equals(Query.GroupBy, next, StringComparison.Ordinal)
 				? this
-				: this with { Query = ResetWindow(Query with { GroupBy = next }) };
+				: this with { Query = ResetWindow(Query with { GroupBy = next, AnchorId = 0 }) };
 		}
 
 		/// <summary>One more chunk, up to the ceiling. At the ceiling, nothing.</summary>
@@ -271,6 +272,15 @@ namespace BetterBuildingMenu.Domain
 			query with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 		/// <summary>A narrowing that changed the result set starts the window over; one that did not keeps it.</summary>
-		private BuildingCatalogQuery Narrowed(BuildingCatalogQuery next) => next.ResetWindowIfPredicatesChanged(Query);
+		/// <remarks>
+		/// The anchor goes with the old window: its start is served, and only a start's page grows the
+		/// window to the anchored row. See docs/design-notes.md, "Opening on the building's tab".
+		/// </remarks>
+		private BuildingCatalogQuery Narrowed(BuildingCatalogQuery next)
+		{
+			var reset = next.ResetWindowIfPredicatesChanged(Query);
+
+			return ReferenceEquals(reset, next) ? next : reset with { AnchorId = 0 };
+		}
 	}
 }

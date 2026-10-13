@@ -104,9 +104,10 @@ namespace BetterBuildingMenu.Domain
 		/// rows after it, so the row can sit on the list's first line in any body; itself when the window
 		/// already does or there is no such row. Up to the ceiling, from the first row.
 		/// </summary>
+		/// <remarks>A row at or past the ceiling no window can hold, so it grows nothing and the list starts at its top.</remarks>
 		public BuildingCatalogQuery CoveringAnchor(int anchorIndex)
 		{
-			if (anchorIndex < 0)
+			if (anchorIndex < 0 || anchorIndex >= MaxLimit)
 			{
 				return this;
 			}

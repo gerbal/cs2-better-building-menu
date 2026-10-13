@@ -908,11 +908,14 @@ increment 9's bodies, which decide what fits on one screen; the warm start and t
 
 **The anchor** is an entry id in the query (`BuildingCatalogQuery.AnchorId`). An open and a tab pick
 set it to the armed building; a sort, a second click on the lit tab and a tab picked while a search
-is typed clear it, so those lists start at the top. It matches no row: the page names its place in
-the order (`AnchorIndex`, −1 when the result does not hold it), and the first window grows to hold
-it and a step of rows after it (`CoveringAnchor`), up to the 2,000-row ceiling, so the row can sit
-on line 1 in any body. The state keeps the window the page served (`CoverAnchor`), so Load more
-grows from there and not from the first chunk.
+is typed clear it, so those lists start at the top. A search, a filter, a range and a grouping clear
+it too and start nothing: its start is served, and a window grown for it would hold up to 2,000 rows
+on every keystroke. It matches no row: the page names its place in the order (`AnchorIndex`, −1 when
+the result does not hold it), and the start's window grows to hold it and a step of rows after it
+(`CoveringAnchor`), up to the 2,000-row ceiling, so the row can sit on line 1 in any body. A row at
+or past the ceiling no window holds: it grows nothing, and its list starts at the top. The state
+keeps the window the page served (`CoverAnchor`), so Load more grows from there and not from the
+first chunk.
 
 **Starts.** An open, a tab pick and a sort move `ListStart`, which every page carries, and nothing
 else does: a search, a filter, a grouping, more rows and an index refresh leave the list where the
@@ -920,10 +923,11 @@ player has it. A counter rather than a flag on one page, because two pages can l
 The UI's own anchor, the first visible row as scrolling settles (`SetCatalogAnchor`), waits for
 windows that move by offset, which know that row.
 
-**In the UI** (`planListScroll`, `useScrollAnchor`), a page whose start the list has not been put
-in place for moves it once: the anchored row onto line 1 when the window holds it, else the list to
-its top; in the list's last screen the row stays in view where the scroll stops. The start is
-recorded only when the move is done, so a page that lands mid-move plans it again. Placing a
+**In the UI** (`planListScroll`, `useScrollAnchor`), a page whose start the list has not been put in
+place for moves it once: the anchored row onto line 1 when the window holds it, else the list to its
+top; in the list's last screen the row stays in view where the scroll stops. The start's first page
+with rows decides its move, and the start is recorded only when the move is done, so a page that
+lands mid-move carries the move on, a page whose anchor a search or a filter cleared too. Placing a
 building unmounts the menu, so the view store keeps the row last armed, or last put on line 1, per
 list; a remount within the same start brings it back into view once, on the mount's first page with
 rows, a third of the way down when it is off the first screen. A row armed after that page is kept

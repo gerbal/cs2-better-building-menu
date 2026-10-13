@@ -546,22 +546,44 @@ public sealed class AssetMenuAnchorTests
     }
 
     [Fact]
-    public void SearchingFilteringGroupingAndLoadingMoreKeepTheAnchorAndStartNothing()
+    public void SearchingFilteringRangingAndGroupingClearTheAnchorAndStartNothing()
     {
-        // Only an open, a tab pick and a sort move the list: the rest leave it where the player has it.
-        var opened = Opened(OnHighways);
+        // The open's start is served: these leave the list where the player has it, and the window
+        // grows only for a page that answers a start.
+        var opened = Opened(OnHighways).CoverAnchor(899);
         var moves = new[]
         {
             opened.Search("four"),
             opened.ToggleFacet(FacetIds.Availability, BuildingCatalogFacetSelection.Availability.Locked),
+            opened.SetMetricRange("cost", "1000", "5000"),
             opened.SetGroupBy(BuildingCatalogGrouping.Theme),
-            opened.LoadMoreTo(200),
+        };
+
+        Assert.All(moves, next =>
+        {
+            Assert.Equal(0, next.Anchor);
+            Assert.Equal(opened.ListStart, next.ListStart);
+            Assert.Equal(BuildingCatalogQuery.DefaultLimit, next.Query.Limit);
+        });
+    }
+
+    [Fact]
+    public void LoadingMoreAndANarrowingThatChangesNothingKeepTheAnchorAndStartNothing()
+    {
+        var opened = Opened(OnHighways).CoverAnchor(409);
+        var moves = new[]
+        {
+            opened.LoadMoreTo(opened.Query.Limit + BuildingCatalogQuery.WindowStep),
+            // No filter is set, and a trailing space trims to the same search: the result set is the same.
+            opened.ClearFilters(),
+            opened.Search(" "),
         };
 
         Assert.All(moves, next =>
         {
             Assert.Equal(4206, next.Anchor);
             Assert.Equal(opened.ListStart, next.ListStart);
+            Assert.True(next.Query.Limit >= opened.Query.Limit);
         });
     }
 
@@ -583,7 +605,10 @@ public sealed class AssetMenuAnchorTests
         var covered = opened.CoverAnchor(409);
 
         Assert.Equal(40 + 1 + BuildingCatalogQuery.WindowStep, opened.CoverAnchor(40).Query.Limit);
-        Assert.Equal(BuildingCatalogQuery.MaxLimit, opened.CoverAnchor(5000).Query.Limit);
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, opened.CoverAnchor(BuildingCatalogQuery.MaxLimit - 1).Query.Limit);
+        // A row at or past the ceiling cannot be held, so it grows nothing.
+        Assert.Same(opened, opened.CoverAnchor(BuildingCatalogQuery.MaxLimit));
+        Assert.Same(opened, opened.CoverAnchor(5000));
         Assert.Same(opened, opened.CoverAnchor(-1));
         Assert.Same(covered, covered.CoverAnchor(409));
     }

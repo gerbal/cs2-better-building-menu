@@ -10,6 +10,9 @@ export type ListScroll =
   | { kind: "lineOne"; start: number; id: number }
   | { kind: "restore"; id: number };
 
+/** A start's move: the list to its top or a row onto line 1. */
+export type StartMove = Extract<ListScroll, { kind: "top" | "lineOne" }>;
+
 export interface ListScrollInput {
   /** Which start of the list the page answers, or null before C# sends one. */
   listStart: number | null;
@@ -25,6 +28,8 @@ export interface ListScrollInput {
   stored: number | null;
   /** Whether this mount has put the list in place already. */
   settled: boolean;
+  /** The start's move still running when the page lands, or null. */
+  underWay: StartMove | null;
 }
 
 const NONE: ListScroll = { kind: "none" };
@@ -32,7 +37,9 @@ const NONE: ListScroll = { kind: "none" };
 /**
  * A new start (an open, a tab pick, a sort) puts the anchored row on line 1 when the window holds it,
  * and the list at its top otherwise; a remount brings the kept row back once; anything else (a
- * search, a filter, more rows) leaves the list where the player has it.
+ * search, a filter, more rows) leaves the list where the player has it. The start's first page with
+ * rows decides its move: a later page of that start, whose anchor a search or a filter cleared,
+ * carries the move under way on.
  */
 export function planListScroll(input: ListScrollInput): ListScroll {
   if (input.itemCount <= 0) {
@@ -40,6 +47,10 @@ export function planListScroll(input: ListScrollInput): ListScroll {
   }
 
   if (input.listStart !== null && input.listStart !== input.positioned) {
+    if (input.underWay?.start === input.listStart) {
+      return input.underWay;
+    }
+
     const held = input.anchorId > 0 && input.anchorIndex >= 0 && input.anchorIndex < input.itemCount;
 
     return held ? { kind: "lineOne", start: input.listStart, id: input.anchorId } : { kind: "top", start: input.listStart };

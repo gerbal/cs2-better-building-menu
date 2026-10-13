@@ -11,7 +11,7 @@ import {
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
 import { getAssetMenuAnchor, getAssetMenuListStart, setAssetMenuAnchor, setAssetMenuListStart } from "domain/assetMenuViewStore";
-import { planListScroll, type ListScroll } from "domain/listScroll";
+import { planListScroll, type ListScroll, type StartMove } from "domain/listScroll";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 /**
@@ -94,6 +94,8 @@ function moveList(root: HTMLElement | null, move: Move): boolean {
 export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, page: ListStartPage): void {
   // Per mount: a remount brings its row back once, and a start in this mount puts that aside.
   const settled = useRef(false);
+  // A start's move from its first page until it ends, so a page landing mid-move carries it on.
+  const underWay = useRef<StartMove | null>(null);
   const { listStart, anchorId, anchorIndex, itemCount } = page;
 
   useEffect(() => {
@@ -105,6 +107,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       itemCount,
       stored: getAssetMenuAnchor(anchorKey),
       settled: settled.current,
+      underWay: underWay.current,
     });
 
     // The mount's first page with rows is its one chance to restore: a row armed after it is not a
@@ -113,6 +116,8 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       if (itemCount > 0) settled.current = true;
       return;
     }
+
+    if (move.kind !== "restore") underWay.current = move;
 
     let frame = 0;
     let handle = 0;
@@ -123,6 +128,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       settled.current = true;
 
       if (move.kind !== "restore") {
+        underWay.current = null;
         setAssetMenuListStart(move.start);
         setAssetMenuAnchor(anchorKey, move.kind === "lineOne" ? move.id : null);
       }

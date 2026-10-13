@@ -52,17 +52,48 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheWindowStopsAtTheCeilingAndAnAnchorPastItIsNotHeld()
+		public void TheWindowStopsAtTheCeiling()
 		{
 			var near = BuildingCatalogQueryEngine.Query(Roads(3000), ByName(anchor: 1950));
-			var past = BuildingCatalogQueryEngine.Query(Roads(3000), ByName(anchor: 2500));
 
 			Assert.Equal(BuildingCatalogQuery.MaxLimit, near.Limit);
 			Assert.Equal(1950, near.Items[1949].Id);
-			Assert.Equal(BuildingCatalogQuery.MaxLimit, past.Items.Count);
+			Assert.True(near.Capped);
+		}
+
+		[Fact]
+		public void AnAnchorAtOrPastTheCeilingGrowsNothing()
+		{
+			// The window cannot hold the row, so the list opens at its top with the first chunk and Load more.
+			var at = BuildingCatalogQueryEngine.Query(Roads(3000), ByName(anchor: BuildingCatalogQuery.MaxLimit + 1));
+			var past = BuildingCatalogQueryEngine.Query(Roads(3000), ByName(anchor: 2500));
+
+			Assert.Equal(BuildingCatalogQuery.MaxLimit, at.AnchorIndex);
 			Assert.Equal(2499, past.AnchorIndex);
-			// The list stops before the anchored row and says so; the UI starts it at its top.
-			Assert.True(past.Capped);
+			Assert.All(new[] { at, past }, page =>
+			{
+				Assert.Equal(BuildingCatalogQuery.DefaultLimit, page.Limit);
+				Assert.Equal(BuildingCatalogQuery.DefaultLimit, page.Items.Count);
+				Assert.True(page.HasMore);
+				Assert.False(page.Capped);
+			});
+		}
+
+		[Fact]
+		public void ASearchAfterAnAnchoredOpenServesTheFirstChunk()
+		{
+			// Opened on row 900: the open's page holds it, and the first keystroke after it is a fresh set.
+			var roads = Roads(1200);
+			var opened = AssetMenuState.Initial.SetSortColumn("Name").OpenMenu("Roads", _ => new MenuOpening(string.Empty, -1, 901));
+			var openPage = BuildingCatalogQueryEngine.Query(roads, opened.Query);
+			var served = opened.CoverAnchor(openPage.AnchorIndex);
+
+			var searchPage = BuildingCatalogQueryEngine.Query(roads, served.Search("road").Query);
+
+			Assert.Equal(900 + 1 + Step, openPage.Items.Count);
+			Assert.Equal(1200, searchPage.TotalCount);
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, searchPage.Limit);
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, searchPage.Items.Count);
 		}
 
 		[Fact]
