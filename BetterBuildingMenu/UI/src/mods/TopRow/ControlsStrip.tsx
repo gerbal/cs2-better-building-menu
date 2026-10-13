@@ -12,12 +12,14 @@ import viewGlyph from "images/view.svg";
 import { isSortSet } from "domain/assetMenuSortPresentation";
 import { removableChipCount } from "domain/filterChips";
 import { menuPickOf } from "domain/menuPicks";
+import { menusDrawingNoGroups } from "domain/opensOnAll";
 import { CONTROLS_MARK, type ControlCell, type ControlForm, type ControlKind } from "domain/topRow";
 import { useFilterChips } from "mods/Pickers/FilterPanel";
 import { useGroupOptions } from "mods/Pickers/GroupList";
 import { useSortOptions } from "mods/Pickers/SortList";
 import { useViewOptions } from "mods/Pickers/ViewList";
 import { AssetMenu$, AssetMenuGroups$ } from "mods/bindings";
+import { useOnAllInput } from "mods/useOnAllInput";
 import styles from "./topRow.module.scss";
 
 const GLYPHS: Readonly<Record<ControlKind, string>> = { sort: sortGlyph, filter: filterGlyph, group: groupGlyph, view: viewGlyph };
@@ -35,8 +37,12 @@ export function useControlCells(): ControlCell[] {
   const group = useGroupOptions();
   const view = useViewOptions();
   const filters = useActiveFilterCount();
-  // A menu's own GROUP is the one set away from how it opens: its default takes the pick away.
-  const groupPicked = menuPickOf(useValue(AssetMenuGroups$), useValue(AssetMenu$)) !== "";
+  // A menu's own GROUP is the one set away from how it opens. A pick equal to what the menu draws unpicked is not
+  // set away: a menu that draws no groups unless picked opens on "No groups".
+  const menu = useValue(AssetMenu$);
+  const groupPick = menuPickOf(useValue(AssetMenuGroups$), menu);
+  const groupDefault = menusDrawingNoGroups(useOnAllInput()).includes(menu) ? "none" : "";
+  const groupPicked = groupPick !== "" && groupPick !== groupDefault;
   const none = label("Tooltip.LABEL[BetterBuildingMenu.FilterNone]", "None");
   const filtersOn = (count: number) => label("Tooltip.LABEL[BetterBuildingMenu.FiltersOn]", "{0} on").replace("{0}", String(count));
 

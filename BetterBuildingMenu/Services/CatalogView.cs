@@ -75,12 +75,18 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		public string EffectiveGroupBy => _effectiveGroupBy ??= _groupByResolver?.Invoke(this) ?? _query.GroupBy;
 
-		/// <summary>The menu's own grouping, with no pick, held to the dimensions it offers: what its share counts All's labels in.</summary>
+		/// <summary>
+		/// The menu's own grouping, with no pick, held to the dimensions it offers: what its share counts All's
+		/// labels in.
+		/// </summary>
 		/// <remarks>Read over the whole menu, so it is the same whichever tab is open.</remarks>
 		public string DefaultGroupBy => GroupFor(string.Empty, null);
 
 		/// <summary>The grouping a page is ordered by: the pick, else the menu's default, and none while a query is typed.</summary>
-		/// <param name="drawsNoGroups">Whether the UI names the menu a small menu of one tab drawn as a list with Small menus grow on, whose default is none.</param>
+		/// <param name="drawsNoGroups">
+		/// Whether the UI names the menu a small menu of one tab drawn as a list with Small menus grow on, whose
+		/// default is none.
+		/// </param>
 		/// <remarks>The default is read over the whole menu, so a menu with no pick draws one grouping on every tab.</remarks>
 		public string GroupFor(string? pick, string? searchText, bool drawsNoGroups = false) =>
 			BuildingCatalogGrouping.WhileSearching(

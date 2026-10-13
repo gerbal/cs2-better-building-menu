@@ -242,6 +242,24 @@ describe("the top row's controls", () => {
     assert.equal(count(render(), /class="dot"/), 1);
   });
 
+  it("light no dot for a stored group pick equal to what the menu draws unpicked", () => {
+    const share = (menu: string, rows: number) => ({ menu, rows, costOrCapacity: rows, capacity: rows, locked: 0, tabs: 1 });
+    set("BuildingCatalogSortColumn", "Match");
+    set("MenuShares", [share("Garbage Management", 7), share("Communications", 21)]);
+
+    // One tab, seven rows, a list: it draws no groups unless picked, so "No groups" is its default.
+    set("AssetMenu", "Garbage Management");
+    set("AssetMenuGroups", [{ menu: "Garbage Management", value: "none" }]);
+    assert.equal(count(render(), /class="dot"/), 0);
+    set("AssetMenuGroups", [{ menu: "Garbage Management", value: "theme" }]);
+    assert.equal(count(render(), /class="dot"/), 1);
+
+    // Twenty-one rows overflow a screen, so its default groups and "No groups" is a pick.
+    set("AssetMenu", "Communications");
+    set("AssetMenuGroups", [{ menu: "Communications", value: "none" }]);
+    assert.equal(count(render(), /class="dot"/), 1);
+  });
+
   it("mark the open menu's own view with the dot, and name the body it draws", () => {
     set("AssetMenu", "Roads");
     set("BuildingCatalogSortColumn", "Default");

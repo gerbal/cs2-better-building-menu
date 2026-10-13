@@ -1098,9 +1098,12 @@ development branches add little in a menu of one category. The UI names these me
 counts each menu's tabs with its share (`MenuShare.Tabs`), and the open menu redraws when it joins or
 leaves them. A small menu with two tabs or more keeps All's labels naming them, as All names each
 tab, and their slots count toward the screen it must fit. A GROUP pick of the player's still applies,
-and its labels take their slots, so the list grows less or not at all; its dot shows only for that
-pick. In the tiles, or with the knob off, the menu's own grouping stands. **This changes 0.2.x:**
-0.2.x grouped these menus by their development branches by default.
+and its labels take their slots, so the list grows less or not at all; its dot shows only for a pick
+other than "No groups", which these menus draw unpicked. The set is judged at 100% text and the first
+Width step, as the menus that open on All are, so a menu in it that Auto draws as cards or tiles at a
+wider step or larger text draws no groups there either. In the tiles at 100% text, or with the knob
+off, the menu's own grouping stands. **This changes 0.2.x:** 0.2.x grouped these menus by their
+development branches by default.
 
 **The window holds a screen.** The UI tells C# how many buildings one screen of the drawn body holds
 (`SetCatalogScreen`); the cards say how many the packer puts in a screen's rows. The window reaches two

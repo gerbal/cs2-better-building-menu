@@ -11,23 +11,11 @@ import {
   type WatchState,
 } from "domain/vanillaMenuWatch";
 import { searchChangedCommand, setMenusDrawingNoGroupsCommand, setMenusOpeningOnAllCommand, type TriggerCommand } from "domain/buildingCatalogContracts";
-import { menusDrawingNoGroups, menusOpeningOnAll, type OnAllInput } from "domain/opensOnAll";
+import { menusDrawingNoGroups, menusOpeningOnAll } from "domain/opensOnAll";
 import { textInputText } from "domain/textInput";
-import {
-  AssetMenuAtLargeText$,
-  AssetMenuDefaultView$,
-  AssetMenuTileSize$,
-  AssetMenuTuning$,
-  AssetMenuViews$,
-  FindItPanelShown$,
-  MenuShares$,
-  OwnsCurrentMenu$,
-  ReplaceVanillaBuildMenu$,
-  SelectedAssetMenu$,
-  send,
-  SHIPPED_TUNING,
-} from "mods/bindings";
+import { FindItPanelShown$, OwnsCurrentMenu$, ReplaceVanillaBuildMenu$, SelectedAssetMenu$, send } from "mods/bindings";
 import { openListCloser } from "mods/BuildingMenu/openListCloser";
+import { useOnAllInput } from "mods/useOnAllInput";
 import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
 
 /**
@@ -68,17 +56,8 @@ export const VanillaMenuWatcher = () => {
   // The small menus, which open on All, and of them those whose list draws no groups unless picked:
   // told to C# here, where the watcher is mounted before any menu opens, since the asset menu mounts
   // only once one has. See domain/opensOnAll.ts.
-  const shares = useValue(MenuShares$);
-  const views = useValue(AssetMenuViews$);
-  const defaultView = useValue(AssetMenuDefaultView$);
-  const tuning = useValue(AssetMenuTuning$);
-  const tileSize = useValue(AssetMenuTileSize$);
-  const atLargeText = useValue(AssetMenuAtLargeText$);
-  const small = useMemo<OnAllInput>(
-    () => ({ shares: shares ?? [], views: views ?? [], defaultView, tuning: { ...SHIPPED_TUNING, ...tuning }, tileSize, atLargeText }),
-    [shares, views, defaultView, tuning, tileSize, atLargeText]
-  );
-  const counted = (shares ?? []).length > 0;
+  const small = useOnAllInput();
+  const counted = small.shares.length > 0;
   useToldSet(counted, useMemo(() => menusOpeningOnAll(small).join("\n"), [small]), setMenusOpeningOnAllCommand);
   useToldSet(counted, useMemo(() => menusDrawingNoGroups(small).join("\n"), [small]), setMenusDrawingNoGroupsCommand);
 

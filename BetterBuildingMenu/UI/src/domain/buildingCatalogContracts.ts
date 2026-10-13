@@ -52,7 +52,8 @@ export const setSectionCollapsedCommand = (id: string, collapsed: boolean): Trig
 export const setMenusOpeningOnAllCommand = (joined: string): TriggerCommand =>
   createTriggerCommand("SetMenusOpeningOnAll", joined);
 
-// Of those, the ones of one tab drawn as a list with Small menus grow on, one name a line: C# groups each one's All by none unless picked.
+// Of those, the ones of one tab drawn as a list with Small menus grow on, one name a line: C# groups
+// each one's All by none unless picked.
 export const setMenusDrawingNoGroupsCommand = (joined: string): TriggerCommand =>
   createTriggerCommand("SetMenusDrawingNoGroups", joined);
 

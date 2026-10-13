@@ -3,8 +3,9 @@
  * text, the first Width step and the game's own body height, so neither the text scale, the Width nor a
  * drag changes which tab a menu opens on. All draws a label over each of its groups, so the rows and
  * those labels must fit; but a small menu of one tab drawn as a list with Small menus grow on draws no
- * groups unless the player picks one, so its rows alone must. A menu whose view is Cards opens on All in C#, whatever its size, and is
- * left out here. Pure. See docs/design-notes.md, "Opening on the building's tab" and "The bodies".
+ * groups unless the player picks one, so its rows alone must. A menu whose view is Cards opens on All in
+ * C#, whatever its size, and is left out here. Pure. See docs/design-notes.md, "Opening on the
+ * building's tab" and "The bodies".
  */
 import { drawnBodyHeight } from "./assetMenuLayout";
 import { autoBody, drawnBody, menuView, type AutoKnobs, type MenuShare } from "./bodyChoice";
@@ -31,7 +32,10 @@ export function menusOpeningOnAll(input: OnAllInput): string[] {
     .sort();
 }
 
-/** The small menus of one tab drawn as a list with Small menus grow on, which draw no groups unless picked: C# groups their All by none. */
+/**
+ * The small menus of one tab drawn as a list with Small menus grow on, which draw no groups unless
+ * picked: C# groups their All by none.
+ */
 export function menusDrawingNoGroups(input: OnAllInput): string[] {
   return smallMenus(input)
     .filter((small) => small.noGroups)
@@ -39,7 +43,7 @@ export function menusDrawingNoGroups(input: OnAllInput): string[] {
     .sort();
 }
 
-/** Each small menu, and whether it draws no groups unless picked: one tab, drawn as a list with Small menus grow on. */
+/** Each small menu, and whether it draws no groups unless picked: one tab, drawn as a list, Small menus grow on. */
 function smallMenus({ shares, views, defaultView, tuning, tileSize, atLargeText }: OnAllInput): { menu: string; noGroups: boolean }[] {
   return shares.flatMap((share) => {
     const body = drawnBody(menuView({ menuPick: menuPickOf(views, share.menu), defaultView, auto: autoBody({ share, textScale: 1, step: 1, knobs: tuning }) }));
