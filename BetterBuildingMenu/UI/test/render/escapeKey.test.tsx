@@ -84,9 +84,10 @@ describe("Escape, BBM's half", () => {
     const field = fakeSearchField("");
     focus(field);
 
-    escape(field);
+    const event = escape(field);
 
     assert.equal(field.blurred, 1, "the camera keys come back");
+    assert.equal(event.stopped, false, "the field lets go, so its own Escape may run");
     assert.deepEqual(sent(), ["toolbar.clearAssetSelection"]);
   });
 
@@ -98,5 +99,14 @@ describe("Escape, BBM's half", () => {
     assert.equal(closes, 0, "the list goes with the menu");
     assert.equal(event.stopped, false);
     assert.deepEqual(sent(), ["toolbar.clearAssetSelection"]);
+  });
+
+  it("lets go of the document when it unmounts", () => {
+    assert.equal(page.listeners(), 1);
+
+    act(() => root?.unmount());
+    root = undefined;
+
+    assert.equal(page.listeners(), 0);
   });
 });
