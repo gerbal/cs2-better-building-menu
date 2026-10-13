@@ -42,8 +42,8 @@ namespace BetterBuildingMenu.Tests
 			Entry(14, Education, "Research"),
 		};
 
-		private static MenuOpening Opening(BuildingCatalogEntry[] entries, BuildingCatalogQuery query, int armed, string[] tabs, bool education = false) =>
-			new CatalogView(entries, query, educationMenu: education, menuCategories: tabs).Opening(armed);
+		private static MenuOpening Opening(BuildingCatalogEntry[] entries, BuildingCatalogQuery query, int armed, string[] tabs, bool education = false, bool onAll = false) =>
+			new CatalogView(entries, query, educationMenu: education, menuCategories: tabs).Opening(armed, onAll);
 
 		private static BuildingCatalogQuery In(string menu, params string[] availability) =>
 			new(UiMenu: menu, Availability: availability.Length > 0 ? availability : null);
@@ -52,6 +52,14 @@ namespace BetterBuildingMenu.Tests
 		public void AnArmedBuildingOpensOnItsTabWithTheListAnchoredOnIt()
 		{
 			Assert.Equal(new MenuOpening("RoadsMediumRoads", -1, 3), Opening(Roads, In("Roads"), armed: 3, RoadTabs));
+		}
+
+		[Fact]
+		public void AMenuThatOpensOnAllOpensThereAnchoredOnTheArmedBuildingItHolds()
+		{
+			Assert.Equal(new MenuOpening(string.Empty, -1, 3), Opening(Roads, In("Roads"), armed: 3, RoadTabs, onAll: true));
+			Assert.Equal(MenuOpening.All, Opening(Roads, In("Roads"), armed: 99, RoadTabs, onAll: true));
+			Assert.Equal(MenuOpening.All, Opening(Schools, In(Education), armed: 0, EducationTabs, education: true, onAll: true));
 		}
 
 		[Fact]
@@ -179,7 +187,7 @@ namespace BetterBuildingMenu.Tests
 			var selected = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.MenuTakeover.cs"), "private void VanillaMenuSelected(int menuEntityIndex)");
 
 			Assert.Contains(
-				"var armed = ArmedEntryId(); var memory = _sessionSorts.For(menuName, MenuPicks.Get(Mod.Settings.MenuGroups, menuName)); _assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed), memory);",
+				"var armed = ArmedEntryId(); var memory = _sessionSorts.For(menuName, MenuPicks.Get(Mod.Settings.MenuGroups, menuName)); var onAll = OpensOnAll.For(menuName, _menusOpeningOnAll, Mod.Settings.MenuViews, Mod.Settings.DefaultView); _assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed, onAll), memory);",
 				selected);
 			Assert.DoesNotContain("SelectMenu(", selected);
 		}
@@ -213,7 +221,7 @@ namespace BetterBuildingMenu.Tests
 			// The rule opens on a tab or a level only where the row draws one: two tabs, two levels.
 			var view = ModSource.Text("Services/CatalogView.cs");
 
-			var opening = ModSource.Member(view, "public MenuOpening Opening(int armed)");
+			var opening = ModSource.Member(view, "public MenuOpening Opening(int armed, bool onAll = false)");
 			var row = ModSource.Text("UI/src/domain/tabRow.ts");
 
 			Assert.Contains("var tabs = DrawsTabs ? MenuCategoryCounts : Array.Empty<MenuCategoryCount>();", opening);

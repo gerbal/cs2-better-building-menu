@@ -36,6 +36,9 @@ namespace BetterBuildingMenu.Systems
 		// The open menu's grouping without a pick of its own, from the last refresh: a GROUP pick of it
 		// takes the menu's own pick away.
 		private string _menuDefaultGroup = string.Empty;
+		// The small menus the UI names, whose rows all fit one screen: each opens on All. Empty until the UI
+		// first says, so a menu opened before then opens on its tab.
+		private IReadOnlyCollection<string> _menusOpeningOnAll = Array.Empty<string>();
 
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
@@ -295,6 +298,8 @@ namespace BetterBuildingMenu.Systems
 			CreateTrigger<int>("SetCatalogScreen", SetCatalogScreen);
 			// A press on the Locked label: a half-locked tab's locked rows leave the window, or come back.
 			CreateTrigger<string, bool>("SetCatalogSectionCollapsed", SetCatalogSectionCollapsed);
+			// The small menus, whose rows all fit one screen of their body: each opens on All from its next open.
+			CreateTrigger<string>("SetMenusOpeningOnAll", joined => _menusOpeningOnAll = OpensOnAll.Parse(joined));
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);

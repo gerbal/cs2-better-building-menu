@@ -48,6 +48,10 @@ export const setCatalogScreenCommand = (slots: number): TriggerCommand =>
 export const setSectionCollapsedCommand = (id: string, collapsed: boolean): TriggerCommand =>
   createTriggerCommand("SetCatalogSectionCollapsed", id, collapsed);
 
+// The small menus, one name a line, whose rows all fit one screen: C# opens each on All from its next open.
+export const setMenusOpeningOnAllCommand = (joined: string): TriggerCommand =>
+  createTriggerCommand("SetMenusOpeningOnAll", joined);
+
 /** Whether a sort's first click puts the highest first, which C# says per sort (SortDefaults). */
 const startsDescending = (column: SortColumn): boolean =>
   (SORT_FIRST_DESCENDING as readonly string[]).includes(column);

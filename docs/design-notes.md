@@ -1307,10 +1307,23 @@ and its list then starts at the top. A tab the row draws no cell for (an asset w
 menu does not list) opens All instead, anchored on the building, so the readout names what the list
 holds. A tab drawn as its branches or densities opens whole: no branch lights, and the readout names
 the tab. The hand-back reopen when the mouse returns after a gamepad is an open like a bar press.
-Small menus opening on All join the rule with increment 9's bodies, which decide what fits on one
-screen. Two later starts call `OpenMenu` with a building of their own when they land: the warm
+Two later starts call `OpenMenu` with a building of their own when they land: the warm
 start, a building armed for the player on a menu's first open, and the follow, a menu that follows a
 building armed from another menu.
+
+**Opening on All** (`OpensOnAll`). Before any of that, two kinds of menu open on All, anchored on the
+armed building where the menu holds it, as the open rule anchors it on a tab: a menu whose view is
+Cards, by its own VIEW pick or by Default view, its cards under their tabs' labels; and a small menu,
+whose rows all fit one screen of its body at 100% text, the first Width step and the game's own body
+height (`menusOpeningOnAll`), so neither the text scale, the Width nor a drag changes which tab it
+opens on. Which body a menu draws is the UI's rule, so the UI names the small menus
+(`SetMenusOpeningOnAll`, one name a line), from the menu watcher, which is mounted before any menu
+opens; it names only the menus C# has counted, so a small menu opens on its tab the first time a
+session opens it, and on All from then on. The Cards from width knob's cards do not open on All: the
+rule reads the stored picks, not the knob.
+
+**This changes 0.2.x:** 0.2.4 opened every menu on All; a menu now opens on its tab, but a menu in Cards
+opens on All, as an upgrader in Cards had it, and so does a small menu.
 
 **The anchor** is an entry id in the query (`BuildingCatalogQuery.AnchorId`). An open and a tab pick
 set it to the armed building; a sort, a second click on the lit tab and a tab picked while a search

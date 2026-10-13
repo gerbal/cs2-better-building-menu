@@ -1,5 +1,5 @@
 import { trigger, useValue } from "cs2/api";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   escapeAction,
   nextWatchState,
@@ -10,14 +10,22 @@ import {
   watchStateWhileOff,
   type WatchState,
 } from "domain/vanillaMenuWatch";
-import { searchChangedCommand } from "domain/buildingCatalogContracts";
+import { searchChangedCommand, setMenusOpeningOnAllCommand } from "domain/buildingCatalogContracts";
+import { menusOpeningOnAll } from "domain/opensOnAll";
 import { textInputText } from "domain/textInput";
 import {
+  AssetMenuAtLargeText$,
+  AssetMenuDefaultView$,
+  AssetMenuTileSize$,
+  AssetMenuTuning$,
+  AssetMenuViews$,
   FindItPanelShown$,
+  MenuShares$,
   OwnsCurrentMenu$,
   ReplaceVanillaBuildMenu$,
   SelectedAssetMenu$,
   send,
+  SHIPPED_TUNING,
 } from "mods/bindings";
 import { openListCloser } from "mods/BuildingMenu/openListCloser";
 import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
@@ -42,6 +50,27 @@ export const VanillaMenuWatcher = () => {
 
   const assetMenuOpen = useValue(OwnsCurrentMenu$);
   const findItPanelShown = useValue(FindItPanelShown$) === true;
+
+  // The small menus, which open on All: told to C# here, where the watcher is mounted before any menu
+  // opens, since the asset menu mounts only once one has. Again whenever the set changes, and never
+  // before C# has counted a menu. See domain/opensOnAll.ts.
+  const shares = useValue(MenuShares$);
+  const views = useValue(AssetMenuViews$);
+  const defaultView = useValue(AssetMenuDefaultView$);
+  const tuning = useValue(AssetMenuTuning$);
+  const tileSize = useValue(AssetMenuTileSize$);
+  const atLargeText = useValue(AssetMenuAtLargeText$);
+  const small = useMemo(
+    () => menusOpeningOnAll({ shares: shares ?? [], views: views ?? [], defaultView, tuning: { ...SHIPPED_TUNING, ...tuning }, tileSize, atLargeText }).join("\n"),
+    [shares, views, defaultView, tuning, tileSize, atLargeText]
+  );
+  const toldSmall = useRef("");
+
+  useEffect(() => {
+    if (small === toldSmall.current) return;
+    toldSmall.current = small;
+    send(setMenusOpeningOnAllCommand(small));
+  }, [small]);
 
   /**
    * Escape, BBM's half: from the search field the open list, then the query, then the menu; from

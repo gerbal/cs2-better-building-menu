@@ -121,18 +121,24 @@ namespace BetterBuildingMenu.Services
 		public int AllCount => FilteredMenuSet.Length;
 
 		/// <summary>
-		/// Where this menu opens, asked of a view of it as it opens (no tab, no search): the armed
-		/// building's tab when the menu holds it (All, anchored on it, when the row draws no such tab),
-		/// else Education's first level with rows, else the menu's first tab with rows; All where the
-		/// row draws fewer than two tabs.
+		/// Where this menu opens, asked of a view of it as it opens (no tab, no search): All, anchored on the
+		/// armed building it holds, for a menu that opens on All; else the armed building's tab when the menu
+		/// holds it (All, anchored on it, when the row draws no such tab), else Education's first level with
+		/// rows, else the menu's first tab with rows; All where the row draws fewer than two tabs.
 		/// </summary>
 		/// <param name="armed">The prefab the game has armed, as the index's id, or 0 for none.</param>
+		/// <param name="onAll">Whether the menu opens on All: its view is Cards, or its rows fit one screen (OpensOnAll).</param>
 		/// <remarks>See docs/design-notes.md, "Opening on the building's tab".</remarks>
-		public MenuOpening Opening(int armed)
+		public MenuOpening Opening(int armed, bool onAll = false)
 		{
 			// One tab draws no tab cells: the row draws All and the strip, vanilla's one tab being the whole menu.
 			var tabs = DrawsTabs ? MenuCategoryCounts : Array.Empty<MenuCategoryCount>();
 			var held = armed > 0 ? PresentSet.FirstOrDefault(entry => entry.Id == armed) : null;
+
+			if (onAll)
+			{
+				return held is null ? MenuOpening.All : new MenuOpening(string.Empty, -1, armed);
+			}
 
 			if (held is not null)
 			{
