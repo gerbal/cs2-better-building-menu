@@ -175,8 +175,10 @@ namespace BetterBuildingMenu
 
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
-		/// The initializers above read the same constants. See docs/design-notes.md, "Reset the
-		/// build menu".
+		/// The initializers above read the same constants, except the control pane's: its
+		/// initializer reads <see cref="Domain.SettingsDefaults.ControlPaneShownWhenMissing"/>, the
+		/// value of a file without the key, and Apply sets the pane to its shipped value. See
+		/// docs/design-notes.md, "Reset the build menu".
 		/// </remarks>
 		public override void SetDefaults()
 		{

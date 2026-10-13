@@ -1,7 +1,7 @@
 import { useValue } from "cs2/api";
 
 import { useTextScale } from "domain/textScaleSetting";
-import { REFERENCE_ASPECT, drawnStepWidth, sanitizeWidthStep, snapTargets, type WidthSnap } from "domain/widthSteps";
+import { REFERENCE_ASPECT, drawnStepWidth, sanitizeWidthStep, snapTargets, type WidthSnap, type WidthStepScreen } from "domain/widthSteps";
 import { AssetMenuWidthStep$, ControlPaneShown$ } from "mods/bindings";
 
 /** The asset menu's widths as drawn now, in rem. */
@@ -13,6 +13,8 @@ export interface AssetMenuLayout {
   paneShown: boolean;
   /** The steps the right edge snaps to. */
   snaps: WidthSnap[];
+  /** What decides where the box sits: the screen's aspect, the text scale and the pane. */
+  screen: WidthStepScreen;
 }
 
 /** The screen's aspect, read at each render: a screen is 1,080 rem tall at any aspect. */
@@ -33,5 +35,5 @@ export function useAssetMenuLayout(): AssetMenuLayout {
   const screen = { aspect: screenAspect(), textScale: useTextScale(), paneShown };
   const menuWidth = drawnStepWidth(step, screen);
 
-  return { step, menuWidth, paneShown, snaps: snapTargets(screen) };
+  return { step, menuWidth, paneShown, snaps: snapTargets(screen), screen };
 }

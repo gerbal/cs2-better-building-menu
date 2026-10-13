@@ -54,6 +54,7 @@ describe("the options toggle in the menu header", () => {
   beforeEach(() => resetBindings());
 
   it("draws the pane button and the close on the game's round highlight button", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
     const root = create(<BuildingMenuHeader onClose={() => {}} />).root;
     const variantOf = (label: string) =>
       root.find((node) => node.props["aria-label"] === label && typeof node.props.onSelect === "function").props.variant;
@@ -63,10 +64,12 @@ describe("the options toggle in the menu header", () => {
   });
 
   it("is drawn whether or not the game hands the header a close", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
     assert.match(renderHtml(<BuildingMenuHeader />), /aria-label="Hide options"/);
   });
 
   it("asks C# to hide the pane while it is shown", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
     const root = create(<BuildingMenuHeader />).root;
     root.find((node) => node.props["aria-label"] === "Hide options" && typeof node.props.onSelect === "function").props.onSelect();
 

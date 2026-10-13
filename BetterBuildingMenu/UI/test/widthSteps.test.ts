@@ -5,12 +5,14 @@ import { WIDTH_STEPS_REFERENCE, WIDTH_STEP_REFERENCE_ASPECT } from "../src/domai
 import {
   CHIRPER_CLEARANCE_OFFSET,
   REFERENCE_ASPECT,
+  boxPlacement,
   draggedStepWidth,
   drawnStepWidth,
   nearestSnapStep,
   sanitizeWidthStep,
   snapTargets,
   toolOptionsEdge,
+  vanillaBoxLeft,
   widthStepWidths,
   type WidthStepScreen,
 } from "../src/domain/widthSteps.ts";
@@ -97,6 +99,64 @@ describe("where a step stops on 16:9, with the pane hidden", () => {
     near(widths[2], 1009, "step 3");
     near(widths[4], 1380, "step 5");
     for (let i = 1; i < widths.length; i++) assert.ok(widths[i] >= widths[i - 1], `step ${i + 1}`);
+  });
+});
+
+/** Each step's left and right edge on the screen, as boxPlacement puts it. */
+const placed = (over: Partial<WidthStepScreen> = {}): number[][] =>
+  [1, 2, 3, 4, 5].map((step) => {
+    const width = drawnStepWidth(step, screen(over));
+    const { left } = boxPlacement(width, screen(over));
+    return [left, left + width];
+  });
+const nearPairs = (actual: number[][], expected: number[][], what: string) =>
+  actual.forEach(([left, right], index) => {
+    near(left, expected[index][0], `${what} step ${index + 1} left`);
+    near(right, expected[index][1], `${what} step ${index + 1} right`);
+  });
+
+describe("where a step sits", () => {
+  it("keeps vanilla's left edge, grows right to 6 rem short of the chirper, then left: on 16:9", () => {
+    assert.equal(vanillaBoxLeft(SIXTEEN_NINE), 607);
+    nearPairs(placed(), [[607, 1313], [607, 1500], [409, 1500], [396, 1676], [396, 1871]], "16:9");
+  });
+
+  it("beside the shown pane, grows right only as far as leaves the pane room before the social column", () => {
+    const rows = placed({ paneShown: true });
+
+    nearPairs(rows, [[607, 1313], [594, 1487], [396, 1487], [396, 1487], [396, 1487]], "beside the pane");
+    // The pane, 6 rem past the box and 379 wide, ends on the social column's edge at step 3: 0.2.4's row.
+    near(rows[2][1] + CONTROL_PANE_TOTAL, 1872);
+  });
+
+  it("keeps steps 1 and 2 at vanilla's edge at every text scale, and slides step 3 off the growing tool options", () => {
+    for (const [scale, edge] of [[1.1, 415], [1.15, 424.5], [1.3, 453]]) {
+      const rows = placed({ textScale: scale });
+
+      near(rows[0][0], 607, `${scale} step 1`);
+      near(rows[1][0], 607, `${scale} step 2`);
+      near(rows[2][0], edge, `${scale} step 3 left`);
+      near(rows[2][1], 1500, `${scale} step 3 right`);
+    }
+  });
+
+  it("places 21:9's and 32:9's steps from vanilla's centred box", () => {
+    assert.equal(vanillaBoxLeft(TWENTY_ONE_NINE), 907);
+    assert.equal(vanillaBoxLeft(THIRTY_TWO_NINE), 1567);
+    nearPairs(placed({ aspect: TWENTY_ONE_NINE }), [[907, 1613], [907, 1946], [709, 2100], [396, 2124], [396, 2471]], "21:9");
+    nearPairs(placed({ aspect: THIRTY_TWO_NINE }), [[1567, 2273], [1567, 2927], [1368, 3420], [707, 3420], [396, 3791]], "32:9");
+  });
+
+  it("draws from vanilla's slot at an offset, negative for a box that reaches left of it", () => {
+    const offsets = [1, 2, 3, 4, 5].map((step) => boxPlacement(drawnStepWidth(step, screen()), screen()).offset);
+
+    assert.deepEqual(offsets, [0, 0, -198, -211, -211]);
+  });
+
+  it("never starts left of the tool options, even where vanilla's own box would", () => {
+    // On 4:3 vanilla's 706 box would start at 367, inside the tool options' column.
+    assert.equal(vanillaBoxLeft(1440 / 1080), 367);
+    assert.equal(boxPlacement(706, screen({ aspect: 1440 / 1080 })).left, 396);
   });
 });
 

@@ -62,8 +62,8 @@ export const AssetMenuExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod.id
 export const AssetMenuHeight$ = bindValue<number>(mod.id, "AssetMenuHeight", ASSET_MENU_DEFAULT_HEIGHT);
 /** The build menu's Width step, 1 to 5, a new player's 1 until C# answers; see BuildingMenuUISystem.AssetMenuSize. */
 export const AssetMenuWidthStep$ = bindValue<number>(mod.id, "AssetMenuWidthStep", WIDTH_STEP_DEFAULT);
-/** Whether the control pane is shown beside the build menu. */
-export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", true);
+/** Whether the control pane is shown beside the build menu: a new player's off until C# answers. */
+export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", false);
 /** The view the player last picked, kept across sessions; "" while none is. See BuildingMenuUISystem.SetAssetMenuViewMode. */
 export const AssetMenuViewMode$ = bindValue<string>(mod.id, "AssetMenuViewMode", "");
 

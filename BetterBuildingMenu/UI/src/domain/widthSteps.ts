@@ -96,6 +96,32 @@ export function drawnStepWidth(step: number, screen: WidthStepScreen): number {
   return Math.max(widths[0], Math.min(widths[drawn - 1], roomAt(drawn, screen)));
 }
 
+/** Where vanilla's build menu starts: the game centres its 706 rem box on the screen. */
+export function vanillaBoxLeft(aspect: number): number {
+  return (screenWidth(aspect) - WIDTH_STEP_VANILLA) / 2;
+}
+
+/** Where the box draws: its left edge on the screen, and that edge less vanilla's. */
+export interface BoxPlacement {
+  left: number;
+  /** Negative for a box that reaches left of vanilla's slot. */
+  offset: number;
+}
+
+/**
+ * Where a box this wide sits: at vanilla's left edge while its right edge stays short of the
+ * chirper's clearance, or beside the shown pane short of the pane's room; then growing left, never
+ * past the tool options' edge, even on a screen where vanilla's own box would.
+ */
+export function boxPlacement(width: number, screen: WidthStepScreen): BoxPlacement {
+  const vanilla = vanillaBoxLeft(screen.aspect);
+  // The first three steps' limit: where a box stops growing right and starts growing left.
+  const growsTo = rightLimit(LAST_STEP_CLEAR_OF_THE_CHIRPER, screen);
+  const left = Math.max(toolOptionsEdge(screen.textScale), Math.min(vanilla, growsTo - width));
+
+  return { left, offset: left - vanilla };
+}
+
 /** The steps the right edge snaps to, narrowest first: beside the shown pane, only those that fit. */
 export function snapTargets(screen: WidthStepScreen): WidthSnap[] {
   const widths = widthStepWidths(screen.aspect);

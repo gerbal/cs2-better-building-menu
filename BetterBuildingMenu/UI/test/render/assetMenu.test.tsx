@@ -7,9 +7,13 @@ import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_WIDTH_HANDLE_REACH } from "../../src/domain/assetMenuLayout";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 
-// The widths AssetMenu writes inline, read off the markup by class.
-const widthOf = (html: string, className: string): number =>
-  Number(new RegExp(`class="${className}(?: [^"]*)?"[^>]*style="width:\\s*([0-9.]+)rem`).exec(html)?.[1]);
+// The lengths AssetMenu writes inline, read off the markup by the element's first class.
+const styleOf = (html: string, className: string): string =>
+  new RegExp(`class="${className}(?: [^"]*)?"[^>]*style="([^"]*)"`).exec(html)?.[1] ?? "";
+const remOf = (style: string, property: string): number =>
+  Number(new RegExp(`(?:^|;)${property}:\\s*(-?[0-9.]+)rem`).exec(style)?.[1]);
+const widthOf = (html: string, className: string): number => remOf(styleOf(html, className), "width");
+const leftOf = (html: string, className: string): number => remOf(styleOf(html, className), "left");
 const render = () => renderHtml(<AssetMenu onClose={() => {}} />);
 
 /** The box's classes and inline style, read off the markup one property at a time. */
@@ -32,51 +36,51 @@ describe("the asset menu's row", () => {
     resetAssetMenuView();
   });
 
-  it("opens at the game's own width, the pane beside it, the strip on its edge", () => {
+  it("opens in vanilla's place at the game's own width, with no pane for a new player", () => {
     const html = render();
 
+    assert.equal(widthOf(html, "assetMenuRow"), 706);
+    assert.equal(leftOf(html, "assetMenuRow"), 0);
     assert.equal(widthOf(html, "toolContainer"), 706);
-    assert.equal(widthOf(html, "assetMenuRow"), 1091);
-    assert.match(html, /class="pane"/);
-    assert.match(html, /class="widthHandle"/);
-  });
-
-  it("draws step 3 as 0.2.4's row", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
-    const html = render();
-
-    assert.equal(widthOf(html, "toolContainer"), 1091);
-    assert.equal(widthOf(html, "assetMenuRow"), 1476);
-  });
-
-  it("leaves the pane out when it is hidden, and keeps the menu's width", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    const html = render();
-
-    assert.equal(widthOf(html, "assetMenuRow"), 1091);
-    assert.equal(widthOf(html, "toolContainer"), 1091);
     assert.doesNotMatch(html, /class="pane"/);
+  });
+
+  it("draws step 3 beside the pane as 0.2.4's row, reaching left of vanilla's slot to the tool options' edge", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    const html = render();
+
+    assert.equal(widthOf(html, "toolContainer"), 1091);
+    // x 396, the tool options' edge, less vanilla's 607.
+    assert.equal(leftOf(html, "assetMenuRow"), -211);
+    assert.match(html, /class="pane"/);
+  });
+
+  it("draws step 3 short of the chirper when the pane is hidden", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    const html = render();
+
+    assert.equal(widthOf(html, "toolContainer"), 1091);
+    // x 409, so the box ends at 1,500, 6 rem short of the chirper.
+    assert.equal(leftOf(html, "assetMenuRow"), -198);
   });
 
   it("gives the widest step the whole room when the pane is hidden", () => {
     setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5);
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     const html = render();
 
     assert.equal(widthOf(html, "toolContainer"), 1475);
-    assert.equal(widthOf(html, "assetMenuRow"), 1475);
+    assert.equal(leftOf(html, "assetMenuRow"), -211);
   });
 
-  it("is no wider than the menu and the pane, so nothing beside a narrow menu takes the mouse", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 2);
-    const html = render();
+  it("keeps the row at vanilla's 706 at every step, never wider than the box, so nothing beside it takes the mouse", () => {
+    for (const step of [1, 2, 3, 4, 5]) {
+      setBinding("BetterBuildingMenu", "AssetMenuWidthStep", step);
+      const html = render();
 
-    assert.equal(widthOf(html, "toolContainer"), 893);
-    assert.equal(widthOf(html, "assetMenuRow"), 1278);
-
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    assert.equal(widthOf(render(), "assetMenuRow"), 893);
+      assert.equal(widthOf(html, "assetMenuRow"), 706, `step ${step}`);
+      assert.ok(widthOf(html, "toolContainer") >= 706, `step ${step}`);
+    }
   });
 });
 
@@ -113,6 +117,7 @@ describe("the asset menu's width strip", () => {
   });
 
   it("reaches into the gap beside the pane while it is shown, and a press there starts the drag", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
     act(() => {
       root = create(<AssetMenu onClose={() => {}} />);
     });
@@ -151,6 +156,8 @@ describe("a drag on the asset menu's right edge", () => {
   let root: ReactTestRenderer | undefined;
   const styleWidth = (className: string) =>
     String(root!.root.find((node) => String(node.props.className ?? "").split(" ")[0] === className).props.style.width);
+  const styleLeft = (className: string) =>
+    String(root!.root.find((node) => String(node.props.className ?? "").split(" ")[0] === className).props.style.left);
 
   beforeEach(() => {
     resetBindings();
@@ -160,6 +167,7 @@ describe("a drag on the asset menu's right edge", () => {
     frames = [];
     globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
     globals.cancelAnimationFrame = () => undefined;
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
     act(() => {
       root = create(<AssetMenu onClose={() => {}} />);
     });
@@ -180,7 +188,9 @@ describe("a drag on the asset menu's right edge", () => {
     act(() => frames.splice(0).forEach((callback) => callback()));
 
     assert.equal(styleWidth("toolContainer"), "726rem");
-    assert.equal(styleWidth("assetMenuRow"), "1111rem");
+    // The row stays vanilla's 706; the box at 726 still fits short of the pane's room, at vanilla's edge.
+    assert.equal(styleWidth("assetMenuRow"), "706rem");
+    assert.equal(styleLeft("assetMenuRow"), "0rem");
   });
 
   it("snaps to the nearest step on release, and keeps that width until the stored step comes back", () => {
@@ -239,6 +249,7 @@ describe("the asset menu's tab row", () => {
   });
 
   it("draws the tab row under the list, inside the box", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
     const html = render();
 
     assert.ok(html.indexOf('class="band"') > html.indexOf('class="content'), "under the list");

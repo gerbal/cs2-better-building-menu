@@ -18,13 +18,6 @@ export function vanillaClass(modulePath: string, key: string): string | null {
   return firstClassToken((classes as Record<string, unknown> | undefined)?.[key]);
 }
 
-/** Vanilla's `.toolLayout`: the side + main + side trio the menu sits in. */
-export function findVanillaToolLayout(doc: Document): HTMLElement | null {
-  const cls = vanillaClass(GAME_MAIN_SCREEN, "toolLayout");
-
-  return cls ? doc.querySelector<HTMLElement>(`.${cls}`) : null;
-}
-
 /**
  * Vanilla's bottom toolbar: a CHILD of `game-main-screen`, because the pair
  * whose paint order we change are defined by being siblings, and matched on the
@@ -54,28 +47,14 @@ export function findVanillaToolbar(doc: Document): HTMLElement | null {
 }
 
 /**
- * The two patches vanilla's layout needs while the asset menu is open, applied on
- * mount and undone on unmount: `toolLayout` left-aligned, and the toolbar sunk
- * below us. See docs/design-notes.md, "Patching vanilla's layout for the asset menu".
+ * The one patch vanilla's layout needs while the asset menu is open, applied on mount and undone
+ * on unmount: the toolbar sunk below the box and the pane. The game's own centring is left alone.
+ * See docs/design-notes.md, "Patching vanilla's layout for the asset menu".
  */
 export function useVanillaLayoutForAssetMenu(): void {
   useEffect(() => {
-    const restores: Array<() => void> = [];
-    const layout = findVanillaToolLayout(document);
     const toolbar = findVanillaToolbar(document);
 
-    if (layout) {
-      restores.push(setInlineStyle(layout, "justifyContent", "flex-start"));
-    }
-
-    if (toolbar) {
-      restores.push(setInlineStyle(toolbar, "zIndex", "-1"));
-    }
-
-    return () => {
-      for (const restore of restores) {
-        restore();
-      }
-    };
+    return toolbar ? setInlineStyle(toolbar, "zIndex", "-1") : undefined;
   }, []);
 }

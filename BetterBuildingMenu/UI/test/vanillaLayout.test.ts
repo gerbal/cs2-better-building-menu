@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { firstClassToken, setInlineStyle } from "../src/mods/BuildingMenu/vanillaLayoutPure.ts";
 
@@ -17,14 +18,14 @@ const fake = (initial: Record<string, string> = {}) => {
 describe("patching one of vanilla's inline styles", () => {
   it("assigns the value and hands back a restore", () => {
     const { el, style } = fake();
-    const restore = setInlineStyle(el, "justifyContent", "flex-start");
+    const restore = setInlineStyle(el, "zIndex", "-1");
 
-    assert.equal(style.justifyContent, "flex-start");
+    assert.equal(style.zIndex, "-1");
     assert.equal(typeof restore, "function");
   });
 
   it("removes the property on restore when the game had set none inline", () => {
-    // Cohtml rejects "" as a value and logs "Trying to set justifyContent
+    // Cohtml rejects "" as a value and logs "Trying to set zIndex
     // property to invalid value!" on every menu close; a browser reads "" as
     // unset. removeProperty is what both accept.
     const { el, style, removed } = fake();
@@ -35,10 +36,10 @@ describe("patching one of vanilla's inline styles", () => {
   });
 
   it("puts a previous inline value back rather than removing it", () => {
-    const { el, style, removed } = fake({ justifyContent: "center" });
-    setInlineStyle(el, "justifyContent", "flex-start")();
+    const { el, style, removed } = fake({ zIndex: "5" });
+    setInlineStyle(el, "zIndex", "-1")();
 
-    assert.equal(style.justifyContent, "center");
+    assert.equal(style.zIndex, "5");
     assert.deepEqual(removed, []);
   });
 });
@@ -54,5 +55,14 @@ describe("a class from the game's stylesheet module", () => {
     assert.equal(firstClassToken(""), null);
     assert.equal(firstClassToken("   "), null);
     assert.equal(firstClassToken(42), null);
+  });
+});
+
+describe("vanilla's own layout", () => {
+  it("keeps its centring, so the asset menu's slot sits where the game's own menu does", () => {
+    const source = readFileSync(new URL("../src/mods/BuildingMenu/vanillaLayout.ts", import.meta.url), "utf8");
+
+    assert.doesNotMatch(source, /justifyContent|toolLayout/);
+    assert.match(source, /setInlineStyle\(toolbar, "zIndex", "-1"\)/);
   });
 });

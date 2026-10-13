@@ -352,14 +352,6 @@ export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
 export const ASSET_MENU_WIDTH_HANDLE_REACH = sheetRem("widthHandleReach");
 
 /**
- * The row's width: the build menu, and the pane beside it while shown. Sized to
- * what it holds, so no empty stretch of the row is left to take the mouse.
- */
-export function assetMenuRowWidth(menuWidth: number, paneShown: boolean): number {
-  return paneShown ? menuWidth + CONTROL_PANE_TOTAL : menuWidth;
-}
-
-/**
  * The width the catalog's table arithmetic takes. Its functions were tuned
  * against the whole row with the pane in it, and they subtract the pane
  * themselves, so they get the build menu plus the pane, whether or not the pane

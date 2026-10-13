@@ -12,7 +12,9 @@ import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { AssetMenuTuning$ } from "mods/bindings";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuRowWidth, catalogLayoutWidth, drawnBodyHeight } from "domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, catalogLayoutWidth, drawnBodyHeight } from "domain/assetMenuLayout";
+import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
+import { boxPlacement } from "domain/widthSteps";
 import { surfaceAlphaStyle } from "domain/looks";
 import { useInterfaceTransparency } from "domain/interfaceTransparencySetting";
 import looks from "looks/looks.module.scss";
@@ -37,32 +39,32 @@ export interface AssetMenuProps {
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
-  const { step, menuWidth, paneShown, snaps } = useAssetMenuLayout();
+  const { step, menuWidth, paneShown, snaps, screen } = useAssetMenuLayout();
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, snaps });
   const transparency = useInterfaceTransparency();
   const tuning = useValue(AssetMenuTuning$);
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
   const shownWidth = widthDrag.liveWidth ?? menuWidth;
-  const rowWidth = assetMenuRowWidth(shownWidth, paneShown);
+  // Where the box draws, from vanilla's slot. See docs/design-notes.md, "The box at its Width step, and the control pane".
+  const placement = boxPlacement(shownWidth, screen);
   // The header's small and large modes, judged against the menu plus the pane.
   // Their classes carry no rules, so neither changes what is drawn.
   const headerWidth = catalogLayoutWidth(shownWidth);
 
-  // The two patches on vanilla's own layout — the column trio left-aligned,
-  // the toolbar sunk beneath the control pane — live with their reasons in
-  // vanillaLayout.ts.
+  // The one patch on vanilla's own layout, the toolbar sunk beneath the box and the pane, lives
+  // with its reason in vanillaLayout.ts.
   useVanillaLayoutForAssetMenu();
 
   return (
     <>
       {blocker}
       {widthDrag.blocker}
-      {/* The width is stated here rather than inherited: this row is wider
-          than the slot, and the slot's `overflow: visible` is what allows it.
-          It is the build menu and the pane and nothing more, so no empty
-          stretch of it is left to take the mouse. */}
-      <div className={classNames(styles.assetMenuRow)} style={{ width: rowWidth + "rem" }}>
+      {/* The row keeps vanilla's 706 layout width, so the game centres it where its own menu
+          sits, and moves by the step's offset; the box and the pane overflow it to the right,
+          which the slot's `overflow: visible` allows. Every step is at least 706, so no stretch
+          of the row lies beside the box to take the mouse. */}
+      <div className={styles.assetMenuRow} style={{ width: `${WIDTH_STEP_VANILLA}rem`, left: `${placement.offset}rem` }}>
         {/* The box carries the look: its tokens, the game's interface style followed, and its
             panels' alphas under the game's transparency. See docs/design-notes.md, "The looks' tokens". */}
         <div

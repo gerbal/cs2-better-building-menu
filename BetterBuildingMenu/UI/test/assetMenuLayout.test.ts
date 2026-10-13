@@ -22,7 +22,6 @@ import {
   REM_IN_PX_AT_720P,
   getAssetMenuColumnWidths as columnWidthsAt,
   visibleTableMetrics,
-  assetMenuRowWidth,
   catalogLayoutWidth,
   drawnBodyHeight,
   TAB_ROW_BAND,
@@ -318,11 +317,6 @@ describe("the metric columns fit the room beside the name", () => {
 });
 
 describe("the row", () => {
-  it("is sized to what it holds, so no empty stretch of it takes the mouse", () => {
-    assert.equal(assetMenuRowWidth(900, true), 900 + CONTROL_PANE_TOTAL);
-    assert.equal(assetMenuRowWidth(900, false), 900);
-  });
-
   it("hands the table the row it was tuned against: at step 3, 0.2.4's own", () => {
     assert.equal(ROW_AT_STEP_3, 1476);
   });

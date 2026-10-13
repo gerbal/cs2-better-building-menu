@@ -3,7 +3,8 @@ namespace BetterBuildingMenu.Domain
 	/// <summary>What each setting ships with, and what Reset the build menu… puts back.</summary>
 	/// <remarks>
 	/// Pure, over <see cref="ISettingsValues"/>, so tests check every value without building the
-	/// settings class, whose initializers read these same constants. See docs/design-notes.md,
+	/// settings class, whose initializers read these same constants, the control pane's
+	/// excepted (see <see cref="ControlPaneShownWhenMissing"/>). See docs/design-notes.md,
 	/// "Reset the build menu".
 	/// </remarks>
 	public static class SettingsDefaults

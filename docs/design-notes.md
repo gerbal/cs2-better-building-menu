@@ -46,24 +46,21 @@ drives.
 
 ## Patching vanilla's layout for the asset menu
 
-`useVanillaLayoutForAssetMenu` in `mods/BuildingMenu/vanillaLayout.ts` makes two
-changes to elements the game owns, applied on mount and undone on unmount. Both
-are imperative and scoped to the mount rather than expressed as a stylesheet
-rule: a rule would restyle the game for the whole session, including while the
-asset menu is closed and for whatever other mod is looking at the same node. A
-missing module or class makes the patch a silent no-op.
+`useVanillaLayoutForAssetMenu` in `mods/BuildingMenu/vanillaLayout.ts` makes one change to an
+element the game owns, applied on mount and undone on unmount: imperative and scoped to the mount,
+because a stylesheet rule would restyle the game for the whole session, and for any other mod
+looking at the same node. A missing module or class makes the patch a silent no-op.
 
-**`toolLayout` left-aligned.** Vanilla centres its side + main + side trio in
-the screen, which puts the main column too far right for the asset menu and its
-control pane to fit beside the tool-options column. Left-aligned, the main
-column starts far enough left that everything fits. Only vanilla's own element
-can decide this: a container of ours can neither shift left over the options
-column nor fit to the right of it.
+**The game's own centring is left alone.** Vanilla centres its side + main + side trio, which puts
+its 706 rem menu at x 607 on 16:9. The asset menu's row keeps that 706 layout width at every Width
+step, so the game centres it in the same place, and the box and the pane draw at an offset from it
+(see "The box at its Width step, and the control pane"). The box places itself, so nothing about
+the trio needs to change.
 
 **The toolbar sunk to `z-index: -1`.** The chirper hangs off `toolbar` and the
 asset menu hangs off `main-container`. Both are children of `game-main-screen` at
-`z-index: auto`, so they paint in tree order and the toast covers the control
-pane — no z-index on our own row can change that. Raising `main-container`
+`z-index: auto`, so they paint in tree order and the toast covers the box's
+wider steps and the control pane — no z-index on our own row can change that. Raising `main-container`
 instead breaks the game's portalled dropdowns, which rely on tree order to win,
 while lowering the toolbar changes exactly the one pair. The toolbar still
 renders (the screen paints no background behind it) and stays hit-testable.
@@ -94,9 +91,9 @@ the toolbar's open menu, and moving the mouse brings BBM's back on the same menu
 - **The rule** is `MenuOwnership`, which is pure: BBM stands in for a menu only while Replace is on
   and the scheme is not the gamepad. `GamepadMenuRecord`, pure too, keeps the record through each
   event that sets or forgets it.
-- **Where each menu sits.** The game's keeps its own place, x 607 at the game's text size, while
-  BBM's starts beside the tool options, so at the first Width step the hand-off moves the menu
-  sideways until BBM's box takes the game's place.
+- **Where each menu sits.** At the first Width step BBM's box takes the game's own rectangle, x
+  607-1,313 at the game's text size, so the hand-off moves nothing. At a wider step the game's menu
+  draws at its own 706, and the switch is a visible jump.
 - **A nudged stick** flips the scheme, and BBM follows each change as the game does. If that makes
   the menus flicker, the fallback is to wait for a scheme to hold 250 ms before handing over.
 - **The handler runs inside the game's input code**, so it does nothing once the settings are gone
@@ -129,10 +126,18 @@ and shows or hides the control pane with the button beside the X. The step is th
 `AssetMenuWidthStep` and the pane `ControlPaneShown`, each pushed to its binding. The UI turns the
 step into a width on this screen, in `widthSteps.ts`.
 
-**Where the box sits.** The row, the box and while shown the pane beside it, starts at the tool
-options column's right edge, where vanilla's layout is left-aligned for it (see "Patching
-vanilla's layout for the asset menu"): x 396 at the game's own text size. That column is 380 wide
-and grows by half the text scale's increase, so the row starts at 415 at 110% and 453 at 130%.
+**Where the box sits.** A step keeps vanilla's left edge, x 607 on 16:9, while its right edge stays
+6 rem short of the chirper (x 1,500); a wider step grows left from there, never past the tool
+options' edge (x 396 at the game's own text size, 415 at 110%, 453 at 130%; that column is 380
+wide and grows by half the text scale's increase). On 16:9 that is 607-1,313, 607-1,500,
+409-1,500, 396-1,676 and 396-1,871. Beside the shown pane the box grows right only as far as leaves
+the pane room before the social column (x 1,487), so step 2 sits at 594 and step 3 at 396, which
+is 0.2.4's own row. Wider screens follow the same rule from vanilla's centred box: x 907 on 21:9,
+1,567 on 32:9. The row the game lays out keeps vanilla's 706 width, so the game centres it where
+its own menu sits, and the box and the pane draw at the offset `boxPlacement` gives, negative for a
+box that reaches left of the slot. The box never starts left of the tool options, even on a screen
+where vanilla's own box would. Vanilla's slot is taken to sit at the screen's centre at every text
+scale.
 
 **Where a step stops.**
 - Steps 1 to 3 stop 6 rem short of the chirper, which starts 414 rem from the screen's right edge
@@ -184,9 +189,8 @@ with the pane hidden, so nothing reaches past the room's edge.
   it sits top left, where the glyph is empty in both states, so it never covers the
   column that shows the pane's state.
 
-**The row is no wider than what it holds.** A row left wider than the box and the pane
-would leave an empty stretch beside a narrow menu. In 0.1.x such a stretch, above the
-Upgrades picker, took every click meant for the city.
+**The row is never wider than the box.** It keeps vanilla's 706 at every step, and every step is at
+least 706, so no stretch of the row lies beside the box to take a click meant for the city.
 
 **The table's arithmetic still counts the pane.** The column widths, the density tier
 and the name budget were tuned against the whole row with the pane in it, so they are
@@ -391,10 +395,10 @@ A release leaves two signs that it ran, so a later release can tell a player who
 one who installed it fresh.
 
 - **`SettingsVersion`**, a hidden setting: the settings file's format version, 0 in a file no
-  release has stepped. 0.2.5 writes 1; the settings migration stores 2 once it has run, and keeps
-  a higher value, a later release's (see "The settings migration"). Its initializer stays 0 and
-  `SetDefaults` never touches it: the game writes a key only once it differs from the default
-  object's, and from then on rewrites it at every save.
+  release has stepped. 0.2.5 writes 1; the settings migration stores this release's version once
+  it has run, and keeps a higher value, a later release's (see "The settings migration"). Its
+  initializer stays 0 and `SetDefaults` never touches it: the game writes a key only once it
+  differs from the default object's, and from then on rewrites it at every save.
 - **`release.json`**, in ModsData: `version` (the format, 1), `first` (the release that first
   wrote it), `last` (the release that loaded last) and `stampBefore` (whether the silhouettes
   stamp existed before the first release that wrote the file ran). `first` and `stampBefore` are
@@ -460,9 +464,9 @@ On every load of a file at this version or earlier, a stored Width step outside 
 **Version 2, the Width steps.**
 - The hidden `Upgrader` is set for an upgrader (see "Who is an upgrader").
 - A height within 0.1 of an earlier release's default, 420 (0.2.3 to 0.2.5) or 155 (an unreleased
-  build's), becomes 149: the height under the menu's 14 rem top strip and 45 rem header, the list
-  and the tab row's band together, that makes the menu as tall as the game's own, 208. Any other
-  height is the player's and is kept.
+  build's), becomes 149: the stored height was then the list and the tab row's band together,
+  under a 14 rem top strip and a 45 rem header, and 149 made that menu as tall as the game's own,
+  208. Any other height is the player's and is kept.
 - An upgrader's width becomes the Width step nearest the one they had, on this screen. The legacy
   `AssetMenuCatalogWidth` of 0, 0.2.4's default, drew the room beside the pane, 1,091 on any
   screen: the third step on 16:9, the second on 21:9 and 32:9. A dragged width gives the step
