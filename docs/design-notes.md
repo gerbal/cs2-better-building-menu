@@ -905,7 +905,9 @@ menu does not list) opens All instead, anchored on the building, so the readout 
 holds. A tab drawn as its branches or densities opens whole: no branch lights, and the readout names
 the tab. The hand-back reopen when the mouse returns after a gamepad is an open like a bar press.
 Small menus opening on All join the rule with increment 9's bodies, which decide what fits on one
-screen; the warm start and the follow call `OpenMenu` with their own building.
+screen. Two later starts call `OpenMenu` with a building of their own when they land: the warm
+start, a building armed for the player on a menu's first open, and the follow, a menu that follows a
+building armed from another menu.
 
 **The anchor** is an entry id in the query (`BuildingCatalogQuery.AnchorId`). An open and a tab pick
 set it to the armed building; a sort, a second click on the lit tab and a tab picked while a search
