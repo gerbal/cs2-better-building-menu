@@ -539,6 +539,32 @@ describe("a tile's tag and name line are the sizes the UI budgets them at", () =
   });
 });
 
+describe("a planned name's boxes", () => {
+  /** The game's Overpass draws its ascent and descent within this many em, as Chromium reports its content area. */
+  const ASCENT_AND_DESCENT = 1.3;
+  const em = (value: string | undefined) => Number(/^(-?[\d.]+)em$/.exec(value ?? "")?.[1]);
+  /** The N of a calc(N rem * var(--fontScale)). */
+  const scaled = (value: string | undefined) => rem(/^calc\(([\d.]+rem) \* var\(--fontScale\)\)$/.exec(value ?? "")?.[1]);
+
+  it("clip across but never an accent or a descender: each is tall enough for the font, its pitch unchanged", () => {
+    for (const selector of [".planned", ".line"]) {
+      const box = declarationsOf(PLANNED, selector);
+      const room = em(box["padding-top"]);
+
+      assert.equal(box.overflow, "hidden", selector);
+      assert.equal(em(box["padding-bottom"]), room, selector);
+      assert.deepEqual([em(box["margin-top"]), em(box["margin-bottom"])], [-room, -room], selector);
+
+      // Every line-height a planned name draws at, against its font: the list's names and the labels' caps.
+      for (const [sheet, rule] of [[LIST_BODY, ".name"], [LABELS, ".label"]]) {
+        const drawn = declarationsOf(sheet, rule);
+        const pitch = scaled(drawn["line-height"]) / scaled(drawn["font-size"]);
+        assert.ok(pitch + 2 * room >= ASCENT_AND_DESCENT, `${selector} in ${sheet} ${rule}: ${pitch} + 2 × ${room}`);
+      }
+    }
+  });
+});
+
 describe("Cohtml stylesheet support", () => {
   it("cuts no text in the bodies with a CSS ellipsis, which Cohtml never draws", () => {
     // A guard: Cohtml computes an inline-block as flex and ignores text-overflow on a flex item, so a

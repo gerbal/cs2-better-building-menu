@@ -261,12 +261,13 @@ describe("the list", () => {
   it("draws each group's label plate in a slot of its own, with its true count, and the buildings after it a slot on", () => {
     const html = render(rows(3), { sections: [group(0, "Small Roads", 66), group(2, "Medium Roads", 34)] });
 
-    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:171rem;height:27\.25rem" data-bbm-label="group"><span class="planned labelText" data-bbm-name="11"><span class="line">SMALL ROADS<\/span><\/span><span class="labelCount">66<\/span><\/div>/);
+    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:171rem;height:27\.25rem" data-bbm-label="group"><span class="planned labelText"><span class="line">SMALL ROADS<\/span><\/span><span class="labelCount">66<\/span><\/div>/);
     assert.match(html, /left:173rem;top:0rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="1"/);
-    assert.match(html, /left:519rem;top:0rem[^>]*data-bbm-label="group"><span class="planned labelText" data-bbm-name="12"><span class="line">MEDIUM ROADS/);
+    assert.match(html, /left:519rem;top:0rem[^>]*data-bbm-label="group"><span class="planned labelText"><span class="line">MEDIUM ROADS/);
     assert.match(html, /left:0rem;top:29\.25rem[^>]*data-catalog-entry="3"/);
-    // A label is no building: the live check counts buildings only.
+    // A label is no building: the live check counts buildings only, and their names.
     assert.equal(count(html, /data-bbm-item="true"/), 3);
+    assert.equal(count(html, /data-bbm-name=/), 3);
   });
 
   it("says a group's name in the game's words where the game has them, and the name C# sends where it has none", () => {
@@ -288,7 +289,7 @@ describe("the list", () => {
     const html = render(rows(1), { sections: [group(0, "Advanced Water Pumping Station And Treatment Facilities", 66)] });
 
     // In its caps, as the plate draws them, cut once between words, its last word kept.
-    assert.match(html, /<span class="planned labelText" data-bbm-name="55"><span class="line">ADVANCED… FACILITIES<\/span><\/span><span class="labelCount">66<\/span>/);
+    assert.match(html, /<span class="planned labelText"><span class="line">ADVANCED… FACILITIES<\/span><\/span><span class="labelCount">66<\/span>/);
     assert.equal(room.flex, "1 1 auto");
     assert.equal(room["min-width"], "0");
     assert.equal(declarationsOf(LABELS, ".labelCount").flex, "0 0 auto");
@@ -300,7 +301,7 @@ describe("the list", () => {
     // The window has reached the locked rows: the label sits before the first of them.
     const html = render(rows(3), { sections: [locked(2, 77)] });
 
-    assert.match(html, /<button class="label lockedLabel" style="left:346rem;top:0rem;width:171rem;height:27\.25rem" data-has-select="true" aria-expanded="true" data-bbm-label="locked"><span class="planned labelText" data-bbm-name="6"><span class="line">LOCKED<\/span><\/span><span class="labelCount">77<\/span><\/button>/);
+    assert.match(html, /<button class="label lockedLabel" style="left:346rem;top:0rem;width:171rem;height:27\.25rem" data-has-select="true" aria-expanded="true" data-bbm-label="locked"><span class="planned labelText"><span class="line">LOCKED<\/span><\/span><span class="labelCount">77<\/span><\/button>/);
     assert.match(render(rows(2), { sections: [locked(2, 77, true)] }), /aria-expanded="false"/);
     // The milestone's ink, as a locked plate's "MS n" says it, on the label plate, which a pointer lights.
     assert.equal(declarationsOf(LABELS, ".lockedLabel .labelText").color, "var(--bbm-bodyMilestone)");

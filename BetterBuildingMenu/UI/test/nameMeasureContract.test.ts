@@ -26,4 +26,15 @@ describe("a planned name measures what Cohtml has laid out", () => {
   it("takes the room from the shared reader", () => {
     assert.match(tileName, /drawnRoom\(/);
   });
+
+  it("reads no room from a box that hugs its line, which would narrow it every frame", () => {
+    // The tiles' name line is as wide as its text: planned again in that width, a name drawn narrower
+    // than its estimate is cut, its box narrows, and so on down to its shortest cut.
+    const tiles = readFileSync(new URL("../src/mods/Bodies/TilesBody.tsx", import.meta.url), "utf8");
+    const lineName = /<PlannedName\s+className=\{styles\.lineName\}[^>]*\/>/.exec(tiles)?.[0] ?? "";
+
+    assert.match(lineName, /\shugs\s/);
+    assert.match(tileName, /drawnRoom\(drawn, hugs \? NO_BOX : box,/);
+    assert.match(tileName, /const NO_BOX = \{ clientWidth: 0 \};/);
+  });
 });

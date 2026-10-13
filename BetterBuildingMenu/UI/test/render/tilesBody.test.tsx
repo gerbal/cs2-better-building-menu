@@ -136,7 +136,7 @@ describe("the tiles", () => {
     ];
     const html = renderHtml(<TilesBody entries={rows(2)} grid={grid()} sections={sections} onPlace={() => undefined} />);
 
-    assert.match(html, /<div class="label stacked" style="left:16rem;top:0rem;width:64rem;height:64rem" data-bbm-label="group"><span class="planned labelText" data-bbm-name="11"><span class="line">RES…TIAL<\/span><\/span><span class="labelCount">62<\/span><\/div>/);
+    assert.match(html, /<div class="label stacked" style="left:16rem;top:0rem;width:64rem;height:64rem" data-bbm-label="group"><span class="planned labelText"><span class="line">RES…TIAL<\/span><\/span><span class="labelCount">62<\/span><\/div>/);
     assert.match(html, /left:82rem;top:0rem;width:64rem;height:64rem[^>]*data-catalog-entry="1"/);
     assert.match(html, /left:148rem;top:0rem[^>]*data-bbm-label="group"/);
   });
@@ -149,8 +149,8 @@ describe("the tiles", () => {
     const html = renderHtml(<TilesBody entries={rows(2)} grid={grid()} sections={sections} onPlace={() => undefined} />);
 
     // Tracked caps wider than the square: each word cut inside it, the other word whole, never mid-letter at its edge.
-    assert.match(html, /<span class="planned labelText" data-bbm-name="13"><span class="line">INT…IONS<\/span><\/span>/);
-    assert.match(html, /<span class="planned labelText" data-bbm-name="17"><span class="line">ELE…ARY<\/span><span class="line">SCHOOL<\/span><\/span>/);
+    assert.match(html, /<span class="planned labelText"><span class="line">INT…IONS<\/span><\/span>/);
+    assert.match(html, /<span class="planned labelText"><span class="line">ELE…ARY<\/span><span class="line">SCHOOL<\/span><\/span>/);
   });
 
   it("draw the Locked label in a tile's square as a plate that can be pressed, its word over its count", () => {

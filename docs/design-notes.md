@@ -1388,11 +1388,17 @@ so the renders and the game draw the same lines. In order:
    search matches its phrase anywhere in the name); the head never ends on a word like "of" or "and"; a
    cut keeping the last word comes first, where catalog names say which of a family a building is, then
    the one keeping the most. Twins that differ in their last word get one shape ("Wide… Road 1",
-   "Wide… Road 2").
+   "Wide… Road 2"). The tail never opens on a separator ("Small… Mirrored", not "… - Mirrored"), and no
+   line opens with one: a lone "-", "–" or "," stays with the word before it.
 3. **At a hyphen,** whole, only where every cut keeps under 60% of the name.
-4. **Inside a word,** its head and its tail kept (`shortenTileLabel`), the last resort: a one-word name
-   too long for its line is cut on it, and never runs into the numbers beside it. A box with no room,
-   or a width that is no number, draws the name's shortest cut.
+4. **Inside a word,** its head and its tail kept (`shortenTileLabel`), the last resort, and never one a
+   cut must keep nor a number, a level or a size ("01", "L1", "2x2"), which cut would read as another
+   building: the other words are cut inside them, the widest first, to a letter each side of the mark
+   at the least ("F…e Extradosed / Bridge" for a search of "bridge"). A kept word is cut inside only where
+   it alone is wider than a line; a number never is, and where nothing else gives, the line clips it. A
+   name with nothing to guard has a word too long for its line cut on it, else the whole name cut, so a
+   one-word name never runs into the numbers beside it. A box with no room, or a width that is no number,
+   draws the name's shortest cut.
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's
@@ -1401,13 +1407,21 @@ narrowing that never widens again, so it cannot spiral. A box that hugs its line
 gives no room as drawn, and only a line drawn past it narrows the plan. It never reads widths in the
 render's own tick, where Cohtml reports the previous text's, nor where the screen's rem is unknown. A
 name planned to its lines draws no third line at any text scale. The plate's markers stay:
-`data-bbm-name` on the name's box carries the whole name's length.
+`data-bbm-name` on the name's box carries the whole name's length, a building's only (a label's planned
+name carries none). A room drawn for one name, type and line count starts from the estimate again for
+another.
+
+Each line, and the name's box, clips across but never above or below. The game's sheets show no
+`overflow-y: visible` beside `overflow-x: hidden`, and a browser scrolls that pair, so each box is an
+eighth of an em taller each side than its line, which a negative margin gives back: the font's ascent
+and descent run past a line-height under 1.3 em (the list's names draw at 12.5 on 11), and an accent or
+a descender is never cut.
 
 The same planner cuts every name the bodies draw: the list's plates, the tiles' name line, a label
-plate's name and a held card's. None relies on a CSS ellipsis, and a test fails on one in the bodies'
+plate's name and a held card's, which keeps its distinguishing word as a row does. None relies on a CSS ellipsis, and a test fails on one in the bodies'
 stylesheets.
 
-**Dim the typed word** (developer, off as it ships) draws the word a search typed in a span of its own,
+**Dim the typed word** (developer, off as it ships) draws each word a search typed in a span of its own,
 dimmed. Cohtml drops a space that opens a text node after an inline element, so the run after the span
 opens with U+200B before its space (`nameRuns`, `AFTER_SPAN`), which keeps it.
 

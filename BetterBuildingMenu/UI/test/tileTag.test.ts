@@ -134,6 +134,8 @@ describe("a tile's tag", () => {
       assert.ok(tagFits(text, 64, scale), `${text} at ${scale}`);
       assert.equal(locked, true);
     }
+    // Where no letter fits beside it, the mark alone: a word was cut, never silently dropped.
+    assert.equal(tileTag(waiting, null, FALLBACK_SEPARATORS, "Verrouillé", 0, 8, 1).text, "…");
   });
 
   it("says the value sorted by under a sort by a value, as 0.2.x's Grid did, and the cost under any other", () => {

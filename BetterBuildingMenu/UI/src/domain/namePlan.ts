@@ -2,10 +2,10 @@
  * The name planner: how a name draws in a box of a width and a number of lines. Whole where it fits;
  * else cut once, between words, keeping every word that tells the name apart from a look-alike and the
  * words a search typed, its head never ending on a word like "of"; a hyphenated compound broken at its
- * hyphen only when every cut keeps too little; a word too long for a line cut inside it, the others
- * kept whole, so it never runs into the numbers beside it. Lines are laid out here, not by the engine,
- * from one advance table of the game's fonts: Cohtml never breaks at a hyphen, and Chromium does. Pure.
- * See docs/design-notes.md, "Names".
+ * hyphen only when every cut keeps too little; else words cut inside them, never a kept word that fits a
+ * line nor a number, so a cut name never reads as another building and never runs into the numbers
+ * beside it. Lines are laid out here, not by the engine, from one advance table of the game's fonts:
+ * Cohtml never breaks at a hyphen, and Chromium does. Pure. See docs/design-notes.md, "Names".
  */
 import { textWidth, WIDE } from "./textWidth";
 import { shortenTileLabel } from "./tileLabel";
@@ -42,8 +42,11 @@ const HYPHEN_SHARE = 0.6;
 
 /** Words a head never ends on: it would read as unfinished. */
 const STOP_WORDS: ReadonlySet<string> = new Set([
-  "a", "an", "and", "at", "by", "de", "del", "der", "des", "die", "du", "for", "in", "la", "le", "of", "on", "the", "to", "und", "von", "with", "w/", "&", "+", "-", "–",
+  "a", "an", "and", "at", "by", "de", "del", "der", "des", "die", "du", "for", "in", "la", "le", "of", "on", "the", "to", "und", "von", "with", "w/", "&", "+", "-", "–", "—", ",",
 ]);
+
+/** A word that only parts two others: it never opens a line, nor a cut's tail. */
+const SEPARATORS: ReadonlySet<string> = new Set(["-", "–", "—", ","]);
 
 /** A unit a line is laid out in: its text, and whether a space comes before it. */
 interface Piece {
@@ -56,6 +59,13 @@ function pieces(name: string, hyphens: boolean): Piece[] {
   const out: Piece[] = [];
 
   for (const word of name.split(/\s+/).filter(Boolean)) {
+    // A separator stays with the word before it, so no line opens with it.
+    const previous = out[out.length - 1];
+    if (SEPARATORS.has(word) && previous !== undefined) {
+      out[out.length - 1] = { ...previous, text: `${previous.text} ${word}` };
+      continue;
+    }
+
     // A space comes before a word's first piece, never inside it.
     let opens = out.length > 0;
     let run = "";
@@ -126,21 +136,33 @@ const kept = (word: string, keep: readonly string[]): boolean =>
   keep.some((wanted) => wanted !== "" && word.toLowerCase().includes(wanted.toLowerCase()));
 
 /**
- * The best cut of the words that fits: a head, the mark, and a tail, keeping every word a cut must
- * keep, the head never ending on a stop word; one keeping the last word first, then the most
- * characters kept, then the longest tail.
+ * Whether a word says a number, a level or a size ("01", "L1", "2x2", "123456789"): mostly digits, or
+ * short with one. Cut inside, it reads as another number, and the name as another building.
  */
-function bestCut(words: readonly string[], box: NameBox, keep: readonly string[]): string[] | null {
+function holdsNumber(word: string): boolean {
+  const digits = word.match(/\d/gu)?.length ?? 0;
+  return digits > 0 && (word.length <= 4 || digits * 2 >= word.length);
+}
+
+/**
+ * The best cut of the words that fits: a head, the mark, and a tail, dropping no word `guarded` holds,
+ * the head never ending on a stop word nor the tail opening on a separator; one keeping the last word
+ * first, then the most characters kept, then the longest tail.
+ */
+function bestCut(words: readonly string[], box: NameBox, guarded: (index: number) => boolean): string[] | null {
   let best: { lines: string[]; kept: number; tail: number } | null = null;
 
   for (let head = words.length - 1; head >= 1; head -= 1) {
     if (STOP_WORDS.has(words[head - 1].toLowerCase())) continue;
 
     for (let tail = head + 1; tail <= words.length; tail += 1) {
-      if (words.slice(head, tail).some((word) => kept(word, keep))) continue;
+      // A separator the dropped words leave at the tail's front goes with them.
+      let from = tail;
+      while (from < words.length && SEPARATORS.has(words[from])) from += 1;
+      if (words.slice(head, from).some((_, at) => guarded(head + at))) continue;
 
       const front = words.slice(0, head).join(" ");
-      const back = words.slice(tail).join(" ");
+      const back = words.slice(from).join(" ");
       // The mark ends the head, so a line may break before the tail.
       const cut = back === "" ? `${front}${CUT_MARK}` : `${front}${CUT_MARK} ${back}`;
       const lines = layout(pieces(cut, false), box);
@@ -159,12 +181,45 @@ function bestCut(words: readonly string[], box: NameBox, keep: readonly string[]
 
 /** A word too wide for a line, cut inside it to the longest form a line holds, its head and its tail kept. */
 function shortenWord(word: string, box: NameBox): string {
-  for (let budget = word.length - 1; budget > 1; budget -= 1) {
+  for (let budget = word.length - 1; budget > SHORTEST; budget -= 1) {
     const cut = shortenTileLabel(word, budget);
     if (runWidth(cut, box) <= box.width) return cut;
   }
 
-  return shortenTileLabel(word, 2);
+  return shortenTileLabel(word, SHORTEST);
+}
+
+/** The fewest characters a word is cut to, its mark counted as `shortenTileLabel` counts it: a letter each side of it. */
+const SHORTEST = 5;
+
+/**
+ * Where no cut of whole words fits: the words a cut may shorten (neither kept nor a number) cut inside
+ * them, the widest first, a character at a time, until the words lay out whole or a cut of them fits. A
+ * kept word is cut inside only where it alone is wider than a line; a number never is. Where even the
+ * shortest forms do not fit, they are drawn as they are, the line clipping what runs past it. A name
+ * with nothing to guard has each word too wide for a line cut inside it, else the whole name cut.
+ */
+function guardedCut(name: string, words: readonly string[], box: NameBox, keep: readonly string[]): string[] {
+  const guarded = words.map((word) => kept(word, keep) || holdsNumber(word));
+  if (!guarded.some(Boolean)) return wordCut(name, box) ?? charCut(name, box);
+  const forms = words.map((word, index) => (guarded[index] && !holdsNumber(word) && runWidth(word, box) > box.width ? shortenWord(word, box) : word));
+  const budgets = words.map((word) => word.length);
+
+  for (;;) {
+    const lines = layout(pieces(forms.join(" "), false), box) ?? bestCut(forms, box, (index) => guarded[index]);
+    if (lines !== null) return lines;
+
+    let widest = -1;
+    forms.forEach((form, index) => {
+      if (!guarded[index] && budgets[index] > SHORTEST && (widest < 0 || runWidth(form, box) > runWidth(forms[widest], box))) widest = index;
+    });
+    if (widest < 0) break;
+
+    budgets[widest] -= 1;
+    forms[widest] = shortenTileLabel(words[widest], budgets[widest]);
+  }
+
+  return clipped(forms, box);
 }
 
 /** The name's words laid out, each too wide for a line cut inside it, the others whole; null where they need more lines. */
@@ -172,7 +227,21 @@ function wordCut(name: string, box: NameBox): string[] | null {
   return layout(pieces(name, false).map((part) => (runWidth(part.text, box) > box.width ? { ...part, text: shortenWord(part.text, box) } : part)), box);
 }
 
-/** A name cut inside its words, its head and its tail kept, short enough to lay out: the last resort. */
+/** The forms over at most `box.lines` lines, greedily, the last line holding the rest: what runs past a line is clipped. */
+function clipped(forms: readonly string[], box: NameBox): string[] {
+  const lines: string[] = [];
+
+  for (const part of pieces(forms.join(" "), false)) {
+    const last = lines.length - 1;
+    const joined = last < 0 ? part.text : `${lines[last]}${part.space ? " " : ""}${part.text}`;
+    if (last >= 0 && (lines.length >= box.lines || runWidth(joined, box) <= box.width)) lines[last] = joined;
+    else lines.push(part.text);
+  }
+
+  return lines;
+}
+
+/** A name cut inside its words, its head and its tail kept, short enough to lay out: the last resort for a name with nothing to guard. */
 function charCut(name: string, box: NameBox): string[] {
   for (let budget = name.length - 1; budget > 1; budget -= 1) {
     const lines = layout(pieces(shortenTileLabel(name, budget), false), box);
@@ -193,7 +262,8 @@ export function planName(name: string, room: NameBox, hints: NameHints = {}): Na
   if (fits !== null) return { lines: fits, whole: true };
 
   const words = whole.split(/\s+/);
-  const cut = bestCut(words, box, hints.keep ?? []);
+  const keep = hints.keep ?? [];
+  const cut = bestCut(words, box, (index) => kept(words[index], keep));
   const keptShare = cut === null ? 0 : (cut.join(" ").length - CUT_MARK.length) / whole.length;
 
   // A hyphen breaks only when every cut keeps too little of the name.
@@ -202,7 +272,7 @@ export function planName(name: string, room: NameBox, hints: NameHints = {}): Na
     if (broken !== null) return { lines: broken, whole: true };
   }
 
-  return { lines: cut ?? wordCut(whole, box) ?? charCut(whole, box), whole: false };
+  return { lines: cut ?? guardedCut(whole, words, box, keep), whole: false };
 }
 
 /** A run of a drawn line: plain, or a typed word, which is drawn in a span of its own. */
@@ -219,17 +289,30 @@ export const AFTER_SPAN = "\u200B";
  * that opens with a space opens with U+200B before it, so the engine keeps the space.
  */
 export function nameRuns(line: string, typed: string): NameRun[] {
-  const query = typed.trim().toLowerCase();
-  if (query === "") return [{ text: line, typed: false }];
+  // Each word typed, as a cut keeps each: a phrase broken over two lines still dims on both.
+  const words = typed.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [{ text: line, typed: false }];
 
   const runs: NameRun[] = [];
   const lower = line.toLowerCase();
   let at = 0;
 
-  for (let found = lower.indexOf(query); found >= 0; found = lower.indexOf(query, found + query.length)) {
+  for (;;) {
+    // The nearest typed word from here, the longer where two start together.
+    let found = -1;
+    let length = 0;
+    for (const word of words) {
+      const index = lower.indexOf(word, at);
+      if (index >= 0 && (found < 0 || index < found || (index === found && word.length > length))) {
+        found = index;
+        length = word.length;
+      }
+    }
+    if (found < 0) break;
+
     if (found > at) runs.push({ text: line.slice(at, found), typed: false });
-    runs.push({ text: line.slice(found, found + query.length), typed: true });
-    at = found + query.length;
+    runs.push({ text: line.slice(found, found + length), typed: true });
+    at = found + length;
   }
 
   if (at < line.length) runs.push({ text: line.slice(at), typed: false });

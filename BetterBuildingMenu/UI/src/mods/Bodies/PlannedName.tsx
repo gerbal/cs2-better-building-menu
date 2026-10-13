@@ -26,6 +26,8 @@ export interface PlannedNameProps {
    * then says nothing of the room, and only a line that ran past it narrows the plan.
    */
   hugs?: boolean;
+  /** Whether the box carries `data-bbm-name`, a building's name's length: a label's name does not. */
+  marked?: boolean;
   className?: string;
 }
 
@@ -41,13 +43,14 @@ const NO_BOX = { clientWidth: 0 };
  * until a frame has drawn the name, then the box as drawn, narrowed by any line that ran past it, a
  * narrowing that never widens again, so it cannot spiral. See docs/design-notes.md, "Names".
  */
-export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", typed = "", dim = false, hugs = false, className }: PlannedNameProps) {
+export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", typed = "", dim = false, hugs = false, marked = true, className }: PlannedNameProps) {
   const boxRef = useRef<HTMLSpanElement>(null);
-  const [drawn, setDrawn] = useState<DrawnRoom>(UNDRAWN);
-  // A new name starts from the estimate again.
-  useEffect(() => {
-    setDrawn(UNDRAWN);
-  }, [name]);
+  // A room drawn for one name, type and line count says nothing of another: they start from the estimate
+  // again in the same render, not a frame late.
+  const key = `${name}\n${font}\n${lines}`;
+  const [state, setState] = useState<{ key: string; drawn: DrawnRoom }>({ key, drawn: UNDRAWN });
+  const drawn = state.key === key ? state.drawn : UNDRAWN;
+  if (state.key !== key) setState({ key, drawn });
   const room = (drawn.box ?? width) * drawn.fit;
   // Each word typed is kept on its own: a search matches its phrase anywhere in the name.
   const plan = planName(name, { width: room, lines, font, tracking }, { keep: [distinct, ...typed.split(/\s+/)] });
@@ -57,7 +60,7 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
     if (!box) return;
     const measure = () => {
       const next = drawnRoom(drawn, hugs ? NO_BOX : box, Array.from(box.children) as HTMLElement[], deviceRem(window.innerHeight));
-      if (next !== drawn) setDrawn(next);
+      if (next !== drawn) setState({ key, drawn: next });
     };
     // Never in the tick of the render: Cohtml reports the PREVIOUS text's
     // scrollWidth for a line whose text just changed, and 0 for one it has not
@@ -81,10 +84,10 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, [name, drawn, hugs]);
+  }, [key, drawn, hugs]);
 
   return (
-    <span ref={boxRef} className={classNames(styles.planned, className)} data-bbm-name={name.length}>
+    <span ref={boxRef} className={classNames(styles.planned, className)} data-bbm-name={marked ? name.length : undefined}>
       {plan.lines.map((line, index) => (
         <span key={index} className={styles.line}>
           {dim && typed.trim() !== ""

@@ -91,7 +91,7 @@ describe("the cards", () => {
   it("draw each group's label in the rows with the cards", () => {
     const html = render(rows(3), { sections: [group(0, "Small Roads", 66), group(2, "Medium Roads", 34)] });
 
-    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:[\d.]+rem;height:46rem" data-bbm-label="group"><span class="planned labelText" data-bbm-name="11"><span class="line">SMALL ROADS<\/span><\/span><span class="labelCount">66<\/span>/);
+    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:[\d.]+rem;height:46rem" data-bbm-label="group"><span class="planned labelText"><span class="line">SMALL ROADS<\/span><\/span><span class="labelCount">66<\/span>/);
     assert.equal(count(html, /data-bbm-label="group"/), 2);
   });
 
@@ -125,6 +125,17 @@ describe("the cards", () => {
     // Cut by the planner, its head and its tail kept: Cohtml draws no CSS ellipsis.
     assert.match(html, /<span class="planned name nameHeld" data-bbm-name="56"><span class="line">漢+…漢+<\/span><\/span>/);
     assert.match(html, /<span class="name" data-bbm-name="10">Building 2<\/span>/);
+  });
+
+  it("keep the word that tells a held card from its look-alike through its name's cut", () => {
+    // Two names a whole em a character too wide for the row, alike but for one short word: the cheapest
+    // cut would drop that word from both, and they would read alike.
+    const name = (word: string) => `東京 ${word} ${Array(9).fill("漢字漢字").join(" ")} aaa駅`;
+    const html = render(["Ost", "Süd"].map((word, at) => entry(at + 1, { name: name(word), distinctWord: word } as Partial<BuildingCatalogEntry>)));
+    const drawn = [...html.matchAll(/class="planned name nameHeld"[^>]*><span class="line">([^<]*)</g)].map((match) => match[1]);
+
+    assert.equal(drawn.length, 2);
+    assert.ok(drawn[0].includes("…") && drawn[0].includes("Ost") && drawn[1].includes("Süd"), drawn.join(" | "));
   });
 
   it("draw no title, which Cohtml never shows", () => {

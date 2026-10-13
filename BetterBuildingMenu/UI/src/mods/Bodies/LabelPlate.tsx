@@ -45,7 +45,7 @@ export const LabelPlate = memo(function LabelPlate({ section, place, stacked }: 
       {/* Planned in its caps, as a building's name is: cut with "…" where it runs past the plate, as
           Cohtml draws no CSS ellipsis, and in a tile's square over two lines, a word wider than the
           square cut inside it, never mid-letter at its edge. */}
-      <PlannedName className={styles.labelText} name={text.toUpperCase()} {...labelNameBox(count, place.width, stacked, textScale)} />
+      <PlannedName className={styles.labelText} name={text.toUpperCase()} marked={false} {...labelNameBox(count, place.width, stacked, textScale)} />
       <span className={styles.labelCount}>{count}</span>
     </>
   );

@@ -80,7 +80,7 @@ const Card = memo(function Card({ entry, text, place, held, armed, enter, textSc
         <span className={styles.words}>
           {held ? (
             // Planned on its one line in the room the card has, cut with "…": Cohtml draws no CSS ellipsis.
-            <PlannedName className={classNames(styles.name, styles.nameHeld)} name={fullName} {...cardNameBox(text, place.width, textScale)} />
+            <PlannedName className={classNames(styles.name, styles.nameHeld)} name={fullName} distinct={entry.distinctWord ?? ""} {...cardNameBox(text, place.width, textScale)} />
           ) : (
             <span className={styles.name} data-bbm-name={fullName.length}>{text.name}</span>
           )}

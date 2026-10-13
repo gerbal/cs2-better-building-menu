@@ -37,6 +37,50 @@ describe("a name planned in its box", () => {
     assert.ok(tram.lines.join(" ").startsWith("Tram"), JSON.stringify(tram));
   });
 
+  it("cuts only words that are neither kept nor numbers where no cut of whole words keeps them all", () => {
+    // A typed "bridge" is in every name of the family: each must still say which bridge it is.
+    const family = [
+      ["Four-Lane Extradosed Bridge", "Extradosed", 85],
+      ["Two-Lane Wooden Covered Bridge", "Wooden", 85],
+      ["Six-Lane Highway Cable-Stayed Bridge", "Highway", 85],
+      ["Four-Lane Divided Extradosed Bridge", "Divided", 70],
+    ] as const;
+
+    for (const [name, distinct, width] of family) {
+      const words = planName(name, plate(width), { keep: [distinct, "bridge"] }).lines.join(" ").split(" ");
+
+      assert.ok(words.includes(distinct) && words.includes("Bridge"), `${name}: ${words.join(" ")}`);
+      assert.ok(fitsBox(planName(name, plate(width), { keep: [distinct, "bridge"] }).lines, plate(width)), name);
+    }
+
+    const tram = planName("Tram + Four-Lane Road Double-Decked Extradosed Bridge", plate(100), { keep: ["Double-Decked"] });
+    assert.match(tram.lines.join(" "), /(^| )Double-Decked( |…|$)/u, JSON.stringify(tram));
+  });
+
+  it("never cuts a number, a level or a size inside it: whole, or clipped as the last resort", () => {
+    const station = planName("Gas Station 01 - L1 2x2", plate(50, 1), { keep: ["01"] }).lines.join(" ").split(" ");
+    const depot = planName("Depot 123456789", plate(40, 1));
+
+    assert.ok(station.includes("01") && station.includes("2x2"), station.join(" "));
+    assert.ok(depot.lines.join(" ").split(" ").includes("123456789"), JSON.stringify(depot));
+    assert.equal(depot.lines.length, 1);
+  });
+
+  it("cuts a word it may cut to no fewer than a letter each side of the mark", () => {
+    const [first] = planName("Four-Lane Extradosed Bridge", plate(85), { keep: ["Extradosed", "bridge"] }).lines[0].split(" ");
+
+    assert.match(first, /^\p{L}+…\p{L}+$/u);
+  });
+
+  it("never opens a cut's tail or a line with a separator", () => {
+    assert.deepEqual(planName("Small Underground Parking - Mirrored", plate(95, 1)).lines, [`Small${CUT_MARK} Mirrored`]);
+
+    for (const [name, width] of [["Small Underground Parking Lot - Mirrored", 60], ["Parking Lot - Mirrored", 40], ["Bus Depot – Large", 30]] as const) {
+      const plan = planName(name, plate(width, 3));
+      assert.ok(plan.lines.every((line) => !/^[-–,]/u.test(line)), `${name} at ${width}: ${plan.lines.join(" / ")}`);
+    }
+  });
+
   it("gives twins one shape, the word that tells them apart kept", () => {
     const twins = [1, 2, 3].map((n) => planName(`Wide Quay With Four-Lane Road ${n}`, plate(95, 1)).lines.join(" "));
 
@@ -112,6 +156,15 @@ describe("a line with the typed word in a span", () => {
       { text: "Four-Lane ", typed: false },
       { text: "Tram", typed: true },
       { text: `${AFTER_SPAN} Road`, typed: false },
+    ]);
+  });
+
+  it("dims each word typed, as a cut keeps each", () => {
+    assert.deepEqual(nameRuns("Bus Stop Shelter", "stop bus"), [
+      { text: "Bus", typed: true },
+      { text: `${AFTER_SPAN} `, typed: false },
+      { text: "Stop", typed: true },
+      { text: `${AFTER_SPAN} Shelter`, typed: false },
     ]);
   });
 

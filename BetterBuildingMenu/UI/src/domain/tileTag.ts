@@ -9,7 +9,7 @@ import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type Numb
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
 import { oneNumber, plateNumbers } from "./listPlate";
-import { planName } from "./namePlan";
+import { CUT_MARK, planName } from "./namePlan";
 import { isPerCell, keepsUnit, sortsByValue } from "./rowNumbers";
 import { NOTHING_SAID } from "./saidOnce";
 import { sortedMetricValue } from "./sortedMetric";
@@ -99,7 +99,8 @@ function cutToTag(text: string, tileWidth: number, textScale: number): string {
     if (tagFits(line, tileWidth, textScale)) return line;
   }
 
-  return "";
+  // No letter fits beside the mark: the mark alone still says a word was cut.
+  return CUT_MARK;
 }
 
 /** The number a value starts with, digit to digit with its group and decimal marks; null when it starts with none. */
