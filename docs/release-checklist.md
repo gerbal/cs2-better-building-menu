@@ -103,6 +103,12 @@ On a developed save:
      Options › Hover card › The game's detail slot draws the wide card above the menu, where the
      game's own detail shows, and Status line only draws no card: it names the building and its
      figures at the tabs' right end;
+   - in View › Look pick Plates: the menu redraws at once and the list stays open; Roads' plates say
+     their speed with its unit (80 km/h) and no symbol, and the tabs' right end says 100 km/h unless
+     shown with no symbol; Zones' look-alike tiles carry their names on a band across the top; in
+     Signature Buildings pick Tiles and read a look-alike unique or built tile: its band spans the tile
+     and covers the top of the game's mark, where Standard's tag, only as wide as its text, does not
+     (take a screenshot); Options › Look reads Plates; pick Standard again;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
    time, and a click elsewhere closes it. Pick List, Icons, Tiles and Cards in View: the menu keeps
@@ -125,11 +131,12 @@ On a developed save:
    it: the pane stays shown, and the menu opens at the Width step nearest the
    width it had, in Cards, on All.
 8. **Upgrades.** On a release that touches them, open the upgrades picker from
-   a placed service building.
+   a placed service building: its frame and rows draw in the Look, Standard and Plates alike, and a
+   row's tooltip card reads light on the game's dark tooltip.
 9. **Controller.** On a release that touches the hand-off, with a gamepad:
    the game's own build menu shows, and moving the mouse brings this one
    back on the same menu.
 10. **Interface style.** On a release that touches the menu's colours: with the game's
     legacy interface on, switch Interface style to Bright blue and to Dark grey-orange,
-    and move Interface transparency to 0% and 100%. No dark text on a dark panel, no
-    light text on a light one, and the lit tab keeps the game's blue.
+    and move Interface transparency to 0% and 100%, in Standard and in Plates. No dark text on a dark
+    panel, no light text on a light one, and the lit tab keeps the game's blue.

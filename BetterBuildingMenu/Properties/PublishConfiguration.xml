@@ -62,39 +62,39 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
 0.3.0
 
 Changes
-* The build menu opens where the game's own does, at its size. Pick one of five Widths in Options › Better Building Menu, or drag the menu's right edge to one; every menu opens at it.
+* The build menu opens where the game's own does, at its size. Pick one of five Widths in Options › Better Building Menu, or drag its right edge to one; every menu opens at it.
 * If you used an earlier version, the menu opens at the width nearest yours.
-* At the wider Widths the tool options move to the screen's left edge to make room.
-* The search, Sort, Filter, Group, View and close sit along the menu's top edge. Each control opens a list that a click elsewhere closes. View also offers Width and More options….
+* At the wider Widths the tool options move left to make room.
+* The search, Sort, Filter, Group, View and close sit along the menu's top edge; each opens a list a click elsewhere closes. View also offers Look, Width and More options….
 * The search box names the building Enter will place, or says All matches locked.
-* Control pane is now an option: off for new players, as you had it if you used an earlier version.
+* Control pane is now an option: off for new players, as you had it in an earlier version.
 * The pane's Reset menu is gone: Reset the build menu… in Options puts the options, the menu's size and each menu's View and Group back, after asking.
 * Pick the chosen sort again to reverse it. In Group, Category is now By tab and None is now No groups.
-* With a terraforming brush in hand, the menu stays open and answers your search and filters, as the game's does.
+* With a terraforming brush the menu stays open and answers your search and filters, as the game's does.
 * Enter in the search arms the best match, wherever it sits, however it is sorted.
-* A sort's first click puts the best first, the most of a capacity or the lowest Cost or Upkeep; ties go to the cheaper building.
+* A sort's first click puts the best first (the most capacity, the lowest Cost or Upkeep), ties to the cheaper building.
 * Sort by Households, Water capacity or Sewage capacity.
 * While Replace the vanilla build menu is off, the other options grey out and say why.
-* With a controller the game's own build menu shows; move the mouse and this one comes back, on the same menu.
-* The tabs sit along the menu's bottom edge, next to the toolbar: All with the menu's icon, then each tab's icon over its count, which follows your filters and search; a tab they empty keeps its place.
-* At the tabs' right end: the tab you are on; a value most of its buildings share, said once where the list has room, with its symbol (100 km/h unless shown), so only the others show theirs; and how many the list holds of how many match. The list's end shows only the button that loads more.
+* With a controller the game's own build menu shows; move the mouse and this one returns, on the same menu.
+* The tabs sit along the menu's bottom edge, next to the toolbar: All with the menu's icon, then each tab's icon over its count, following your filters and search; a tab they empty keeps its place.
+* At the tabs' right end: the tab you are on; a value most of its buildings share, said once with its symbol where there is room (100 km/h unless shown), so only the others show theirs; and how many the list holds of how many match. The list ends in just the button that loads more.
 * Education's school levels are named chips beside the Education tab.
-* A menu opens on the tab of the building you last picked from it, that building at the top; with nothing picked, on its first tab, and Education on its first school level. In Cards, or with few buildings, on All. Opening a menu clears the search.
-* Picking a sort, or clicking the lit tab, takes the list back to its top; so does going back to that building's tab.
-* While you type, Up and Down change the building Enter places, marked ↵ in the list, and Page Up and Page Down scroll it. Esc closes an open list, then clears the search, then closes the menu.
+* A menu opens on the tab of the building you last picked from it, that building at the top; else on its first tab (Education: its first school level); in Cards or with few buildings, on All. Opening a menu clears the search.
+* A sort, or a click on the lit tab, takes the list back to its top; so does going back to that building's tab.
+* While you type, Up and Down change the building Enter places, marked ↵, and Page Up and Page Down scroll the list. Esc closes an open list, then clears the search, then the menu.
 * After Enter, a pick or closing the menu, the arrow keys move the camera again. The search box shows an outline while you type.
 * On a wider menu, each tab shows its name beside its icon where all fit.
 * A mark under the menu points to its toolbar button.
-* The menu follows the game's Interface style and Interface transparency.
-* Each menu remembers its own View (List, Icons, Tiles or Cards) and Group, and its Sort until you quit. Options › Default view, Auto at first, sets the rest: a list for most menus, icons for Landscaping and Signature Buildings, tiles for zones. Grid is now Tiles, Table is now List.
+* Options › Look draws every menu and the upgrades panel as Standard or Plates, which writes units out (80 km/h); both follow the game's Interface style and Interface transparency.
+* Each menu keeps its own View (List, Icons, Tiles or Cards) and Group, and its Sort until you quit. Options › Default view, Auto at first, sets the rest: a list for most menus, icons for Landscaping and Signature Buildings, tiles for zones. Grid is now Tiles, Table is now List.
 * If you used an earlier version, Default view starts at your View.
-* List puts each building on a plate, 20 a screen, more when wider: its picture; its name, cut once with … to keep what tells it apart; its cost, a road's per cell (¢44/c); and, by a symbol, its speed, capacity, workers or lot. Above 100% text, Options › At large text picks More buildings or Whole names.
-* Tiles shows pictures with their cost, tags look-alikes with what tells them apart, and names the one you point at. Options › Tile size is set to 64, once; a size you pick after that stays.
+* List puts each building on a plate, 20 a screen, more when wider: its picture; its name, cut once with … keeping what tells it apart; its cost, a road's per cell (¢44/c); and by a symbol its speed, capacity, workers or lot. Above 100% text, Options › At large text picks More buildings or Whole names.
+* Tiles shows pictures with their cost, tags look-alikes with what tells them apart, and names the one you point at. Options › Tile size is set to 64 once; a size you pick later stays.
 * A tile's tag shows a long cost in thousands or millions, and under a number sort, that number.
 * Icons shows pictures alone, 45 a screen, more when wider; a family (Boulder 01–08) shows each number and shares a shade.
 * Point at a building for its card; Options › Hover card moves it to the game's detail slot, or to a line at the tabs' end.
 * Each View says MS n while the city waits on that milestone, else Locked (Icons where it fits), and keeps the unique and built marks.
-* Typing searches the whole menu, best match first, and Sort reads Match. Clearing it brings back your tab and sort.
+* Typing searches the whole menu, best match first, Sort reading Match; clearing it brings back your tab and sort.
 * Cards are earlier versions' cards, three rows to the menu's height, each as wide as its name.
 * In All, each View names each tab with its count. A tab mostly locked lists what you can build first, then Locked: a click folds it away.
 * A menu with few buildings shows them bigger in the list.
