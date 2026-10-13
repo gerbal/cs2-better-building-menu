@@ -149,6 +149,11 @@ describe("the readout's legend", () => {
       ["GarbageFacility", 250_000, 250_004, true], ["GarbageFacility", 250_000, 250_010, false],
       ["WaterPumpingStation", 30_000, 30_000.4, true], ["WaterPumpingStation", 30_000, 30_001, false],
       ["School", 400, 400.04, true], ["School", 400, 401, false],
+      // Midpoints in decimal that a double holds just below: toFixed prints them down, and so does C#.
+      ["PowerPlant", 10_450, 10_400, true], ["PowerPlant", 10_450, 10_500, false],
+      ["Battery", 1_500, 1_000, true], ["Battery", 1_500, 2_000, false],
+      ["GarbageFacility", 105, 100, true], ["GarbageFacility", 105, 110, false],
+      ["GarbageFacility", 1_105_000, 1_100_000, true], ["GarbageFacility", 1_105_000, 1_110_000, false],
     ] as const;
 
     for (const [role, one, other, alike] of table) {

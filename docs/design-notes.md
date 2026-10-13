@@ -1327,7 +1327,8 @@ filters, or a search's result, since the UI only ever sees a window of it:
   capacity's unit follows. A network and a building at one figure, or two capacities in different
   units, are two values, and a legend no loaded row holds still says the rows' unit. Values that print
   alike are one: a network's cost by the whole coin a cell (half up, as the row prints it), a capacity
-  to the places it prints in the game's metric units. A row leaves its cell blank where its figure
+  to the places it prints in the game's metric units, rounded as the UI rounds it, on the figure's exact
+  value, so a midpoint the figure holds just below rounds down on both sides. A row leaves its cell blank where its figure
   prints as the said one in the player's units (`holdsBack`), so a cell never prints the value the
   readout says beside it.
 

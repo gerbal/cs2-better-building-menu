@@ -155,14 +155,62 @@ namespace BetterBuildingMenu.Domain
 			"TelecomFacility" => Rounded(value, 1, 1),
 			"GarbageFacility" => value < 100 ? Rounded(value, 1, 1) : value < 1_000_000 ? Rounded(value, 1_000, 2) : Rounded(value, 1_000_000, 2),
 			"WaterPumpingStation" or "SewageOutlet" or "WastewaterTreatmentPlant" => Rounded(value, 1, 0),
-			_ => Rounded(value, 1, 1),
+			// A count the UI groups with one place, rounding after it multiplies, as groupDigits does.
+			_ => Math.Round(value * 10, MidpointRounding.AwayFromZero) / 10,
 		};
 
-		/// <summary>A value in units of <paramref name="unit"/>, to <paramref name="places"/> places, half up, back in its own.</summary>
+		/// <summary>
+		/// A value in units of <paramref name="unit"/>, to <paramref name="places"/> places, back in its own:
+		/// rounded as the UI's toFixed rounds, on the double's exact value, so a decimal midpoint the double
+		/// holds just below rounds down on both sides, and a true tie rounds up.
+		/// </summary>
 		private static double Rounded(double value, double unit, int places)
 		{
-			var scale = Math.Pow(10, places);
-			return Math.Round(value / unit * scale, MidpointRounding.AwayFromZero) / scale * unit;
+			var scaled = value / unit;
+			var whole = RoundedExactly(Math.Abs(scaled), places);
+			return whole < 0 ? value : Math.Sign(scaled) * whole / Math.Pow(10, places) * unit;
+		}
+
+		/// <summary>
+		/// A non-negative double times 10^<paramref name="places"/>, rounded half up on its exact binary
+		/// value (mantissa over a power of two); -1 where the figure is out of reach, kept as it is.
+		/// </summary>
+		private static double RoundedExactly(double value, int places)
+		{
+			if (double.IsNaN(value) || double.IsInfinity(value) || value >= 1e15 || places > 3)
+			{
+				return -1;
+			}
+
+			var bits = BitConverter.DoubleToInt64Bits(value);
+			var exponent = (int)((bits >> 52) & 0x7FF);
+			var mantissa = (ulong)(bits & 0xFFFFFFFFFFFFFL);
+			if (exponent == 0)
+			{
+				exponent = 1;
+			}
+			else
+			{
+				mantissa |= 1UL << 52;
+			}
+
+			// value = mantissa * 2^shift; times 10^places, below 2^63 for any mantissa at three places.
+			var shift = exponent - 1075;
+			var scaled = mantissa * (ulong)Math.Pow(10, places);
+			if (shift >= 0)
+			{
+				return value * Math.Pow(10, places);
+			}
+
+			var right = -shift;
+			if (right >= 64)
+			{
+				return 0;
+			}
+
+			var whole = scaled >> right;
+			var rest = scaled & ((1UL << right) - 1);
+			return rest >= 1UL << (right - 1) ? whole + 1 : whole;
 		}
 
 		/// <summary>A value as the rows print it: the figure, a lot's depth, its basis and its unit's role.</summary>

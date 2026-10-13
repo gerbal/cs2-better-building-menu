@@ -229,7 +229,32 @@ namespace BetterBuildingMenu.Tests
 			{ "WaterPumpingStation", 30_000, 30_001, false },
 			{ "School", 400, 400.04, true },
 			{ "School", 400, 401, false },
+			// Midpoints in decimal that a double holds just below: the UI's toFixed prints them down.
+			{ "PowerPlant", 10_450, 10_400, true },
+			{ "PowerPlant", 10_450, 10_500, false },
+			{ "Battery", 1_500, 1_000, true },
+			{ "Battery", 1_500, 2_000, false },
+			{ "GarbageFacility", 105, 100, true },
+			{ "GarbageFacility", 105, 110, false },
+			{ "GarbageFacility", 1_105_000, 1_100_000, true },
+			{ "GarbageFacility", 1_105_000, 1_110_000, false },
 		};
+
+		[Fact]
+		public void TheUisTableOfCapacitiesAsPrintedIsThisOne()
+		{
+			// The UI's said-once test prints each pair; the two tables are one contract.
+			var source = ModSource.Text("UI/test/saidOnce.test.ts");
+			var rows = System.Text.RegularExpressions.Regex.Matches(source, @"\[""(\w+)"", ([\d_.]+), ([\d_.]+), (true|false)\]")
+				.Cast<System.Text.RegularExpressions.Match>()
+				.Select(match => (match.Groups[1].Value, Number(match.Groups[2].Value), Number(match.Groups[3].Value), match.Groups[4].Value == "true"))
+				.ToArray();
+			var ours = CapacitiesAsPrinted.Select(row => ((string)row[0], (double)row[1], (double)row[2], (bool)row[3])).ToArray();
+
+			Assert.Equal(ours, rows);
+		}
+
+		private static double Number(string text) => double.Parse(text.Replace("_", string.Empty), System.Globalization.CultureInfo.InvariantCulture);
 
 		[Theory]
 		[MemberData(nameof(CapacitiesAsPrinted))]
