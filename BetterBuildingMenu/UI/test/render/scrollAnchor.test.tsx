@@ -9,7 +9,10 @@ import {
   setAssetMenuAnchor,
   setAssetMenuListStart,
 } from "../../src/domain/assetMenuViewStore";
+import { useCatalogWindow } from "../../src/mods/BuildingCatalog/useCatalogWindow";
 import { useScrollAnchor, type ListStartPage } from "../../src/mods/BuildingCatalog/useScrollAnchor";
+import { catalogPage, entry } from "../harness/render";
+import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 
 const globals = globalThis as unknown as Record<string, unknown>;
 const KEY = "catalog|cards|menuCategory";
@@ -70,6 +73,13 @@ function fakeList(count: number) {
 
 const Probe = ({ list, page }: { list: RefObject<HTMLElement>; page: ListStartPage }) => {
   useScrollAnchor(list, KEY, page);
+  return null;
+};
+
+/** Both hooks, in the catalog's order: the load-more poll's frames run before the move's. */
+const CatalogProbe = ({ list }: { list: RefObject<HTMLElement> }) => {
+  const { anchorId, anchorIndex, listStart, items } = useCatalogWindow(list, { viewMode: "cards", groupBy: "none" });
+  useScrollAnchor(list, KEY, { listStart, anchorId, anchorIndex, itemCount: items.length });
   return null;
 };
 
@@ -263,6 +273,50 @@ describe("where the list goes when a page lands", () => {
 
     const offset = list.offsetOf(120);
     assert.ok(offset >= 0 && offset < VIEWPORT, `row 120 at ${offset}`);
+  });
+
+  it("asks for no more rows while a new start's move to the top is under way", () => {
+    // A sort from a deep scroll: the shorter page lands with the old scroll at its end, and the
+    // load-more poll reads it there before the move to the top has landed.
+    const realNow = Date.now;
+    let clock = 0;
+    Date.now = () => clock;
+
+    try {
+      resetBindings();
+      const list = fakeList(100);
+      list.scroller.scrollTop = 100 * ROW - VIEWPORT;
+      setAssetMenuListStart(1);
+      const page = catalogPage(Array.from({ length: 100 }, (_, at) => entry(at + 1)), {
+        hasMore: true, totalCount: 308, listStart: 2, anchorId: 0, anchorIndex: -1,
+      });
+      setBinding("BetterBuildingMenu", "BuildingCatalog", page);
+      const loadMores = () => triggers.filter((call) => call.name === "LoadMoreBuildingCatalog");
+
+      act(() => {
+        root = create(<CatalogProbe list={list.ref} />);
+      });
+
+      for (let pass = 0; pass < 60 && frames.size > 0; pass++) {
+        clock += 100;
+        tick();
+      }
+
+      assert.equal(list.scroller.scrollTop, 0);
+      assert.equal(getAssetMenuListStart(), 2);
+      assert.deepEqual(loadMores(), []);
+
+      // Once the move has landed, the bottom of the list asks for more again.
+      list.scroller.scrollTop = 100 * ROW - VIEWPORT;
+      for (let pass = 0; pass < 3; pass++) {
+        clock += 100;
+        tick();
+      }
+
+      assert.deepEqual(loadMores().map((call) => call.args), [[200]]);
+    } finally {
+      Date.now = realNow;
+    }
   });
 
   for (const misses of [false, true]) {

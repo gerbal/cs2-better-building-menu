@@ -35,6 +35,14 @@ export interface ListScrollInput {
 const NONE: ListScroll = { kind: "none" };
 
 /**
+ * Whether the page answers a start the list has not been put in place for yet: its move is still to
+ * come or under way, and the scroll the list reads is the last start's.
+ */
+export function isNewStart(listStart: number | null, positioned: number | null): boolean {
+  return listStart !== null && listStart !== positioned;
+}
+
+/**
  * A new start (an open, a tab pick, a sort) puts the anchored row on line 1 when the window holds it,
  * and the list at its top otherwise; a remount brings the kept row back once; anything else (a
  * search, a filter, more rows) leaves the list where the player has it. The start's first page with
@@ -46,7 +54,7 @@ export function planListScroll(input: ListScrollInput): ListScroll {
     return NONE;
   }
 
-  if (input.listStart !== null && input.listStart !== input.positioned) {
+  if (input.listStart !== null && isNewStart(input.listStart, input.positioned)) {
     if (input.underWay?.start === input.listStart) {
       return input.underWay;
     }

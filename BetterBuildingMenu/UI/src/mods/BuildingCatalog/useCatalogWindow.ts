@@ -2,7 +2,9 @@ import { useValue } from "cs2/api";
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
+import { getAssetMenuListStart } from "domain/assetMenuViewStore";
 import { CATALOG_WINDOW_STEP, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { isNewStart } from "domain/listScroll";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
 import { listScroller } from "./catalogDom";
 
@@ -77,6 +79,8 @@ export function useCatalogWindow(
   // asks from the page on screen, not the one it started under.
   const latestLoadMore = useRef(loadMore);
   latestLoadMore.current = loadMore;
+  const latestListStart = useRef(listStart);
+  latestListStart.current = listStart;
 
   /**
    * The passive half of the trigger: watch where the scroll actually is. It
@@ -102,7 +106,9 @@ export function useCatalogWindow(
 
       const now = Date.now();
 
-      if (now - lastCheck >= LOAD_MORE_POLL_MS) {
+      // A new start's page lands under the last start's scroll, deep in a shorter list, until
+      // useScrollAnchor's move lands: that reading is not the player at the bottom.
+      if (now - lastCheck >= LOAD_MORE_POLL_MS && !isNewStart(latestListStart.current, getAssetMenuListStart())) {
         lastCheck = now;
 
         const root = rootRef.current;
