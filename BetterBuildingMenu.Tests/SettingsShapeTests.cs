@@ -322,5 +322,31 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(groups, typeof(BetterBuildingMenuSettings).GetCustomAttribute<SettingsUIGroupOrderAttribute>()!.groups);
 			Assert.Equal(groups, typeof(BetterBuildingMenuSettings).GetCustomAttribute<SettingsUIShowGroupNameAttribute>()!.groups);
 		}
+
+		[Fact]
+		public void MoreOptionsOpensTheModsOwnPageOnItsOneTab()
+		{
+			// The game names a mod's page after its IMod type, and each tab after the page.
+			var page = typeof(Mod).Assembly.GetName().Name + "." + typeof(Mod).Namespace + "." + nameof(Mod);
+			var tab = Assert.Single(typeof(BetterBuildingMenuSettings).GetCustomAttribute<SettingsUITabOrderAttribute>()!.tabs);
+
+			var target = OptionRows.OptionsPage(page, tab);
+
+			Assert.Equal(page, target.Page);
+			Assert.Equal(page + "." + tab, target.Section);
+		}
+
+		[Fact]
+		public void MoreOptionsAsksForThePageTheSettingsRegisterUnder()
+		{
+			// The settings register under their own id, with the game's prefix on each tab, so the
+			// trigger names that id and the one tab, never a string of its own.
+			Assert.Contains("Settings.RegisterInOptionsUI();", ModSource.Text("Mod.cs"));
+
+			var open = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.AssetMenuSize.cs"), "private void OpenModOptions(");
+
+			Assert.Contains("OptionRows.OptionsPage(Mod.Settings.id, BetterBuildingMenuSettings.SETTINGS)", open);
+			Assert.Contains("OpenPage(target.Page, target.Section, isAdvanced: false)", open);
+		}
 	}
 }

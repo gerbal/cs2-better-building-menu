@@ -146,9 +146,8 @@ The menus and their tabs, unlike the placements, wait for the next full pass. St
 only when the game regroups without recreating the assets. A recreated category is one such case:
 `ReplacePrefabSystem` does not move its members to the new entity, so the new category starts
 empty, and vanilla, which draws no empty category, hides the tab and its assets. The walk agrees
-and places none of them, so the tab counts nothing. The tab row and the chip row's category
-picker draw only the tabs the menu fills (`presentCategories`), so they hide it at the same
-pass. Re-reading the tabs on a partial pass is not worth it: a category removed late in the frame
+and places none of them, so the tab counts nothing. The tab row draws only the tabs the menu
+fills (`presentCategories`), so it hides it at the same pass. Re-reading the tabs on a partial pass is not worth it: a category removed late in the frame
 would make its menu's read fail on every partial pass rather than on the next full one.
 
 ## A pass that fails

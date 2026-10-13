@@ -131,11 +131,11 @@ namespace BetterBuildingMenu.Systems
 		/// The vanilla menu the asset menu is scoped to, or empty for the whole catalog.
 		/// </summary>
 		/// <remarks>
-		/// Published so the chip row can name it: the scope is set by clicking a toolbar icon,
-		/// and would otherwise be applied with nothing on screen saying so.
+		/// Published so the top row and the tab row can name it: the scope is set by clicking a
+		/// toolbar icon, and would otherwise be applied with nothing on screen saying so.
 		/// </remarks>
 		private ValueBindingHelper<string> _AssetMenuBinding = null!;
-		/// <summary>Every vanilla menu, so one can be chosen as a filter.</summary>
+		/// <summary>Every vanilla menu, so the tab row can draw the open one's icon.</summary>
 		private ValueBindingHelper<VanillaMenuCategory[]> _AssetMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _AssetMenuMilestonesBinding = null!;
@@ -270,12 +270,11 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);
 				CreateTrigger("ClearAssetMenuFilters", ClearAssetMenuFilters);
-				CreateTrigger("ResetAssetMenu", ResetAssetMenu);
 				CreateTrigger<string>("SetAssetMenuStripTab", SetAssetMenuStripTab);
-				CreateTrigger("ClearAssetMenuScope", ClearAssetMenuScope);
-				CreateTrigger<string>("SetAssetMenu", SetAssetMenu);
 			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
 			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
+			// VIEW's More options.
+			CreateTrigger("OpenModOptions", OpenModOptions);
 
 			// A gamepad cannot reach BBM's menu: the game's own stands in while one is used.
 			// Last, so the handler never runs before the bindings it reads exist.

@@ -57,3 +57,36 @@
 .lit .note {
   color: var(--bbm-armText);
 }
+
+// VIEW's list: a positioned box, so its Width sub-list sits beside it in a popover or the pane.
+.viewList {
+  position: relative;
+}
+
+// Between the views and the doors to what applies to every menu.
+.divider {
+  flex: 0 0 auto;
+  height: 1rem;
+  margin: 3rem 4rem;
+  background-color: var(--bbm-divider);
+}
+
+// A sub-list's name, which no click acts on.
+.header {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: $popover-row;
+  padding: 0 8rem;
+  color: var(--bbm-tDim);
+  font-size: calc(#{$top-row-text} * var(--fontScale));
+  white-space: nowrap;
+}
+
+// "Width, every menu": 4 to the VIEW list's left, from inside its popover's padding, its bottom 4
+// below the Width row's, which sits one row (More options) above the list's bottom.
+.widthList {
+  left: -($popover-width + 4rem + $popover-padding);
+  bottom: $popover-row - 4rem;
+}

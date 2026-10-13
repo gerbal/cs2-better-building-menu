@@ -29,6 +29,14 @@ export const CHIRPER_CLEARANCE_OFFSET = 420;
 /** The widest step that stays clear of the chirper. */
 const LAST_STEP_CLEAR_OF_THE_CHIRPER = 3;
 
+/** The steps by number, narrowest first. */
+export const WIDTH_STEP_NUMBERS: readonly number[] = WIDTH_STEP_SHARES.map((_, index) => index + 1);
+
+/** Whether a step runs on over the chirper, by the player's choice. */
+export function coversTheChirper(step: number): boolean {
+  return step > LAST_STEP_CLEAR_OF_THE_CHIRPER;
+}
+
 /** What decides where a step can sit on this screen. */
 export interface WidthStepScreen {
   /** The screen's width over its height. */
@@ -152,8 +160,7 @@ export function popoverRightLimit(placement: BoxPlacement, width: number, aspect
 /** The steps the right edge snaps to, narrowest first: beside the shown pane, only those that fit. */
 export function snapTargets(screen: WidthStepScreen): WidthSnap[] {
   const widths = widthStepWidths(screen.aspect);
-  return widths
-    .map((_, index) => index + 1)
+  return WIDTH_STEP_NUMBERS
     .filter((step) => !screen.paneShown || fitsBesideThePane(step, widths, screen))
     .map((step) => ({ step, width: drawnStepWidth(step, screen) }));
 }

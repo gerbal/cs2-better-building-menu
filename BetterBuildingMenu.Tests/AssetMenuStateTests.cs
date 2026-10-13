@@ -238,37 +238,6 @@ public sealed class AssetMenuStateTransitionTests
     }
 
     [Fact]
-    public void ResetKeepsTheMenuAndDropsEverythingThePlayerNarrowed()
-    {
-        var state = Grown(S()
-            .SelectMenu("Roads")
-            .SelectCategory("Highways")
-            .SelectSchoolTier(2)
-            .Search("bridge")
-            .SetSortColumn("ConstructionCost")
-            .SetDescending(true)
-            .SetGroupBy("cost")
-            .ToggleFacet("theme", "European")
-            .SetMetricRange("cost", "1000", "5000"));
-
-        var reset = state.ResetMenu();
-
-        Assert.Equal("Roads", reset.Menu);
-        Assert.Equal("", reset.Category);
-        Assert.Equal(-1, reset.SchoolTier);
-        Assert.Null(reset.Query.StripTabs);
-        Assert.Equal("", reset.SearchText);
-        Assert.Equal("", reset.Query.SortColumn);
-        Assert.False(reset.Query.Descending);
-        Assert.Equal("", reset.Query.GroupBy);
-        Assert.Null(reset.Query.Themes);
-        Assert.Equal(BuildingCatalogMetricRangeState.Empty, reset.MetricRanges);
-        Assert.Null(reset.Query.MinConstructionCost);
-        Assert.Equal(0, reset.Query.Offset);
-        Assert.Equal(BuildingCatalogQuery.DefaultLimit, reset.Query.Limit);
-    }
-
-    [Fact]
     public void SearchEverythingDropsTheScopeAndKeepsTheSearch()
     {
         var everywhere = S().SelectMenu("Roads").SelectCategory("Highways").Search("bridge").ClearMenuScope();
@@ -392,7 +361,6 @@ public sealed class AssetMenuStateTransitionTests
             ("clear metrics", s => s.ClearMetricRanges()),
             ("clear facets", s => s.ClearFacets()),
             ("clear filters", s => s.ClearFilters()),
-            ("reset", s => s.ResetMenu()),
             ("search", s => s.Search("depot")),
             ("everywhere", s => s.ClearMenuScope()),
         };

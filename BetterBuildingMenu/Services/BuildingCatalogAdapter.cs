@@ -896,7 +896,7 @@ namespace BetterBuildingMenu.Services
 		/// <remarks>
 		/// A selection has to stay visible even when nothing in view carries it, or it becomes
 		/// a filter with no control attached: the group would publish zero options — dropped by
-		/// the rail and the chip row alike — while the query went on filtering on it.
+		/// the rail and the filter chips alike — while the query went on filtering on it.
 		/// </remarks>
 		private static string[] WithSelected(string[] present, IReadOnlyList<string>? selected)
 		{

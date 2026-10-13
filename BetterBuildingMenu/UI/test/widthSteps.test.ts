@@ -5,6 +5,8 @@ import { WIDTH_STEPS_REFERENCE, WIDTH_STEP_REFERENCE_ASPECT } from "../src/domai
 import {
   CHIRPER_CLEARANCE_OFFSET,
   REFERENCE_ASPECT,
+  WIDTH_STEP_NUMBERS,
+  coversTheChirper,
   boxPlacement,
   WIDTH_DRAG_DEAD_ZONE,
   draggedStepWidth,
@@ -326,5 +328,12 @@ describe("a popover's right limit", () => {
 
     // In the box: steps 4 and 5 start at 396, so x 1,500 is 1,104 in.
     assert.deepEqual(limits, [706, 893, 1091, 1104, 1104]);
+  });
+});
+
+describe("the steps by number", () => {
+  it("are one to five, and only the two past the chirper's clearance cover it", () => {
+    assert.deepEqual([...WIDTH_STEP_NUMBERS], [1, 2, 3, 4, 5]);
+    assert.deepEqual(WIDTH_STEP_NUMBERS.filter(coversTheChirper), [4, 5]);
   });
 });

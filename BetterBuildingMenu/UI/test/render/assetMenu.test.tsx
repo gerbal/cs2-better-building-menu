@@ -405,4 +405,24 @@ describe("the asset menu's controls", () => {
 
     assert.equal(popovers().length, 0);
   });
+
+  it("keeps one list open across the top row and the pane: opening either closes the other", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    mount();
+    const pane = () => root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("pane"));
+    const summary = (label: string) =>
+      pane().find((node) => String(node.props["aria-label"] ?? "").startsWith(`${label} · `) && typeof node.props.onSelect === "function");
+    const paneLists = () => pane().findAll((node) => node.type === "div" && node.props.className === "pickerOptions");
+
+    act(() => summary("Sort by").props.onSelect());
+    assert.equal(paneLists().length, 1);
+
+    act(() => control("Group").props.onSelect());
+    assert.equal(popovers().length, 1);
+    assert.equal(paneLists().length, 0, "the popover closes the pane's list");
+
+    act(() => summary("View").props.onSelect());
+    assert.equal(paneLists().length, 1);
+    assert.equal(popovers().length, 0, "the pane's list closes the popover");
+  });
 });

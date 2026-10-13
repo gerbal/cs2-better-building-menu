@@ -12,6 +12,7 @@ import {
   planField,
   popoverLeft,
   searchPlaceholder,
+  toggleList,
   type ControlCell,
   type ControlKind,
 } from "../src/domain/topRow.ts";
@@ -180,5 +181,22 @@ describe("a popover's place", () => {
     // At 720p a rem is two thirds of a pixel.
     assert.equal(controlLeftRem(500, 300, 720), 300);
     assert.equal(controlLeftRem(undefined, 300, 720), null);
+  });
+});
+
+describe("the one open list", () => {
+  const sortHere = { home: "popover", kind: "sort", left: 40 } as const;
+  const sortInThePane = { home: "pane", kind: "sort" } as const;
+
+  it("opens on a press, and a second press on the same control closes it", () => {
+    assert.deepEqual(toggleList(null, sortHere), sortHere);
+    assert.equal(toggleList(sortHere, { ...sortHere, left: 52 }), null);
+    assert.equal(toggleList(sortInThePane, sortInThePane), null);
+  });
+
+  it("switches to another control's list, in the same home or the other, never stacking two", () => {
+    assert.deepEqual(toggleList(sortHere, { home: "popover", kind: "group", left: 90 }), { home: "popover", kind: "group", left: 90 });
+    assert.deepEqual(toggleList(sortHere, sortInThePane), sortInThePane);
+    assert.deepEqual(toggleList(sortInThePane, sortHere), sortHere);
   });
 });

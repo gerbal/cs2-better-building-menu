@@ -63,14 +63,12 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("GroupBy_footprint"), english: "Footprint", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_cost"), english: "Cost", source: "buildingGroups", plumbed: true },
 
-  // --- Chip row. Already behind translate(). -------------------------------
-  { key: key("AllMenus"), english: "All menus", source: "ChipRow", plumbed: true },
+  // --- Menu names and filter chips. Already behind translate(). -------------
   // The one menu the asset menu renames, because it is the one whose contents it
   // changes: Roads gathers every network, which the game's own word does not
   // describe. Offered ahead of that string rather than instead of it.
   { key: key("MenuRoadsAndNetworks"), english: "Roads & Networks", source: "vanillaServiceLabels", plumbed: true },
-  { key: key("AllTypes"), english: "All types", source: "ChipRow", plumbed: true },
-  { key: key("Remove"), english: "Remove", source: "ChipRow", plumbed: true },
+  { key: key("Remove"), english: "Remove", source: "FilterPanel", plumbed: true },
   // The end of the feed.
   { key: key("LoadMore"), english: "Load more", source: "BuildingCatalog", plumbed: true },
 

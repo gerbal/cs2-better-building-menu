@@ -1,0 +1,11 @@
+@use "assetMenuGeometry" as *;
+
+// A list's surface, in the top row's popover or over the control pane, so a list looks the same in
+// either home.
+@mixin popover-surface {
+  width: $popover-width;
+  padding: $popover-padding;
+  border-radius: 4rem;
+  background-color: var(--bbm-popBg);
+  box-shadow: var(--bbm-popRing);
+}

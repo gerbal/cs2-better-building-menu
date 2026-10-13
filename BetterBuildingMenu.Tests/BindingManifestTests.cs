@@ -139,6 +139,19 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void MoreOptionsIsNamedOnBothSidesAndThePanesOldControlsAreGone()
+		{
+			Assert.Contains("OpenModOptions", CSharpNames());
+			Assert.Contains("OpenModOptions", TypeScriptNames());
+
+			foreach (var name in new[] { "SetAssetMenu", "ClearAssetMenuScope", "ResetAssetMenu" })
+			{
+				Assert.DoesNotContain(name, CSharpNames());
+				Assert.DoesNotContain(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
 		public void TheControlPaneIsSetFromOptionsAlone()
 		{
 			// The header's switch and its trigger give way to the Options row; the pane still reads the binding.

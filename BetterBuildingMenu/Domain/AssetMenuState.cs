@@ -182,25 +182,6 @@ namespace BetterBuildingMenu.Domain
 				: this with { SearchText = next, Query = Narrowed(Query with { SearchText = next.Trim() }) };
 		}
 
-		/// <summary>
-		/// Back to the menu as it opened: filters, search, sort, direction,
-		/// grouping, category, tab and tier all dropped; the menu itself kept.
-		/// </summary>
-		public AssetMenuState ResetMenu() => this with
-		{
-			SearchText = string.Empty,
-			Query = ResetWindow(BuildingCatalogMetricRange.Clear(BuildingCatalogFacetSelection.Clear(Query)) with
-			{
-				UiCategory = string.Empty,
-				SchoolTier = -1,
-				StripTabs = null,
-				SearchText = string.Empty,
-				SortColumn = string.Empty,
-				Descending = false,
-				GroupBy = string.Empty,
-			}),
-		};
-
 		// --- The query to run -------------------------------------------------
 
 		/// <summary>

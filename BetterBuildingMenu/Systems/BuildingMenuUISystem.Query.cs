@@ -30,32 +30,12 @@ namespace BetterBuildingMenu.Systems
 		private void SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier, _tierParent));
 
 		/// <summary>A tab, strip tab or school tier the player picks: the pick logger counts it, then it applies.</summary>
-		/// <remarks>Each of the three triggers is a click in the strip or the chip row, so each counts.</remarks>
+		/// <remarks>Each of the three triggers is a click in the tab row, so each counts.</remarks>
 		private void ApplyTabPick(AssetMenuState next)
 		{
 			_placementWatch.TabSwitched();
 			Apply(next);
 		}
-
-		/// <summary>
-		/// Scopes the asset menu to a vanilla menu chosen from the filters.
-		/// </summary>
-		/// <remarks>
-		/// The same state a bottom-bar icon sets, reached the other way, so the view the menu
-		/// chip names stays reachable without the shortcut. Deliberately not VanillaMenuSelected:
-		/// that one answers the game, this one answers a player already inside the asset menu.
-		/// </remarks>
-		private void SetAssetMenu(string menuName) => Apply(_assetMenu.SelectMenu(menuName), navigation: true);
-
-		/// <summary>
-		/// Drops the vanilla-menu scope and shows the whole catalog.
-		/// </summary>
-		/// <remarks>
-		/// The bottom-bar icons are shortcuts to a preconfigured view, not a box the player is
-		/// locked inside. The facets deliberately survive: this clears the scope, not the
-		/// narrowing chosen within it, so one × does one job.
-		/// </remarks>
-		private void ClearAssetMenuScope() => Apply(_assetMenu.ClearMenuScope(), navigation: true);
 
 		/// <summary>The scope bindings, from the one state that owns them.</summary>
 		private void PublishScope()
@@ -130,16 +110,6 @@ namespace BetterBuildingMenu.Systems
 		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_assetMenu.LoadMoreTo(requestedLimit));
 
 		private void ToggleAssetMenuFacet(string facetId, string optionId) => Apply(_assetMenu.ToggleFacet(facetId, optionId));
-
-		/// <summary>
-		/// Puts a menu back the way it opens.
-		/// </summary>
-		/// <remarks>
-		/// Clear drops only the facets; a menu also accumulates a strip tab, a school level, a
-		/// search and a sort, and this is the one gesture back to a known state. Grouping and
-		/// view mode are UI-side choices, so the pane clears its own alongside this.
-		/// </remarks>
-		private void ResetAssetMenu() => Apply(_assetMenu.ResetMenu());
 
 		private void ClearAssetMenuFilters() => Apply(_assetMenu.ClearFilters());
 

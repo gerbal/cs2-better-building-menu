@@ -325,11 +325,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       // ceiling here could only cut the asset menu short.
       data-catalog-max-height={catalogMaxHeight}
     >
-      {/* No toolbar band here. Identity, grouping, sort and view live in
-          ControlPane, beside the menu at every height while the player shows it. */}
-
-      {/* No filter chrome either: the rail and the active-filter chips are the
-          control plane's, so this component draws results and nothing else. */}
+      {/* No controls here: Sort, Filter, Group and View are the top row's, and the
+          control pane's while it shows, so this component draws results and nothing else. */}
 
       {tableMode ? (
         <TableView

@@ -1,5 +1,6 @@
 @use "../../base.scss" as _base;
 @use "../../assetMenuGeometry" as *;
+@use "../../popoverSurface" as *;
 
 // The control plane: a column to the right of the build menu, mirroring
 // vanilla's tool-options column. Its width and the gap beside it are in
@@ -24,9 +25,9 @@
   // colour on this element and drops it for a length on border-radius, so the
   // variable form draws square corners beside every rounded panel.
   border-radius: 12rem;
-  background-color: var(--panelColorNormal);
-  backdrop-filter: var(--panelBlur);
-  background-image: linear-gradient(var(--panelGradientStart), var(--panelGradientEnd));
+  // The look's list material under its blur, the box's body beside it: one material.
+  background-color: var(--bbm-body);
+  backdrop-filter: var(--bbm-bodyBlur);
   color: rgba(255, 255, 255, 1);
   pointer-events: auto;
 }
@@ -64,21 +65,6 @@
   flex: 1 1 auto;
   min-width: 0;
   justify-content: flex-end;
-}
-
-// The scope breadcrumbs at the head of the pane. ChipRow draws its own ground
-// and rule for a full-width band; here it is the first thing in the column, on
-// the pane's own ground, so both would be a box drawn twice.
-.scope {
-  // 12rem, to sit on the same left edge as every row.
-  margin: -6rem 0 4rem;
-  padding: 4rem 12rem;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
-
-  > * {
-    background-color: rgba(0, 0, 0, 0) !important;
-    border-top: none !important;
-  }
 }
 
 // What the search is, on the far side of the screen from the field that set it.
@@ -124,8 +110,13 @@
   background-color: rgba(52, 63, 74, 1);
 }
 
+// Cut inside the summary, never over the row's label. A flex item, so no text-overflow: Cohtml
+// ignores it there.
 .pickerLabel {
-  @include _base.truncate;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .caret {
@@ -137,96 +128,21 @@
 // Opens UPWARD, over the pane. The pane is bottom-aligned against the bottom
 // bar, so a menu growing downward would open off the bottom of the screen.
 .pickerOptions {
+  @include popover-surface;
+
   position: absolute;
   right: 0;
   bottom: 33rem;
   z-index: 30;
   display: flex;
   flex-direction: column;
-  min-width: 100%;
-  padding: 3rem;
-  border-radius: 4rem;
-  // The in-game surface, matching what the filter rail's popovers take from
-  // game-dropdown.module.scss — NOT cs2/ui's light settings-screen default.
-  background-color: rgba(15, 16, 19, 1);
-  border: 1rem solid rgba(60, 64, 76, 1);
 }
 
-// The chips, moved with the filters they record. .rowChips lets its row wrap,
-// which the picker rows never do — at this width a chip row is often two lines.
+// The chips, under the filters they record. They wrap, which the picker rows never do — at this
+// width a chip row is often two lines — so the label sits at the row's top.
 .rowChips {
   align-items: flex-start;
 }
 
-.rowChips .rowValue {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
 
-.chip {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  height: 22rem;
-  margin: 0 4rem 3rem 0;
-  padding: 0 2rem 0 7rem;
-  border-radius: 11rem;
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 1rem solid rgba(255, 255, 255, 0.12);
-}
 
-.chipText {
-  white-space: nowrap;
-  font-size: var(--fontSizeS);
-  color: var(--menuText1Normal);
-}
-
-.chipRemove {
-  @include _base.transparentButton(false, true);
-  width: 18rem !important;
-  height: 18rem;
-  margin-left: 3rem;
-  padding: 0;
-  border-radius: 9rem;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-  line-height: 16rem;
-  text-align: center;
-}
-
-.chipRemove:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  color: var(--menuText1Normal);
-}
-
-.clearAll {
-  @include _base.transparentButton(false, true);
-  width: auto !important;
-  height: 22rem;
-  margin-bottom: 3rem;
-  padding: 0 8rem;
-  border-radius: 11rem;
-  background-color: rgba(0, 0, 0, 0.25);
-  color: var(--accentColorNormal);
-  white-space: nowrap;
-  font-size: var(--fontSizeS);
-}
-
-// Back to how the menu opens. Quiet by default — it is a way out rather than
-// a thing to reach for — and it earns its attention on hover, which is when
-// the player is already looking for it.
-.resetButton {
-  @include _base.transparentButton(false, true);
-  width: auto !important;
-  height: 20rem;
-  padding: 0 8rem !important;
-  border-radius: 3rem;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
-  white-space: nowrap;
-}
-
-.resetButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--menuText1Normal);
-}

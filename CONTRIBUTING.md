@@ -133,9 +133,11 @@ or the reader, in a sentence.
 
 | Term | Meaning |
 |---|---|
-| Asset menu | Vanilla's name for one of its toolbar menus (Roads, Zones, Police & Administration and so on) and for what opens from it. This mod draws its own in place of vanilla's asset grid (`AssetMenu`, bindings and types named `AssetMenu*`): the build menu, with the results and the tab row under them, beside the control pane. The menu the player opens decides what it lists. |
+| Asset menu | Vanilla's name for one of its toolbar menus (Roads, Zones, Police & Administration and so on) and for what opens from it. This mod draws its own in place of vanilla's asset grid (`AssetMenu`, bindings and types named `AssetMenu*`): the build menu, a box with the top row along its top edge, the results, and the tab row under them, with the control pane beside it when the player shows it. The menu the player opens decides what it lists. |
+| Top row | The row along the asset menu's top edge (`TopRow`): the search field, the controls Sort, Filter, Group and View (`ControlsStrip`), the buttons other mods add to the game's tab bar, and close. |
+| Popover | The list a top-row control opens above the box (`ControlPopover`), one at a time. The lists themselves (`SortList`, `FilterPanel`, `GroupList`, `ViewList`) are shared with the control pane. |
 | Tab row | The menu's tabs along the asset menu's bottom edge, under the results (`TabRow`): All, then vanilla's second tier, with branches or school levels where those cut a menu better. A branch tab is a strip tab in the code (`StripAxes`, `SetAssetMenuStripTab`). |
-| Control pane | The column beside the results with the count, Group by, Sort by and view mode (`ControlPane`). |
+| Control pane | An option (Options › Control pane): a column beside the box with Filters, Group by, Sort by and View, the same lists the top row's popovers show (`ControlPane`). |
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
 | Facet | One filter dimension, such as role, source, availability, content, theme or placement, with its options. Computed in C# (`BuildingCatalogFacet*`). |
 | Index | Every indexed prefab as a `PrefabIndex`, filed in the `CatalogIndex` that `PrefabIndexingSystem` publishes as `Index`. |

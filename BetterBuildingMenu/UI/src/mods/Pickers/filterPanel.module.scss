@@ -1,0 +1,80 @@
+@use "../../base.scss" as _base;
+
+// FILTER's list, in its popover or the control pane: the rail of the game's dropdowns, then a chip
+// for each filter on, each removable, and Clear filters once two are.
+.panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.underRail {
+  margin-top: 4rem;
+}
+
+// Sized to the chips and wrapping inside what holds it, so beside the pane's label they sit right.
+.chips {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 22rem;
+  margin: 0 4rem 3rem 0;
+  padding: 0 2rem 0 7rem;
+  border-radius: 11rem;
+  background-color: var(--bbm-chipBg);
+}
+
+.chipText {
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+  color: var(--bbm-tState);
+}
+
+// The game's icon Button, with the game's press. Its one class pins a square size and paints a
+// fill: two classes outrank it whichever sheet loads last.
+.chip .chipRemove {
+  @include _base.transparentButton(false, true);
+
+  width: 18rem !important;
+  height: 18rem;
+  margin-left: 3rem;
+  padding: 0;
+  border-radius: 9rem;
+  background-color: transparent;
+  color: var(--bbm-tDim);
+  font-size: var(--fontSizeS);
+  line-height: 16rem;
+  text-align: center;
+}
+
+.chip .chipRemove:hover {
+  background-color: var(--bbm-ctlOpen);
+  color: var(--bbm-tStateSet);
+}
+
+// The icon variant pins a square width, and this carries a word.
+.chips .clearAll {
+  @include _base.transparentButton(false, true);
+
+  width: auto !important;
+  height: 22rem;
+  margin-bottom: 3rem;
+  padding: 0 8rem;
+  border-radius: 11rem;
+  background-color: var(--bbm-chipBg);
+  color: var(--bbm-tWord);
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+}
+
+.chips .clearAll:hover {
+  background-color: var(--bbm-ctlOpen);
+}

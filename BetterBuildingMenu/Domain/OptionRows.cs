@@ -21,5 +21,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>A row's description: its own while Replace is on, else the line saying why it is greyed out.</summary>
 		public static string DescriptionId(bool replaceOn, string ownId) => replaceOn ? ownId : OffWhileReplaceOffId;
+
+		/// <summary>The page and tab VIEW's More options opens: the mod's own page, and a tab the game names after it.</summary>
+		public static (string Page, string Section) OptionsPage(string settingsId, string tab) => (settingsId, settingsId + "." + tab);
 	}
 }

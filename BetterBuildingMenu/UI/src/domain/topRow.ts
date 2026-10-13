@@ -204,6 +204,14 @@ export interface OpenPopover {
   left: number | null;
 }
 
+/** The one list open: in the top row's popover, or over the control pane. Never two at once. */
+export type OpenList = (OpenPopover & { home: "popover" }) | { home: "pane"; kind: ControlKind };
+
+/** A press on a control: its own list, open in that home, closes; any other list gives way to it. */
+export function toggleList(open: OpenList | null, pressed: OpenList): OpenList | null {
+  return open !== null && open.home === pressed.home && open.kind === pressed.kind ? null : pressed;
+}
+
 /**
  * A popover's left edge in the box: under its control, pulled left to end at the limit, never left of
  * the box; at the limit when the control was not measured.

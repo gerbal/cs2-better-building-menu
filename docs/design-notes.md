@@ -429,29 +429,50 @@ control sits over it (`topRowRightInset`).
   never whether the player chose it, and the view is one pick for every menu, so a dot there could
   not tell a pick from a default. A cell's label is the game's Tooltip ("Group · By tab"). Each
   cell is the game's icon button with its hover and press.
-- **The popovers.** A press on a control opens its popover, and a second press closes it; a press
-  on another control switches; only one is open. A popover is 240 wide, a child of the box so it
-  takes the look, opening upward from 2.25 rem above the box, anchored by a fixed bottom offset as
-  the pane's own menus are (a surface hung from `bottom: 100%` is untried on this engine). Its left
-  edge sits under its control's, as drawn at the press, pulled left to end at the box's right edge
-  or 6 rem short of the chirper (`popoverRightLimit`); a control that cannot be measured
+- **The popovers.** A press on a control opens its popover, and a second press closes it; a press on
+  another control switches. One list is open at a time across the top row and the pane: opening
+  either home's list closes the other's (`toggleList`). A popover is 240 wide, a child of the box so
+  it takes the look, opening upward from 2.25 rem above the box, anchored by a fixed bottom offset
+  as the pane's own menus are (a surface hung from `bottom: 100%` is untried on this engine). Its
+  left edge sits under its control's, as drawn at the press, pulled left to end at the box's right
+  edge or 6 rem short of the chirper (`popoverRightLimit`); a control that cannot be measured
   right-aligns it there. It sits over the top edge's strip and the top row (z-index 50 over 45 and
   40). A press anywhere else closes it: a capture-phase `mousedown` on the document, since the
   game's input sends mouse events and no pointer events, which a press inside the popover or on the
   controls never triggers (`isWithin`, by the marks `data-bbm-popover` and `data-bbm-controls`).
-  Filter's and View's cells open no list yet.
-- **The SORT and GROUP lists.** SORT lists Default and the sorts that can move this menu's rows,
-  the current one lit with its direction (▲ or ▼), which picking it again flips; GROUP lists the
-  groupings the menu offers, its own lit. A pick closes either. A sort keeps the list's scroll
-  position: scrolling the list to its top on a sort arrives with the list's anchor rule, in a later
-  increment. **This changes 0.2.x:** the pane's separate reverse-sort button is gone, since the lit
-  row flips the direction; and the first two groupings are named "By tab" and "No groups", in the
-  strip, the popover and the pane alike, where the pane said "Category" and "None".
-- **The pane** draws the same lists: its Group by and Sort by rows are summaries that open them over
-  the pane, the sort's summary naming its direction. Its root carries the look's class
-  (`useLookRoot`), since custom properties reach only a root's own children, and the pane sits
-  beside the box, not inside it. **This changes 0.2.x:** the pane's lists draw their rows in the
-  look's ink, 24 rem tall, the lit one in the game's selected colour with white text.
+- **The SORT and GROUP lists.** SORT lists Default and the sorts that can move this menu's rows, the
+  current one lit with its direction (▲ or ▼), which picking it again flips; GROUP lists the
+  groupings the menu offers, its own lit. A pick closes either. A sort keeps the results' scroll
+  position: scrolling the results to their top on a sort arrives with the list's anchor rule, in a
+  later increment. **This changes 0.2.x:** the pane's separate reverse-sort button is gone, since
+  the lit row flips the direction; and the first two groupings are named "By tab" and "No groups",
+  in the strip, the popover and the pane alike, where the pane said "Category" and "None".
+- **FILTER** holds the filter rail of the game's dropdowns, then a chip for each filter on and
+  Clear filters once two are (`FilterPanel`), scrolling past 300 rem. A pick keeps it open, since a
+  filter is often one of several. The game draws a dropdown's menu outside the popover, so while one
+  is open the popover ignores presses outside it (`FilterRail`'s `onDropdownToggle`): the first
+  press on the map closes the dropdown, as anywhere in the game, and the next closes the popover.
+- **VIEW** lists the four views, the drawn one lit, a pick closing it; then, under a divider, the
+  doors to what applies to every menu: "Width · 1" with a dim "every menu ›", and More options…,
+  which opens the mod's Options page (`OpenModOptions`, through the game's
+  `OptionsUISystem.OpenPage`, on the page the settings register under, `Mod.Settings.id`, and its
+  one tab; closing Options lands on the pause menu). Width opens "Width, every menu" to the list's
+  left: the five steps, the stored one lit, "default" beside 1 and "covers the chirper" beside 4
+  and 5; beside the pane the steps that do not fit are dimmed, and a stored one among them draws as
+  the widest that fits. A click sends one `SetAssetMenuWidthStep` and keeps both lists open.
+- **The pane** draws the same four lists: Filters inline, the chips under them in their Active
+  row, and Group by, Sort by and View as summaries that open theirs over the pane, on the popovers'
+  surface. While a search is typed, its caption names it ("Results for road"). A summary cuts its
+  value inside itself, so a row's label is whole at every text size. Its root carries the look's
+  class (`useLookRoot`), since custom properties reach only a root's own children, and the pane
+  sits beside the box, not inside it; its own surface is the look's `body`, the box's beside it.
+  **This changes 0.2.x:** the pane's lists draw their rows in the look's ink, 24 rem tall, the lit
+  one in the game's selected colour with white text, on the popovers' surface, and its chips in the
+  look's ink; the sort's summary names its direction (▲ or ▼); in the game's default style the pane
+  draws the look's dark panel, without the game's gradient. The pane draws no scope chips (the
+  search reaches other menus), no Reset menu (Options' Reset the build menu… puts everything back)
+  and no row of view buttons (VIEW carries the views, on the top row and in the pane), and the
+  triggers `SetAssetMenu`, `ClearAssetMenuScope` and `ResetAssetMenu` are gone.
 
 ## The top edge
 
@@ -577,9 +598,9 @@ held, the marker and the stamp as they stood, the sign that decided, and each va
 
 ## The remembered view
 
-The view the player picks in the control pane (Cards, List, Grid or Table) is kept in the hidden
-setting `AssetMenuViewMode`, so the next session opens in it. Until the player picks one it holds
-`""`, and the menu opens in Cards.
+The view the player picks in VIEW (Cards, List, Grid or Table), on the top row or in the control
+pane, is kept in the hidden setting `AssetMenuViewMode`, so the next session opens in it. Until the
+player picks one it holds `""`, and the menu opens in Cards.
 
 - **This session's pick draws first.** The UI's store keeps it, so a pick redraws at once, with
   no round trip. `chooseViewMode` draws that pick, else the stored view, else Cards, and both the
@@ -589,12 +610,11 @@ setting `AssetMenuViewMode`, so the next session opens in it. Until the player p
   or `""` for anything else, and saves only when the stored value changes. The binding is
   read/write, like the sort's, so the stored view reaches the UI on its first frame; nothing is
   sent back from an effect, which would answer C#'s own echo.
-- **A reset forgets it.** The pane's Reset menu sends `""`, and Reset the build menu… stores it,
-  so the next session opens in Cards. This session's pick goes too: `StoredViewWatcher`, mounted
-  for the whole session because Options opens while the menu is closed, drops it when the stored
-  view empties (`sessionPickAfterStored`). No pick sends `""`, so nothing else empties it. The
-  watcher lives in a city only, so its first answer counts too: empty beside a pick is a reset
-  made at the main menu.
+- **A reset forgets it.** Reset the build menu… stores `""`, so the next session opens in Cards.
+  This session's pick goes too: `StoredViewWatcher`, mounted for the whole session because Options
+  opens while the menu is closed, drops it when the stored view empties (`sessionPickAfterStored`).
+  No pick sends `""`, so nothing else empties it. The watcher lives in a city only, so its first
+  answer counts too: empty beside a pick is a reset made at the main menu.
 
 ## Reset the build menu
 
@@ -809,9 +829,9 @@ already carries:
 
 Both held on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex with a new
 algorithm, and the two surfaces the mod builds by hand paint in full, text included, with
-neither workaround: `ControlPane`'s `.pickerOptions`, anchored by a fixed `bottom` offset,
-and `ChipRow`'s `.picker`, which hangs from `top: 100%`. A surface anchored by `bottom: 100%`
-has not been tried on 2.2, so anchor a new one by `top` all the same.
+neither workaround: `ControlPane`'s `.pickerOptions` and the top row's popovers
+(`controlPopover.module.scss`), each anchored by a fixed `bottom` offset. A surface anchored by
+`bottom: 100%` has not been tried on 2.2, so anchor a new one by `top` or a fixed `bottom` offset.
 
 ## The card against vanilla
 

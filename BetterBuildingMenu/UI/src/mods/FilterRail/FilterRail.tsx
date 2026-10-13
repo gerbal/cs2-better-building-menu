@@ -38,6 +38,8 @@ interface FilterRailProps {
   metricsActive: number;
   onToggleOption: (groupId: string, optionId: string) => void;
   renderMetrics: () => JSX.Element;
+  /** Told each time one of its dropdowns opens or closes: their menus draw outside whatever holds the rail. */
+  onDropdownToggle?: (open: boolean) => void;
 }
 
 type RailIconId = FacetId | typeof RAIL_METRICS_ID;
@@ -66,6 +68,7 @@ export const FilterRail = ({
   metricsActive,
   onToggleOption,
   renderMetrics,
+  onDropdownToggle,
 }: FilterRailProps) => {
   const { translate } = useLocalization();
   const [query, setQuery] = useState("");
@@ -106,7 +109,10 @@ export const FilterRail = ({
               // Opening a dropdown resets the search: `query` is one piece of
               // state shared by every dimension's menu, so a stale value would
               // otherwise leak from one dimension into the next.
-              onToggle={(visible) => visible && setQuery("")}
+              onToggle={(visible) => {
+                if (visible) setQuery("");
+                onDropdownToggle?.(visible);
+              }}
               content={
                 <div className={styles.menu}>
                   {searchable && (
@@ -154,8 +160,7 @@ export const FilterRail = ({
           );
         })}
 
-        {/* No Clear here: the chip row owns clearing and sits immediately to
-            the right, so a second one would say it twice in one band. */}
+        {/* No Clear here: the filter panel's chips own clearing, under the rail. */}
       </div>
     </div>
   );

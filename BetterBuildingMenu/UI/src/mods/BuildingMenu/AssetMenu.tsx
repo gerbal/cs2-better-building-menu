@@ -14,7 +14,7 @@ import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useLookRoot } from "mods/useLookRoot";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuBoxHeight, drawnBodyHeight, POPOVER_GAP, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
 import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
-import { controlLeftRem, type ControlKind, type OpenPopover } from "domain/topRow";
+import { controlLeftRem, toggleList, type ControlKind, type OpenList } from "domain/topRow";
 import { boxPlacement, popoverRightLimit, topRowRightInset } from "domain/widthSteps";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
@@ -46,18 +46,21 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   // Where the box draws, from vanilla's slot. See docs/design-notes.md, "The box at its Width step, and the control pane".
   const placement = boxPlacement(shownWidth, screen);
 
-  // One popover at a time, opened under its control's drawn left edge. See docs/design-notes.md, "The top row".
+  // One list open at a time, in the top row's popover, under its control's drawn left edge, or
+  // over the pane. See docs/design-notes.md, "The top row".
   const root = useRef<HTMLDivElement>(null);
-  const [popover, setPopover] = useState<OpenPopover | null>(null);
+  const [list, setList] = useState<OpenList | null>(null);
   const togglePopover = useCallback((kind: ControlKind, cell: HTMLElement | null) => {
     const left = controlLeftRem(
       cell?.getBoundingClientRect?.().left,
       root.current?.getBoundingClientRect?.().left,
       typeof window === "undefined" ? 0 : window.innerHeight
     );
-    setPopover((current) => (current?.kind === kind ? null : { kind, left }));
+    setList((open) => toggleList(open, { home: "popover", kind, left }));
   }, []);
-  const closePopover = useCallback(() => setPopover(null), []);
+  const togglePaneList = useCallback((kind: ControlKind) => setList((open) => toggleList(open, { home: "pane", kind })), []);
+  const closeList = useCallback(() => setList(null), []);
+  const popover = list?.home === "popover" ? list : null;
 
   // The one patch on vanilla's own layout, the toolbar sunk beneath the box and the pane, lives
   // with its reason in vanillaLayout.ts.
@@ -120,13 +123,13 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             open={popover}
             limit={popoverRightLimit(placement, shownWidth, screen.aspect)}
             bottom={assetMenuBoxHeight(catalogHeight) + POPOVER_GAP}
-            onClose={closePopover}
+            onClose={closeList}
           />
           {/* Last, so it paints over the top row's upper edge, under the popovers. See
               docs/design-notes.md, "The top edge". */}
           <TopEdge active={isResizing} onBeginResize={(event) => beginResize(event, TOP_EDGE_HEIGHT)} />
         </div>
-        {paneShown && <ControlPane />}
+        {paneShown && <ControlPane open={list?.home === "pane" ? list.kind : null} onToggle={togglePaneList} onClose={closeList} />}
       </div>
     </>
   );

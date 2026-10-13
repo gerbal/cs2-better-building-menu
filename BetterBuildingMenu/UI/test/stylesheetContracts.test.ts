@@ -21,6 +21,9 @@ const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
 const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
 const TAB_ROW = "mods/TabRow/tabRow.module.scss";
+const FILTER_PANEL = "mods/Pickers/filterPanel.module.scss";
+const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
+const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
 
 const catalog = (selector: string) => declarationsOf(CATALOG, selector);
 const pane = (selector: string) => declarationsOf(PANE, selector);
@@ -306,12 +309,32 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(pane(".rowLabel")["font-size"], "16rem");
   });
 
-  it("lets the pane's text buttons size to their text", () => {
+  it("lets the lists' text buttons size to their text", () => {
     // The icon variant pins a square width, so any control here carrying text
     // has to override it, or the button sizes to the square and elides the
     // word inside it.
-    for (const selector of [".pickerSummary", ".clearAll"]) {
-      assert.equal(pane(selector).width, "auto !important", selector);
+    for (const [sheet, selector] of [[PANE, ".pickerSummary"], [FILTER_PANEL, ".chips .clearAll"], [PICKER_LIST, ".list .row"]] as const) {
+      assert.equal(declarationsOf(sheet, selector).width, "auto !important", selector);
+    }
+  });
+
+  it("keeps a pane row's label whole, its value cut inside the summary, at any text size", () => {
+    // A summary gives way at a larger text size, never the row's label beside it.
+    assert.equal(pane(".rowLabel").flex, "0 0 auto");
+    assert.equal(pane(".rowLabel")["white-space"], "nowrap");
+    for (const selector of [".rowValue", ".picker", ".pickerSummary", ".pickerLabel"]) {
+      assert.equal(pane(selector)["min-width"], "0", selector);
+    }
+    assert.equal(pane(".pickerLabel").overflow, "hidden");
+    // A flex item: Cohtml ignores text-overflow there, so the summary states none.
+    assert.equal(pane(".pickerLabel")["text-overflow"], undefined);
+  });
+
+  it("draws a list on the same surface over the pane as in the top row's popover", () => {
+    const popover = declarationsOf(POPOVER, ".popover");
+
+    for (const prop of ["width", "padding", "border-radius", "background-color", "box-shadow"]) {
+      assert.equal(pane(".pickerOptions")[prop], popover[prop], prop);
     }
   });
 

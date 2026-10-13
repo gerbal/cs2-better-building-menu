@@ -1,6 +1,8 @@
 ﻿using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Utilities;
 
+using Game.UI.Menu;
+
 using System;
 
 namespace BetterBuildingMenu.Systems
@@ -41,6 +43,28 @@ namespace BetterBuildingMenu.Systems
 
 			Mod.Settings.AssetMenuWidthStep = step;
 			Mod.Settings.ApplyAndSave();
+		}
+
+		private void OpenModOptions()
+		{
+			// VIEW's More options: the mod's own page, on its one tab. Closing Options lands on the
+			// pause menu, which is the game's. A failure costs the player a click, never the session.
+			try
+			{
+				var options = World.GetExistingSystemManaged<OptionsUISystem>();
+				if (options is null)
+				{
+					Mod.Log.Warn("Could not open the mod's Options page: the game's Options system is missing");
+					return;
+				}
+
+				var target = OptionRows.OptionsPage(Mod.Settings.id, BetterBuildingMenuSettings.SETTINGS);
+				options.OpenPage(target.Page, target.Section, isAdvanced: false);
+			}
+			catch (Exception ex)
+			{
+				Mod.Log.Warn(ex, "Could not open the mod's Options page");
+			}
 		}
 
 		private void SetAssetMenuViewMode(string picked)

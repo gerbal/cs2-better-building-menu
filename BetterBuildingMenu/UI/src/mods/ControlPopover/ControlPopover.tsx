@@ -1,8 +1,11 @@
+import { Scrollable } from "cs2/ui";
 import { useEffect, useRef } from "react";
 
 import { CONTROLS_MARK, isWithin, POPOVER_MARK, popoverLeft, type OpenPopover } from "domain/topRow";
+import { FilterPanel } from "mods/Pickers/FilterPanel";
 import { GroupList } from "mods/Pickers/GroupList";
 import { SortList } from "mods/Pickers/SortList";
+import { ViewList } from "mods/Pickers/ViewList";
 import styles from "./controlPopover.module.scss";
 
 export interface ControlPopoverProps {
@@ -16,8 +19,8 @@ export interface ControlPopoverProps {
 
 /**
  * The open control's popover: a child of the box, so it takes the look, opening upward above the
- * box. One at a time; a press outside it and the controls closes it. See docs/design-notes.md, "The
- * top row".
+ * box. One at a time; a press outside it and the controls closes it, except while one of the game's
+ * dropdowns FILTER opened is open. See docs/design-notes.md, "The top row".
  */
 export const ControlPopover = ({ open, limit, bottom, onClose }: ControlPopoverProps) => {
   // Set while one of the game's dropdowns this popover opened is open: its menu draws outside.
@@ -37,13 +40,19 @@ export const ControlPopover = ({ open, limit, bottom, onClose }: ControlPopoverP
     return () => document.removeEventListener("mousedown", onPress, true);
   }, [open, onClose]);
 
-  // SORT and GROUP have lists; FILTER's and VIEW's cells open none yet.
-  if (open === null || (open.kind !== "sort" && open.kind !== "group")) return null;
+  if (open === null) return null;
 
   return (
     <div className={styles.popover} style={{ left: `${popoverLeft(open.left, limit)}rem`, bottom: `${bottom}rem` }} {...{ [POPOVER_MARK]: "true" }}>
       {open.kind === "sort" && <SortList onPicked={onClose} />}
+      {/* FILTER stays open on a pick: a filter is often one of several. */}
+      {open.kind === "filter" && (
+        <Scrollable className={styles.filterBody} vertical trackVisibility="scrollable">
+          <FilterPanel onDropdownToggle={(shown) => { keepOpen.current = shown; }} />
+        </Scrollable>
+      )}
       {open.kind === "group" && <GroupList onPicked={onClose} />}
+      {open.kind === "view" && <ViewList onPicked={onClose} />}
     </div>
   );
 };
