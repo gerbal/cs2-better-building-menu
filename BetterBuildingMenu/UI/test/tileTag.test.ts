@@ -184,6 +184,26 @@ describe("a tile's tag", () => {
     assert.equal(tag(plant(4_500), 1.3, "capacity").text, "450 kW");
   });
 
+  it("keeps a scaled unit at 150% text on the smallest tile, its number in thousands first, never past the tag", () => {
+    const measure = (buildingType: string, subCategory: string) => (capacity: number) => row({ subCategory, buildingType, capacity });
+    const plant = measure("PowerPlant", "ServiceBuildings_Electricity");
+    const battery = measure("Battery", "ServiceBuildings_Electricity");
+    const dump = measure("GarbageFacility", "ServiceBuildings_Garbage");
+    const at150 = (entry: BuildingCatalogEntry) => tag(entry, 1.5, "capacity").text;
+
+    // 20,000 MW, as a dam makes; in thousands, the space before the unit closed up where the tag needs it.
+    assert.equal(at150(plant(200_000_000)), "20kMW");
+    assert.ok(tagFits(at150(plant(200_000_000)), 64, 1.5));
+    // 500 MWh, as a battery stores: its unit kept, never the bare "500"; the narrowest form, as no form
+    // with its unit fits the smallest tile by the estimate, which errs wide.
+    assert.equal(at150(battery(5_000_000)), "500MWh");
+    // kW, t and kt: each keeps its unit and fits.
+    for (const [entry, unit] of [[plant(4_500), "kW"], [dump(999_990), "t"], [dump(12_345_678), "kt"]] as const) {
+      const text = at150(entry);
+      assert.ok(text.endsWith(unit) && tagFits(text, 64, 1.5), text);
+    }
+  });
+
   it("says nothing where the readout says the cost once, and the milestone of a locked building still", () => {
     const said = [{ kind: "cost" as const, value: 125_000, depth: 0 }];
 

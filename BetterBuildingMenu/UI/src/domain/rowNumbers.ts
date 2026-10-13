@@ -95,14 +95,14 @@ export function sortedText(entry: BuildingCatalogEntry, sortedMetric: AssetMenuM
 }
 
 /**
- * Roles whose capacity is a measure whose unit scales with its size (kW or MW, kg, t or kt): its figure
- * keeps its unit wherever it shows, since two of them bare side by side read as one scale.
+ * Roles whose capacity is a measure whose unit scales with its size (kW or MW, MWh, kg, t or kt): its
+ * figure keeps its unit wherever it shows, since two of them bare side by side read as one scale.
  */
-const SCALED_ROLES: ReadonlySet<string> = new Set(["PowerPlant", "GarbageFacility"]);
+const SCALED_ROLES: ReadonlySet<string> = new Set(["PowerPlant", "Battery", "GarbageFacility"]);
 
 /** Roles whose capacity is a measure rather than a count of people or things: the figure says its own unit. */
 const MEASURED_ROLES: ReadonlySet<string> = new Set([
-  ...SCALED_ROLES, "Battery", "TelecomFacility", "WaterPumpingStation", "SewageOutlet", "WastewaterTreatmentPlant",
+  ...SCALED_ROLES, "TelecomFacility", "WaterPumpingStation", "SewageOutlet", "WastewaterTreatmentPlant",
 ]);
 
 /** Whether a figure of this kind keeps its unit where room is short, shortening its number instead. */

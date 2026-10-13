@@ -66,30 +66,31 @@ export function tileTag(
     return { text, locked };
   }
 
-  // Money has short forms: a network's per cell, a building's whole.
   const money = bySort ? (sortedMetric === "upkeep" ? sortedMetricValue(entry, "upkeep") : null) : locked ? null : entry.constructionCost;
 
-  // The most exact form that fits; where none does, the narrowest, which the tag clips least: a figure
-  // is never cut, as a cut number reads as another number.
+  // Money has short forms, a network's per cell and a building's whole, and so has a unit that scales
+  // with its size, its unit kept: two such figures bare side by side read as one scale.
   if (typeof money === "number" && Number.isFinite(money) && money !== 0) {
-    const forms = isPerCell(entry) ? compactCostPerCellForms(money, separators) : compactMoneyForms(money, separators);
-    const fits = forms.find((form) => tagFits(form, tileWidth, textScale));
-    const narrowest = forms.reduce((least, form) => (textWidth(form, 1, "wider") < textWidth(least, 1, "wider") ? form : least));
-
-    return { text: fits ?? narrowest, locked };
+    return { text: fittingForm(isPerCell(entry) ? compactCostPerCellForms(money, separators) : compactMoneyForms(money, separators), tileWidth, textScale), locked };
   }
-
-  // A unit that scales with its size stays, its number shortened: two such figures bare side by side
-  // read as one scale. Any other sorted value keeps its whole number and drops its unit, which the Sort
-  // control names: a cut word reads as noise. A word, the locked word, that still runs over is cut by
-  // the name planner, with "…".
   if (bySort && keepsUnit(entry, sortedMetric)) {
-    const forms = compactUnitForms(text, separators);
-    return { text: forms.find((form) => tagFits(form, tileWidth, textScale)) ?? forms[forms.length - 1], locked };
+    return { text: fittingForm(compactUnitForms(text, separators), tileWidth, textScale), locked };
   }
 
+  // Any other sorted value keeps its whole number and drops its unit, which the Sort control names: a
+  // cut word reads as noise. A word, the locked word, that still runs over is cut by the name planner,
+  // with "…".
   const number = bySort ? leadingNumber(text) : null;
   return { text: number ?? cutToTag(text, tileWidth, textScale), locked };
+}
+
+/**
+ * The most exact of a figure's forms that fits the tag; where none does, the narrowest, which the tag
+ * clips least: a figure is never cut, as a cut number reads as another number.
+ */
+function fittingForm(forms: readonly string[], tileWidth: number, textScale: number): string {
+  return forms.find((form) => tagFits(form, tileWidth, textScale))
+    ?? forms.reduce((least, form) => (textWidth(form, 1, "wider") < textWidth(least, 1, "wider") ? form : least));
 }
 
 /** How a tag is cut: beside a lock glyph or not, the words it keeps, and the measure that decides it fits. */

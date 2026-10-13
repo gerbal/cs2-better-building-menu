@@ -495,13 +495,23 @@ describe("a network's cost per cell", () => {
 
 describe("a figure with a unit, shortened", () => {
   it("drops its decimals a step at a time and keeps its unit", () => {
-    assert.deepEqual(compactUnitForms("1,234.57 MW", { ...FALLBACK_SEPARATORS, group: "," }), ["1,234.57 MW", "1,234.6 MW", "1,235 MW"]);
-    assert.deepEqual(compactUnitForms("2.45 t"), ["2.45 t", "2.5 t", "2 t"]);
+    assert.deepEqual(compactUnitForms("1,234.57 MW", { ...FALLBACK_SEPARATORS, group: "," }), [
+      "1,234.57 MW", "1,234.6 MW", "1,235 MW", "1.2k MW", "1k MW", "1,234.57MW", "1,234.6MW", "1,235MW", "1.2kMW", "1kMW",
+    ]);
+    assert.deepEqual(compactUnitForms("2.45 t"), ["2.45 t", "2.5 t", "2 t", "2.45t", "2.5t", "2t"]);
   });
 
-  it("reads the player's own marks, and leaves a figure with no decimals as it is", () => {
-    assert.deepEqual(compactUnitForms("1.234,5 kW", { ...FALLBACK_SEPARATORS, group: ".", decimal: "," }), ["1.234,5 kW", "1.235 kW"]);
-    assert.deepEqual(compactUnitForms("450 kW"), ["450 kW"]);
+  it("reads the player's own marks, and closes up the space before the unit last", () => {
+    assert.deepEqual(compactUnitForms("1.234,5 MW", { ...FALLBACK_SEPARATORS, group: ".", decimal: "," }), ["1.234,5 MW", "1.235 MW", "1,2k MW", "1k MW", "1.234,5MW", "1.235MW", "1,2kMW", "1kMW"]);
+    assert.deepEqual(compactUnitForms("450 kW"), ["450 kW", "450kW"]);
+    assert.deepEqual(compactUnitForms("500 MWh"), ["500 MWh", "500MWh"]);
+  });
+
+  it("says a figure of a thousand or more in thousands, to one decimal and to none, its unit kept", () => {
+    assert.deepEqual(compactUnitForms("20,000 MW", { ...FALLBACK_SEPARATORS, group: "," }), ["20,000 MW", "20k MW", "20,000MW", "20kMW"]);
+    // A group mark that is a space stays inside the number; only the space before the unit closes up.
+    assert.deepEqual(compactUnitForms("20 000 MW", { ...FALLBACK_SEPARATORS, group: " " }), ["20 000 MW", "20k MW", "20 000MW", "20kMW"]);
+    assert.deepEqual(compactUnitForms("Free"), ["Free"]);
   });
 });
 

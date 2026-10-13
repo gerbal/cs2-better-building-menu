@@ -1376,9 +1376,11 @@ run of text, in the glyph ink, a step behind the number's digits. A capacity tha
 weight, water, data) says its own unit and draws no glyph, and the lot is left out where the name already says it ("Parking Lot
 1x3"). Under a sort by a number the second is the value sorted by, with its unit, as Sort names the
 kind; under a sort by upkeep without the month every row shares, one convention for the list, the cards
-and the tiles' tags ("¢1,200", "¢3.9/c"). A unit that scales with its size (kW or MW, t or kt) is never dropped: where a tile's tag is
-short of room the number loses its decimals instead (`compactUnitForms`), since two such figures bare
-side by side read as one scale. The cards and the tiles' name line read their figures through the same
+and the tiles' tags ("¢1,200", "¢3.9/c"). A unit that scales with its size (kW or MW, MWh, t or kt) is never dropped: where a
+tile's tag is short of room the number loses its decimals, then says thousands ("20k MW"), then closes
+up the space before its unit ("20kMW", "500MWh") (`compactUnitForms`), since two such figures bare side
+by side read as one scale. Where no form fits, as a battery's "500MWh" at 150% on the smallest tile by
+the estimate, which errs wide, the tag says the narrowest, as it does a money figure. The cards and the tiles' name line read their figures through the same
 functions.
 
 A network's cost is said per cell (`formatCostPerCell`): the index carries a kilometre's worth, 125
