@@ -16,9 +16,18 @@ export interface AssetMenuView {
   anchors: Readonly<Record<string, number>>;
   /** The start the list was last put in place for (BuildingCatalogPage.listStart), so a remount does not redo it. */
   listStart: number | null;
+  /** The game's slot's left edge as last read, and the window it was read in, so a remount starts there. */
+  slot: SlotReading | null;
 }
 
-const initial = (): AssetMenuView => ({ viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null });
+/** Where the game's slot starts, in rem, on a window of this size in pixels. */
+export interface SlotReading {
+  innerWidth: number;
+  innerHeight: number;
+  left: number;
+}
+
+const initial = (): AssetMenuView => ({ viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null, slot: null });
 
 let state: AssetMenuView = initial();
 
@@ -119,6 +128,21 @@ export function getAssetMenuListStart(): number | null {
 
 export function setAssetMenuListStart(start: number | null): void {
   setAssetMenuView({ listStart: start });
+}
+
+/** The slot's left edge as last read on a window of this size, or null: another size's would place the box wrong. */
+export function getAssetMenuSlotLeft(innerWidth: number, innerHeight: number): number | null {
+  const { slot } = state;
+
+  return slot !== null && slot.innerWidth === innerWidth && slot.innerHeight === innerHeight ? slot.left : null;
+}
+
+export function setAssetMenuSlotLeft(reading: SlotReading): void {
+  if (getAssetMenuSlotLeft(reading.innerWidth, reading.innerHeight) === reading.left) {
+    return;
+  }
+
+  setAssetMenuView({ slot: reading });
 }
 
 export const ASSET_MENU_DISCLOSURE_KEYS = {

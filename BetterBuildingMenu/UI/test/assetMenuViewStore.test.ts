@@ -6,11 +6,13 @@ import {
   getAssetMenuAnchorKey,
   getAssetMenuDisclosure,
   getAssetMenuListStart,
+  getAssetMenuSlotLeft,
   getAssetMenuView,
   resetAssetMenuView,
   setAssetMenuAnchor,
   setAssetMenuDisclosure,
   setAssetMenuListStart,
+  setAssetMenuSlotLeft,
   setAssetMenuView,
   subscribeAssetMenuView,
 } from "../src/domain/assetMenuViewStore.ts";
@@ -19,7 +21,7 @@ describe("Asset menu view store", () => {
   beforeEach(() => resetAssetMenuView());
 
   it("starts with nothing chosen", () => {
-    assert.deepEqual(getAssetMenuView(), { viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null });
+    assert.deepEqual(getAssetMenuView(), { viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null, slot: null });
   });
 
   it("tells a subscriber when a field moves, and not when it does not", () => {
@@ -186,5 +188,28 @@ describe("Asset menu scroll anchor", () => {
     resetAssetMenuView();
 
     assert.equal(getAssetMenuAnchor(tableByCategory), null);
+  });
+});
+
+describe("the game's slot as last read", () => {
+  beforeEach(() => resetAssetMenuView());
+
+  it("is kept for a window of the same size, and nothing for another", () => {
+    setAssetMenuSlotLeft({ innerWidth: 1920, innerHeight: 1080, left: 608 });
+
+    assert.equal(getAssetMenuSlotLeft(1920, 1080), 608);
+    assert.equal(getAssetMenuSlotLeft(1280, 720), null);
+    assert.equal(getAssetMenuSlotLeft(2560, 1080), null);
+  });
+
+  it("tells no subscriber when the same reading comes again", () => {
+    setAssetMenuSlotLeft({ innerWidth: 1920, innerHeight: 1080, left: 608 });
+    let fired = 0;
+    subscribeAssetMenuView(() => { fired += 1; });
+
+    setAssetMenuSlotLeft({ innerWidth: 1920, innerHeight: 1080, left: 608 });
+    assert.equal(fired, 0);
+    setAssetMenuSlotLeft({ innerWidth: 1280, innerHeight: 720, left: 604 });
+    assert.equal(fired, 1);
   });
 });

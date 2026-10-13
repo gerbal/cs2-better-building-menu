@@ -4,7 +4,7 @@ import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
 import { getAssetMenuListStart } from "domain/assetMenuViewStore";
 import { CATALOG_WINDOW_STEP, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
-import { isNewStart } from "domain/listScroll";
+import { pendingStart } from "domain/listScroll";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
 import { listScroller } from "./catalogDom";
 
@@ -108,7 +108,7 @@ export function useCatalogWindow(
 
       // A new start's page lands under the last start's scroll, deep in a shorter list, until
       // useScrollAnchor's move lands: that reading is not the player at the bottom.
-      if (now - lastCheck >= LOAD_MORE_POLL_MS && !isNewStart(latestListStart.current, getAssetMenuListStart())) {
+      if (now - lastCheck >= LOAD_MORE_POLL_MS && pendingStart(latestListStart.current, getAssetMenuListStart()) === null) {
         lastCheck = now;
 
         const root = rootRef.current;

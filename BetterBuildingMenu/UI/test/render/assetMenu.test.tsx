@@ -567,6 +567,9 @@ describe("the game's slot as the box measures it", () => {
   let root: ReactTestRenderer | undefined;
   // Where the slot the row sits in starts, in pixels: 1 px per rem on a 1920 × 1080 screen.
   let slotLeftPx = 608;
+  let slotWidthPx = 704;
+  // The element the row sits in, as the engine hands it over.
+  let parent: () => unknown = () => ({ getBoundingClientRect: () => ({ left: slotLeftPx, width: slotWidthPx }) });
   const rowLeft = () =>
     String(root!.root.find((node) => String(node.props.className ?? "").split(" ")[0] === "assetMenuRow").props.style.left);
   const runFrames = () => {
@@ -576,7 +579,7 @@ describe("the game's slot as the box measures it", () => {
     root = create(<AssetMenu onClose={() => {}} />, {
       createNodeMock: (element) =>
         String(element.props.className ?? "").split(" ")[0] === "assetMenuRow"
-          ? { parentElement: { getBoundingClientRect: () => ({ left: slotLeftPx, width: 704 }) } }
+          ? { parentElement: parent() }
           : null,
     });
   });
@@ -589,6 +592,8 @@ describe("the game's slot as the box measures it", () => {
     globals.window = { innerWidth: 1920, innerHeight: 1080 };
     frames = [];
     slotLeftPx = 608;
+    slotWidthPx = 704;
+    parent = () => ({ getBoundingClientRect: () => ({ left: slotLeftPx, width: slotWidthPx }) });
     globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
     globals.cancelAnimationFrame = () => undefined;
   });
@@ -626,5 +631,64 @@ describe("the game's slot as the box measures it", () => {
     runFrames();
 
     assert.equal(rowLeft(), "-199rem");
+  });
+
+  it("stays at the centred slot while the slot reads zero wide, as before the first layout", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    slotLeftPx = 0;
+    slotWidthPx = 0;
+    mount();
+    runFrames();
+
+    assert.equal(rowLeft(), "-195rem");
+  });
+
+  for (const [what, element] of [["no element", null], ["an element with no rect", {}]] as const) {
+    it(`stays at the centred slot when the row sits in ${what}`, () => {
+      setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+      parent = () => element;
+      mount();
+      runFrames();
+
+      assert.equal(rowLeft(), "-195rem");
+    });
+  }
+
+  it("reads the slot again when the text scale changes", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    mount();
+    runFrames();
+
+    // At 110% step 3 starts at the tool options' edge, x 415, whatever the slot.
+    slotLeftPx = 612;
+    act(() => setBinding("options", "textScale", 1.1));
+    runFrames();
+
+    assert.equal(rowLeft(), "-197rem");
+  });
+
+  it("starts a second mount from the slot the first one read, on the same screen", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    mount();
+    runFrames();
+    act(() => root?.unmount());
+    frames = [];
+
+    mount();
+
+    assert.equal(rowLeft(), "-199rem");
+  });
+
+  it("starts a mount on another screen from the centred slot, not the last screen's", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    mount();
+    runFrames();
+    act(() => root?.unmount());
+    frames = [];
+
+    globals.window = { innerWidth: 1280, innerHeight: 720 };
+    mount();
+
+    assert.equal(rowLeft(), "-195rem");
   });
 });

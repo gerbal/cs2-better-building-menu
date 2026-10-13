@@ -9,6 +9,7 @@ import {
   setAssetMenuAnchor,
   setAssetMenuListStart,
 } from "../../src/domain/assetMenuViewStore";
+import { CATALOG_ANCHOR_MAX_FRAMES } from "../../src/domain/catalogWindow";
 import { useCatalogWindow } from "../../src/mods/BuildingCatalog/useCatalogWindow";
 import { useScrollAnchor, type ListStartPage } from "../../src/mods/BuildingCatalog/useScrollAnchor";
 import { catalogPage, entry } from "../harness/render";
@@ -317,6 +318,56 @@ describe("where the list goes when a page lands", () => {
     } finally {
       Date.now = realNow;
     }
+  });
+
+  it("lets the load-more poll go when a start's move gives up at its frame budget", () => {
+    // The anchored row never renders: the move runs out its frames, and the list is the player's again.
+    const realNow = Date.now;
+    let clock = 0;
+    Date.now = () => clock;
+
+    try {
+      resetBindings();
+      const list = fakeList(100);
+      list.scroller.scrollTop = 100 * ROW - VIEWPORT;
+      setAssetMenuListStart(1);
+      setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(Array.from({ length: 100 }, (_, at) => entry(at + 1)), {
+        hasMore: true, totalCount: 308, listStart: 2, anchorId: 999, anchorIndex: 50,
+      }));
+      const loadMores = () => triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").map((call) => call.args);
+      const frames = (count: number) => {
+        for (let pass = 0; pass < count; pass++) {
+          clock += 100;
+          tick();
+        }
+      };
+
+      act(() => {
+        root = create(<CatalogProbe list={list.ref} />);
+      });
+      frames(CATALOG_ANCHOR_MAX_FRAMES);
+      assert.deepEqual(loadMores(), [], "held while the move still has frames");
+
+      frames(5);
+
+      assert.equal(getAssetMenuListStart(), 2);
+      assert.deepEqual(loadMores(), [[200]]);
+    } finally {
+      Date.now = realNow;
+    }
+  });
+
+  it("ends a move at its frame budget when every frame re-lays the row out", () => {
+    const list = fakeList(250);
+
+    mount(list, { listStart: 1, anchorId: 150, anchorIndex: 149, itemCount: 250 });
+    for (let pass = 0; pass < 2 * CATALOG_ANCHOR_MAX_FRAMES && frames.size > 0; pass++) {
+      tick();
+      list.rewrap();
+    }
+
+    assert.equal(frames.size, 0);
+    assert.equal(getAssetMenuListStart(), 1);
   });
 
   for (const misses of [false, true]) {

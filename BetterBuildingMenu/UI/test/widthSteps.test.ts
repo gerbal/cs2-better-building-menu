@@ -12,6 +12,7 @@ import {
   draggedStepWidth,
   drawnStep,
   drawnStepWidth,
+  measuredSlotLeft,
   nearestSnapStep,
   popoverRightLimit,
   sanitizeWidthStep,
@@ -398,6 +399,23 @@ describe("from the game's slot as measured", () => {
     const over = { slotLeft: 608 };
 
     assert.equal(toolOptionsShift(boxPlacement(drawnStepWidth(2, screen(over)), screen(over)), screen(over)), null);
+  });
+});
+
+describe("the game's slot's left edge, read off its rect", () => {
+  it("turns pixels into rem at the screen's height", () => {
+    assert.equal(measuredSlotLeft({ left: 608, width: 704 }, 1080), 608);
+    assert.equal(measuredSlotLeft({ left: 402, width: 474.67 }, 720), 603);
+  });
+
+  it("reads nothing from a missing rect, one not laid out yet, a left that is not a number, or a screen with no height", () => {
+    // Each falls back to the centred slot rather than placing the box against x 0, or nowhere.
+    assert.equal(measuredSlotLeft(null, 1080), null);
+    assert.equal(measuredSlotLeft(undefined, 1080), null);
+    assert.equal(measuredSlotLeft({ left: 0, width: 0 }, 1080), null);
+    assert.equal(measuredSlotLeft({ left: Number.NaN, width: 704 }, 1080), null);
+    assert.equal(measuredSlotLeft({ left: Number.POSITIVE_INFINITY, width: 704 }, 1080), null);
+    assert.equal(measuredSlotLeft({ left: 608, width: 704 }, 0), null);
   });
 });
 

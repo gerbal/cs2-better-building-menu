@@ -35,11 +35,11 @@ export interface ListScrollInput {
 const NONE: ListScroll = { kind: "none" };
 
 /**
- * Whether the page answers a start the list has not been put in place for yet: its move is still to
- * come or under way, and the scroll the list reads is the last start's.
+ * The start the page answers when the list has not been put in place for it yet, or null: its move
+ * is still to come or under way, and the scroll the list reads is the last start's.
  */
-export function isNewStart(listStart: number | null, positioned: number | null): boolean {
-  return listStart !== null && listStart !== positioned;
+export function pendingStart(listStart: number | null, positioned: number | null): number | null {
+  return listStart !== null && listStart !== positioned ? listStart : null;
 }
 
 /**
@@ -54,14 +54,16 @@ export function planListScroll(input: ListScrollInput): ListScroll {
     return NONE;
   }
 
-  if (input.listStart !== null && isNewStart(input.listStart, input.positioned)) {
-    if (input.underWay?.start === input.listStart) {
+  const start = pendingStart(input.listStart, input.positioned);
+
+  if (start !== null) {
+    if (input.underWay?.start === start) {
       return input.underWay;
     }
 
     const held = input.anchorId > 0 && input.anchorIndex >= 0 && input.anchorIndex < input.itemCount;
 
-    return held ? { kind: "lineOne", start: input.listStart, id: input.anchorId } : { kind: "top", start: input.listStart };
+    return held ? { kind: "lineOne", start, id: input.anchorId } : { kind: "top", start };
   }
 
   return !input.settled && input.stored !== null ? { kind: "restore", id: input.stored } : NONE;

@@ -140,9 +140,10 @@ the toolbar's open menu, and moving the mouse brings BBM's back on the same menu
   and the scheme is not the gamepad. `GamepadMenuRecord`, pure too, keeps the record through each
   event that sets or forgets it.
 - **Where each menu sits.** At the first Width step BBM's box takes the game's own slot's left and
-  bottom, x 608-1,314 on a 1920 × 1080 screen, so the hand-off moves only the right edge, by the
-  2 rem the game's 704 slot is narrower (6 rem wider at 712 in a 1280 × 720 window). At a wider
-  step the game's menu draws at its own width, and the switch is a visible jump.
+  bottom, so the hand-off moves only the right edge. On a 1920 × 1080 screen the box is 608-1,314
+  and the game's slot 704 wide, so its menu ends 2 rem short of BBM's; in a 1280 × 720 window the
+  slot is 712 wide and its menu ends 6 rem past. At a wider step the game's menu draws at its own
+  width, and the switch is a visible jump.
 - **A nudged stick** flips the scheme, and BBM follows each change as the game does. If that makes
   the menus flicker, the fallback is to wait for a scheme to hold 250 ms before handing over.
 - **The handler runs inside the game's input code**, so it does nothing once the settings are gone
@@ -183,7 +184,10 @@ column is 380 wide and grows by half the text scale's increase). The slot is mea
 the game centres it, but its rem width follows the pixel ratio, 704 at 1 px per rem and 712 at 1.5
 rem per px, so `useGameSlotLeft` reads the left edge of the element the row sits in, again when the
 screen or the text scale changes, and the placement takes it as an input (`WidthStepScreen.slotLeft`).
-Until the first reading the centred 712 (`VANILLA_SLOT_WIDTH`) stands for it. On a 1920 × 1080
+Until the first reading the centred 712 (`VANILLA_SLOT_WIDTH`) stands for it, which draws the box
+4 rem right of its place at 1 px per rem; the view store keeps the last reading with the window's
+size, so a later open on the same screen starts from it and only a session's first open draws the
+fallback, for the frames until two readings agree. On a 1920 × 1080
 screen, a slot at x 608, the steps draw at 608-1,314, 607-1,500, 409-1,500, 396-1,676 and
 396-1,871; from the 712 slot at x 604 step 1 is 604-1,310 and step 2 604-1,497, the rest the same,
 so steps 3 to 5 sit at the same screen edges whatever the slot. Beside the shown pane the box grows
