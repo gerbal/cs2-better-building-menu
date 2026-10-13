@@ -143,24 +143,4 @@ describe("the filter rail", () => {
     assert.equal(tree!.root.findByType(TextInput).props.value, "");
     assert.ok(labels(tree!.root).includes("Other 3"));
   });
-
-  it("reports each of its dropdowns opening and closing, so what holds it can stay open", () => {
-    const reported: boolean[] = [];
-    act(() => {
-      tree = create(
-        <FilterRail
-          facets={state}
-          metricsActive={0}
-          onToggleOption={() => undefined}
-          onDropdownToggle={(open) => reported.push(open)}
-          renderMetrics={() => <div />}
-        />
-      );
-    });
-
-    act(() => dropdown("Theme").props.onToggle(true));
-    act(() => dropdown("Theme").props.onToggle(false));
-
-    assert.deepEqual(reported, [true, false]);
-  });
 });

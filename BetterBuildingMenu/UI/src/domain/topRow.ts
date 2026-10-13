@@ -203,6 +203,16 @@ export function isWithin(target: unknown, attribute: string): boolean {
   return false;
 }
 
+/**
+ * Whether one of the game's dropdown menus is open, read off the document at a press: the game draws
+ * an open dropdown's menu outside whatever holds the dropdown and drops it when it closes, which it
+ * does on a pick or an outside press without telling the dropdown's owner. Null for a class the
+ * game's module did not give.
+ */
+export function gameMenuOpen(doc: { querySelector(selector: string): unknown } | undefined, menuClass: string | null): boolean {
+  return menuClass !== null && doc !== undefined && doc.querySelector(`.${menuClass}`) !== null;
+}
+
 /** The open popover: whose control, and that control's left edge in the box, where it was measured. */
 export interface OpenPopover {
   kind: ControlKind;

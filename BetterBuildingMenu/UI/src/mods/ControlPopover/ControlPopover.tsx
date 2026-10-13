@@ -1,7 +1,9 @@
 import { Scrollable } from "cs2/ui";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-import { CONTROLS_MARK, isWithin, POPOVER_MARK, popoverLeft, type OpenPopover, type PopoverAnchor } from "domain/topRow";
+import { CONTROLS_MARK, gameMenuOpen, isWithin, POPOVER_MARK, popoverLeft, type OpenPopover, type PopoverAnchor } from "domain/topRow";
+import { vanillaClass } from "mods/BuildingMenu/vanillaLayout";
+import { GAME_DROPDOWN_THEME } from "mods/FilterRail/FilterRail";
 import { FilterPanel } from "mods/Pickers/FilterPanel";
 import { GroupList } from "mods/Pickers/GroupList";
 import { SortList } from "mods/Pickers/SortList";
@@ -20,20 +22,19 @@ export interface ControlPopoverProps {
 /**
  * The open control's popover: a child of the box, so it takes the look, opening upward above the
  * box, or down from under the top row when the box leaves no room above it. One at a time; a press
- * outside it and the controls closes it, except while one of the game's dropdowns FILTER opened is
+ * outside it and the controls closes it, except FILTER while one of the game's dropdown menus is
  * open. See docs/design-notes.md, "The top row".
  */
 export const ControlPopover = ({ open, limit, anchor, onClose }: ControlPopoverProps) => {
-  // Set while one of the game's dropdowns this popover opened is open: its menu draws outside.
-  const keepOpen = useRef(false);
-
   useEffect(() => {
     if (open === null) return undefined;
-    keepOpen.current = false;
 
-    // Captured, and on mousedown: the game's input sends mouse events, never pointer events.
+    // Captured, and on mousedown: the game's input sends mouse events, never pointer events. Captured,
+    // it runs before the game's dropdown closes itself on the same press, so the menu is still drawn:
+    // that press closes the dropdown, and the next one FILTER.
     const onPress = (event: MouseEvent) => {
-      if (keepOpen.current || isWithin(event.target, POPOVER_MARK) || isWithin(event.target, CONTROLS_MARK)) return;
+      if (isWithin(event.target, POPOVER_MARK) || isWithin(event.target, CONTROLS_MARK)) return;
+      if (open.kind === "filter" && gameMenuOpen(document, vanillaClass(GAME_DROPDOWN_THEME, "dropdownMenu"))) return;
       onClose();
     };
 
@@ -52,7 +53,7 @@ export const ControlPopover = ({ open, limit, anchor, onClose }: ControlPopoverP
       {/* FILTER stays open on a pick: a filter is often one of several. */}
       {open.kind === "filter" && (
         <Scrollable className={styles.filterBody} vertical trackVisibility="scrollable">
-          <FilterPanel onDropdownToggle={(shown) => { keepOpen.current = shown; }} />
+          <FilterPanel />
         </Scrollable>
       )}
       {open.kind === "group" && <GroupList onPicked={onClose} />}

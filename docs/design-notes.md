@@ -498,8 +498,13 @@ control sits over it (`topRowRightInset`).
 - **FILTER** holds the filter rail of the game's dropdowns, then a chip for each filter on and
   Clear filters once two are (`FilterPanel`), scrolling past 300 rem. A pick keeps it open, since a
   filter is often one of several. The game draws a dropdown's menu outside the popover, so while one
-  is open the popover ignores presses outside it (`FilterRail`'s `onDropdownToggle`): the first
-  press on the map closes the dropdown, as anywhere in the game, and the next closes the popover.
+  is open the popover ignores presses outside it: the first press on the map closes the dropdown, as
+  anywhere in the game, and the next closes the popover. Whether a menu is open is read off the
+  document at the press (`gameMenuOpen`), by the class of the game's dropdown theme the rail hands
+  its dropdowns (`dropdownMenu`), never from a flag the dropdown's `onToggle` sets: the game's
+  dropdown closes itself on a pick or an outside press without calling it. The popover's listener
+  is captured, so it runs before the dropdown's own and still finds the menu on the press that
+  closes it.
 - **VIEW** lists the four views, the drawn one lit, a pick closing it; then, under a divider, the
   doors to what applies to every menu: "Width · 1" with a dim "every menu ›", and More options…,
   which opens the mod's Options page (`OpenModOptions`, through the game's

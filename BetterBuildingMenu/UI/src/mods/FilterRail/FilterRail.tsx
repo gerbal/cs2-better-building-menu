@@ -21,7 +21,8 @@ import { GameTextInput, gameClasses } from "mods/gameModules";
  * settings-screen look, which draws a white panel over the map; taking the
  * game's own theme also keeps its hover, focus and open states.
  */
-const GameDropdownTheme = gameClasses("game-ui/game/themes/game-dropdown.module.scss");
+export const GAME_DROPDOWN_THEME = "game-ui/game/themes/game-dropdown.module.scss";
+const GameDropdownTheme = gameClasses(GAME_DROPDOWN_THEME);
 
 /**
  * The menu half of that theme, and only that half: whole, it also replaces the
@@ -38,8 +39,6 @@ interface FilterRailProps {
   metricsActive: number;
   onToggleOption: (groupId: string, optionId: string) => void;
   renderMetrics: () => JSX.Element;
-  /** Told each time one of its dropdowns opens or closes: their menus draw outside whatever holds the rail. */
-  onDropdownToggle?: (open: boolean) => void;
 }
 
 type RailIconId = FacetId | typeof RAIL_METRICS_ID;
@@ -68,7 +67,6 @@ export const FilterRail = ({
   metricsActive,
   onToggleOption,
   renderMetrics,
-  onDropdownToggle,
 }: FilterRailProps) => {
   const { translate } = useLocalization();
   const [query, setQuery] = useState("");
@@ -111,7 +109,6 @@ export const FilterRail = ({
               // otherwise leak from one dimension into the next.
               onToggle={(visible) => {
                 if (visible) setQuery("");
-                onDropdownToggle?.(visible);
               }}
               content={
                 <div className={styles.menu}>

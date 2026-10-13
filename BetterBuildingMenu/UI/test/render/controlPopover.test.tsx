@@ -21,6 +21,8 @@ let listeners: Press[] = [];
 let captures: unknown[] = [];
 let root: ReactTestRenderer | undefined;
 let closed = 0;
+// Whether the document holds an open menu of the game's dropdown theme, as the game draws one.
+let menuShown = false;
 
 const mount = (open: OpenPopover | null, limit = 706, anchor: PopoverAnchor = { bottom: 210.25 }) => act(() => {
   root = create(<ControlPopover open={open} limit={limit} anchor={anchor} onClose={() => { closed += 1; }} />);
@@ -57,7 +59,9 @@ describe("a control's popover", () => {
       removeEventListener: (_type: string, listener: Press) => {
         listeners = listeners.filter((other) => other !== listener);
       },
+      querySelector: (selector: string) => (menuShown && selector === ".vanilla-dropdownMenu" ? {} : null),
     };
+    menuShown = false;
     set("BuildingCatalogSortColumn", "Default");
     set("BuildingCatalogSortDescending", false);
     set("BuildingCatalog", catalogPage([entry(1)], { reorderableSortColumns: ["Default", "Name", "ConstructionCost"] }));
@@ -201,18 +205,39 @@ describe("a control's popover", () => {
     assert.equal(closed, 0);
   });
 
-  it("keeps FILTER open while one of the game's dropdowns it opened is open", () => {
+  it("keeps FILTER open while one of the game's dropdown menus is open, and closes on the next press once it has gone", () => {
     filters();
     set("BuildingCatalogMetricRanges", null);
     mount({ kind: "filter", left: 0 });
     const theme = () => popover().findAllByType(Dropdown)[0];
 
     act(() => theme().props.onToggle(true));
-    // The game draws the dropdown's menu outside the popover, so a pick in it is a press outside.
+    menuShown = true;
+    // The game draws the dropdown's menu outside the popover, so a press in it, or the press on the
+    // map that closes it, is a press outside.
     pressAt(outside);
     assert.equal(closed, 0);
 
-    act(() => theme().props.onToggle(false));
+    // The game's dropdown closes itself on that press, and never reports it.
+    menuShown = false;
+    pressAt(outside);
+    assert.equal(closed, 1);
+  });
+
+  it("keeps FILTER open for a game dropdown's menu it never heard open", () => {
+    filters();
+    set("BuildingCatalogMetricRanges", null);
+    mount({ kind: "filter", left: 0 });
+
+    menuShown = true;
+    pressAt(outside);
+    assert.equal(closed, 0);
+  });
+
+  it("closes another control's popover on a press outside, whatever dropdown menu is open", () => {
+    mount({ kind: "sort", left: 0 });
+
+    menuShown = true;
     pressAt(outside);
     assert.equal(closed, 1);
   });

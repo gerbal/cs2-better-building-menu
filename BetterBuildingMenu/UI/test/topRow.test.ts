@@ -7,6 +7,7 @@ import {
   cutToWidth,
   enterTarget,
   fieldNeeds,
+  gameMenuOpen,
   isWithin,
   planControls,
   planField,
@@ -165,6 +166,26 @@ describe("a press inside a popover or the controls", () => {
   it("is outside both for the map, the page or nothing", () => {
     assert.equal(isWithin(node({}, node({})), POPOVER_MARK), false);
     assert.equal(isWithin(null, CONTROLS_MARK), false);
+  });
+});
+
+describe("whether one of the game's dropdown menus is open, at a press", () => {
+  // The document as the press finds it: the game draws an open dropdown's menu, and drops it on close.
+  const page = (...classes: string[]) => ({
+    querySelector: (selector: string) => (classes.some((name) => selector === `.${name}`) ? { className: selector.slice(1) } : null),
+  });
+
+  it("is open while an element with the menu's class is in the document", () => {
+    assert.equal(gameMenuOpen(page("dropdown-menu_A", "other_B"), "dropdown-menu_A"), true);
+  });
+
+  it("is closed once the menu has gone, whatever the dropdown last reported", () => {
+    assert.equal(gameMenuOpen(page("other_B"), "dropdown-menu_A"), false);
+  });
+
+  it("is closed when the game's module gave no class, or there is no document", () => {
+    assert.equal(gameMenuOpen(page("dropdown-menu_A"), null), false);
+    assert.equal(gameMenuOpen(undefined, "dropdown-menu_A"), false);
   });
 });
 

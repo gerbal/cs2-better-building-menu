@@ -112,14 +112,12 @@ export const FilterChips = ({ className, onBody = false }: { className?: string;
 };
 
 export interface FilterPanelProps {
-  /** Told each time one of the rail's dropdowns opens or closes: the FILTER popover stays open meanwhile. */
-  onDropdownToggle?: (open: boolean) => void;
   /** Draw the chips under the rail. The control pane draws them in a row of their own. */
   chips?: boolean;
 }
 
 /** FILTER's list, in its popover or the control pane: the rail of the game's dropdowns, then the chips. */
-export const FilterPanel = ({ onDropdownToggle, chips = true }: FilterPanelProps) => {
+export const FilterPanel = ({ chips = true }: FilterPanelProps) => {
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const { toggle } = useFilterRouting();
@@ -130,7 +128,6 @@ export const FilterPanel = ({ onDropdownToggle, chips = true }: FilterPanelProps
         facets={facets}
         metricsActive={countActiveMetricRanges(metricRangesFromState(metricRanges))}
         onToggleOption={toggle}
-        onDropdownToggle={onDropdownToggle}
         renderMetrics={() => <BuildingCatalogMetricFilters />}
       />
       {chips && <FilterChips className={styles.underRail} />}
