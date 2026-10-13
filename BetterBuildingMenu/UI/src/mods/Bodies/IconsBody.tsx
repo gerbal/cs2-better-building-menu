@@ -15,7 +15,7 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$ } from "mods/bindings";
 import { clearPointed } from "domain/assetMenuViewStore";
-import { pointAt } from "mods/HoverCard/pointing";
+import { pointAt, type CellEnter } from "mods/HoverCard/pointing";
 import styles from "./iconsBody.module.scss";
 import { LabelPlate } from "./LabelPlate";
 import { PlannedName } from "./PlannedName";
@@ -74,7 +74,7 @@ const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textSca
       variant="flat"
       focusKey={FOCUS_DISABLED}
       onSelect={() => onPlace(entry)}
-      onMouseEnter={(event: { currentTarget: Element }) => pointAt(entry, event.currentTarget)}
+      onMouseEnter={(event: CellEnter) => pointAt(entry, event)}
       onMouseLeave={() => clearPointed(entry.id)}
       aria-label={word ? `${name} — ${word}` : name}
       aria-disabled={locked || built ? "true" : undefined}

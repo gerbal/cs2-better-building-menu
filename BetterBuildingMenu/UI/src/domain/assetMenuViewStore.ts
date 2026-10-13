@@ -29,6 +29,8 @@ export interface AssetMenuView {
 export interface Pointed {
   entry: BuildingCatalogEntry;
   cell: Rect;
+  /** Where the pointer entered the cell, in screen rem, as its enter event says; none where it says nothing. */
+  at?: { x: number; y: number };
 }
 
 /** Where the game's slot starts, in rem, on a window of this size in pixels. */

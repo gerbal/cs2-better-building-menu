@@ -4,7 +4,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { memo, useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from "react";
 
-import { clearPointed, type Pointed } from "domain/assetMenuViewStore";
+import { clearPointed, getAssetMenuView, type Pointed } from "domain/assetMenuViewStore";
 import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { TAB_COUNT_SIZE, TAB_NAME_SIZE } from "domain/assetMenuLayout";
 import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type StatusLine } from "domain/hoverCard";
@@ -100,8 +100,11 @@ export function useStatusLine(room: () => number, keyKind: KeyKind): StatusLine 
   }, textScale > 1);
 }
 
-/** Where the pointer last moved over the box, in the page's pixels; null until it has moved there. */
-type PointerAt = MutableRefObject<{ x: number; y: number } | null>;
+/**
+ * Where the pointer last moved over the box, in the page's pixels, and the building pointed at as it moved;
+ * null until it has moved there.
+ */
+type PointerAt = MutableRefObject<{ x: number; y: number; id: number | null } | null>;
 
 interface CardProps {
   pointed: Pointed;
@@ -155,14 +158,16 @@ function useAfterLayout(boxRef: RefObject<HTMLElement>, cardRef: RefObject<HTMLE
 
 /**
  * Whether the pointed building's cell, as drawn now, still lies under the pointer: where the pointer last
- * moved over the box, else the middle of the cell it entered. Where it does not, the building is pointed at
+ * moved over the box while this building was pointed at, else where it entered the cell, else the cell's
+ * middle, so a move heard before the enter never judges it. Where it does not, the building is pointed at
  * no more. Content that moves under a resting pointer (a wheel, a key, a new page) may send no leave, and a
  * card that followed the building would name one the pointer has left. See docs/design-notes.md, "The hover card".
  */
 function stillPointed(cell: Rect | null, pointed: Pointed, pointer: PointerAt, innerHeight: number): cell is Rect {
-  const at = pointer.current === null
-    ? { x: pointed.cell.x + pointed.cell.w / 2, y: pointed.cell.y + pointed.cell.h / 2 }
-    : remRect({ left: pointer.current.x, top: pointer.current.y, width: 0, height: 0 }, innerHeight);
+  const moved = pointer.current !== null && pointer.current.id === pointed.entry.id ? pointer.current : null;
+  const at = moved !== null
+    ? remRect({ left: moved.x, top: moved.y, width: 0, height: 0 }, innerHeight)
+    : pointed.at ?? { x: pointed.cell.x + pointed.cell.w / 2, y: pointed.cell.y + pointed.cell.h / 2 };
   if (cell !== null && coversPoint(cell, at)) return true;
   clearPointed(pointed.entry.id);
   return false;
@@ -395,7 +400,7 @@ export interface HoverCardProps {
 export const HoverCard = ({ boxRef, hidden }: HoverCardProps) => {
   const form = hoverCardForm(useValue(AssetMenuHoverCard$));
   const pointed = usePointedAfterDelay();
-  const pointer: PointerAt = useRef<{ x: number; y: number } | null>(null);
+  const pointer: PointerAt = useRef<{ x: number; y: number; id: number | null } | null>(null);
 
   useEffect(() => () => clearPointed(), []);
 
@@ -403,7 +408,7 @@ export const HoverCard = ({ boxRef, hidden }: HoverCardProps) => {
     const box = boxRef.current;
     if (!box) return undefined;
     const moved = (event: MouseEvent) => {
-      pointer.current = { x: event.clientX, y: event.clientY };
+      pointer.current = { x: event.clientX, y: event.clientY, id: getAssetMenuView().pointed?.entry.id ?? null };
     };
     box.addEventListener("mousemove", moved);
     return () => box.removeEventListener("mousemove", moved);

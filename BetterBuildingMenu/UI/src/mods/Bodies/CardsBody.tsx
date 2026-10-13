@@ -13,7 +13,7 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { ActivePrefabId$ } from "mods/bindings";
 import type { CardPlace, CardsLayout } from "mods/BuildingCatalog/useCardsLayout";
 import { clearPointed } from "domain/assetMenuViewStore";
-import { pointAt } from "mods/HoverCard/pointing";
+import { pointAt, type CellEnter } from "mods/HoverCard/pointing";
 import styles from "./cardsBody.module.scss";
 import { LabelPlate } from "./LabelPlate";
 import { PlannedName } from "./PlannedName";
@@ -54,7 +54,7 @@ const Card = memo(function Card({ entry, text, place, held, armed, enter, textSc
       variant="flat"
       focusKey={FOCUS_DISABLED}
       onSelect={() => onPlace(entry)}
-      onMouseEnter={(event: { currentTarget: Element }) => pointAt(entry, event.currentTarget)}
+      onMouseEnter={(event: CellEnter) => pointAt(entry, event)}
       onMouseLeave={() => clearPointed(entry.id)}
       aria-label={word ? `${fullName} — ${word}` : fullName}
       aria-disabled={locked || built ? "true" : undefined}

@@ -20,7 +20,7 @@ import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { clearPointed } from "domain/assetMenuViewStore";
-import { pointAt } from "mods/HoverCard/pointing";
+import { pointAt, type CellEnter } from "mods/HoverCard/pointing";
 import { LabelPlate } from "./LabelPlate";
 import { PlannedName } from "./PlannedName";
 import styles from "./tilesBody.module.scss";
@@ -78,7 +78,7 @@ const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, 
       variant="flat"
       focusKey={FOCUS_DISABLED}
       onSelect={() => onPlace(entry)}
-      onMouseEnter={(event: { currentTarget: Element }) => pointAt(entry, event.currentTarget)}
+      onMouseEnter={(event: CellEnter) => pointAt(entry, event)}
       onMouseLeave={() => clearPointed(entry.id)}
       aria-label={word ? `${name} — ${word}` : name}
       aria-disabled={locked || built ? "true" : undefined}

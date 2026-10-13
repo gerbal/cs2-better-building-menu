@@ -3,13 +3,24 @@ import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { cellsInField, remRect, type Rect } from "domain/hoverCardPlace";
 import { lastCatalogRow, listScroller } from "mods/BuildingCatalog/catalogDom";
 
+/** A cell's mouse enter, as the bodies hand it on: the cell, and where the pointer is, in pixels. */
+export interface CellEnter {
+  currentTarget: { getBoundingClientRect?: () => DOMRect } | null;
+  clientX?: number;
+  clientY?: number;
+}
+
 /**
  * The pointer entered a building's cell: it is the one pointed at, its cell read off the screen in rem,
- * for the hover card. A cell leaves through `clearPointed(id)`. Real input sends mouse events only, so the
- * bodies call these from their cells' mouse enter and leave.
+ * and where the pointer entered it, for the hover card. A cell leaves through `clearPointed(id)`. Real
+ * input sends mouse events only, so the bodies call these from their cells' mouse enter and leave.
  */
-export function pointAt(entry: BuildingCatalogEntry, element: { getBoundingClientRect?: () => DOMRect } | null): void {
-  setPointed({ entry, cell: remRect(element?.getBoundingClientRect?.(), typeof window === "undefined" ? 0 : window.innerHeight) });
+export function pointAt(entry: BuildingCatalogEntry, event: CellEnter): void {
+  const height = typeof window === "undefined" ? 0 : window.innerHeight;
+  const cell = remRect(event.currentTarget?.getBoundingClientRect?.(), height);
+  const known = Number.isFinite(event.clientX) && Number.isFinite(event.clientY) && height > 0;
+  const at = known ? remRect({ left: event.clientX!, top: event.clientY!, width: 0, height: 0 }, height) : null;
+  setPointed(at === null ? { entry, cell } : { entry, cell, at: { x: at.x, y: at.y } });
 }
 
 /**

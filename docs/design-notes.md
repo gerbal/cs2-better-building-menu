@@ -1591,15 +1591,15 @@ Any other stored value reads as beside the pointer, on every load.
 
 - **What is pointed at.** A body's cell says the pointer entered it and left it (`pointAt`,
   `clearPointed`), from its mouse enter and leave, the only events real input sends; the view store holds
-  the building and its cell on screen, in rem. A leave takes the building away only while it is still the
-  one pointed at, so a leave the engine sends after the next cell's enter takes nothing. The card shows
-  once the pointer has rested the Hover delay knob's time on one building (150 ms as it ships), and goes
-  at once when it leaves, to nothing or to the next cell: React sends a cell's leave and the next one's
-  enter from one mouseout, so a card kept up until the next had rested would name a building the pointer
-  has left; a building the pointer comes back to before the next has rested waits the delay again. A cell
-  that goes from under a resting pointer (typing turns the tiles into the list, a page changes) sends no
-  leave, so each cell takes its own building away as it unmounts; nothing is pointed at once the menu
-  closes.
+  the building, its cell on screen, in rem, and where the pointer entered it. A leave takes the building
+  away only while it is still the one pointed at, so a leave the engine sends after the next cell's enter
+  takes nothing. The card shows once the pointer has rested the Hover delay knob's time on one building
+  (150 ms as it ships), and goes at once when it leaves, to nothing or to the next cell: React sends a
+  cell's leave and the next one's enter from one mouseout, so a card kept up until the next had rested
+  would name a building the pointer has left; a building the pointer comes back to before the next has
+  rested waits the delay again. A cell that goes from under a resting pointer (typing turns the tiles
+  into the list, a page changes) sends no leave, so each cell takes its own building away as it unmounts;
+  nothing is pointed at once the menu closes.
 - **One card, a child of the box's root,** so it takes the look's tokens and the interface style with them,
   as the popovers do, drawing above the box from inside it. It takes no pointer, and hides while a list is
   open. Its panel is the popovers' own (`popover-panel`, shared), dark under every style, so its inks are
@@ -1627,9 +1627,10 @@ Any other stored value reads as beside the pointer, on every load.
   the pointed cell where it is drawn then, when the page changes, when the screen, the box or the card
   change size, on a wheel over the box and on a key: Cohtml sends no scroll event, a wheel is what
   scrolls the body, and PageUp, PageDown and Enter's reveal scroll it from the keys (`useAfterLayout`).
-  Where the pointed cell no longer lies under the pointer then (where it last moved over the box, else
-  the middle of the cell it entered), the building is pointed at no more and the card goes
-  (`stillPointed`): content that moves under a resting pointer may send no leave, and a card that
+  Where the pointed cell no longer lies under the pointer then (where it last moved over the box while
+  that building was pointed at, else where the cell's enter says it came in, else the cell's middle, so a
+  move the box heard before the enter never judges it), the building is pointed at no more and the card
+  goes (`stillPointed`): content that moves under a resting pointer may send no leave, and a card that
   followed its building would name one the pointer has left. The next building's card shows once the
   pointer enters a cell. Under Status line only the readout's building goes the same way. Both cards
   share this measure and place (`usePlacedCard`), and neither carries a cell's marks, so neither is read

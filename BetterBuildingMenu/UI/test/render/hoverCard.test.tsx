@@ -8,6 +8,7 @@ import { clearPointed, getAssetMenuView, resetAssetMenuView, setPointed } from "
 import { SLOT_ROOM } from "../../src/domain/hoverCardPlace";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { HoverCard } from "../../src/mods/HoverCard/HoverCard";
+import { pointAt } from "../../src/mods/HoverCard/pointing";
 
 const globals = globalThis as unknown as Record<string, unknown>;
 /** The globals the card reaches for, faked here and put back after each case. */
@@ -269,6 +270,25 @@ describe("the hover card", () => {
     frame();
 
     assert.equal(card()[0].props.style.left, "108rem");
+  });
+
+  it("judges by where the pointer entered the cell, never by a move the box heard before it, which says another place", () => {
+    mount();
+    // A move over the top row, heard by the box; then the cell's own enter, inside the plate at its right end.
+    act(() => heard.get("box mousemove")!({ clientX: 100, clientY: 760 }));
+    act(() => pointAt(entry(1, { name: "Elementary School" }), { currentTarget: plate(1), clientX: 780, clientY: 815 } as never));
+    wait(150);
+    frame();
+    frame();
+    assert.equal(card().length, 1);
+    assert.deepEqual(getAssetMenuView().pointed?.at, { x: 780, y: 815 });
+
+    // The body scrolls the plate right by 100: the point it entered at is on it still, its middle is not.
+    plates.set(1, { x: 712, y: 805 });
+    act(() => heard.get("box wheel")!());
+    frame();
+    frame();
+    assert.equal(card()[0]?.props.style.left, "108rem");
   });
 
   it("says the page's own building, and goes when a new page moves its cell from under the resting pointer", () => {
