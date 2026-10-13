@@ -90,14 +90,15 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
 
   return (
     <span ref={boxRef} className={classNames(styles.planned, className)} data-bbm-name={marked ? name.length : undefined}>
-      {plan.lines.map((line, index) => (
-        <span key={index} className={styles.line}>
-          {dim && typed.trim() !== ""
-            // The typed word in a span of its own; the run after it keeps its space (nameRuns).
-            ? nameRuns(line, typed).map((run, at) => (run.typed ? <span key={at} className={styles.typed}>{run.text}</span> : run.text))
-            : line}
-        </span>
-      ))}
+      {plan.lines.map((line, index) => (dim && typed.trim() !== ""
+        // Every run a span of its own, side by side in a row: Cohtml lays out a span beside bare text as a
+        // box of its own, which a line's own flow stacks. The run after the typed word keeps its space (nameRuns).
+        ? (
+          <span key={index} className={classNames(styles.line, styles.runs)}>
+            {nameRuns(line, typed).map((run, at) => <span key={at} className={run.typed ? styles.typed : undefined}>{run.text}</span>)}
+          </span>
+        )
+        : <span key={index} className={styles.line}>{line}</span>))}
     </span>
   );
 });

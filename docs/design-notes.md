@@ -1505,8 +1505,12 @@ plate's name and a held card's, which keeps its distinguishing word as a row doe
 stylesheets.
 
 **Dim the typed word** (developer, off as it ships) draws each word a search typed in a span of its own,
-dimmed. Cohtml drops a space that opens a text node after an inline element, so the run after the span
-opens with U+200B before its space (`nameRuns`, `AFTER_SPAN`), which keeps it.
+dimmed, in an ink that follows the interface style (`tTyped`: the look's dim ink, the style's second ink
+on Bright blue's light plates). Cohtml lays out a span beside bare text as a box of its own, and a
+block's boxes as a column, so the typed word would take a row of its own: a dimmed line is a row
+(`.runs`), every run a span in it, keeping its spaces (`white-space: pre`). Cohtml drops a space that
+opens a text node after an inline element, so the run after the typed word opens with U+200B before its
+space (`nameRuns`, `AFTER_SPAN`), which keeps it.
 
 **This changes 0.2.x:** a list row's name was drawn whole and clipped at its box; it is now planned to
 its lines and cut once, keeping the words that tell it apart, with "…" where words were dropped.

@@ -76,8 +76,11 @@ describe("the list", () => {
 
     setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, dimTypedWord: true });
     const typed = render(rows(1, () => ({ name: "Tram Road 1" })), { typed: "tram" });
-    // The span's following space opens with U+200B, which Cohtml keeps.
-    assert.match(typed, /<span class="line"><span class="typed">Tram<\/span>\u200b Road 1<\/span>/);
+    // Every run a span of its own in a row: Cohtml lays a span beside bare text out as a box of its own,
+    // which a line's own flow would stack. The run after the typed span opens with U+200B, which Cohtml keeps.
+    assert.match(typed, /<span class="line runs"><span class="typed">Tram<\/span><span>\u200b Road 1<\/span><\/span>/);
+    const between = render(rows(1, () => ({ name: "Old Tram Road" })), { typed: "tram" });
+    assert.match(between, /<span class="line runs"><span>Old <\/span><span class="typed">Tram<\/span><span>\u200b Road<\/span><\/span>/);
   });
 
   it("says the cost over the capacity, right of the name, its digits beside the glyph for its unit", () => {

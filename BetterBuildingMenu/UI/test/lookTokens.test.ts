@@ -48,7 +48,7 @@ const PATTERN: Readonly<Record<Kind, RegExp>> = {
 
 /** Each ink and a surface it sits on, as the frame draws them: an ink can sit on more than one. */
 const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
-  ["tName", "plate"], ["tCost", "plate"], ["tNum2", "plate"], ["tGlyph", "plate"], ["tLocked", "plateLocked"], ["thumb", "track"],
+  ["tName", "plate"], ["tTyped", "plate"], ["tCost", "plate"], ["tNum2", "plate"], ["tGlyph", "plate"], ["tLocked", "plateLocked"], ["thumb", "track"],
   ["tWord", "head"], ["tState", "head"], ["tStateSet", "head"], ["tDim", "head"], ["tRead1", "head"], ["tRead2", "head"],
   ["tabCount", "head"], ["tabIcon", "head"], ["amber", "head"], ["tQuery", "fieldBg"],
   ["armText", "arm"], ["armNum", "arm"], ["pillText", "pillBg"], ["tagText", "tagBg"],
@@ -122,6 +122,11 @@ describe("the looks' tokens", () => {
       assert.equal(tokens(selector).bodyMilestone, "var(--menuText1Normal)", selector);
       assert.equal(tokens(selector).bodyEntMark, "var(--menuText1Normal)", selector);
     }
+  });
+
+  it("draw a dimmed typed word in the style's own second ink on its plates, the look's dim ink in the look", () => {
+    assert.equal(tokens(STANDARD).tTyped, tokens(STANDARD).tDim);
+    for (const selector of FOLLOW) assert.equal(tokens(selector).tTyped, "var(--menuText2Normal)", selector);
   });
 
   it("draw a list plate's unit glyph in the glyph ink, dim on a built plate and the armed ink on the armed, as its number", () => {

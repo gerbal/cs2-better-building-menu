@@ -617,6 +617,16 @@ describe("a planned name's boxes", () => {
   /** The N of a calc(N rem * var(--fontScale)). */
   const scaled = (value: string | undefined) => rem(/^calc\(([\d.]+rem) \* var\(--fontScale\)\)$/.exec(value ?? "")?.[1]);
 
+  it("lay a dimmed line's runs side by side, each keeping its spaces, the typed word in an ink that follows the style", () => {
+    // Cohtml lays out a block's runs as a column: a row keeps the typed word on its line.
+    const runs = declarationsOf(PLANNED, ".runs");
+
+    assert.equal(runs.display, "flex");
+    assert.equal(runs["flex-direction"], "row");
+    assert.equal(runs["white-space"], "pre");
+    assert.equal(declarationsOf(PLANNED, ".typed").color, "var(--bbm-tTyped)");
+  });
+
   it("clip across but never an accent or a descender: each is tall enough for the font, its pitch unchanged", () => {
     for (const selector of [".planned", ".line"]) {
       const box = declarationsOf(PLANNED, selector);

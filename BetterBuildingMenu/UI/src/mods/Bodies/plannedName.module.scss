@@ -30,7 +30,16 @@ $ascent-room: 0.125em;
   @include clips-across;
 }
 
-// The word a search typed, dimmed by the Dim the typed word knob, so the rest of the name stands out.
+// A line with the typed word dimmed: its runs side by side, each in a span of its own, each keeping its
+// spaces. Cohtml lays out a block's runs as a column, which would put the typed word on a row of its own.
+.runs {
+  display: flex;
+  flex-direction: row;
+  white-space: pre;
+}
+
+// The word a search typed, dimmed by the Dim the typed word knob, so the rest of the name stands out: in
+// an ink that follows the interface style, dark on Bright blue's light plates.
 .typed {
-  color: var(--bbm-tDim);
+  color: var(--bbm-tTyped);
 }
