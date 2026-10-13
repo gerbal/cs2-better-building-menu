@@ -467,6 +467,7 @@ namespace BetterBuildingMenu.Tests
 		[Theory]
 		[InlineData(false, "grid", "tiles")]
 		[InlineData(false, "", "auto")]
+		[InlineData(false, "x", "auto")]
 		[InlineData(true, "table", "list")]
 		[InlineData(true, "", "cards")]
 		public void AViewKeptByAnEarlierRedesignReleaseCarriesForEveryone(bool upgrader, string kept, string defaultView)
@@ -515,6 +516,7 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.False(result.Changed);
 			Assert.Equal("glass", values.DefaultView);
+			Assert.Equal("z", values.AtLargeText);
 		}
 
 		[Fact]

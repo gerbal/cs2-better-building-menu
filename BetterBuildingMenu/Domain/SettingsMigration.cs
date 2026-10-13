@@ -22,9 +22,10 @@ namespace BetterBuildingMenu.Domain
 	/// <remarks>
 	/// Pure, over <see cref="ISettingsValues"/>, so tests never build the settings class. Only a
 	/// value that was an earlier release's default moves, and a new player's control pane goes off.
-	/// A per-load sanitiser also brings a Width step outside its range to the first, but only in a
-	/// file at this version or earlier: a later release's file is left whole. See
-	/// docs/design-notes.md, "The settings migration".
+	/// A per-load sanitiser also brings a Width step outside its range to the first, and reads a
+	/// Default view or At large text the row does not offer as shipped, but only in a file at this
+	/// version or earlier: a later release's file is left whole. See docs/design-notes.md, "The
+	/// settings migration".
 	/// </remarks>
 	public static class SettingsMigration
 	{
@@ -52,7 +53,10 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>How near an earlier default a stored height must be to count as it: the height commit's own tolerance.</summary>
 		public const float HeightTolerance = 0.1f;
 
-		/// <summary>Runs every step newer than the stored version, then, for a file at this version or earlier, keeps the Width step within its range.</summary>
+		/// <summary>
+		/// Runs every step newer than the stored version, then, for a file at this version or earlier, keeps
+		/// the Width step within its range and Default view and At large text to the values their rows offer.
+		/// </summary>
 		/// <param name="values">The settings as loaded, changed in place.</param>
 		/// <param name="fileKeys">The key names the settings file held.</param>
 		/// <param name="prior">What ModsData held before this load wrote to it.</param>

@@ -152,7 +152,7 @@
   "Options.LABEL[BetterBuildingMenu.DefaultViewTiles]": "Tiles",
   "Options.LABEL[BetterBuildingMenu.DefaultViewCards]": "Cards",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AtLargeText]": "At large text",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AtLargeText]": "Above 100% text size. More buildings: 18 a screen, with long names shortened. Whole names: 12 a screen, each name whole.",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AtLargeText]": "Above 100% text scale. More buildings: 18 a screen, with long names shortened. Whole names: 12 a screen, each name whole.",
   "Options.LABEL[BetterBuildingMenu.AtLargeTextMoreBuildings]": "More buildings",
   "Options.LABEL[BetterBuildingMenu.AtLargeTextWholeNames]": "Whole names",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ControlPaneShown]": "Control pane",

@@ -722,7 +722,7 @@ release's file is not touched.
   own box; 0.2.x shipped 100 for its grid, a picture with a label under it.
 - The view 0.2.5 kept becomes Default view, mapped: Cards stays Cards, Grid draws as Tiles, List and
   Table as List. With none kept, an upgrader opens in Cards, as 0.2.4 did, and a new player in Auto.
-  The view's key stays in the file, and this step is the only reader of it.
+  The view's key stays in the file, declared and hidden, so this step can read it.
 
 **This changes 0.2.x:** every player's Tile size moves to 64, once.
 
