@@ -72,7 +72,7 @@ namespace BetterBuildingMenu.Tests
 			var publish = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs"), "private bool PublishMenuShares(");
 
 			// With the toolbar's row untouched this query is the refresh's own snapshot, from the cache.
-			Assert.Contains("_buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu), VanillaToolbarSelection.None, built => built.DefaultGroupBy)", publish);
+			Assert.Contains("_buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu, SaidOnceAt: 0), VanillaToolbarSelection.None, built => built.DefaultGroupBy)", publish);
 			// All's labels in the menu's own grouping, the ones a menu opening on All draws.
 			Assert.Contains("_menuShares.Count(_assetMenu.Menu, source.Generation, () => All().MenuSet, () => All().Page.Sections, () => All().MenuCategoryCounts.Count)", publish);
 			Assert.Contains("_MenuShares.Value = _menuShares.Shares;", publish);

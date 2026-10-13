@@ -39,11 +39,15 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The kinds a value is said once for, in the readout's order.</summary>
 		private static readonly string[] SaidKinds = { Speed, Capacity, Workers, Lot, Cost };
 
+		/// <summary>The kinds a view's key kind can be, in the order it is picked.</summary>
+		private static readonly string[] KeyKinds = { Capacity, Speed, Workers, Lot };
+
 		/// <summary>
 		/// The facts of a whole result: each kind's value that <paramref name="saidOnceAt"/> percent or more of
 		/// its unlocked rows share, none in a search or for the kind sorted by; and the key kind, capacity where
 		/// half the rows carry one, else the first of speed, workers and lot that half carry.
 		/// </summary>
+		/// <remarks>One pass over the result, as it runs on every refresh over every match.</remarks>
 		public static ViewFacts Of(IReadOnlyList<BuildingCatalogEntry> rows, int saidOnceAt, bool searching, string? sortColumn)
 		{
 			if (rows.Count == 0)
@@ -51,39 +55,55 @@ namespace BetterBuildingMenu.Domain
 				return None;
 			}
 
-			var keyKind = new[] { Capacity, Speed, Workers, Lot }.FirstOrDefault(kind => 2 * rows.Count(row => Carries(row, kind)) >= rows.Count) ?? NoKind;
-
-			if (searching || saidOnceAt <= 0)
-			{
-				return new ViewFacts(Array.Empty<SharedValue>(), keyKind);
-			}
-
-			var open = rows.Where(row => !row.IsLocked).ToArray();
+			var counting = !searching && saidOnceAt > 0;
 			var sorted = SortedKind(sortColumn);
-			var shared = new List<SharedValue>();
+			var carried = new int[KeyKinds.Length];
+			var tallies = new Tally?[SaidKinds.Length];
+			var open = 0;
 
-			foreach (var kind in SaidKinds)
+			foreach (var row in rows)
 			{
-				if (kind == sorted || open.Length == 0)
+				for (var at = 0; at < KeyKinds.Length; at++)
+				{
+					if (Carries(row, KeyKinds[at]))
+					{
+						carried[at]++;
+					}
+				}
+
+				if (!counting || row.IsLocked)
 				{
 					continue;
 				}
 
-				// The commonest value; at a tie, the smaller, so the answer never rests on the rows' order.
-				var common = open
-					.Where(row => Carries(row, kind))
-					.GroupBy(row => ValueOf(row, kind))
-					.OrderByDescending(group => group.Count())
-					.ThenBy(group => group.Key.Value)
-					.ThenBy(group => group.Key.Depth)
-					.FirstOrDefault();
-
-				// The share as the whole percentage the game would show, rounded half to even (Percent.FromFraction).
-				if (common is not null
-					&& common.Count() >= SaidOnceFloor
-					&& Percent.FromFraction((float)common.Count() / open.Length) >= saidOnceAt)
+				open++;
+				for (var at = 0; at < SaidKinds.Length; at++)
 				{
-					shared.Add(new SharedValue(kind, common.Key.Value, common.Key.Depth));
+					var kind = SaidKinds[at];
+					if (kind != sorted && Carries(row, kind))
+					{
+						(tallies[at] ??= new Tally()).Add(ValueOf(row, kind));
+					}
+				}
+			}
+
+			var keyAt = Array.FindIndex(carried, count => 2 * count >= rows.Count);
+			var keyKind = keyAt < 0 ? NoKind : KeyKinds[keyAt];
+
+			if (!counting)
+			{
+				return new ViewFacts(Array.Empty<SharedValue>(), keyKind);
+			}
+
+			var shared = new List<SharedValue>();
+			for (var at = 0; at < SaidKinds.Length; at++)
+			{
+				// The share as the whole percentage the game would show, rounded half to even (Percent.FromFraction).
+				if (tallies[at] is { } tally
+					&& tally.BestCount >= SaidOnceFloor
+					&& Percent.FromFraction((float)tally.BestCount / open) >= saidOnceAt)
+				{
+					shared.Add(new SharedValue(SaidKinds[at], tally.Best.Value, tally.Best.Depth));
 				}
 			}
 
@@ -115,11 +135,40 @@ namespace BetterBuildingMenu.Domain
 		private static string? SortedKind(string? sortColumn) => sortColumn switch
 		{
 			"ConstructionCost" => Cost,
-			"Capacity" => Capacity,
+			// A pump's, an outlet's or a treatment plant's capacity is its water or sewage capacity.
+			"Capacity" or "WaterCapacity" or "SewageCapacity" => Capacity,
 			"Workers" => Workers,
 			"LotWidth" or "LotDepth" => Lot,
 			_ => null,
 		};
+
+		/// <summary>One kind's values over the open rows, and the commonest so far.</summary>
+		/// <remarks>At a tie the smaller value is the commonest, so the answer never rests on the rows' order.</remarks>
+		private sealed class Tally
+		{
+			private readonly Dictionary<(double Value, int Depth), int> _counts = new();
+
+			public (double Value, int Depth) Best { get; private set; }
+
+			public int BestCount { get; private set; }
+
+			public void Add((double Value, int Depth) value)
+			{
+				_counts.TryGetValue(value, out var count);
+				_counts[value] = ++count;
+				if (count > BestCount || (count == BestCount && Smaller(value, Best)))
+				{
+					Best = value;
+					BestCount = count;
+				}
+			}
+
+			private static bool Smaller((double Value, int Depth) one, (double Value, int Depth) other)
+			{
+				var byValue = one.Value.CompareTo(other.Value);
+				return byValue < 0 || (byValue == 0 && one.Depth < other.Depth);
+			}
+		}
 
 		public void Write(IJsonWriter writer)
 		{

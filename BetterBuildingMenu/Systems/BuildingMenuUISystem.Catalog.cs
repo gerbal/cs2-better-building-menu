@@ -159,9 +159,10 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private bool PublishMenuShares(CatalogSource source)
 		{
-			// The menu's All in its own grouping, built once and only when the ledger counts.
+			// The menu's All in its own grouping, built once and only when the ledger counts. Said once at is off, as
+			// nothing reads this page's facts.
 			CatalogView? all = null;
-			CatalogView All() => all ??= _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu), VanillaToolbarSelection.None, built => built.DefaultGroupBy);
+			CatalogView All() => all ??= _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu, SaidOnceAt: 0), VanillaToolbarSelection.None, built => built.DefaultGroupBy);
 
 			try
 			{

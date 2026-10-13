@@ -109,6 +109,19 @@ describe("the page's view facts' two halves agree", () => {
     assert.deepEqual(valueWritten, ["kind", "value", "depth"]);
   });
 
+  it("names the same kinds on both sides", () => {
+    // C#'s kind constants against the string unions the UI's SharedValue.kind and ViewFacts.keyKind declare.
+    const constants = [...FACTS_CS.matchAll(/public const string \w+ = "(\w*)";/g)].map(([, kind]) => kind);
+    const union = (name: string, field: string) => {
+      const body = ENTRY_TS.slice(ENTRY_TS.indexOf(`export interface ${name} {`));
+      const declared = new RegExp(`^\\s{2}${field}: ([^;]+);`, "m").exec(body.slice(0, body.indexOf("\n}")))?.[1] ?? "";
+      return [...declared.matchAll(/"(\w*)"/g)].map(([, kind]) => kind);
+    };
+
+    assert.ok(constants.length >= 6, "expected ViewFacts.cs' kind constants");
+    assert.deepEqual([...new Set([...union("SharedValue", "kind"), ...union("ViewFacts", "keyKind")])].sort(), [...constants].sort());
+  });
+
   it("carries the facts on the page under the name the UI reads", () => {
     assert.ok(writtenNames(PAGE_CS).includes("facts"), "BuildingCatalogPage.Write writes no facts");
     assert.ok(declaredNames("BuildingCatalogPage").includes("facts"), "buildingCatalog.ts declares no facts on the page");

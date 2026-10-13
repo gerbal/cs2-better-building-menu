@@ -1,3 +1,4 @@
+using System.Collections;
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
@@ -78,6 +79,17 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains(byDefault.SharedValues, value => value.Kind == ViewFacts.Cost && value.Value == 4000);
 			Assert.DoesNotContain(byCost.SharedValues, value => value.Kind == ViewFacts.Cost);
 			Assert.Contains(byCost.SharedValues, value => value.Kind == ViewFacts.Speed);
+
+			// A pump's or an outlet's capacity is its water or sewage capacity, so a sort by either orders by the capacity.
+			var pumps = new[] { School(1, 500), School(2, 500), School(3, 500) }
+				.Select(pump => pump with { WaterCapacity = 500, SewageCapacity = 500 })
+				.ToArray();
+			Assert.Contains(BuildingCatalogQueryEngine.Query(pumps, new BuildingCatalogQuery(UiMenu: "Education")).Facts.SharedValues, value => value.Kind == ViewFacts.Capacity);
+			foreach (var column in new[] { "WaterCapacity", "SewageCapacity" })
+			{
+				var sorted = BuildingCatalogQueryEngine.Query(pumps, new BuildingCatalogQuery(UiMenu: "Education", SortColumn: column)).Facts;
+				Assert.DoesNotContain(sorted.SharedValues, value => value.Kind == ViewFacts.Capacity);
+			}
 		}
 
 		/// <summary>The share is the whole percentage the game would show, rounded half to even: five of eight is 62.5%, so 62.</summary>
@@ -130,6 +142,33 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheCommonestValueIsCountedOverTheOpenRowsAlone()
+		{
+			// Three open rows at 80 km/h against two at 100; four locked rows at 100 would make 100 the commonest.
+			var rows = new[]
+			{
+				Road(1, 80), Road(2, 80), Road(3, 80), Road(4, 100), Road(5, 100),
+				Road(6, 100, locked: true), Road(7, 100, locked: true), Road(8, 100, locked: true), Road(9, 100, locked: true),
+			};
+
+			var facts = BuildingCatalogQueryEngine.Query(rows, new BuildingCatalogQuery(UiMenu: "Roads", SaidOnceAt: 60)).Facts;
+
+			var shared = Assert.Single(facts.SharedValues);
+			Assert.Equal((ViewFacts.Speed, 80d), (shared.Kind, shared.Value));
+		}
+
+		[Fact]
+		public void TheRowsAreReadInOnePass()
+		{
+			var rows = new CountingRows(MediumRoads);
+
+			var facts = ViewFacts.Of(rows, saidOnceAt: 67, searching: false, sortColumn: null);
+
+			Assert.Equal(100d, Assert.Single(facts.SharedValues).Value);
+			Assert.Equal((1, 0), (rows.Enumerations, rows.Reads));
+		}
+
+		[Fact]
 		public void AnEmptyResultSaysNothing()
 		{
 			var facts = BuildingCatalogQueryEngine.Query(Array.Empty<BuildingCatalogEntry>(), new BuildingCatalogQuery()).Facts;
@@ -148,6 +187,37 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("sharedValues", writer.PropertyNames);
 			Assert.Contains("keyKind", writer.PropertyNames);
 			Assert.Contains("Write:String:speed", writer.Tokens);
+		}
+
+		/// <summary>A result that counts how it is read: each enumeration, and each read by index.</summary>
+		private sealed class CountingRows : IReadOnlyList<BuildingCatalogEntry>
+		{
+			private readonly IReadOnlyList<BuildingCatalogEntry> _rows;
+
+			public CountingRows(IReadOnlyList<BuildingCatalogEntry> rows) => _rows = rows;
+
+			public int Enumerations { get; private set; }
+
+			public int Reads { get; private set; }
+
+			public int Count => _rows.Count;
+
+			public BuildingCatalogEntry this[int index]
+			{
+				get
+				{
+					Reads++;
+					return _rows[index];
+				}
+			}
+
+			public IEnumerator<BuildingCatalogEntry> GetEnumerator()
+			{
+				Enumerations++;
+				return _rows.GetEnumerator();
+			}
+
+			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 		}
 	}
 }
