@@ -509,6 +509,21 @@ public sealed class AssetMenuAnchorTests
     }
 
     [Fact]
+    public void ANewLevelOnTheSameTabIsAnotherListAndStartsAtTheArmedBuilding()
+    {
+        // The tab is the same, the level is not: only the same tab and level is the second click.
+        var atTwo = Opened(new MenuOpening("Education", 2, 0), Education);
+        var grown = atTwo.CoverAnchor(409);
+
+        var atThree = grown.SelectSchoolTier(3, "Education", armed: 77);
+
+        Assert.Equal(77, atThree.Anchor);
+        Assert.Equal(3, atThree.SchoolTier);
+        Assert.Equal(grown.ListStart + 1, atThree.ListStart);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, atThree.Query.Limit);
+    }
+
+    [Fact]
     public void ATabPickedWhileASearchIsTypedStartsAtTheTop()
     {
         // The search orders that list, and the armed row on line 1 would hide better matches.
