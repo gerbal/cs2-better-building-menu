@@ -1,3 +1,5 @@
+@use "sass:math";
+
 // Spacing is margins throughout these stylesheets, except the card list, whose
 // group is sized to a max-content that counts gap and not item margins.
 
@@ -128,7 +130,7 @@ $mark-inset: 0.147;
 /// FRAME's coordinates. Reduces to mark-inset when the two are the same,
 /// which is every mode but the table.
 @function mark-frame-inset($picture, $frame) {
-  @return ($frame - ($picture - 2 * mark-inset($picture))) / 2;
+  @return math.div($frame - ($picture - 2 * mark-inset($picture)), 2);
 }
 
 @mixin artwork-box($picture) {

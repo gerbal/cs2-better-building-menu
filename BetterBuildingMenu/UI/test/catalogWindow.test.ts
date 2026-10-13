@@ -335,24 +335,24 @@ describe("putting a row on the list's first line", () => {
 describe("a page of the list", () => {
   it("is a screen down or up, held inside the list's ends", () => {
     // A 100-tall viewport over 1,000 of list: the scroll runs 0-900.
-    assert.equal(pageScrollTop(200, 100, 1000, 1), 300);
-    assert.equal(pageScrollTop(300, 100, 1000, -1), 200);
-    assert.equal(pageScrollTop(850, 100, 1000, 1), 900);
-    assert.equal(pageScrollTop(50, 100, 1000, -1), 0);
+    assert.equal(pageScrollTop(200, 100, 1000, 1, 0, 0), 300);
+    assert.equal(pageScrollTop(300, 100, 1000, -1, 0, 0), 200);
+    assert.equal(pageScrollTop(850, 100, 1000, 1, 0, 0), 900);
+    assert.equal(pageScrollTop(50, 100, 1000, -1, 0, 0), 0);
     // A list that fits has nowhere to go.
-    assert.equal(pageScrollTop(0, 100, 80, 1), 0);
+    assert.equal(pageScrollTop(0, 100, 80, 1, 0, 0), 0);
   });
 });
 
 describe("a page of a body's lines", () => {
   it("is the whole lines that fit the screen, so lines land on the top edge as they were", () => {
     // 29.25-pixel lines in a 100-pixel screen: three whole lines a page.
-    assert.equal(pageScrollTop(0, 100, 1000, 1, 29.25), 87.75);
-    assert.equal(pageScrollTop(87.75, 100, 1000, -1, 29.25), 0);
+    assert.equal(pageScrollTop(0, 100, 1000, 1, 29.25, 2), 87.75);
+    assert.equal(pageScrollTop(87.75, 100, 1000, -1, 29.25, 2), 0);
   });
 
   it("is at least one line, however short the screen", () => {
-    assert.equal(pageScrollTop(0, 20, 1000, 1, 29.25), 29.25);
+    assert.equal(pageScrollTop(0, 20, 1000, 1, 29.25, 2), 29.25);
   });
 
   it("counts the lines as the body does, the last needing no gap below it", () => {
@@ -361,7 +361,15 @@ describe("a page of a body's lines", () => {
   });
 
   it("keeps inside the list's ends", () => {
-    assert.equal(pageScrollTop(880, 100, 1000, 1, 29.25), 900);
+    assert.equal(pageScrollTop(880, 100, 1000, 1, 29.25, 2), 900);
+  });
+
+  it("takes the gap with the pitch, so no caller can page a line short", () => {
+    // Six parameters and no default: a pitch without its gap counts 4.93 lines as 4, and does not compile.
+    assert.equal(pageScrollTop.length, 6);
+    // @ts-expect-error The gap is required.
+    const withoutGap = () => pageScrollTop(0, 144.25, 1000, 1, 29.25);
+    assert.equal(typeof withoutGap, "function");
   });
 });
 

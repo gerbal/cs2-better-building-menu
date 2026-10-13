@@ -24,10 +24,16 @@ const known = (text: string): string | null => (text === "" || text === METRIC_N
  * The plate's numbers. Under a sort by a number the second is the value sorted by, so the order
  * reads down the column; otherwise the capacity, where the building has one that is not zero.
  */
-export function plateNumbers(entry: BuildingCatalogEntry, sortedMetric: AssetMenuMetric | null, separators: NumberSeparators, lockedWord: string): PlateNumbers {
+export function plateNumbers(
+  entry: BuildingCatalogEntry,
+  sortedMetric: AssetMenuMetric | null,
+  separators: NumberSeparators,
+  lockedWord: string,
+  achievedMilestone: number,
+): PlateNumbers {
   const locked = isEntryLocked(entry);
   const cost = known(formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)) ?? "";
-  const first = locked ? lockedFact(entry, lockedWord) : cost;
+  const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : cost;
 
   if (sortedMetric !== null && sortedMetric !== "cost" && sortedMetric !== "lot") {
     const value = sortedMetricValue(entry, sortedMetric);

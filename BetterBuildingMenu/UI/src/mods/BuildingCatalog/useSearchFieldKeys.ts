@@ -25,10 +25,10 @@ const MOVE_WAIT_MS = 250;
 
 /**
  * While the search field has the keys, Up and Down move Enter's target a row that can be placed at a
- * time, and PageUp and PageDown scroll the list a screen of the body's whole lines; the game's input waits then, so the keys
- * are BBM's. From anywhere else they stay the camera's. Captured, since the app container stops
- * keydown from bubbling. One move is in flight: the next goes once `answered` changes (the page
- * landed) or a moment passes, so a key held down costs one refresh at a time. See
+ * time, and PageUp and PageDown scroll the list a screen of the body's whole lines; the game's input
+ * waits then, so the keys are BBM's. From anywhere else they stay the camera's. Captured, since the
+ * app container stops keydown from bubbling. One move is in flight: the next goes once `answered`
+ * changes (the page landed) or a moment passes, so a key held down costs one refresh at a time. See
  * docs/design-notes.md, "The search field's keys".
  */
 export function useSearchFieldKeys(rootRef: RefObject<HTMLElement>, canMove: boolean, answered: string, linePitchRem = 0): void {

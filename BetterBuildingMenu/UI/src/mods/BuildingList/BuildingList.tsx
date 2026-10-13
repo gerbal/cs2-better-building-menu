@@ -16,6 +16,7 @@ import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { useUnitSystem } from "domain/unitSettings";
+import { useStateWords } from "mods/Bodies/useBodyWords";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
 
@@ -49,13 +50,8 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
   // states does not depend on which view mode the player is in.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
-  const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
-  // The game's own words first, so the row reads as vanilla's does; see the
-  // hover card, which asks for the same key.
-  const builtLabel =
-    translate("Toolbar.ASSET_ALREADY_BUILT", "")
-    || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
-    || "Already built";
+  // The words every body says why a building cannot be placed with.
+  const { locked: lockedLabel, built: builtLabel } = useStateWords();
   const cards = variant === "cards";
 
   const place = (entry: BuildingCatalogEntry) => {

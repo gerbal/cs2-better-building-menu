@@ -100,13 +100,19 @@ describe("lock conditions", () => {
 });
 
 describe("what stands in a locked building's cost", () => {
-  it("is the milestone it waits on", () => {
-    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 7 }, "Locked"), "MS 7");
+  it("is the milestone it waits on, while the city has not reached it", () => {
+    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 7 }, "Locked", 0), "MS 7");
+    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 7 }, "Locked", 6), "MS 7");
   });
 
   it("is the locked word where no milestone holds it back, never MS 0", () => {
-    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 0 }, "Locked"), "Locked");
-    assert.equal(lockedFact({ isLocked: true }, "Locked"), "Locked");
+    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 0 }, "Locked", 0), "Locked");
+    assert.equal(lockedFact({ isLocked: true }, "Locked", 0), "Locked");
+  });
+
+  it("is the locked word once the city has reached its milestone, as only the development tree holds it back", () => {
+    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 4 }, "Locked", 4), "Locked");
+    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 4 }, "Locked", 9), "Locked");
   });
 });
 

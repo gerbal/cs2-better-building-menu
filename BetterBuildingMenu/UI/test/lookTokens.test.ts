@@ -54,6 +54,7 @@ const INK_ON: Readonly<Record<string, string>> = {
   armText: "arm", armNum: "arm", pillText: "pillBg", tagText: "tagBg",
   bodyChipText: "bodyChipBg", bodyChipDim: "bodyChipBg", bodyWord: "bodyChipBg",
   bodyCtlText: "bodyCtl", bodyCtlDim: "bodyCtl", bodyLabel: "body",
+  bodyMilestone: "plateLocked", bodyEntMark: "plate",
 };
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */
@@ -99,6 +100,19 @@ describe("the looks' tokens", () => {
       for (const key of bodyInks) {
         assert.match(tokens(selector)[key], /^var\(--(?:menuPanel\d|menuText\dNormal)\)$/, `${selector} --bbm-${key}`);
       }
+    }
+  });
+
+  it("draw the list's milestone and Enter's mark in body inks, the look's amber and blue, dark on Bright blue's light plates", () => {
+    const list = "mods/Bodies/listBody.module.scss";
+
+    assert.equal(declarationsOf(list, ".milestone").color, "var(--bbm-bodyMilestone)");
+    assert.equal(declarationsOf(list, ".enterMark")["background-color"], "var(--bbm-bodyEntMark)");
+    assert.equal(tokens(STANDARD).bodyMilestone, tokens(STANDARD).amber);
+    assert.equal(tokens(STANDARD).bodyEntMark, tokens(STANDARD).entMark);
+    for (const selector of FOLLOW) {
+      assert.equal(tokens(selector).bodyMilestone, "var(--menuText1Normal)", selector);
+      assert.equal(tokens(selector).bodyEntMark, "var(--menuText1Normal)", selector);
     }
   });
 

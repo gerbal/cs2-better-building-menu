@@ -91,13 +91,14 @@ export function listLockConditions(
 }
 
 /**
- * What a locked building shows where its cost would be: the milestone it waits on, or the locked word
- * for one that only the development tree or another requirement holds back, which has no milestone.
+ * What a locked building shows where its cost would be: the milestone it waits on, while the city has
+ * not reached it, or the locked word for one that only the development tree or another requirement
+ * holds back. A prefab's milestone stays whatever the city reaches, so a reached one is no reason.
  */
-export function lockedFact(entry: UnlockableEntry | null | undefined, lockedWord: string): string {
+export function lockedFact(entry: UnlockableEntry | null | undefined, lockedWord: string, achievedMilestone: number): string {
   const milestone = entry?.unlockMilestone ?? 0;
 
-  return milestone > 0 ? `MS ${milestone}` : lockedWord;
+  return milestone > 0 && milestone > achievedMilestone ? `MS ${milestone}` : lockedWord;
 }
 
 /**

@@ -1062,9 +1062,14 @@ more can see the bottom coming. A screen is no predicate and no start: it only g
 text in an inline paragraph (`<p cohinline>`), on up to two lines at 100% text and one under More
 buildings, cut where it runs past them; and a right-aligned number column, the cost over the capacity,
 or under a sort by a number the value sorted by, so the order reads down the column (`plateNumbers`),
-with a locked building's milestone ("MS 7") in the cost's place, in amber, or the locked word where
-only the development tree or another requirement holds it back (`lockedFact`; never "MS 0"). The
-armed building is filled. Enter's target carries "↵" beside its numbers while the page answers the
+with a locked building's milestone ("MS 7") in the cost's place, in amber, while the city has not
+reached it (the game's `achievedMilestone`), or the locked word where only the development tree or
+another requirement holds it back (`lockedFact`; never "MS 0", nor a milestone the city has: a
+prefab's milestone stays whatever the city reaches). The amber and the "↵" mark are body inks
+(`bodyMilestone`, `bodyEntMark`) that follow an interface style to its own ink, dark on Bright blue's
+light plates. A unique carries the game's own mark on its picture, faint under the pointer, and one
+the city already holds the already-built mark, as 0.2.x's list drew them; a plate that cannot be
+placed, locked or built, keeps its dim plate under the pointer. The armed building is filled. Enter's target carries "↵" beside its numbers while the page answers the
 query in the box. Names are plain text, never in spans: Cohtml drops the space after an inline element
 and never breaks at a hyphen. The game's Scrollable scrolls the slots, its track over the box's right
 margin and its thumb on the slots' right edge, clear of the width strip; the region, the scroller and
@@ -1108,10 +1113,11 @@ field's.
   the list's place stay. The field names the moved target and Enter arms it, by id, wherever its row
   is. Its row carries "↵", and when the keys move the target its row comes wholly on screen, the list
   moving as little as it takes (`revealScrollTop`, `useRevealEnterTarget`); a target past the window is
-  armed by id all the same, and the list stays. The reveal follows the page that answers a move (a new
-  step), never a dropped repeat, and sets the scroll once, on the first frame it can measure: plates
-  are placed by slot, so a late wrap moves no row. A typed search's best match needs no reveal: it is
-  the list's first row under Match.
+  armed by id all the same, and the list stays. The reveal follows the page that answers a move (any
+  new step, a move back to the best match's step 0 included), never a dropped repeat, and sets the
+  scroll once, on the first frame it can measure: plates are placed by slot, so a late wrap moves no
+  row. A typed search's best match needs no reveal: it is the list's first row under Match, where the
+  search's start puts the list.
 - **PageUp and PageDown** scroll the list a screen of the body's whole lines, counted as the body
   counts them (`wholeLines`: the last line needs no gap below it), so lines land on the top edge as
   they were (a screen of the scroller for the cards, which have no lines), held inside its ends

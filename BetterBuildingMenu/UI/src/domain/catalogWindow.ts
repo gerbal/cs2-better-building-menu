@@ -115,9 +115,10 @@ export function lineOneScrollTop(currentScrollTop: number, rowTop: number, conta
  * The scroll a screen down, or up, from here, held inside the list's ends: an engine need not clamp a
  * scroll set past them. With a line pitch, the screen is the whole lines that fit it, counted as the
  * body counts them (`wholeLines`, the gap in the height's unit), so a page lands lines on the top edge
- * as it found them.
+ * as it found them; a pitch of 0 pages the screen. The gap has no default, so no caller pages a line
+ * short.
  */
-export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch = 0, lineGap = 0): number {
+export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch: number, lineGap: number): number {
   const page = linePitch > 0 ? wholeLines(clientHeight, linePitch, lineGap) * linePitch : clientHeight;
 
   return Math.max(0, Math.min(scrollHeight - clientHeight, scrollTop + direction * page));

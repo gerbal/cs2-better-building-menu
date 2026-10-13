@@ -1,3 +1,4 @@
+@use "../../base.scss" as _base;
 @use "bodyShell" as *;
 
 // The list: plates placed from their slot index, in the look's tokens. See docs/design-notes.md,
@@ -28,7 +29,12 @@
   background-color: var(--bbm-plateHover);
 }
 
-.locked {
+// A building that cannot be placed, locked or a unique the city holds: its own plate, which a pointer
+// does not light as it lights one that places.
+.locked,
+.locked:hover,
+.built,
+.built:hover {
   background-color: var(--bbm-plateLocked);
 }
 
@@ -38,16 +44,43 @@
   background-color: var(--bbm-arm);
 }
 
-.picture {
-  flex: 0 0 auto;
-  width: 25rem;
-  height: 25rem;
+// The picture and its mark, nested so the mark sizes from the picture by base.scss's one ratio.
+.artwork {
+  @include _base.artwork-box(25rem);
+
+  .picture {
+    @include _base.artwork-picture(25rem);
+  }
+
+  .mark {
+    @include _base.unique-mark(25rem);
+  }
 }
 
 // Above 100% text the picture keeps 24 rem, as the plates' own height shrinks.
-.largeText .picture {
-  width: 24rem;
-  height: 24rem;
+.largeText .artwork {
+  @include _base.artwork-box(24rem);
+
+  .picture {
+    @include _base.artwork-picture(24rem);
+  }
+
+  .mark {
+    @include _base.unique-mark(24rem);
+  }
+}
+
+// 0.2.x's states: a unique shows its mark faintly under the pointer, a unique the city holds always.
+.uniqueMark {
+  opacity: 0;
+}
+
+.plate:hover .uniqueMark {
+  opacity: 0.5;
+}
+
+.builtMark {
+  opacity: 1;
 }
 
 .name {
@@ -67,7 +100,10 @@
   white-space: nowrap;
 }
 
-.locked .name {
+.locked .name,
+.built .name,
+.built .first,
+.built .second {
   color: var(--bbm-tLocked);
 }
 
@@ -86,16 +122,21 @@
   white-space: nowrap;
 }
 
-.first {
+// The mark and the first number, side by side.
+.firstLine {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 2rem;
+}
+
+.first {
   color: var(--bbm-tCost);
 }
 
+// On the locked plate, which an interface style can turn light: a body ink that follows it.
 .milestone {
-  color: var(--bbm-amber);
+  color: var(--bbm-bodyMilestone);
 }
 
 .second {
@@ -112,8 +153,13 @@
   flex: 0 0 auto;
   width: calc(10rem * var(--fontScale));
   height: calc(10rem * var(--fontScale));
-  background-color: var(--bbm-entMark);
+  // On the plate, which an interface style can turn light: a body ink that follows it.
+  background-color: var(--bbm-bodyEntMark);
   mask-size: contain;
   mask-position: 50% 50%;
   mask-repeat: no-repeat;
+}
+
+.armed .enterMark {
+  background-color: var(--bbm-armNum);
 }

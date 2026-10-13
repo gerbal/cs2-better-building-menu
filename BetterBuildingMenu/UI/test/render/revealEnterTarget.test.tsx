@@ -6,13 +6,17 @@ import { useRevealEnterTarget } from "../../src/mods/BuildingCatalog/useRevealEn
 
 const globals = globalThis as unknown as Record<string, unknown>;
 
-/** A 144-tall scroller at y 100 holding rows of 27 on a 29.25 pitch, one of which is the target; frames run when told. */
+/**
+ * A 144-tall scroller at y 100 holding rows of 27 on a 29.25 pitch, one of which is the target; frames
+ * run when told. A row height of 0 is a row not laid out yet.
+ */
 function fakeList(targetLine: number) {
   const scroller = { clientHeight: 144, scrollHeight: 2000, scrollTop: 0, parentElement: null as unknown, getBoundingClientRect: () => ({ top: 100, height: 144 }) };
-  const row = { parentElement: scroller, getBoundingClientRect: () => ({ top: 100 + targetLine * 29.25 - scroller.scrollTop, height: 27 }) };
+  const shape = { height: 27 };
+  const row = { parentElement: scroller, getBoundingClientRect: () => ({ top: 100 + targetLine * 29.25 - scroller.scrollTop, height: shape.height }) };
   const root = { scrollHeight: 144, clientHeight: 144, parentElement: null, querySelectorAll: (selector: string) => (selector === '[data-catalog-entry="7"]' ? [row] : []) };
   scroller.parentElement = root;
-  return { ref: { current: root } as unknown as RefObject<HTMLElement>, scroller };
+  return { ref: { current: root } as unknown as RefObject<HTMLElement>, scroller, shape };
 }
 
 const Probe = ({ list, target, step }: { list: RefObject<HTMLElement>; target: number | null; step: number }) => {
@@ -56,6 +60,37 @@ describe("Enter's target brought on screen", () => {
     act(() => { root = create(<Probe list={list.ref} target={7} step={0} />); });
     flush();
 
+    assert.equal(list.scroller.scrollTop, 0);
+  });
+
+  it("brings the best match back on screen when the keys move the target back to it", () => {
+    const list = fakeList(0);
+    act(() => { root = create(<Probe list={list.ref} target={7} step={1} />); });
+    flush();
+
+    // PageDown took the list on, and Up moved the target back to step 0, the list's first row.
+    list.scroller.scrollTop = 300;
+    act(() => root!.update(<Probe list={list.ref} target={7} step={0} />));
+    flush();
+
+    assert.equal(list.scroller.scrollTop, 0);
+  });
+
+  it("stops waiting for the row once the list goes", () => {
+    const cancelled: unknown[] = [];
+    globals.cancelAnimationFrame = (handle: unknown) => cancelled.push(handle);
+    const list = fakeList(8);
+    list.shape.height = 0;
+    act(() => { root = create(<Probe list={list.ref} target={7} step={2} />); });
+    // The first frame finds the row unmeasured and asks for another.
+    frames.shift()!();
+    act(() => root!.unmount());
+    root = undefined;
+
+    list.shape.height = 27;
+    flush();
+
+    assert.deepEqual(cancelled, [1]);
     assert.equal(list.scroller.scrollTop, 0);
   });
 

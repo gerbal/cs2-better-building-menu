@@ -45,7 +45,7 @@ describe("the list", () => {
   it("says the cost over the capacity, right of the name", () => {
     const html = render(rows(1, () => ({ constructionCost: 1000, capacity: 20 })));
 
-    assert.match(html, /<span class="first">¢1[^<]*000<\/span><span class="second">20[^<]*<\/span>/);
+    assert.match(html, /<span class="first">¢1[^<]*000<\/span><\/span><span class="second">20[^<]*<\/span>/);
   });
 
   it("fills the armed building, and only it", () => {
@@ -58,7 +58,8 @@ describe("the list", () => {
 
   it("marks Enter's target with ↵ beside its numbers, and nothing without a target", () => {
     assert.equal(count(render(rows(3), { enterId: 3 }), /class="enterMark"/), 1);
-    assert.match(render(rows(3), { enterId: 3 }), /data-catalog-entry="3"[\s\S]*class="enterMark"/);
+    // The mark and the number each their own box: no bare text beside an element in a flex row.
+    assert.match(render(rows(3), { enterId: 3 }), /data-catalog-entry="3"[\s\S]*<img class="enterMark"[^>]*><span class="first">¢/);
     assert.equal(count(render(rows(3)), /class="enterMark"/), 0);
   });
 
@@ -68,6 +69,33 @@ describe("the list", () => {
     assert.match(html, /class="plate locked"/);
     assert.match(html, /<span class="first milestone">MS 7<\/span>/);
     assert.match(html, /aria-disabled="true"/);
+  });
+
+  it("says the locked word in the cost's place once the city has reached the building's milestone", () => {
+    // Only the development tree holds it back now; "MS 7" would send the player after a milestone they have.
+    setBinding("milestone", "achievedMilestone", 7);
+    const html = render(rows(1, () => ({ isLocked: true, unlockMilestone: 7 } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /<span class="first milestone">Locked<\/span>/);
+  });
+
+  it("keeps the game's unique mark on a unique building, shown on hover as 0.2.x's list did", () => {
+    const html = render(rows(1, () => ({ isUnique: true } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /<img class="mark uniqueMark" src="Media\/Game\/Icons\/Unique\.svg"/);
+    assert.doesNotMatch(html, /class="plate built"/);
+  });
+
+  it("marks a unique the city already holds as built, dimmed and unplaceable", () => {
+    const html = render(rows(1, () => ({ isUnique: true, isAlreadyBuilt: true } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /<img class="mark builtMark" src="Media\/Game\/Icons\/AlreadyBuilt\.svg"/);
+    assert.match(html, /class="plate built"/);
+    assert.match(html, /aria-disabled="true"/);
+  });
+
+  it("draws no mark on a building that is not unique", () => {
+    assert.doesNotMatch(render(rows(2)), /class="mark /);
   });
 
   it("draws three one-line plates across above 100% text, and whole two-line ones under Whole names", () => {

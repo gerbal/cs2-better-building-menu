@@ -102,6 +102,9 @@ $standard: (
   bodyCtlText: ink(0.8),
   bodyCtlDim: ink(0.55),
   bodyLabel: rgba(255, 255, 255, 1),
+  // The list's plates: a locked building's milestone, and the mark on Enter's target.
+  bodyMilestone: #f0b84a,
+  bodyEntMark: rgb(120, 204, 236),
   seamLocked: rgba(240, 184, 74, 0.55),
   seamElse: rgba(120, 204, 236, 0.7),
   track: ink(0.08),
@@ -149,6 +152,8 @@ $standard-follow: (
   bodyCtlText: var(--menuText1Normal),
   bodyCtlDim: var(--menuText2Normal),
   bodyLabel: var(--menuText1Normal),
+  bodyMilestone: var(--menuText1Normal),
+  bodyEntMark: var(--menuText1Normal),
 );
 
 @mixin tokens($map) {

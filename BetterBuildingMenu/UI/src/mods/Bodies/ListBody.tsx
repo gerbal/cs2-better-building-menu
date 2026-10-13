@@ -1,4 +1,5 @@
 import { useValue } from "cs2/api";
+import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
@@ -27,6 +28,7 @@ interface PlateProps {
   sortedMetric: AssetMenuMetric | null;
   separators: NumberSeparators;
   stateWords: StateWords;
+  achievedMilestone: number;
   hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
@@ -36,43 +38,57 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, index, armed, enter, sortedMetric, separators, stateWords, hoverCard, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, index, armed, enter, sortedMetric, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
-  const numbers = plateNumbers(entry, sortedMetric, separators, stateWords.locked);
+  const numbers = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone);
   const { left, top } = slotPosition(grid, index);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   const locked = isEntryLocked(entry);
+  const built = isEntryAlreadyBuilt(entry);
 
   return (
     <BuildingHoverCard entry={entry} context={hoverCard}>
       <Button
-        className={classNames(styles.plate, grid.form !== "plate2" && styles.largeText, armed && styles.armed, locked && styles.locked)}
+        className={classNames(styles.plate, grid.form !== "plate2" && styles.largeText, armed && styles.armed, locked && styles.locked, built && styles.built)}
         // Inline, over the game's Button and its own square: the slot is the plate's place and size.
         style={{ left: `${left}rem`, top: `${top}rem`, width: `${grid.cellWidth}rem`, height: `${grid.cellHeight}rem` }}
         variant="flat"
         focusKey={FOCUS_DISABLED}
         onSelect={() => onPlace(entry)}
         aria-label={word ? `${name} — ${word}` : name}
-        aria-disabled={locked || isEntryAlreadyBuilt(entry) ? "true" : undefined}
+        aria-disabled={locked || built ? "true" : undefined}
         data-catalog-entry={entry.id}
         data-bbm-item="true"
       >
-        <img
-          className={styles.picture}
-          src={lockedThumbnail(entry, locked || isEntryAlreadyBuilt(entry))}
-          onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-          alt=""
-          aria-hidden="true"
-          data-bbm-pic="true"
-        />
+        {/* The picture and its mark share a box, so the game's unique and already-built marks sit on the
+            building, as 0.2.x's list drew them. */}
+        <span className={styles.artwork}>
+          <img
+            className={styles.picture}
+            src={lockedThumbnail(entry, locked || built)}
+            onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+            alt=""
+            aria-hidden="true"
+            data-bbm-pic="true"
+          />
+          {entry.isUnique === true && (
+            <img
+              className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)}
+              src={built ? "Media/Game/Icons/AlreadyBuilt.svg" : "Media/Game/Icons/Unique.svg"}
+              alt=""
+              aria-hidden="true"
+            />
+          )}
+        </span>
         {/* Plain text, no spans: Cohtml drops the space after an inline element, and never breaks at a hyphen. */}
         <p className={classNames(styles.name, grid.nameLines === 1 && styles.oneLine)} data-bbm-name={name.length} {...{ cohinline: "" }}>
           {name}
         </p>
         <div className={styles.numbers} data-bbm-fact="true">
-          <span className={classNames(styles.first, numbers.locked && styles.milestone)}>
+          {/* The mark and the number each in their own box: no bare text beside an element in a flex row. */}
+          <span className={styles.firstLine}>
             {enter && <img className={styles.enterMark} style={{ maskImage: `url(${enterMark})` }} alt="" aria-hidden="true" />}
-            {numbers.first}
+            <span className={classNames(styles.first, numbers.locked && styles.milestone)}>{numbers.first}</span>
           </span>
           {numbers.second !== null && <span className={styles.second}>{numbers.second}</span>}
         </div>
@@ -102,6 +118,8 @@ export const ListBody = memo(function ListBody({ entries, grid, enterId, onPlace
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const armedId = useValue(ActivePrefabId$);
   const hoverCard = useHoverCardContext();
+  // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
+  const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
 
   return (
     <div className={styles.body} data-bbm-view="list">
@@ -118,6 +136,7 @@ export const ListBody = memo(function ListBody({ entries, grid, enterId, onPlace
               sortedMetric={sortedMetric}
               separators={separators}
               stateWords={stateWords}
+              achievedMilestone={achievedMilestone}
               hoverCard={hoverCard}
               onPlace={onPlace}
             />

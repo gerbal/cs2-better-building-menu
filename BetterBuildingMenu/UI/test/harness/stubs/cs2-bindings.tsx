@@ -17,3 +17,7 @@ export const upgrade = {
   selectUpgrade: (entity: Entity, upgradeEntity: Entity): void => { triggers.push({ group: "upgradeMenu", name: "selectUpgrade", args: [entity, upgradeEntity] }); },
   clearUpgradeSelection: (): void => { triggers.push({ group: "upgradeMenu", name: "clearUpgradeSelection", args: [] }); },
 };
+// The milestone the city has reached; 0 is a city before its first.
+export const milestone = {
+  achievedMilestone$: bindValue<number>("milestone", "achievedMilestone", 0),
+};
