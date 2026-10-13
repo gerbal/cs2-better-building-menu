@@ -256,6 +256,55 @@ describe("the base game's names in a plate's room", () => {
     }
   });
 
+  /** The shortest cut keeping a name's first word, by its head where it is hyphenated, and its distinguishing word whole. */
+  const headForm = (name: string, distinct: string): string => {
+    const [first] = name.split(/\s+/);
+    return `${first.includes("-") ? first.split("-")[0] : first}${CUT_MARK} ${distinct}${CUT_MARK}`;
+  };
+
+  it("tells two families' look-alikes apart by their first word where a cut keeping it and the distinguishing word fits", () => {
+    const words = new Map(names);
+    const families = [
+      ["Four-Lane Perpendicular Parking Road", "One-Lane One-Way Perpendicular Parking Road", "Two-Lane Divided Perpendicular Parking Road", "Two-Lane Perpendicular Parking Road"],
+      ["Four-Lane Highway One-Way Suspension Bridge", "Two-Lane Highway One-Way Suspension Bridge"],
+    ];
+    const box = roomOf(1.3, "moreBuildings");
+
+    for (const family of families) {
+      const plans = family.map((name) => planName(name, box, { keep: [words.get(name) ?? ""] }).lines.join(" "));
+      const fits = family.map((name) => textWidth(headForm(name, words.get(name) ?? ""), box.font) <= box.width);
+
+      family.forEach((name, one) => family.forEach((other, two) => {
+        if (two <= one || !fits[one] || !fits[two]) return;
+        assert.notEqual(plans[one], plans[two], `${name} and ${other} both draw ${plans[one]}`);
+      }));
+      assert.ok(fits.some(Boolean), family.join(" | "));
+    }
+
+    // Over every base-game name in each form: two cut names of two families (their first words differ)
+    // never read alike where each one's cut keeping its first word and its distinguishing word fits, and
+    // those two cuts differ.
+    for (const [textScale, atLargeText] of forms) {
+      const box = roomOf(textScale, atLargeText);
+      const drawn = new Map<string, string[]>();
+
+      for (const [name, distinct] of new Map(names)) {
+        const plan = planName(name, box, { keep: [distinct] });
+        if (plan.whole || distinct === "" || STOP_WORDS.has(distinct.toLowerCase())) continue;
+        const form = headForm(name, distinct);
+        if (textWidth(form, box.font) > box.width) continue;
+
+        const key = plan.lines.join(" ");
+        const family = name.split(/\s+/)[0].toLowerCase();
+        for (const other of drawn.get(key) ?? []) {
+          if (other.split(/\s+/)[0].toLowerCase() === family) continue;
+          assert.equal(headForm(other, words.get(other) ?? ""), form, `${textScale} ${atLargeText}: ${name} and ${other} both draw ${key}`);
+        }
+        drawn.set(key, [...(drawn.get(key) ?? []), name]);
+      }
+    }
+  });
+
   it("never draws a line wider than its room, nor more than two marks in one, with or without a search", () => {
     for (const [textScale, atLargeText] of forms) {
       const grid = bodyGrid({ body: "list", boxWidth: 706, bodyHeight: ASSET_MENU_DEFAULT_HEIGHT, textScale, atLargeText, tileSize: 64, plateHeight: 27.25, nameLines: 0 });

@@ -1423,9 +1423,11 @@ so the renders and the game draw the same lines. In order:
    cut would read as another building: "Two… Wooden / Covered Bridge", and with no plain word left,
    "Four-Lane / Extradosed B…e" for a search of "bridge". Of the cuts that fit, the one keeping most of
    the words held hardest, then the fewest marks, never more than two in a line. Before the
-   distinguishing word is cut inside, the mark goes first with the word whole, the head dropped and the
-   words after it where they must be ("…Angled P…ng Road", "…Perpendicular…"): look-alikes that lose
-   it read alike. Only where none of these fits is the whole name cut inside its words, then the mark
+   distinguishing word is cut inside, it is kept whole: with the first word and a mark after each ("One…
+   Perpendicular…", "Narrow… Concrete…"), which tells two families' look-alikes apart, or with the mark
+   first, the head dropped and the words after it where they must be ("…01 1x1 Agr…ture"), whichever
+   keeps more of what is held, then the first word: look-alikes that lose it read alike. Where neither
+   the first word nor more fits, rows of two families can still read alike ("…Perpendicular…"). Only where none of these fits is the whole name cut inside its words, then the mark
    put first; where not even the mark fits, no line is drawn. The planner never draws a line wider than
    its room, so a one-word name never runs into the numbers beside it.
 
