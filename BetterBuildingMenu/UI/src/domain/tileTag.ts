@@ -2,13 +2,14 @@
  * What a tile's tag says: the plate's first number (the cost, or why a locked building waits), or under
  * a sort by a value the value sorted by, as 0.2.x's Grid drew it, so a re-sort says why the tiles moved.
  * A money figure too wide for the tag is said in thousands or millions, shortened a step at a time,
- * rather than cut; a tag drops only a unit every tile beside it shares. Pure. See docs/design-notes.md,
- * "The bodies".
+ * rather than cut; a tag drops only a unit every tile beside it shares, and a word that still runs over
+ * is cut by the name planner, with "…". Pure. See docs/design-notes.md, "The bodies".
  */
 import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
 import { oneNumber, plateNumbers } from "./listPlate";
+import { planName } from "./namePlan";
 import { isPerCell, keepsUnit, sortsByValue } from "./rowNumbers";
 import { NOTHING_SAID } from "./saidOnce";
 import { sortedMetricValue } from "./sortedMetric";
@@ -62,7 +63,8 @@ export function tileTag(
   // Money has short forms: a network's per cell, a building's whole.
   const money = bySort ? (sortedMetric === "upkeep" ? sortedMetricValue(entry, "upkeep") : null) : locked ? null : entry.constructionCost;
 
-  // The most exact form that fits; where none does, the narrowest, which the stylesheet cuts least.
+  // The most exact form that fits; where none does, the narrowest, which the tag clips least: a figure
+  // is never cut, as a cut number reads as another number.
   if (typeof money === "number" && Number.isFinite(money) && money !== 0) {
     const forms = isPerCell(entry) ? compactCostPerCellForms(money, separators) : compactMoneyForms(money, separators);
     const fits = forms.find((form) => tagFits(form, tileWidth, textScale));
@@ -73,13 +75,31 @@ export function tileTag(
 
   // A unit that scales with its size stays, its number shortened: two such figures bare side by side
   // read as one scale. Any other sorted value keeps its whole number and drops its unit, which the Sort
-  // control names: a cut word reads as noise. Anything else is cut by the stylesheet, with an ellipsis.
+  // control names: a cut word reads as noise. A word, the locked word, that still runs over is cut by
+  // the name planner, with "…".
   if (bySort && keepsUnit(entry, sortedMetric)) {
     const forms = compactUnitForms(text, separators);
     return { text: forms.find((form) => tagFits(form, tileWidth, textScale)) ?? forms[forms.length - 1], locked };
   }
 
-  return { text: bySort ? leadingNumber(text) ?? text : text, locked };
+  const number = bySort ? leadingNumber(text) : null;
+  return { text: number ?? cutToTag(text, tileWidth, textScale), locked };
+}
+
+/**
+ * A tag's words that fit it, cut once by the name planner where they run over: "…" where they were cut,
+ * never a clip, as Cohtml draws no CSS ellipsis. The planner measures one font and the tag the wider of
+ * two, so the room narrows until the cut fits both.
+ */
+function cutToTag(text: string, tileWidth: number, textScale: number): string {
+  if (tagFits(text, tileWidth, textScale)) return text;
+
+  for (let room = tagRoom(tileWidth) - TAG_PADDING; room > 0; room -= 1) {
+    const [line = ""] = planName(text, { width: room, lines: 1, font: TAG_FONT * textScale }).lines;
+    if (tagFits(line, tileWidth, textScale)) return line;
+  }
+
+  return "";
 }
 
 /** The number a value starts with, digit to digit with its group and decimal marks; null when it starts with none. */

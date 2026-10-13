@@ -15,9 +15,9 @@ const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
 });
 const rows = (n: number, over: (id: number) => Partial<BuildingCatalogEntry> = () => ({})) =>
   Array.from({ length: n }, (_, at) => entry(at + 1, over(at + 1)));
-type Options = { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[]; searching?: boolean };
+type Options = { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[]; typed?: string };
 const body = (entries: BuildingCatalogEntry[], options: Options = {}) =>
-  <ListBody entries={entries} grid={grid(options.over)} sections={options.sections} searching={options.searching ?? false} enterId={options.enterId ?? null} onPlace={() => undefined} footer={<div className="loadMoreRow" />} />;
+  <ListBody entries={entries} grid={grid(options.over)} sections={options.sections} typed={options.typed ?? ""} enterId={options.enterId ?? null} onPlace={() => undefined} footer={<div className="loadMoreRow" />} />;
 const render = (entries: BuildingCatalogEntry[], options: Options = {}) => renderHtml(body(entries, options));
 const group = (start: number, label: string, count: number, labelId = ""): CatalogSection =>
   ({ id: `group:${start}`, kind: "group", label, labelId, start, count, collapsed: false });
@@ -44,13 +44,37 @@ describe("the list", () => {
     assert.match(html, /data-bbm-view="list"/);
     assert.equal(count(html, /data-bbm-pic="true"/), 3);
     assert.equal(count(html, /data-bbm-fact="true"/), 3);
-    assert.match(html, /data-bbm-name="10"[^>]*>Building 1<\/p>/);
+    assert.match(html, /data-bbm-name="10"><span class="line">Building 1<\/span><\/span>/);
   });
 
-  it("writes each name as plain text in an inline paragraph, two lines at 100% text", () => {
-    const html = render(rows(1, () => ({ name: "Two-Lane One-Way Half Road Left" })));
+  it("plans each name over its two lines at 100% text, each line a box of its own, whole where it fits", () => {
+    const html = render(rows(2, (id) => ({ name: id === 1 ? "Two-Lane One-Way Road" : "Four-Lane Perpendicular Parking Road" })));
 
-    assert.match(html, /<p class="name" data-bbm-name="31" cohinline="">Two-Lane One-Way Half Road Left<\/p>/);
+    assert.match(html, /<span class="planned name" data-bbm-name="21"><span class="line">Two-Lane One-Way<\/span><span class="line">Road<\/span><\/span>/);
+    // Too long for two lines beside its numbers: cut once, its last words kept.
+    assert.match(html, /data-bbm-name="36"><span class="line">Four-Lane… Parking<\/span><span class="line">Road<\/span><\/span>/);
+    assert.doesNotMatch(html, /cohinline/);
+  });
+
+  it("cuts a one-word name too long for its line inside it, its head and its tail kept", () => {
+    const html = render(rows(1, () => ({ name: "ModernBrickGarageWithAVeryLongName01" })));
+
+    assert.match(html, /data-bbm-name="36"><span class="line">[^<]*…[^<]*01<\/span><\/span>/);
+  });
+
+  it("keeps the distinguishing word through a cut, and each typed word, dimmed by the knob", () => {
+    const long = "Tram + Four-Lane Road Double-Decked Extradosed Bridge";
+    const plain = render(rows(1, () => ({ name: long, distinctWord: "Double-Decked" })));
+    assert.match(plain, /Double-Decked/);
+
+    // Each word of a typed phrase is kept on its own, as a search matches the phrase anywhere in the name.
+    const phrase = render(rows(1, () => ({ name: "Four-Lane Road With Bus Stop Bays And Wide Sidewalks" })), { typed: "bus stop" });
+    assert.match(phrase, /data-bbm-name="52"><span class="line">[^<]*<\/span><span class="line">[^<]*Bus Stop[^<]*…<\/span>/);
+
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, dimTypedWord: true });
+    const typed = render(rows(1, () => ({ name: "Tram Road 1" })), { typed: "tram" });
+    // The span's following space opens with U+200B, which Cohtml keeps.
+    assert.match(typed, /<span class="line"><span class="typed">Tram<\/span>\u200b Road 1<\/span>/);
   });
 
   it("says the cost over the capacity, right of the name, its digits beside the glyph for its unit", () => {
@@ -174,9 +198,19 @@ describe("the list", () => {
     const whole = render(rows(1), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
 
     assert.match(more, /class="plate largeText"[^>]*style="left:0rem;top:0rem;width:228\.6666/);
-    assert.match(more, /class="name oneLine"/);
+    assert.match(more, /class="planned name"/);
     assert.match(whole, /height:34\.56rem/);
-    assert.match(whole, /<p class="name" /);
+    assert.match(whole, /class="planned name"/);
+  });
+
+  it("never draws a third name line at 130% under Whole names: two lines, whole device pixels each, fit the plate", () => {
+    const html = render(rows(1, () => ({ name: "Prestigious High School (based on Ohio State University Hall)" })), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
+    const lines = count(html, /<span class="line">/);
+    // A line draws in whole device pixels: at 720p, 1.5 rem each.
+    const drawn = Math.ceil(scaled(".name", "line-height", 1.3) / 1.5) * 1.5;
+
+    assert.equal(lines, 2);
+    assert.ok(lines * drawn <= 34.56, `${lines} lines of ${drawn}`);
   });
 
   // A length the stylesheet scales with the game's text, as calc(N rem * var(--fontScale)), at this scale.
@@ -196,7 +230,7 @@ describe("the list", () => {
       assert.match(html, /<span class="first">¢85[^<]*000<\/span>/);
       assert.equal(lines, 1);
       assert.ok(lines * scaled(".numbers", "line-height", scale) <= PLATE1_HEIGHT, `${lines} lines at ${scale}`);
-      assert.ok(scaled(".oneLine", "max-height", scale) <= PLATE1_HEIGHT);
+      assert.ok(scaled(".name", "line-height", scale) <= PLATE1_HEIGHT);
     });
   }
 
@@ -227,9 +261,9 @@ describe("the list", () => {
   it("draws each group's label plate in a slot of its own, with its true count, and the buildings after it a slot on", () => {
     const html = render(rows(3), { sections: [group(0, "Small Roads", 66), group(2, "Medium Roads", 34)] });
 
-    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:171rem;height:27\.25rem" data-bbm-label="group"><span class="labelText"><span class="labelWords">Small Roads<\/span><\/span><span class="labelCount">66<\/span><\/div>/);
+    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:171rem;height:27\.25rem" data-bbm-label="group"><span class="planned labelText" data-bbm-name="11"><span class="line">SMALL ROADS<\/span><\/span><span class="labelCount">66<\/span><\/div>/);
     assert.match(html, /left:173rem;top:0rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="1"/);
-    assert.match(html, /left:519rem;top:0rem[^>]*data-bbm-label="group"><span class="labelText"><span class="labelWords">Medium Roads/);
+    assert.match(html, /left:519rem;top:0rem[^>]*data-bbm-label="group"><span class="planned labelText" data-bbm-name="12"><span class="line">MEDIUM ROADS/);
     assert.match(html, /left:0rem;top:29\.25rem[^>]*data-catalog-entry="3"/);
     // A label is no building: the live check counts buildings only.
     assert.equal(count(html, /data-bbm-item="true"/), 3);
@@ -240,32 +274,25 @@ describe("the list", () => {
     try {
       const html = render(rows(2), { sections: [group(0, "Small Roads", 1, "RoadsSmallRoads"), group(1, "Medium Roads", 1, "RoadsMediumRoads")] });
 
-      assert.match(html, /<span class="labelText"><span class="labelWords">Petites routes<\/span><\/span>/);
-      assert.match(html, /<span class="labelText"><span class="labelWords">Medium Roads<\/span><\/span>/);
+      assert.match(html, /<span class="line">PETITES ROUTES<\/span>/);
+      assert.match(html, /<span class="line">MEDIUM ROADS<\/span>/);
       assert.doesNotMatch(html, />Small Roads</);
     } finally {
       resetTranslations();
     }
   });
 
-  it("cuts a long name on one line with an ellipsis, in a box of its own that is no flex item, its count kept whole", () => {
-    // Cohtml draws no ellipsis on a flex item: the flex child takes the room, the name inside it is cut.
+  it("plans a long name on its one line, cut with \"…\" by the planner, its count kept whole", () => {
+    // Cohtml draws no CSS ellipsis (it computes an inline-block as flex), so the planner cuts the name.
     const room = declarationsOf(LABELS, ".labelText");
-    const words = declarationsOf(LABELS, ".labelWords");
+    const html = render(rows(1), { sections: [group(0, "Advanced Water Pumping Station And Treatment Facilities", 66)] });
 
+    // In its caps, as the plate draws them, cut once between words, its last word kept.
+    assert.match(html, /<span class="planned labelText" data-bbm-name="55"><span class="line">ADVANCED… FACILITIES<\/span><\/span><span class="labelCount">66<\/span>/);
     assert.equal(room.flex, "1 1 auto");
     assert.equal(room["min-width"], "0");
-    assert.equal(room["text-overflow"], undefined);
-    assert.equal(words.display, "inline-block");
-    assert.equal(words["max-width"], "100%");
-    assert.equal(words["text-overflow"], "ellipsis");
-    assert.equal(words["white-space"], "nowrap");
-    assert.equal(words.overflow, "hidden");
-    assert.equal(words.flex, undefined);
     assert.equal(declarationsOf(LABELS, ".labelCount").flex, "0 0 auto");
-    assert.match(render(rows(1), { sections: [group(0, "Small Roads", 1)] }), /<span class="labelText"><span class="labelWords">Small Roads<\/span><\/span>/);
-    // A tile's square holds the name on as many lines as it takes, wrapped at the square's edge.
-    assert.equal(declarationsOf(LABELS, ".stacked .labelWords")["white-space"], "normal");
+    // A tile's square plans the name over two lines in the square's width.
     assert.equal(declarationsOf(LABELS, ".stacked .labelText")["align-self"], "stretch");
   });
 
@@ -273,7 +300,7 @@ describe("the list", () => {
     // The window has reached the locked rows: the label sits before the first of them.
     const html = render(rows(3), { sections: [locked(2, 77)] });
 
-    assert.match(html, /<button class="label lockedLabel" style="left:346rem;top:0rem;width:171rem;height:27\.25rem" data-has-select="true" aria-expanded="true" data-bbm-label="locked"><span class="labelText"><span class="labelWords">Locked<\/span><\/span><span class="labelCount">77<\/span><\/button>/);
+    assert.match(html, /<button class="label lockedLabel" style="left:346rem;top:0rem;width:171rem;height:27\.25rem" data-has-select="true" aria-expanded="true" data-bbm-label="locked"><span class="planned labelText" data-bbm-name="6"><span class="line">LOCKED<\/span><\/span><span class="labelCount">77<\/span><\/button>/);
     assert.match(render(rows(2), { sections: [locked(2, 77, true)] }), /aria-expanded="false"/);
     // The milestone's ink, as a locked plate's "MS n" says it, on the label plate, which a pointer lights.
     assert.equal(declarationsOf(LABELS, ".lockedLabel .labelText").color, "var(--bbm-bodyMilestone)");
@@ -281,7 +308,7 @@ describe("the list", () => {
   });
 
   it("puts a search's fifth result under the first at the third step, nearest the field, and along the row by the knob", () => {
-    const step3 = { over: { boxWidth: 1091 }, searching: true };
+    const step3 = { over: { boxWidth: 1091 }, typed: "four" };
 
     assert.match(render(rows(30), step3), /left:0rem;top:29\.25rem;width:177\.5rem[^>]*data-catalog-entry="5"/);
     assert.match(render(rows(30), { over: { boxWidth: 1091 } }), /left:718rem;top:0rem[^>]*data-catalog-entry="5"/);
@@ -297,7 +324,7 @@ describe("the list", () => {
 
     assert.match(html, /class="plate big" style="left:0rem;top:0rem;width:171rem;height:71\.125rem"/);
     assert.match(html, /<span class="artwork" style="width:66rem;height:66rem"><img class="picture" src="" style="width:66rem;height:66rem"/);
-    assert.match(html, /<span class="bigWords"><p class="name" data-bbm-name="10" cohinline="">Building 1<\/p><div class="numbers" data-bbm-fact="true">/);
+    assert.match(html, /<span class="bigWords"><span class="planned name" data-bbm-name="10"><span class="line">Building 1<\/span><\/span><div class="numbers" data-bbm-fact="true">/);
     assert.match(render(rows(1)), /<span class="artwork"><img class="picture" src="" alt=""/);
   });
 
@@ -326,7 +353,7 @@ describe("the list", () => {
     assert.equal(count(big, /class="second"/), 7);
     assert.match(big, /data-catalog-entry="2"[\s\S]*?<img class="enterMark"[^>]*><span class="first">¢/);
     assert.equal(count(oneLine, /class="second"/), 0);
-    assert.equal(count(oneLine, /class="name oneLine"/), 0);
+    assert.equal(count(oneLine, /data-bbm-name="10"><span class="line">Building \d<\/span><\/span>/), 7);
     assert.match(oneLine, /class="plate largeText" style="[^"]*height:46\.75rem"/);
   });
 

@@ -91,7 +91,7 @@ describe("the cards", () => {
   it("draw each group's label in the rows with the cards", () => {
     const html = render(rows(3), { sections: [group(0, "Small Roads", 66), group(2, "Medium Roads", 34)] });
 
-    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:[\d.]+rem;height:46rem" data-bbm-label="group"><span class="labelText"><span class="labelWords">Small Roads<\/span><\/span><span class="labelCount">66<\/span>/);
+    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:[\d.]+rem;height:46rem" data-bbm-label="group"><span class="planned labelText" data-bbm-name="11"><span class="line">SMALL ROADS<\/span><\/span><span class="labelCount">66<\/span>/);
     assert.equal(count(html, /data-bbm-label="group"/), 2);
   });
 
@@ -104,7 +104,7 @@ describe("the cards", () => {
     try {
       const html = render(rows(1), { sections });
 
-      assert.match(html, /<span class="labelWords">Routes de petite taille<\/span>/);
+      assert.match(html, /<span class="line">ROUTES DE PETITE TAILLE<\/span>/);
       assert.ok(width(html) > english, `${width(html)} is not wider than ${english}`);
     } finally {
       resetTranslations();
@@ -117,13 +117,13 @@ describe("the cards", () => {
     assert.match(render(rows(1)), /class="card" style="left:0rem;top:20\.12rem;width:[\d.]+rem;height:50rem"/);
   });
 
-  it("cut the name of a card the packer holds to the row in a box of its own, and no other card's", () => {
+  it("plan the name of a card the packer holds to the row on its one line, cut with \"…\", and no other card's", () => {
     // 56 ideographs, a whole em each, pass the game's own 706 box's row.
     const long = "漢".repeat(56);
     const html = render([entry(1, { name: long }), entry(2)]);
 
-    // The live check reads how much of the name the box that cuts it draws.
-    assert.match(html, new RegExp(`<span class="name nameHeld"><span class="nameWords" data-bbm-name="56">${long}</span></span>`));
+    // Cut by the planner, its head and its tail kept: Cohtml draws no CSS ellipsis.
+    assert.match(html, /<span class="planned name nameHeld" data-bbm-name="56"><span class="line">漢+…漢+<\/span><\/span>/);
     assert.match(html, /<span class="name" data-bbm-name="10">Building 2<\/span>/);
   });
 

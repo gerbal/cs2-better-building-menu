@@ -13,15 +13,17 @@ import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, slotPosition, slotsHeight, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { oneLineNumber, plateNumbers } from "domain/listPlate";
+import { NAME_FONT, oneLineNumber, plateNameRoom, plateNumbers } from "domain/listPlate";
 import type { KeyKind } from "domain/rowNumbers";
 import { sortedMetricFor } from "domain/sortedMetric";
+import { useTextScale } from "domain/textScaleSetting";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { ActivePrefabId$, BuildingCatalogSortColumn$ } from "mods/bindings";
+import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { LabelPlate } from "./LabelPlate";
 import styles from "./listBody.module.scss";
+import { PlannedName } from "./PlannedName";
 import { UniqueMark } from "./UniqueMark";
 import { UNIT_GLYPHS } from "./unitGlyphs";
 import { useBodyCells, useNearField } from "./useBodyCells";
@@ -39,6 +41,11 @@ interface PlateProps {
   keyKind: KeyKind;
   /** The values the readout says once, which this plate leaves blank where it holds them. */
   said: readonly SharedValue[];
+  /** The query the page answers, whose words the name keeps; "" without one. */
+  typed: string;
+  /** Whether the typed words draw dimmed. */
+  dim: boolean;
+  textScale: number;
   separators: NumberSeparators;
   stateWords: StateWords;
   achievedMilestone: number;
@@ -51,7 +58,7 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, typed, dim, textScale, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
   const both = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said);
   // A one-line plate is one number tall: two would be cut at its top and foot.
@@ -65,11 +72,18 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
   const picture = big ? { width: `${grid.picture}rem`, height: `${grid.picture}rem` } : undefined;
   const words = (
     <>
-      {/* Plain text, no spans: Cohtml drops the space after an inline element, and never breaks at a
-          hyphen. */}
-      <p className={classNames(styles.name, grid.nameLines === 1 && styles.oneLine)} data-bbm-name={name.length} {...{ cohinline: "" }}>
-        {name}
-      </p>
+      {/* Planned over its lines, each a box of its own: Cohtml never breaks at a hyphen, and the
+          planner keeps what tells the name apart. */}
+      <PlannedName
+        className={styles.name}
+        name={name}
+        width={plateNameRoom(grid, numbers, enter, textScale)}
+        lines={grid.nameLines}
+        font={NAME_FONT * textScale}
+        distinct={entry.distinctWord ?? ""}
+        typed={typed}
+        dim={dim}
+      />
       <div className={styles.numbers} data-bbm-fact="true">
         {/* The mark and the number each in their own box: no bare text beside an element in a flex
             row. */}
@@ -138,10 +152,11 @@ export interface ListBodyProps {
   /** Where the window starts in the result's order, which the sections' starts count from. */
   offset?: number;
   /**
-   * Whether the page answers a typed query: its results fill nearest the field at a wider step, by
-   * the Search flow knob.
+   * The query the page answers, "" without one: its results fill nearest the field at a wider step, by
+   * the Search flow knob, and each name keeps the words typed. The page's own query, not the box's, so
+   * the last query's rows keep their places until the page answers.
    */
-  searching?: boolean;
+  typed?: string;
   /** The kind of number the view's rows show second, from the page's facts; the capacity by default. */
   keyKind?: KeyKind;
   /** Enter's target, while the page answers the query in the box; null otherwise. */
@@ -156,7 +171,7 @@ export interface ListBodyProps {
  * plates over its groups and its locked rows in slots of their own. The game's Scrollable draws the track
  * at the box's right edge, inside its margin. See docs/design-notes.md, "The bodies".
  */
-export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SECTIONS, offset = 0, searching = false, keyKind = "capacity", enterId, onPlace, footer }: ListBodyProps) {
+export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SECTIONS, offset = 0, typed = "", keyKind = "capacity", enterId, onPlace, footer }: ListBodyProps) {
   const separators = useNumberSeparators();
   const stateWords = useStateWords();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
@@ -164,7 +179,9 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
-  const flow = useNearField(searching, grid.firstCols, grid.lines);
+  const textScale = useTextScale();
+  const dim = useValue(AssetMenuTuning$).dimTypedWord ?? SHIPPED_TUNING.dimTypedWord;
+  const flow = useNearField(typed.trim() !== "", grid.firstCols, grid.lines);
   // What the readout says once, which the rows that hold it leave blank. See docs/design-notes.md, "Numbers said once".
   const said = useAssetMenuView((view) => view.said);
   // The form it draws, which decides the numbers the readout may say once; none once it goes. Before
@@ -191,6 +208,9 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
               sortedMetric={sortedMetric}
               keyKind={keyKind}
               said={said}
+              typed={typed}
+              dim={dim}
+              textScale={textScale}
               separators={separators}
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}

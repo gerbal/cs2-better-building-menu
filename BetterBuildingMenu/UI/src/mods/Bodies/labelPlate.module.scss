@@ -1,4 +1,3 @@
-@use "../../base.scss" as _base;
 @use "bodyShell" as *;
 
 // A label plate in a body: a group's name or Locked, then its count, in a slot or a line of its own.
@@ -19,21 +18,13 @@
   letter-spacing: 0.4rem;
 }
 
-// On the body, which an interface style can turn light: body inks that follow it. The flex child takes
-// the room the count leaves.
+// The planned name, on the body, which an interface style can turn light: body inks that follow it. It
+// takes the room the count leaves, which the planner cuts it to with "…", the count kept whole.
 .labelText {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   color: var(--bbm-bodyWord);
-}
-
-// The name inside it, never a flex item, as Cohtml cuts a flex item's text with no ellipsis: one line,
-// cut with "…" where it runs past the plate, its count kept whole.
-.labelWords {
-  display: inline-block;
-  max-width: 100%;
-  @include _base.truncate;
 }
 
 .labelCount {
@@ -49,20 +40,16 @@
 
 @include cell-lit(".lockedLabel");
 
-// In a tile's square: the name over the count, the name on as many lines as it takes.
+// In a tile's square: the name over the count, the name planned over two lines.
 .stacked {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
   padding: 0 4rem;
 
-  // The whole square's width, so the name's box wraps at the square's edge.
+  // The whole square's width, which the name is planned in.
   .labelText {
     flex: 0 1 auto;
     align-self: stretch;
-  }
-
-  .labelWords {
-    white-space: normal;
   }
 }

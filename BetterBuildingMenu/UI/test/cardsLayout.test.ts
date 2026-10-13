@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
 import { bodyLines, SLOT_GAP } from "../src/domain/bodyGeometry";
-import { cardGeometry, cardText, cardWidth, CARD_GAP, labelWidth, packCards } from "../src/domain/cardsLayout";
+import { cardGeometry, cardNameBox, cardText, cardWidth, CARD_GAP, labelNameBox, labelWidth, packCards } from "../src/domain/cardsLayout";
+import { planName } from "../src/domain/namePlan";
+import { fontSizeRatio } from "../src/domain/textScale";
 import { pageScrollTop } from "../src/domain/catalogWindow";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
 import { textWidth } from "../src/domain/textWidth";
@@ -152,6 +154,32 @@ describe("a card's width", () => {
     // Every character is tracked, the count's too.
     near(labelWidth("Small Roads", "66", 1),
       2 * rem(sides(plate.padding)[1]) + textWidth("SMALL ROADS", font) + rem(plate.gap) + textWidth("66", font) + 13 * tracking + 2);
+  });
+});
+
+describe("the room a held card's or a label's name is planned in", () => {
+  it("is a held card's width less its picture, padding and sorted column, at the name's own type", () => {
+    const text = cardText(entry({ name: "A Very Long Hospital Name Indeed" }), "capacity", separators, "Locked", 0);
+    const box = cardNameBox(text, 150, 1.3);
+
+    near(box.width, 150 - (cardWidth(text, 1.3) - textWidth(text.name, 14 * fontSizeRatio("s", 1.3)) - 2) - 2);
+    assert.equal(box.lines, 1);
+    near(box.font, 14 * fontSizeRatio("s", 1.3));
+    // At the card's own width the whole name fits.
+    assert.ok(planName(text.name, cardNameBox(text, cardWidth(text, 1), 1)).whole);
+  });
+
+  it("is a label plate's room beside its count, tracked as the stylesheet draws it, or its square's over two lines", () => {
+    const plate = declarationsOf(LABELS, ".label");
+    const font = rem(/calc\(([\d.]+rem)/.exec(plate["font-size"])![1]);
+    const tracking = rem(plate["letter-spacing"]);
+    const [, padding] = sides(plate.padding).map(rem);
+    const [, stacked] = sides(declarationsOf(LABELS, ".stacked").padding).map(rem);
+
+    assert.deepEqual(labelNameBox("66", 171, false, 1), { width: 171 - 2 * padding - rem(plate.gap) - textWidth("66", font) - 2 * tracking, lines: 1, font, tracking });
+    assert.deepEqual(labelNameBox("62", 64, true, 1.3), { width: 64 - 2 * stacked, lines: 2, font: font * 1.3, tracking });
+    // A plate sized from its words holds them whole.
+    assert.ok(planName("SMALL ROADS", labelNameBox("66", labelWidth("Small Roads", "66", 1), false, 1)).whole);
   });
 });
 

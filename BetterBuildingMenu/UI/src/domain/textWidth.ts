@@ -44,8 +44,11 @@ const ADVANCES: Readonly<Record<string, readonly [number, number]>> = {
 /** A character the table does not hold: wider than most letters. */
 const UNKNOWN_ADVANCE = 0.65;
 
-/** An ideograph or a syllable block, which the game draws in a Noto face a whole em wide. */
-const WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/u;
+/**
+ * An ideograph or a syllable block, which the game draws in a Noto face a whole em wide, and which a
+ * line may break before or after.
+ */
+export const WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/u;
 
 /**
  * A run's width in rem at a font this many rem high: in Overpass, which names and numbers draw in, or

@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FALLBACK_SEPARATORS, formatBuildingMetric, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { oneNumber, plateNumbers } from "../src/domain/listPlate";
+import { bodyGrid } from "../src/domain/bodyGeometry";
+import { NAME_FONT, oneNumber, plateNameRoom, plateNumbers } from "../src/domain/listPlate";
+import { textWidth } from "../src/domain/textWidth";
+import { declarationsOf, rem, sides } from "./harness/compiledCss";
 
 const row = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry => ({
   id: 1,
@@ -113,5 +116,46 @@ describe("the one number, where there is room for one", () => {
       first: plateNumbers(locked, "workers", FALLBACK_SEPARATORS, "Locked", 0).second, second: null, glyph: null, locked: false,
     });
     assert.equal(oneNumber(plateNumbers(row({ workers: null }), "workers", FALLBACK_SEPARATORS, "Locked", 0), "workers").first, "");
+  });
+});
+
+describe("a list plate's name room", () => {
+  const LIST_BODY = "mods/Bodies/listBody.module.scss";
+  const sheet = (selector: string) => declarationsOf(LIST_BODY, selector);
+  /** The N of a calc(N rem * var(--fontScale)) the stylesheet scales with the text. */
+  const scaled = (value: string | undefined) => rem(/^calc\(([\d.]+rem) \* var\(--fontScale\)\)$/.exec(value ?? "")?.[1]);
+  const grid = (textScale: number, menuRows?: number) => bodyGrid({
+    body: "list", boxWidth: 706, bodyHeight: 144.25, textScale, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0, menuRows, smallMenusGrow: menuRows !== undefined,
+  });
+
+  it("is the plate less its padding, picture and gaps and its number column, as the stylesheet draws them", () => {
+    const [, right, , left] = sides(sheet(".plate").padding).map(rem);
+    const gap = rem(sheet(".plate").gap);
+    const font = scaled(sheet(".numbers")["font-size"]);
+    const glyph = scaled(sheet(".unitGlyph").width);
+    const mark = scaled(sheet(".enterMark").width);
+    const markGap = rem(sheet(".firstLine").gap);
+    const numbers = { first: "¢85,000", second: "400", glyph: "person" as const, locked: false };
+    const plate2 = grid(1);
+
+    assert.equal(scaled(sheet(".name")["font-size"]), NAME_FONT);
+    assert.ok(Math.abs(plateNameRoom(plate2, numbers, true, 1)
+      - (plate2.cellWidth - left - right - rem(sheet(".artwork").width) - 2 * gap - Math.max(mark + markGap + textWidth(numbers.first, font), glyph + markGap + textWidth("400", font)))) < 1e-9);
+
+    // Above 100% text the picture is 24, and a glyph and a mark grow with the text, their gap does not.
+    const plate1 = grid(1.3);
+    const key = { first: "400", second: null, glyph: "person" as const, locked: false };
+    assert.equal(plate1.form, "plate1");
+    assert.ok(Math.abs(plateNameRoom(plate1, key, false, 1.3)
+      - (plate1.cellWidth - left - right - rem(sheet(".largeText .artwork").width) - 2 * gap - (glyph * 1.3 + markGap + textWidth("400", font * 1.3)))) < 1e-9);
+  });
+
+  it("is a big plate's room beside its picture, its name over its numbers", () => {
+    const big = grid(1, 3);
+    const [, right, , left] = sides(sheet(".big").padding).map(rem);
+
+    assert.equal(big.form, "big");
+    assert.ok(Math.abs(plateNameRoom(big, { first: "¢85,000", second: "400", glyph: "person", locked: false }, false, 1)
+      - (big.cellWidth - left - right - big.picture - rem(sheet(".big").gap))) < 1e-9);
   });
 });

@@ -7,13 +7,15 @@ import { memo, type ReactNode } from "react";
 import enterMark from "images/enter.svg";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import type { CardText } from "domain/cardsLayout";
+import { cardNameBox, type CardText } from "domain/cardsLayout";
+import { useTextScale } from "domain/textScaleSetting";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { ActivePrefabId$ } from "mods/bindings";
 import type { CardPlace, CardsLayout } from "mods/BuildingCatalog/useCardsLayout";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import styles from "./cardsBody.module.scss";
 import { LabelPlate } from "./LabelPlate";
+import { PlannedName } from "./PlannedName";
 import { UniqueMark } from "./UniqueMark";
 import { useStateWords, type StateWords } from "./useBodyWords";
 
@@ -24,6 +26,7 @@ interface CardProps {
   held: boolean;
   armed: boolean;
   enter: boolean;
+  textScale: number;
   stateWords: StateWords;
   hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
@@ -35,7 +38,7 @@ interface CardProps {
  * and the capacity); and under a sort by a number, the value sorted by at its right. The live check and
  * the render tests count what a body shows through the data-bbm markers.
  */
-const Card = memo(function Card({ entry, text, place, held, armed, enter, stateWords, hoverCard, onPlace }: CardProps) {
+const Card = memo(function Card({ entry, text, place, held, armed, enter, textScale, stateWords, hoverCard, onPlace }: CardProps) {
   const fullName = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
@@ -76,8 +79,8 @@ const Card = memo(function Card({ entry, text, place, held, armed, enter, stateW
         </span>
         <span className={styles.words}>
           {held ? (
-            // The name in a box of its own inside the flex child: Cohtml draws no ellipsis on a flex item.
-            <span className={classNames(styles.name, styles.nameHeld)}><span className={styles.nameWords} data-bbm-name={fullName.length}>{text.name}</span></span>
+            // Planned on its one line in the room the card has, cut with "…": Cohtml draws no CSS ellipsis.
+            <PlannedName className={classNames(styles.name, styles.nameHeld)} name={fullName} {...cardNameBox(text, place.width, textScale)} />
           ) : (
             <span className={styles.name} data-bbm-name={fullName.length}>{text.name}</span>
           )}
@@ -124,6 +127,7 @@ export const CardsBody = memo(function CardsBody({ layout, enterId, onPlace, foo
   const stateWords = useStateWords();
   const armedId = useValue(ActivePrefabId$);
   const hoverCard = useHoverCardContext();
+  const textScale = useTextScale();
 
   return (
     <div className={styles.body} data-bbm-view="cards">
@@ -140,6 +144,7 @@ export const CardsBody = memo(function CardsBody({ layout, enterId, onPlace, foo
               held={cell.held}
               armed={armedId !== 0 && cell.entry.id === armedId}
               enter={cell.entry.id === enterId}
+              textScale={textScale}
               stateWords={stateWords}
               hoverCard={hoverCard}
               onPlace={onPlace}

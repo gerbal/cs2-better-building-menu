@@ -13,15 +13,14 @@ import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/b
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { tileLabelLineBudget } from "domain/tileLabel";
 import { tileFacts } from "domain/tileNameLine";
 import { tagRoom, tileTag } from "domain/tileTag";
 import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { FittedName } from "./FittedName";
 import { LabelPlate } from "./LabelPlate";
+import { PlannedName } from "./PlannedName";
 import styles from "./tilesBody.module.scss";
 import { UniqueMark } from "./UniqueMark";
 import { useBodyCells } from "./useBodyCells";
@@ -184,11 +183,14 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
         <div className={styles.nameLine} style={{ height: `${grid.nameLine}rem` }}>
           {named !== null && (
             <>
-              <FittedName
+              <PlannedName
                 className={styles.lineName}
-                label={named.name || named.prefabName}
-                budget={tileLabelLineBudget(grid.cellWidth * grid.cols * NAME_SHARE, textScale, LINE_NAME_FONT)}
+                name={named.name || named.prefabName}
+                width={grid.cellWidth * grid.cols * NAME_SHARE}
                 lines={1}
+                font={LINE_NAME_FONT * textScale}
+                distinct={named.distinctWord ?? ""}
+                hugs
               />
               <span className={styles.lineFacts}>{tileFacts(named, separators)}</span>
             </>

@@ -9,6 +9,7 @@ import type { AssetMenuMetric } from "./assetMenuLayout";
 import { SLOT_GAP, wholeLines } from "./bodyGeometry";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
+import type { NameBox } from "./namePlan";
 import { capacityText, costText, lotText, sortedText } from "./rowNumbers";
 import { fontSizeRatio } from "./textScale";
 import { listLabel } from "./tileLabel";
@@ -43,11 +44,15 @@ const SORTED_GAP = 8;
 /** What a run drawn a pixel wider than its estimate costs: none of the card's words is cut by it. */
 const TEXT_SLACK = 2;
 
-/** A label plate's caps at 100% text, their tracking per character, its padding each side and the gap to its count. */
+/**
+ * A label plate's caps at 100% text, their tracking per character, its padding each side and the gap
+ * to its count; in a tile's square, its padding each side: labelPlate.module.scss.
+ */
 const LABEL_FONT = 10;
 const LABEL_TRACKING = 0.4;
 const LABEL_PADDING = 6;
 const LABEL_GAP = 4;
+const STACKED_PADDING = 4;
 
 export interface CardGeometry {
   /** A card's height: the knob's, or more where its two lines need it at large text. */
@@ -121,6 +126,25 @@ export function cardWidth(text: CardText, textScale: number): number {
   const sorted = text.sorted === null ? 0 : SORTED_GAP + textWidth(text.sorted, nameFont);
 
   return CARD_PAD_LEFT + CARD_PICTURE + CARD_PICTURE_GAP + Math.max(textWidth(text.name, nameFont), facts) + TEXT_SLACK + sorted + CARD_PAD_RIGHT;
+}
+
+/** The box a held card's name is planned in: the card less its picture, padding and sorted column, one line. */
+export function cardNameBox(text: CardText, width: number, textScale: number): NameBox {
+  const font = NAME_FONT * fontSizeRatio("s", textScale);
+  const sorted = text.sorted === null ? 0 : SORTED_GAP + textWidth(text.sorted, font);
+
+  return { width: width - CARD_PAD_LEFT - CARD_PICTURE - CARD_PICTURE_GAP - TEXT_SLACK - sorted - CARD_PAD_RIGHT, lines: 1, font };
+}
+
+/**
+ * The box a label plate's name is planned in, its caps tracked: beside its count on one line, or in a
+ * tile's square over two lines, its count under it.
+ */
+export function labelNameBox(count: string, width: number, stacked: boolean, textScale: number): NameBox {
+  const font = LABEL_FONT * textScale;
+  if (stacked) return { width: width - 2 * STACKED_PADDING, lines: 2, font, tracking: LABEL_TRACKING };
+
+  return { width: width - 2 * LABEL_PADDING - LABEL_GAP - textWidth(count, font) - count.length * LABEL_TRACKING, lines: 1, font, tracking: LABEL_TRACKING };
 }
 
 /** A label plate's width among the cards: the words it draws in caps, then its count, on a plate of their own. */

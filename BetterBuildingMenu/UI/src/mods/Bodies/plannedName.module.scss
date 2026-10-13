@@ -1,0 +1,21 @@
+// A planned name, each line one box: namePlan.ts lays the lines out, where it is testable, and draws
+// whole where the name fits; a line is never wrapped again by the engine. See docs/design-notes.md, "Names".
+.planned {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+// One line: a nowrap box, the planner's own line. A line drawn wider than its box is clipped, and the
+// name is planned again a frame later in the room it drew in.
+.line {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+// The word a search typed, dimmed by the Dim the typed word knob, so the rest of the name stands out.
+.typed {
+  color: var(--bbm-tDim);
+}

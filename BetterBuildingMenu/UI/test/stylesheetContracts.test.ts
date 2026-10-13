@@ -28,6 +28,7 @@ const LIST_BODY = "mods/Bodies/listBody.module.scss";
 const FILTER_PANEL = "mods/Pickers/filterPanel.module.scss";
 const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
 const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
+const PLANNED = "mods/Bodies/plannedName.module.scss";
 
 const catalog = (selector: string) => declarationsOf(CATALOG, selector);
 const pane = (selector: string) => declarationsOf(PANE, selector);
@@ -39,9 +40,9 @@ const resize = (selector: string) => declarationsOf(RESIZE, selector);
 
 describe("Asset menu stylesheet contracts", () => {
   it("keeps a label plate's name to its slot, on one line, and never cuts its count", () => {
-    // The slot is the plate's size, so a long name is cut inside it rather than widening it;
+    // The slot is the plate's size, so a long name is planned inside it rather than widening it;
     // the count says how many the label holds, so it gives way last.
-    assert.equal(labels(".labelWords")["white-space"], "nowrap");
+    assert.equal(declarationsOf(PLANNED, ".line")["white-space"], "nowrap");
     assert.equal(labels(".labelText").overflow, "hidden");
     assert.equal(labels(".labelCount").flex, "0 0 auto");
     assert.equal(labels(".label").overflow, "hidden");
@@ -55,15 +56,10 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(cards(".card")["box-sizing"], "border-box");
   });
 
-  it("cuts a card's name with an ellipsis where the packer holds the card to the row", () => {
-    // Cohtml draws no ellipsis on a flex item, so the name is cut in an inline-block box of its own,
-    // inside the flex item, which keeps to the card's words.
-    assert.equal(cards(".nameHeld")["max-width"], "100%");
+  it("gives a held card's planned name the width of the card's words, whatever its lines hold", () => {
+    // The name is planned again in the box as drawn: a box that hugged its lines would narrow it each frame.
+    assert.equal(cards(".nameHeld")["align-self"], "stretch");
     assert.equal(cards(".nameHeld").overflow, "hidden");
-    assert.equal(cards(".nameWords").display, "inline-block");
-    assert.equal(cards(".nameWords")["max-width"], "100%");
-    assert.equal(cards(".nameWords").overflow, "hidden");
-    assert.equal(cards(".nameWords")["text-overflow"], "ellipsis");
   });
 
   it("lets every body's scroller fill the body and no more, and the body shrink below its content", () => {
@@ -527,7 +523,7 @@ describe("a wrapping row of cards keeps each card its own height", () => {
 });
 
 describe("a tile's tag and name line are the sizes the UI budgets them at", () => {
-  it("draws the tag in the font and padding tileTag.ts measures it by, cut as a cut where it still runs over", () => {
+  it("draws the tag in the font and padding tileTag.ts measures it by, clipped where it still runs over", () => {
     const tag = declarationsOf(TILES, ".tag");
 
     assert.equal(tag["font-size"], "calc(10rem * var(--fontScale))");
@@ -536,7 +532,6 @@ describe("a tile's tag and name line are the sizes the UI budgets them at", () =
     assert.equal(tag["box-sizing"], "border-box");
     assert.equal(tag.overflow, "hidden");
     assert.equal(tag["white-space"], "nowrap");
-    assert.equal(tag["text-overflow"], "ellipsis");
   });
 
   it("draws the name line's name in the font TilesBody budgets its characters by", () => {
@@ -545,6 +540,18 @@ describe("a tile's tag and name line are the sizes the UI budgets them at", () =
 });
 
 describe("Cohtml stylesheet support", () => {
+  it("cuts no text in the bodies with a CSS ellipsis, which Cohtml never draws", () => {
+    // A guard: Cohtml computes an inline-block as flex and ignores text-overflow on a flex item, so a
+    // CSS ellipsis only clips. Every name in the bodies is cut by the planner, with "…" in its text.
+    const found = moduleSheets()
+      .filter((sheet) => sheet.startsWith("mods/Bodies/"))
+      .flatMap((sheet) => everyDeclaration(sheet)
+        .filter(({ prop }) => prop === "text-overflow")
+        .map(({ selectors, value }) => `${sheet} ${selectors.join(", ")}  text-overflow: ${value}`));
+
+    assert.deepEqual(found, []);
+  });
+
   it("states no declaration the engine silently drops", () => {
     // Catching it here turns a silent log warning into a build failure.
     // Compiled, so a declaration a mixin brings in counts, and the comments

@@ -1115,9 +1115,9 @@ a fresh result's first window, and an anchored start's from its row. So a body d
 tiles (22 × 14 = 308 a screen) always has rows below its screen to scroll to, and the poll that loads
 more can see the bottom coming. A screen is no predicate and no start: it only grows the window.
 
-**The list.** Each building on a plate: its picture, 25 rem (24 above 100% text); its name, as plain
-text in an inline paragraph (`<p cohinline>`), on up to two lines at 100% text and one under More
-buildings, cut where it runs past them; and a right-aligned number column, the cost over the view's
+**The list.** Each building on a plate: its picture, 25 rem (24 above 100% text); its name, planned
+over up to two lines at 100% text and one under More buildings (see "Names"); and a right-aligned
+number column, the cost over the view's
 key number by its glyph (see "Numbers said once"), or under a sort by a number the value sorted by, so the order reads down the column (`plateNumbers`),
 with a locked building's milestone ("MS 7") in the cost's place, in amber, while the city has not
 reached it (the game's `achievedMilestone`), or the locked word where only the development tree or
@@ -1160,11 +1160,13 @@ beside it shares it, and keeps every unit that tells tiles apart: under a sort b
 monthly, so a building's reads without its month ("¢4,612", "¢16.5k"); a network's cost and upkeep read
 per cell ("¢44/c", "¢36.9/c"), the cell telling a network's figure from a building's whole one. A road's
 cost or upkeep and a building's bill fit the smallest tile at every text scale; only a mod's road dearer
-than ten thousand a cell outruns the tag at 150%, where the stylesheet cuts it. A sorted value whose unit
+than ten thousand a cell outruns the tag at 150%, where the tag clips it: a figure is never cut, as a
+cut number reads as another number. A sorted value whose unit
 does not fit beside it keeps its whole number and drops the unit ("1 000", not "1 000 stu…"), which the
 Sort control names, unless the unit scales with its size (see "Numbers said once"). The fit is judged from the glyph advances of the
 game's own fonts, the wider of Overpass and Noto Sans per character, so it errs toward the short form;
-anything else too wide is bounded to the tile and cut with an ellipsis. The advances are the one table
+a word too wide (a long locked word) is cut once by the name planner, with "…", as Cohtml draws no CSS
+ellipsis. The advances are the one table
 the cards are sized from (`textWidth`, see "The cards"), so every letter of a unit counts its own
 measured width rather than a flat 0.65 em: a figure with narrow letters can fit whole where a flat
 width would shorten it, and one with a wide letter ("W") takes a short form sooner.
@@ -1178,8 +1180,8 @@ rasters only.
 Under the tiles, where 14 rem or more are left (`TILE_NAME_LINE_MIN`: two lines of 64 leave 14.25, 68
 leaves 6.25) and the Tile name line knob is on, a line names the tile the pointer is on, else the armed
 one, then the numbers a tile does not show, its capacity, upkeep and lot (`tileFacts`). The name takes up
-to 60% of the line and is fitted to it from the widths drawn (`FittedName`), its character budget taken
-at the line's own font. Look-alike tags wait for the name planner.
+to 60% of the line and is planned on it at the line's own font (see "Names"); its box hugs its line, so
+the numbers follow the name, and only a line drawn past the box narrows its room.
 
 **This changes 0.2.x:** Grid drew each tile's name under its picture; a tile now draws only its picture
 and its tag, and the name is the line's under the tiles, for the tile pointed at or armed. Under a sort by
@@ -1211,9 +1213,9 @@ Sans), never from the drawn card, so the packer is pure and no frame re-packs. A
 lacks counts 0.65 em, an ideograph or a syllable block a whole em. A card a few rem wider than its words
 costs nothing; one narrower would cut its last letter, so the estimate keeps 2 rem of slack. A card
 wider than the row (a long name in a script the table counts a whole em a character, or a long name at
-large text on the first step) is held to the row, and its name is cut with "…" in a box of its own, as a
-label plate's is: Cohtml draws no ellipsis on a flex item. Only a held card's name is cut, so an
-estimate a rem short runs into the card's padding rather than losing letters to "…". The tiles' tag
+large text on the first step) is held to the row, and its name is planned on its one line in the room
+the card has (`cardNameBox`, see "Names"), cut with "…" as a label plate's is. Only a held card's name is
+cut, so an estimate a rem short runs into the card's padding rather than losing letters to "…". The tiles' tag
 judges its fit from the same table, the wider of the two fonts.
 
 **Its height** is the Card height knob's: 46 rem, three rows in the game's own 144.25 body a little over
@@ -1268,8 +1270,12 @@ group whose first row the window has not reached waits for it, so no label sits 
 nothing under it. A tab whose rows are all locked and folded draws its Locked label alone, never the
 empty line. A plate says the group's name, in the game's words where the game has one
 (`sectionLabel`, from the section's label id), or the locked word, in caps at 10 rem, then the
-count. The name sits in a box of its own inside the room the count leaves, cut on its one line with an
-ellipsis where it runs past the plate: Cohtml draws no ellipsis on a flex item. The plate's fill
+count. The name is planned in its caps, their tracking counted, in the room the count leaves
+(`labelNameBox`, see "Names"), cut once with "…" where it runs past the plate: Cohtml computes an
+inline-block as flex and draws no CSS ellipsis on a flex item, so none of the bodies' text relies on one.
+In a tile's square it is planned over two lines in the square's width: a tab's word wider than the
+square ("INTERSECTIONS") is cut inside it, the other words whole, never mid-letter at its edge. The
+plate's fill
 (`labBg`) follows an interface style, and so do its inks, body inks (`bodyWord`, `bodyChipDim`; Locked
 in `bodyMilestone`, the ink of "MS n"). In the tiles it takes a tile's square, its name over its count. The
 Locked plate is a button that lights under the pointer as a plate does: a press collapses the locked
@@ -1369,6 +1375,44 @@ for Four-Lane Road 2. A row with no look-alike, or that is all of what it shares
 whatever their case and however many spaces part them. C# finds it over the whole result, as a
 look-alike past the window still decides which word a cut name keeps, and counts each run of leading
 words once in one pass over the rows' words, so a refresh sorts nothing more.
+
+**The planner** (`planName`) lays a name out in a box of a width and a number of lines, at the box's
+own font, from the one advance table (`textWidth`), and draws each line as a box of its own
+(`PlannedName`), never left to the engine to wrap: Cohtml never breaks at a hyphen, and Chromium does,
+so the renders and the game draw the same lines. In order:
+
+1. **Whole,** broken between words, where it fits its lines. An ideograph breaks on either side, as the
+   engine breaks it, and never stands alone on the last line.
+2. **Cut once,** between words, the mark ending the head ("Four-Lane… Parking Road"), never leading:
+   every word a cut must keep stays (the distinguishing word, and in a search each word typed, as a
+   search matches its phrase anywhere in the name); the head never ends on a word like "of" or "and"; a
+   cut keeping the last word comes first, where catalog names say which of a family a building is, then
+   the one keeping the most. Twins that differ in their last word get one shape ("Wide… Road 1",
+   "Wide… Road 2").
+3. **At a hyphen,** whole, only where every cut keeps under 60% of the name.
+4. **Inside a word,** its head and its tail kept (`shortenTileLabel`), the last resort: a one-word name
+   too long for its line is cut on it, and never runs into the numbers beside it. A box with no room,
+   or a width that is no number, draws the name's shortest cut.
+
+The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
+`plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's
+flex row sizes whatever the name holds, narrowed by the most any line ran past it (`drawnRoom`), a
+narrowing that never widens again, so it cannot spiral. A box that hugs its line (the tiles' name line)
+gives no room as drawn, and only a line drawn past it narrows the plan. It never reads widths in the
+render's own tick, where Cohtml reports the previous text's, nor where the screen's rem is unknown. A
+name planned to its lines draws no third line at any text scale. The plate's markers stay:
+`data-bbm-name` on the name's box carries the whole name's length.
+
+The same planner cuts every name the bodies draw: the list's plates, the tiles' name line, a label
+plate's name and a held card's. None relies on a CSS ellipsis, and a test fails on one in the bodies'
+stylesheets.
+
+**Dim the typed word** (developer, off as it ships) draws the word a search typed in a span of its own,
+dimmed. Cohtml drops a space that opens a text node after an inline element, so the run after the span
+opens with U+200B before its space (`nameRuns`, `AFTER_SPAN`), which keeps it.
+
+**This changes 0.2.x:** a list row's name was drawn whole and clipped at its box; it is now planned to
+its lines and cut once, keeping the words that tell it apart, with "…" where words were dropped.
 
 ## The search field's keys
 

@@ -104,7 +104,7 @@ describe("Enter's target brought on screen", () => {
     // ninth result on the first line, beside the first four; the row order would put it on the second.
     const grid = bodyGrid({ body: "list", boxWidth: 1091, bodyHeight: 56.5, textScale: 1, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0 });
     const entries = Array.from({ length: 30 }, (_, at) => entry(at + 1));
-    const html = renderHtml(<ListBody entries={entries} grid={grid} searching enterId={null} onPlace={() => undefined} footer={<div />} />);
+    const html = renderHtml(<ListBody entries={entries} grid={grid} typed="building" enterId={null} onPlace={() => undefined} footer={<div />} />);
     const top = Number(/top:([\d.]+)rem[^>]*data-catalog-entry="9"/.exec(html)?.[1]);
     assert.equal(top, 0);
 

@@ -90,21 +90,12 @@
 
 @include unique-mark-states(".plate");
 
+// The name's lines, as many as the planner gives it: none past the plate's own, so none is cut.
 .name {
   flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
   font-size: calc(11rem * var(--fontScale));
   line-height: calc(12.5rem * var(--fontScale));
-  // Two lines, whole device pixels each: whatever a third line holds is cut.
-  max-height: calc(27rem * var(--fontScale));
-  overflow: hidden;
   color: var(--bbm-tName);
-}
-
-.oneLine {
-  max-height: calc(14rem * var(--fontScale));
-  white-space: nowrap;
 }
 
 .locked .name,

@@ -95,17 +95,11 @@
   color: var(--bbm-tName);
 }
 
-// A card the packer holds to the row is narrower than its words: its name keeps to them, and is cut
-// with "…" in a box of its own, never a flex item, as Cohtml cuts a flex item's text with no ellipsis.
+// A card the packer holds to the row is narrower than its words: its name is planned in them and cut
+// with "…", its box the words' whole width, which the name is planned in again once drawn.
 .nameHeld {
-  max-width: 100%;
+  align-self: stretch;
   overflow: hidden;
-}
-
-.nameWords {
-  display: inline-block;
-  max-width: 100%;
-  @include _base.truncate;
 }
 
 .facts {

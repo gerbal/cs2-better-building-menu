@@ -165,7 +165,7 @@ $mark-inset: 0.147;
 
 /// One line of text, cut with an ellipsis where it runs out of room. On a
 /// flex item Cohtml ignores text-overflow and this only clips, which is why
-/// tileLabel.ts elides names in JS.
+/// the bodies' names are cut by the name planner (namePlan.ts) instead.
 @mixin truncate {
   overflow: hidden;
   white-space: nowrap;

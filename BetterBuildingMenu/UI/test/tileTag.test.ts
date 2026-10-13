@@ -124,6 +124,18 @@ describe("a tile's tag", () => {
     assert.deepEqual(tag(row({ isLocked: true, unlockMilestone: 4, constructionCost: 12_500_000 } as Partial<BuildingCatalogEntry>)), { text: "MS 4", locked: true });
   });
 
+  it("cuts a locked word too long for the tag once, with \"…\", at every text scale: Cohtml draws no CSS ellipsis", () => {
+    const waiting = row({ isLocked: true, unlockMilestone: 0 } as Partial<BuildingCatalogEntry>);
+
+    for (const scale of SCALES) {
+      const { text, locked } = tileTag(waiting, null, FALLBACK_SEPARATORS, "Verrouillé jusqu'au prochain palier", 0, 64, scale);
+
+      assert.ok(text.includes("…") && text.startsWith("Ve"), `${text} at ${scale}`);
+      assert.ok(tagFits(text, 64, scale), `${text} at ${scale}`);
+      assert.equal(locked, true);
+    }
+  });
+
   it("says the value sorted by under a sort by a value, as 0.2.x's Grid did, and the cost under any other", () => {
     // "400 patients" does not fit a 64 tile, so the number stands alone.
     const capacity = "400";

@@ -1,48 +1,14 @@
-import { fontSizeRatio } from "./textScale";
-
 /**
- * Shortening for a name drawn in a box it may not fit: the tiles' name line and
- * the cards' rows. Catalog names are longest at the front and distinguished at
- * the back, so clipping from the right makes many buildings read alike: the
- * tail is kept, the head is spent, and the hover card has the whole.
+ * Shortening a name inside its words, the name planner's last resort and the cards' cap on a name.
+ * Catalog names are longest at the front and distinguished at the back, so clipping from the right
+ * makes many buildings read alike: the tail is kept, the head is spent, and the hover card has the
+ * whole.
  */
-
-/**
- * Characters that fit on one line of a box MEASURED_WIDTH wide at fontSizeM,
- * taken from the running game. A typical-text figure, so an all-caps name
- * overruns it and the line's text-overflow catches that rare case.
- */
-const CHARS_AT_MEASURED_WIDTH = 12;
-/** The width that figure was taken at; a budget for another width scales from it. */
-const MEASURED_WIDTH = 100;
-/** The font that figure was taken in: the game's fontSizeM at 100% text, in rem. */
-const MEASURED_FONT = 16;
-
-/**
- * Two lines unless the caller says otherwise, because one cannot hold names
- * three and four words long — on one line head and tail both name the family
- * and nothing names the building.
- */
-const TILE_LABEL_LINES = 2;
-
-/**
- * Characters on a single line of a box this wide, in fontSizeM unless the
- * caller draws a font of its own size (rem at 100% text, grown by the scale).
- */
-export const tileLabelLineBudget = (width: number, textScale = 1, font = MEASURED_FONT): number => {
-  const size = Number.isFinite(width) && width > 0 ? width : MEASURED_WIDTH;
-  // fontSizeM grows by vanilla's own calc() — see domain/textScale.ts; any other
-  // font grows with the scale. The budget at the measured font is rounded as it
-  // was measured; any other is floored, since the base already fills the line.
-  const ratio = font === MEASURED_FONT ? fontSizeRatio("m", textScale) : (font * textScale) / MEASURED_FONT;
-  const unscaled = (size / MEASURED_WIDTH) * CHARS_AT_MEASURED_WIDTH;
-  return Math.max(4, ratio === 1 ? Math.round(unscaled) : Math.floor(unscaled / ratio));
-};
 
 /**
  * What the ellipsis costs, in characters of the budget. More than one: the mark
  * is nearly two average characters wide, and what survives an elision keeps the
- * capitals and drops the spaces. Undercharged, the stylesheet elides again.
+ * capitals and drops the spaces. Undercharged, a cut runs past its line.
  */
 const ELLIPSIS_CHARS = 3;
 
@@ -90,74 +56,6 @@ export const shortenTileLabel = (label: string, budget: number): string => {
   if (headLength <= 0) return `…${tail}`;
 
   return `${name.slice(0, headLength).trimEnd()}…${tail}`;
-};
-
-/**
- * Fit the last line, dropping whole words before it cuts one: a word fragment
- * reads as noise where a dropped word reads as a gap. The last word is always
- * kept, being where the game puts what distinguishes one building from another.
- */
-const fitLastLine = (rest: string, perLine: number): string => {
-  if (rest.length <= perLine) return rest;
-
-  const words = rest.split(/\s+/);
-  const tail = words[words.length - 1];
-
-  // Largest head that still fits, so as much of the name survives as can. The
-  // mark costs what shortenTileLabel charges for it, not one character, or the
-  // line overflows and is clipped a second time.
-  const markCost = ELLIPSIS_CHARS - 1;
-  for (let head = words.length - 2; head >= 1; head -= 1) {
-    const candidate = `${words.slice(0, head).join(" ")}…${tail}`;
-    if (candidate.length + markCost <= perLine) return candidate;
-  }
-
-  return shortenTileLabel(rest, perLine);
-};
-
-/**
- * Lay the name out over its lines by greedy word packing, so only the
- * last line is ever elided and a name distinguished by its suffix keeps it.
- * Returns one entry per DRAWN line; the caller reserves the height either way.
- */
-export const wrapTileLabel = (
-  label: string,
-  perLine: number,
-  lines: number = TILE_LABEL_LINES
-): string[] => {
-  const name = (label ?? "").trim();
-  if (!name) return [];
-  if (lines <= 1 || perLine <= 1) return [shortenTileLabel(name, perLine)];
-
-  const words = name.split(/\s+/);
-  const drawn: string[] = [];
-  let index = 0;
-
-  // Every line but the last takes whole words only.
-  while (index < words.length && drawn.length < lines - 1) {
-    // A single word longer than the line has to be cut somewhere; cutting it
-    // here keeps the remaining words a line of their own.
-    if (words[index].length > perLine) {
-      drawn.push(shortenTileLabel(words[index], perLine));
-      index += 1;
-      continue;
-    }
-
-    let line = words[index];
-    index += 1;
-
-    while (index < words.length && line.length + 1 + words[index].length <= perLine) {
-      line += ` ${words[index]}`;
-      index += 1;
-    }
-
-    drawn.push(line);
-  }
-
-  const rest = words.slice(index).join(" ");
-  if (rest) drawn.push(fitLastLine(rest, perLine));
-
-  return drawn;
 };
 
 /**

@@ -1,37 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { reduceBudgetToFit, contentOverflowPx, overflowsBox } from "../src/domain/measuredFit.ts";
-
-// Character budgets and rem widths are estimates; the drawn text is the fact.
-// The px-per-rem ratio changes with resolution, so a budget that exactly fills
-// its line at one spills at another. The estimate is corrected from the DOM.
-describe("a tile line budget corrected from what was drawn", () => {
-  it("keeps the budget when the line fits", () => {
-    assert.equal(reduceBudgetToFit(17, 187, 180), 17);
-    assert.equal(reduceBudgetToFit(17, 187, 187), 17);
-  });
-
-  it("shrinks in proportion to the overflow, and always by at least one", () => {
-    // "Medium Roundabout": seventeen characters wanting 195px of 187 → 16.
-    assert.equal(reduceBudgetToFit(17, 187, 195), 16);
-    // A pixel is rounding noise — fractional rem widths land on whole pixels
-    // either side — and costs nothing; two is a real overflow.
-    assert.equal(reduceBudgetToFit(17, 187, 188), 17);
-    assert.equal(reduceBudgetToFit(17, 187, 189), 16);
-    // A large one costs more.
-    assert.equal(reduceBudgetToFit(17, 100, 200), 8);
-  });
-
-  it("never goes below the four characters a line needs to say anything", () => {
-    assert.equal(reduceBudgetToFit(5, 10, 100), 4);
-    assert.equal(reduceBudgetToFit(4, 10, 100), 4);
-  });
-
-  it("ignores a box that has not been laid out", () => {
-    assert.equal(reduceBudgetToFit(17, 0, 195), 17);
-    assert.equal(reduceBudgetToFit(17, 187, 0), 17);
-  });
-});
+import { contentOverflowPx, drawnRoom, overflowsBox } from "../src/domain/measuredFit.ts";
 
 describe("what counts as overflow", () => {
 // Cohtml's scrollWidth equals offsetWidth when nothing overflows, and
@@ -51,28 +20,43 @@ describe("what counts as overflow", () => {
   });
 });
 
-describe("the budget a set of drawn lines allows", () => {
-  it("is the tightest correction any line asks for", async () => {
-    const { lineBudgetFromDrawn } = await import("../src/domain/measuredFit.ts");
-    // Two lines in a 64px box: the first fits, the second overflows by a third.
-    const lines = [
-      { clientWidth: 64, offsetWidth: 64, scrollWidth: 64 },
-      { clientWidth: 64, offsetWidth: 64, scrollWidth: 96 },
-    ];
-    assert.equal(lineBudgetFromDrawn(12, lines), 8);
+// The advance table is an estimate; the drawn text is the fact. A name is planned again in the box it
+// drew in, and narrower where its lines ran past it.
+describe("the room a drawn name's lines may take", () => {
+  const undrawn = { box: null, fit: 1 };
+  const fits = { clientWidth: 64, offsetWidth: 64, scrollWidth: 64 };
+
+  it("is the box as drawn, in rem, wider or narrower than the estimate", () => {
+    // 720p: a pixel is 1.5 rem.
+    assert.deepEqual(drawnRoom(undrawn, { clientWidth: 60 }, [fits], 1.5), { box: 90, fit: 1 });
   });
 
-  it("leaves the budget alone when every line fits", async () => {
-    const { lineBudgetFromDrawn } = await import("../src/domain/measuredFit.ts");
-    assert.equal(lineBudgetFromDrawn(12, [{ clientWidth: 64, offsetWidth: 64, scrollWidth: 64 }]), 12);
+  it("narrows by the most any line ran past its box, in proportion, and never widens again", () => {
+    const lines = [fits, { clientWidth: 64, offsetWidth: 64, scrollWidth: 96 }];
+    const narrowed = drawnRoom({ box: 90, fit: 1 }, { clientWidth: 60 }, lines, 1.5);
+
+    assert.deepEqual(narrowed, { box: 90, fit: 64 / 96 });
+    assert.equal(drawnRoom(narrowed, { clientWidth: 60 }, [fits], 1.5), narrowed);
   });
 
-  it("ignores lines that have not been laid out yet", async () => {
-    // Cohtml reports 0 for an element it has not laid out, and the previous
-    // text's width for one whose text just changed; a zero box is the first
-    // case and must not count as overflow.
-    const { lineBudgetFromDrawn } = await import("../src/domain/measuredFit.ts");
-    assert.equal(lineBudgetFromDrawn(12, [{ clientWidth: 0, offsetWidth: 0, scrollWidth: 0 }]), 12);
+  it("is the same room, the very object, where nothing moved beyond rounding", () => {
+    const room = { box: 90, fit: 1 };
+
+    assert.equal(drawnRoom(room, { clientWidth: 60.004 }, [fits], 1.5), room);
+    assert.equal(drawnRoom(room, { clientWidth: 60 }, [{ clientWidth: 64, offsetWidth: 64, scrollWidth: 65 }], 1.5), room);
+  });
+
+  it("keeps the estimate while the box has not been laid out", () => {
+    // Cohtml reports 0 for an element it has not laid out, and the previous text's width for one whose
+    // text just changed; a zero box is the first case and must not count as overflow.
+    assert.equal(drawnRoom(undrawn, { clientWidth: 0 }, [{ clientWidth: 0, offsetWidth: 0, scrollWidth: 40 }], 1.5), undrawn);
+  });
+
+  it("keeps the estimate where the screen's rem is unknown: a box of no width would cut every name to its shortest", () => {
+    // deviceRem answers 0 for a screen of no height.
+    assert.equal(drawnRoom(undrawn, { clientWidth: 60 }, [fits], 0), undrawn);
+    assert.equal(drawnRoom(undrawn, { clientWidth: 60 }, [fits], Number.NaN), undrawn);
+    assert.equal(drawnRoom(undrawn, { clientWidth: 60 }, [fits], Number.POSITIVE_INFINITY), undrawn);
   });
 });
 

@@ -7,9 +7,12 @@ import { memo } from "react";
 import { groupDigits } from "domain/assetMenuMetricFormat";
 import type { CatalogSection } from "domain/buildingCatalog";
 import { setSectionCollapsedCommand } from "domain/buildingCatalogContracts";
+import { labelNameBox } from "domain/cardsLayout";
+import { useTextScale } from "domain/textScaleSetting";
 import { sectionLabel } from "domain/vanillaServiceLabels";
 import { send } from "mods/bindings";
 import styles from "./labelPlate.module.scss";
+import { PlannedName } from "./PlannedName";
 import { useNumberSeparators, useStateWords } from "./useBodyWords";
 
 export interface LabelPlateProps {
@@ -29,17 +32,21 @@ export interface LabelPlateProps {
  */
 export const LabelPlate = memo(function LabelPlate({ section, place, stacked }: LabelPlateProps) {
   const { translate } = useLocalization();
+  const textScale = useTextScale();
   const stateWords = useStateWords();
   const separators = useNumberSeparators();
   const locked = section.kind === "locked";
   const text = sectionLabel(section, (key) => translate(key, null), stateWords.locked);
   // Inline, over the game's Button and its own square: the slot is the plate's place and size.
   const style = { left: `${place.left}rem`, top: `${place.top}rem`, width: `${place.width}rem`, height: `${place.height}rem` };
+  const count = groupDigits(section.count, separators);
   const content = (
     <>
-      {/* The name in a box of its own inside the flex child: Cohtml draws no ellipsis on a flex item. */}
-      <span className={styles.labelText}><span className={styles.labelWords}>{text}</span></span>
-      <span className={styles.labelCount}>{groupDigits(section.count, separators)}</span>
+      {/* Planned in its caps, as a building's name is: cut with "…" where it runs past the plate, as
+          Cohtml draws no CSS ellipsis, and in a tile's square over two lines, a word wider than the
+          square cut inside it, never mid-letter at its edge. */}
+      <PlannedName className={styles.labelText} name={text.toUpperCase()} {...labelNameBox(count, place.width, stacked, textScale)} />
+      <span className={styles.labelCount}>{count}</span>
     </>
   );
 

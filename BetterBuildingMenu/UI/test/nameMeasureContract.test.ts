@@ -8,11 +8,11 @@ import { describe, it } from "node:test";
  *
  * A line whose text has just been swapped still reports the PREVIOUS text's
  * scrollWidth in the same tick, and a brand-new line reads 0. Measuring
- * synchronously after every re-render shrinks the budget to its floor.
+ * synchronously after every re-render narrows the room for nothing.
  */
-const tileName = readFileSync(new URL("../src/mods/Bodies/FittedName.tsx", import.meta.url), "utf8");
+const tileName = readFileSync(new URL("../src/mods/Bodies/PlannedName.tsx", import.meta.url), "utf8");
 
-describe("a fitted name measures what Cohtml has laid out", () => {
+describe("a planned name measures what Cohtml has laid out", () => {
   it("never reads the lines in the same tick as the render that changed them", () => {
     assert.doesNotMatch(tileName, /\n\s*measure\(\);/, "a bare measure() call reads the previous text's layout");
   });
@@ -23,7 +23,7 @@ describe("a fitted name measures what Cohtml has laid out", () => {
     assert.match(tileName, /requestAnimationFrame/);
   });
 
-  it("takes the budget from the shared reader", () => {
-    assert.match(tileName, /lineBudgetFromDrawn\(/);
+  it("takes the room from the shared reader", () => {
+    assert.match(tileName, /drawnRoom\(/);
   });
 });

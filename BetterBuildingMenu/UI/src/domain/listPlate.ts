@@ -5,10 +5,12 @@
  */
 import type { NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
+import type { BodyGrid } from "./bodyGeometry";
 import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
 import { costText, keyFigure, sortedText, sortsByValue, type KeyKind, type UnitGlyph } from "./rowNumbers";
 import { holdsBack, missingCost, missingFigure, NOTHING_SAID } from "./saidOnce";
+import { textWidth } from "./textWidth";
 
 export interface PlateNumbers {
   /** The cost, or for a locked building "MS n" or the locked word; "" when it has neither. */
@@ -68,4 +70,45 @@ export function oneLineNumber(entry: BuildingCatalogEntry, numbers: PlateNumbers
   if (sortsByValue(sortedMetric) || numbers.locked || !holdsBack(entry, said, "cost")) return oneNumber(numbers, sortedMetric);
 
   return { first: numbers.second ?? "", second: null, glyph: numbers.second === null ? null : numbers.glyph, locked: false, firstIsKey: true };
+}
+
+/** A plate's padding either side together and the gap between its picture, name and numbers, at 100% text: listBody.module.scss. */
+const PLATE_PADDING = 1 + 4;
+const PLATE_GAP = 3;
+const BIG_PADDING = 2 + 6;
+const BIG_GAP = 6;
+
+/** The picture's side: 25 at 100% text, 24 above it; a big plate's is the grid's. */
+const PICTURE = 25;
+const LARGE_PICTURE = 24;
+
+/**
+ * The number column's type, and a glyph's and ↵'s side, at 100% text, all growing with the text; the
+ * gap between a mark and its number, which does not.
+ */
+const NUMBER_FONT = 10;
+const MARK = 10;
+const GLYPH = 9;
+const MARK_GAP = 2;
+
+/** A list name's type at 100% text. */
+export const NAME_FONT = 11;
+
+/**
+ * The room a plate's name is planned in, in rem: the plate less its padding, its picture and its gaps,
+ * and beside the name the number column, as wide as its wider line; a big plate's name sits over its
+ * numbers and takes the room beside the picture.
+ */
+export function plateNameRoom(grid: BodyGrid, numbers: PlateNumbers, enter: boolean, textScale: number): number {
+  if (grid.form === "big") return Math.max(0, grid.cellWidth - BIG_PADDING - grid.picture - BIG_GAP);
+
+  const font = NUMBER_FONT * textScale;
+  const mark = (side: number) => side * textScale + MARK_GAP;
+  // A one-line plate's key number keeps its glyph on the first line.
+  const firstGlyph = numbers.second === null && numbers.glyph !== null ? mark(GLYPH) : 0;
+  const first = (enter ? mark(MARK) : 0) + firstGlyph + textWidth(numbers.first, font);
+  const second = numbers.second === null ? 0 : (numbers.glyph === null ? 0 : mark(GLYPH)) + textWidth(numbers.second, font);
+  const picture = grid.form === "plate2" ? PICTURE : LARGE_PICTURE;
+
+  return Math.max(0, grid.cellWidth - PLATE_PADDING - picture - 2 * PLATE_GAP - Math.max(first, second));
 }

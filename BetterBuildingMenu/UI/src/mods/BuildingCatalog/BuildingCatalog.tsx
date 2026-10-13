@@ -147,9 +147,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // Enter's target, marked on its row while the page answers the query, and brought on screen when the keys move it.
   const enterId = answering && (currentSearch ?? "").trim() !== "" ? bestMatchId : null;
   useRevealEnterTarget(rootRef, enterId, enterStep);
-  // The list fills a typed query's results nearest the field from the page's own query, not the box's,
-  // so the last query's rows keep their places until the page answers.
-  const searching = pageSearch.trim() !== "";
 
   // Enter arms the backend's best match by id, wherever its row is, so a search
   // can be finished without leaving the keyboard. One listener for every view, on
@@ -255,7 +252,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
             ? <CardsBody layout={cards} enterId={enterId} onPlace={activate} footer={catalogFooter} />
             : grid !== null && grid.form === "tile"
               ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
-              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} searching={searching} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
+              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} typed={pageSearch} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
     </div>
   );
 });
