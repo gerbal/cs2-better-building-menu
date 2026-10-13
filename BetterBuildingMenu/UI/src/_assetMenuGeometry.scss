@@ -119,3 +119,9 @@ $popover-row: 24rem;
 $popover-padding: 4rem;
 // FILTER's list scrolls past this height.
 $popover-filter-height: 300rem;
+
+// The notch under the lit bar button: a trapezoid of borders this tall, this wide at its foot, its
+// sides this wide each, so its top is the foot and both sides.
+$notch-height: 4rem;
+$notch-foot: 26.4rem;
+$notch-side: 6rem;

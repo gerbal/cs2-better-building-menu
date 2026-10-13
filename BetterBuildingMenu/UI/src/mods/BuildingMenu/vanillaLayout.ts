@@ -4,6 +4,7 @@ import { firstClassToken, setInlineStyle } from "./vanillaLayoutPure";
 
 const GAME_MAIN_SCREEN = "game-ui/game/components/game-main-screen.module.scss";
 const TOOLBAR = "game-ui/game/components/toolbar/toolbar.module.scss";
+const TOOLBAR_BUTTONS = "game-ui/game/components/toolbar/top/toolbar-button-strip/toolbar-button-strip.module.scss";
 
 /** A class the game's stylesheet module exports, or null — never a guess. */
 export function vanillaClass(modulePath: string, key: string): string | null {
@@ -44,6 +45,22 @@ export function findVanillaToolbar(doc: Document): HTMLElement | null {
   }
 
   return null;
+}
+
+/**
+ * The bar's lit button: in the bar's button strip, matched on the strip module's own class, the
+ * button the game marks `selected`, the one whose menu is open. Null without the bar, the strip or a
+ * lit button. See docs/design-notes.md, "The notch".
+ */
+export function findLitToolbarButton(doc: Document): HTMLElement | null {
+  const toolbar = findVanillaToolbar(doc);
+  const stripClass = vanillaClass(TOOLBAR_BUTTONS, "toolbarButtonStrip");
+
+  if (!toolbar || !stripClass) {
+    return null;
+  }
+
+  return toolbar.querySelector<HTMLElement>(`.${stripClass} button.selected`);
 }
 
 /**

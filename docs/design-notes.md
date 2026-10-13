@@ -593,6 +593,25 @@ strip draws nothing; under the mouse, a 75 × 4 pill on the edge and the game's 
 label is the game's Tooltip. The drag measures rem against the strip's own 8 rem. The upgrades
 panel keeps its strip as its first row.
 
+## The notch
+
+Under the box's bottom edge a small trapezoid marks the lit bar button: 38.4 rem across its top,
+26.4 at its foot, 4 tall, in the look's `notch`, the game's selected colour, which no interface style
+changes. It is a child of the box at `top: 100%`, so it follows the box at every Width step and
+height, and it takes no presses. It is drawn with borders, a 4 rem top border in the colour and 6 rem
+transparent sides, each a longhand, since Cohtml drops a border shorthand fed by `var()`.
+
+Its place is read, not computed. The button is the game's own: inside the bar (`findVanillaToolbar`),
+the button strip, matched on its stylesheet module's class, then its `button.selected`, which the
+game sets on the button whose menu is open (`findLitToolbarButton`); a prefix match on a hashed class
+name could also match BBM's own. Its rectangle and the box's are read over ten frames whenever the
+game's selected menu, the text scale, the screen's height, or the box's width or place changes (the
+bar relights its button a frame or two after the binding moves, and a rectangle reads zero before
+layout), keeping the last good reading, and turned into rem by the screen's 1,080 rem height
+(`notchLeft`). Centred on the button, the notch is held inside the box's ends, so at the first step a
+button right of the box (Communications, Landscaping) puts it at the box's right end. With no lit
+button found it draws nothing. A look that sets `notchLine` draws its line with that look.
+
 ## The release marker and the settings version
 
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from

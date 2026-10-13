@@ -141,6 +141,7 @@ describe("the looks' tokens", () => {
       "mods/Pickers/pickerList.module.scss",
       "mods/Pickers/filterPanel.module.scss",
       "mods/ControlPane/controlPane.module.scss",
+      "mods/Notch/notch.module.scss",
     ];
     for (const sheet of readers) {
       assert.ok(TOKEN_SHEETS.includes(sheet), `${sheet} reads the tokens`);

@@ -415,6 +415,9 @@ export const POPOVER_GAP = sheetRem("popoverGap");
 /** FILTER's height, which its list scrolls past: the tallest a popover draws, so the room one needs. */
 export const POPOVER_FILTER_HEIGHT = sheetRem("popoverFilterHeight");
 
+/** The notch's width across its top, which it centres on the lit bar button: see _assetMenuGeometry.scss. */
+export const NOTCH_TOP_WIDTH = sheetRem("notchTop");
+
 /**
  * The box's bottom edge on the layout's 1080-tall frame, where vanilla's own menu ends above the
  * toolbar. The UI reads only the game's slot's left edge, so the frame above this edge stands for its bottom.

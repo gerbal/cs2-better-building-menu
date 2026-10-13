@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
+import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
 /**
@@ -217,6 +217,22 @@ describe("Asset menu stylesheet contracts", () => {
     // A compound class from the TextInput's own focus: Cohtml has no :focus to lean on here, and no outline.
     assert.equal(declarationsOf(TOP_ROW, ".field")["box-shadow"], "var(--bbm-fieldRing)");
     assert.equal(declarationsOf(TOP_ROW, ".field.focused")["box-shadow"], "var(--bbm-focusRing)");
+  });
+
+  it("hangs the notch under the box's bottom edge, a trapezoid of border longhands that takes no presses", () => {
+    const notch = declarationsOf("mods/Notch/notch.module.scss", ".notch");
+
+    assert.equal(notch.position, "absolute");
+    assert.equal(notch.top, "100%");
+    assert.equal(notch["pointer-events"], "none");
+    assert.equal(notch["box-sizing"], "content-box");
+    // Its foot and both sides make its top, 4 tall, in the look's notch.
+    assert.ok(Math.abs(rem(notch.width) + 2 * rem(notch["border-left-width"]) - NOTCH_TOP_WIDTH) < 1e-9);
+    assert.equal(notch["border-right-width"], notch["border-left-width"]);
+    assert.equal(notch["border-top-width"], "4rem");
+    assert.equal(notch["border-top-color"], "var(--bbm-notch)");
+    assert.equal(notch["border-left-color"], "transparent");
+    assert.equal(notch["border-right-color"], "transparent");
   });
 
   it("draws the popovers over the top edge's strip, from a bottom offset", () => {

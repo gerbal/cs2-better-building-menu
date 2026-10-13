@@ -2,6 +2,7 @@ import classNames from "classnames";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
+import { Notch } from "mods/Notch/Notch";
 import { ControlPane } from "mods/ControlPane/ControlPane";
 import { ControlPopover } from "mods/ControlPopover/ControlPopover";
 import { TabRow } from "mods/TabRow/TabRow";
@@ -132,6 +133,8 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
               onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)}
             />
           )}
+          {/* Under the box's bottom edge, over the lit bar button. See docs/design-notes.md, "The notch". */}
+          <Notch boxRef={root} boxWidth={shownWidth} offset={placement.offset} />
           {/* The open control's popover, above the box or, for a tall box, under the top row,
               inside its root so it takes the look. */}
           <ControlPopover
