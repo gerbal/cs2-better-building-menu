@@ -3,7 +3,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useRef } from "react";
+import { memo, useLayoutEffect, useRef, useState } from "react";
 
 import enterMark from "images/enter.svg";
 import find from "images/find.svg";
@@ -16,7 +16,7 @@ import { AssetMenu$, BuildingCatalog$, CurrentSearch$, IsSearchLoading$, send, U
 import { GameTextInput } from "mods/gameModules";
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { ControlsStrip, useControlCells } from "./ControlsStrip";
-import { noteSearchField } from "./searchField";
+import { blurSearchField, noteSearchField } from "./searchField";
 import styles from "./topRow.module.scss";
 
 export interface TopRowProps {
@@ -46,6 +46,11 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
   const untranslated = useValue(UntranslatedKeys$) ?? [];
   const scale = useTextScale();
   const cells = useControlCells();
+  // The field's own focus, from the game's TextInput: its ring says it has the keys.
+  const [focused, setFocused] = useState(false);
+  // The box can go while the field has focus (a tool that takes the screen, the game's close,
+  // Replace switched off): let go of the keys first, while the field is still on the page.
+  useLayoutEffect(() => () => blurSearchField(), []);
 
   const label = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
   const target = enterTarget(page, query);
@@ -81,7 +86,7 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
   return (
     <div className={styles.topBand}>
       <div className={styles.topRow} style={{ marginRight: `${rightInset}rem` }}>
-        <div className={styles.field}>
+        <div className={classNames(styles.field, focused && styles.focused)}>
           <img
             className={classNames(styles.glyph, loading && styles.spinning)}
             style={{ maskImage: loading ? "url(coui://uil/Standard/HalfCircleProgress.svg)" : `url(${find})` }}
@@ -97,6 +102,8 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
             className={styles.input}
             focusKey={FOCUS_DISABLED}
             onChange={onChange}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             placeholder={plan.placeholder}
           />
           {plan.target !== null && (

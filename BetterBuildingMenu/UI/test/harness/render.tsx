@@ -6,8 +6,22 @@ import { installVanillaRegistry } from "./vanillaRegistry";
 // Every render test imports this module, so the resolver is seeded once.
 installVanillaRegistry();
 
-/** What a component draws, as markup. Effects do not run; hooks do. */
-export const renderHtml = (element: ReactElement): string => renderToStaticMarkup(element);
+/**
+ * What a component draws, as markup. Effects do not run; hooks do. React warns that a layout effect
+ * does nothing on the server, which is what this is and is the point of a markup render, so that
+ * one warning is dropped; any other still prints.
+ */
+export function renderHtml(element: ReactElement): string {
+  const error = console.error;
+  console.error = (...args: unknown[]) => {
+    if (!args.some((arg) => typeof arg === "string" && arg.includes("useLayoutEffect does nothing on the server"))) error(...args);
+  };
+  try {
+    return renderToStaticMarkup(element);
+  } finally {
+    console.error = error;
+  }
+}
 
 /** A catalog entry the components accept, with every field a row reads. */
 export function entry(id: number, over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry {

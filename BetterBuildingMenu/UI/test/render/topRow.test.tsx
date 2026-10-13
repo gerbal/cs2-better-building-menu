@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { fakeSearchField, keysPage } from "../harness/fakeKeys";
 import { count, renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
@@ -245,5 +246,54 @@ describe("the top row's controls", () => {
     assert.deepEqual(asked, ["filter"]);
     assert.ok(String(control("Group").props.className).split(" ").includes("open"));
     act(() => root!.unmount());
+  });
+});
+
+describe("the top row's search field and the keys", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const saved = globals.document;
+
+  beforeEach(() => {
+    resetBindings();
+    resetTranslations();
+  });
+
+  afterEach(() => {
+    globals.document = saved;
+  });
+
+  it("draws the focus ring while the field has the keys, and its plain ring otherwise", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(row());
+    });
+    const ringed = () =>
+      String(root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ")[0] === "field").props.className)
+        .split(" ")
+        .includes("focused");
+    const input = root!.root.find((node) => node.props.className === "input" && typeof node.props.onFocus === "function");
+    assert.equal(ringed(), false);
+
+    act(() => input.props.onFocus());
+    assert.equal(ringed(), true);
+
+    act(() => input.props.onBlur());
+    assert.equal(ringed(), false);
+    act(() => root!.unmount());
+  });
+
+  it("lets go of the keys when the box goes with the field focused", () => {
+    // A tool that takes the screen, the game's own close or Replace switched off: no Escape, no Enter.
+    const field = fakeSearchField();
+    globals.document = keysPage(field).document;
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(row());
+    });
+    assert.equal(field.blurred, 0);
+
+    act(() => root!.unmount());
+
+    assert.equal(field.blurred, 1);
   });
 });

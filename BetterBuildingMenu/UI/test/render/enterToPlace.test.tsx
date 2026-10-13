@@ -24,6 +24,13 @@ const press = (event: KeyEvent) => act(() => page.keydown(event));
 const enter = (target?: unknown) => press({ key: "Enter", target });
 const armed = () => triggers.filter((call) => call.name === "SetCurrentPrefab").map((call) => call.args[0]);
 
+/** The search field, focused, counting its blurs. */
+function focusSearchField() {
+  const field = fakeSearchField();
+  page.document.activeElement = field;
+  return field;
+}
+
 // Two groups, the weaker match first: grouping orders the page by group before
 // relevance, which is exactly when the first row is not the one to arm.
 const groupedPage = (searchText: string, bestMatchId: number | null) => {
@@ -177,6 +184,43 @@ describe("Enter in the catalog", () => {
     rerender();
     down();
     assert.deepEqual(moves(), [1]);
+  });
+
+  it("gives the camera its keys back on Enter from the field, even when Enter arms nothing", () => {
+    groupedPage("", null);
+    typed("");
+    mount();
+    const field = focusSearchField();
+
+    enter(field);
+
+    assert.equal(field.blurred, 1);
+    assert.deepEqual(armed(), []);
+  });
+
+  it("gives the camera its keys back once on Enter from the field that arms", () => {
+    groupedPage("clinic", 1);
+    typed("clinic");
+    mount();
+    const field = focusSearchField();
+
+    enter(field);
+
+    assert.deepEqual(armed(), [1]);
+    assert.equal(field.blurred, 1);
+  });
+
+  it("gives the camera its keys back on any arm, a tile's too", () => {
+    groupedPage("clinic", 1);
+    typed("clinic");
+    mount();
+    const field = focusSearchField();
+    const [results] = root!.root.findAll((node) => typeof node.props.onPlace === "function");
+
+    act(() => results.props.onPlace(entry(2, { name: "Old Clinic" })));
+
+    assert.deepEqual(armed(), [2]);
+    assert.equal(field.blurred, 1);
   });
 
   it("ignores other keys, and lets go of the document when it unmounts", () => {

@@ -213,6 +213,12 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(declarationsOf(TOP_ROW, ".dot").position, "absolute");
   });
 
+  it("rings the search field in the focus ring while it has the keys, and in its plain ring otherwise", () => {
+    // A compound class from the TextInput's own focus: Cohtml has no :focus to lean on here, and no outline.
+    assert.equal(declarationsOf(TOP_ROW, ".field")["box-shadow"], "var(--bbm-fieldRing)");
+    assert.equal(declarationsOf(TOP_ROW, ".field.focused")["box-shadow"], "var(--bbm-focusRing)");
+  });
+
   it("draws the popovers over the top edge's strip, from a bottom offset", () => {
     const popover = declarationsOf("mods/ControlPopover/controlPopover.module.scss", ".popover");
 

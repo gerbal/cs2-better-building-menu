@@ -39,6 +39,11 @@
   box-shadow: var(--bbm-fieldRing);
 }
 
+// While the field has the keys: the look's focus ring in place of its plain one.
+.field.focused {
+  box-shadow: var(--bbm-focusRing);
+}
+
 .glyph {
   flex: 0 0 auto;
   width: $field-glyph;

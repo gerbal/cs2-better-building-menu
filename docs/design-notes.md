@@ -930,6 +930,15 @@ field's.
 **This changes 0.2.x:** in the search field Up and Down now move Enter's target and no longer move the
 caret, and PageUp and PageDown, which did nothing, scroll the list.
 
+**Giving the keys back.** The field blurs on Enter from it, whatever Enter arms, on any arm (the
+catalog's one `armById`), on Escape's last step (see "Escape"), and as the box goes while it has
+focus: the top row blurs it in a layout-effect cleanup, which runs while the field is still on the
+page, so every way out (the close button, a tool that takes the screen, Replace switched off, the
+gamepad hand-off) lets go (`blurSearchField`). A press elsewhere blurs it, as on any page. While the
+field has focus it draws the look's `focusRing` in place of its `fieldRing`, from the game's
+`TextInput`'s own focus and blur. **This changes 0.2.x:** the field kept focus after Enter, so the
+camera keys stayed dead until a press elsewhere; it now lets go of them, and shows when it holds them.
+
 ## Opening on the building's tab
 
 A menu opens where the player was, as the game's own does: a bar press re-arms the menu's last

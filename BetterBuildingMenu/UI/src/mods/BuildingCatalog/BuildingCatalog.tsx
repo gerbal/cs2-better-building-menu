@@ -27,7 +27,7 @@ import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter, pageAnswers } from "domain/buildingSearchRank";
-import { isSearchField } from "mods/TopRow/searchField";
+import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
@@ -206,6 +206,10 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   // Arms a prefab by id, loaded or not: Enter's target can sit past the window.
   const armById = useCallback((id: number): void => {
+    // The keys go back to the camera with the building in hand. See docs/design-notes.md, "The
+    // search field's keys".
+    blurSearchField();
+
     // Placing unmounts the whole asset menu, so this is the last moment the scroll
     // position exists — and the building just chosen is what to come back to.
     setAssetMenuAnchor(anchorKey, id);
@@ -245,11 +249,18 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const pendingEnter = useRef<string | null>(null);
   const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
   onEnter.current = (event) => {
-    if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
+    const fromField = isSearchField(event.target);
+    if (!isEnterForSearch(event.target, fromField)) return;
 
     const decision = enterDecision({ bestMatchId, searchText: pageSearch }, currentSearch ?? "");
     pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
-    if (decision && "arm" in decision) armById(decision.arm);
+    if (decision && "arm" in decision) {
+      armById(decision.arm);
+    } else if (fromField) {
+      // Enter from the field ends the typing, whatever it arms: the camera keys come back. An arm
+      // has already given them back.
+      blurSearchField();
+    }
   };
   useEffect(() => {
     const waiting = pendingEnter.current;
