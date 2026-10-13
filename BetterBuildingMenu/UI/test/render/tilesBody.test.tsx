@@ -64,7 +64,8 @@ describe("the tiles", () => {
     setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Capacity");
     const sorted = render([entry(1, { capacity: 300 })]);
 
-    assert.match(sorted, /<span class="tag"[^>]*>300[^<]*<\/span>/);
+    // The unit word does not fit beside it on a 64 tile, so the whole number stands alone.
+    assert.match(sorted, /<span class="tag"[^>]*>300<\/span>/);
     assert.doesNotMatch(sorted, /<span class="tag"[^>]*>¢/);
     setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "ConstructionCost");
     assert.match(render([entry(1, { capacity: 300 })]), /<span class="tag"[^>]*>¢1[^<]*000<\/span>/);

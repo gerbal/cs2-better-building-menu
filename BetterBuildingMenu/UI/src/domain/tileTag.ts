@@ -74,10 +74,19 @@ export function tileTag(
     return { text, locked };
   }
 
-  // Only money has a short form; anything else is cut by the stylesheet, with an ellipsis.
+  // Money has a short form.
   const money = bySort ? (sortedMetric === "upkeep" ? sortedMetricValue(entry, "upkeep") : null) : locked ? null : entry.constructionCost;
 
-  return typeof money === "number" && Number.isFinite(money) && money !== 0
-    ? { text: formatCompactMoney(money, bySort ? "upkeep" : "cost", separators, entry.costIsPerDistance), locked }
-    : { text, locked };
+  if (typeof money === "number" && Number.isFinite(money) && money !== 0) {
+    return { text: formatCompactMoney(money, bySort ? "upkeep" : "cost", separators, entry.costIsPerDistance), locked };
+  }
+
+  // A sorted value keeps its whole number and drops its unit, which the Sort control names: a cut word
+  // reads as noise. Anything else is cut by the stylesheet, with an ellipsis.
+  return { text: bySort ? leadingNumber(text) ?? text : text, locked };
+}
+
+/** The number a value starts with, digit to digit with its group and decimal marks; null when it starts with none. */
+function leadingNumber(text: string): string | null {
+  return /^-?\d(?:[\d\s.,'’]*\d)?/u.exec(text)?.[0] ?? null;
 }

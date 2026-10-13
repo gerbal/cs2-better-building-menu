@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FALLBACK_SEPARATORS, formatBuildingMetric, formatCapacity } from "../src/domain/assetMenuMetricFormat";
+import { FALLBACK_SEPARATORS, formatBuildingMetric, formatCapacity, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
 import { tagFits, tileTag } from "../src/domain/tileTag";
 
@@ -52,7 +52,8 @@ describe("a tile's tag", () => {
   });
 
   it("says the value sorted by under a sort by a value, as 0.2.x's Grid did, and the cost under any other", () => {
-    const capacity = formatCapacity(400, "ServiceBuildings", "ServiceBuildings_Health", "Hospital", FALLBACK_SEPARATORS);
+    // "400 patients" does not fit a 64 tile, so the number stands alone.
+    const capacity = "400";
 
     assert.deepEqual(tag(row(), 1, "capacity"), { text: capacity, locked: false });
     assert.equal(tag(row(), 1, "upkeep").text, formatBuildingMetric(1_200, "upkeep"));
@@ -62,10 +63,27 @@ describe("a tile's tag", () => {
     assert.deepEqual(tag(row({ isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>), 1, "capacity"), { text: capacity, locked: false });
   });
 
-  it("says a sorted upkeep too wide for the tag in millions, and leaves a figure with no short form to the stylesheet's cut", () => {
+  it("says a sorted upkeep too wide for the tag in millions", () => {
     assert.match(tag(row({ upkeep: 1_500_000 }), 1.3, "upkeep").text, /^¢1\.5M/);
-    const wide = formatCapacity(123_456_789, "ServiceBuildings", "ServiceBuildings_Health", "Hospital", FALLBACK_SEPARATORS);
-    assert.equal(tag(row({ capacity: 123_456_789 }), 1.3, "capacity").text, wide);
+  });
+
+  it("keeps a sorted capacity's whole number and drops its unit where both do not fit, at 100% and 130% text", () => {
+    const school = row({ subCategory: "ServiceBuildings_Education", buildingType: "School", capacity: 1_000 });
+    const whole = formatCapacity(1_000, "ServiceBuildings", "ServiceBuildings_Education", "School", FALLBACK_SEPARATORS);
+
+    for (const scale of [1, 1.3]) {
+      assert.ok(!tagFits(whole, 64, scale), `${whole} at ${scale}`);
+      assert.equal(tag(school, scale, "capacity").text, groupDigits(1_000, FALLBACK_SEPARATORS), `${scale}`);
+    }
+    assert.equal(tag(row({ capacity: 123_456_789 }), 1.3, "capacity").text, groupDigits(123_456_789, FALLBACK_SEPARATORS));
+  });
+
+  it("keeps a sorted value's unit where it fits", () => {
+    const plant = row({ subCategory: "ServiceBuildings_Electricity", buildingType: "PowerPlant", capacity: 400_000 });
+    const whole = formatCapacity(400_000, "ServiceBuildings", "ServiceBuildings_Electricity", "PowerPlant", FALLBACK_SEPARATORS);
+
+    assert.match(whole, /[A-Za-z]/);
+    assert.equal(tag(plant, 1, "capacity").text, whole);
   });
 
   it("says nothing for a building with no cost", () => {
