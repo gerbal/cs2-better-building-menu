@@ -78,3 +78,31 @@
 .chips .clearAll:hover {
   background-color: var(--bbm-ctlOpen);
 }
+
+// On the pane's body, which follows the game's style: the body's inks, plate and ink together. The
+// popover stays dark under every style and keeps the light ink above. Three classes outrank the
+// rules above; the hovers are restated, which they would otherwise lose on a tie.
+.chips.onBody .chip {
+  background-color: var(--bbm-bodyChipBg);
+}
+
+.chips.onBody .chipText {
+  color: var(--bbm-bodyChipText);
+}
+
+.chips.onBody .chipRemove {
+  color: var(--bbm-bodyChipDim);
+}
+
+.chips.onBody .chipRemove:hover {
+  color: var(--bbm-tStateSet);
+}
+
+.chips.onBody .clearAll {
+  background-color: var(--bbm-bodyChipBg);
+  color: var(--bbm-bodyWord);
+}
+
+.chips.onBody .clearAll:hover {
+  background-color: var(--bbm-ctlOpen);
+}

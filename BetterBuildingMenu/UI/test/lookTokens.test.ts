@@ -52,6 +52,8 @@ const INK_ON: Readonly<Record<string, string>> = {
   tWord: "head", tState: "head", tStateSet: "head", tDim: "head", tRead1: "head", tRead2: "head",
   tabCount: "head", tabIcon: "head", amber: "head", tQuery: "fieldBg",
   armText: "arm", armNum: "arm", pillText: "pillBg", tagText: "tagBg",
+  bodyChipText: "bodyChipBg", bodyChipDim: "bodyChipBg", bodyWord: "bodyChipBg",
+  bodyCtlText: "bodyCtl", bodyCtlDim: "bodyCtl",
 };
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */
@@ -84,6 +86,18 @@ describe("the looks' tokens", () => {
         const where = `${selector}: ${ink} on ${surface}`;
         if (turnsLight(map[surface])) assert.ok(styleInk(map[ink]), where);
         else assert.ok(!/--menuText1Normal|--menuText2Normal/.test(map[ink]), where);
+      }
+    }
+  });
+
+  it("follow the game's style with every ink drawn on the body, which the pane draws its chips and summaries on", () => {
+    // The blur is the body's material, not an ink, and the body itself is pinned above.
+    const bodyInks = Object.keys(tokens(STANDARD)).filter((key) => /^body[A-Z]/.test(key) && key !== "bodyBlur");
+
+    assert.ok(bodyInks.length >= 8, `the look declares ${bodyInks.length} body inks`);
+    for (const selector of FOLLOW) {
+      for (const key of bodyInks) {
+        assert.match(tokens(selector)[key], /^var\(--(?:menuPanel\d|menuText\dNormal)\)$/, `${selector} --bbm-${key}`);
       }
     }
   });

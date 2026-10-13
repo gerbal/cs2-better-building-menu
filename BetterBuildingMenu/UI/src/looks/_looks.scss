@@ -91,6 +91,16 @@ $standard: (
   iconSlot: ink(0.07),
   iconSlotRing: inset 0 0 0 1rem ink(0.16),
   chipBg: ink(0.07),
+  // On the body, which a style turns light: the pane's chips and its summaries, whose ink and plate
+  // follow the style together.
+  bodyChipBg: ink(0.07),
+  bodyChipText: ink(0.72),
+  bodyChipDim: ink(0.4),
+  bodyWord: ink(0.55),
+  bodyCtl: rgba(20, 27, 34, 1),
+  bodyCtlHover: rgba(52, 63, 74, 1),
+  bodyCtlText: ink(0.8),
+  bodyCtlDim: ink(0.55),
   seamLocked: rgba(240, 184, 74, 0.55),
   seamElse: rgba(120, 204, 236, 0.7),
   track: ink(0.08),
@@ -129,6 +139,14 @@ $standard-follow: (
   entMark: var(--accentColorLight),
   focusRing: inset 0 0 0 1.5rem var(--accentColorNormal),
   ctlOpen: var(--accentColorDark),
+  bodyChipBg: var(--menuPanel1),
+  bodyChipText: var(--menuText1Normal),
+  bodyChipDim: var(--menuText2Normal),
+  bodyWord: var(--menuText1Normal),
+  bodyCtl: var(--menuPanel1),
+  bodyCtlHover: var(--menuPanel3),
+  bodyCtlText: var(--menuText1Normal),
+  bodyCtlDim: var(--menuText2Normal),
 );
 
 @mixin tokens($map) {

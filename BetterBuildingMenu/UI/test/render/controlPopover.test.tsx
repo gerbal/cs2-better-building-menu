@@ -174,6 +174,8 @@ describe("a control's popover", () => {
 
     assert.equal(popover().findAll((node) => node.type === "div" && node.props.className === "rail").length, 1);
     assert.equal(rows().filter((node) => node.props["aria-label"] === "Remove European").length, 1);
+    // On the popover's own dark surface, in its light ink.
+    assert.deepEqual(popover().findAll((node) => node.type === "div" && classes(node).includes("chips")).map(classes), [["chips", "underRail"]]);
     act(() => popover().findAllByType(DropdownItem).find((item) => item.props.value === "American")!.props.onChange());
 
     assert.deepEqual(sent("ToggleAssetMenuFacet"), [["theme", "American"]]);
@@ -222,6 +224,8 @@ describe("a control's popover", () => {
     // Beside the pane on 16:9 only the first three fit; the stored 5 stays lit among the dimmed.
     assert.deepEqual(classed("dim"), ["4", "5"]);
     assert.deepEqual(classed("lit"), ["5"]);
+    const notes = widthList()[0].findAllByType(PickerRow).map((row) => [row.props.label, row.props.note]);
+    assert.deepEqual(notes, [["1", "default"], ["2", undefined], ["3", undefined], ["4", "covers the chirper"], ["5", "covers the chirper"]]);
     act(() => steps[2].props.onSelect());
 
     assert.deepEqual(sent("SetAssetMenuWidthStep"), [[3]]);

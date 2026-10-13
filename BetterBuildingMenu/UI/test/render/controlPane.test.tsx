@@ -76,6 +76,8 @@ describe("the control pane", () => {
     assert.match(html, /class="rail"/);
     assert.match(html, /class="rowLabel">Active</);
     assert.match(html, /aria-label="Remove Hospital"/);
+    // On the pane's body, which follows the game's style, in the body's inks.
+    assert.match(html, /class="chips onBody"/);
   });
 
   it("draws no chip and no Active row while nothing narrows the set, and none for the menu itself", () => {

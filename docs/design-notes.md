@@ -460,19 +460,25 @@ control sits over it (`topRowRightInset`).
   left: the five steps, the stored one lit, "default" beside 1 and "covers the chirper" beside 4
   and 5; beside the pane the steps that do not fit are dimmed, and a stored one among them draws as
   the widest that fits. A click sends one `SetAssetMenuWidthStep` and keeps both lists open.
-- **The pane** draws the same four lists: Filters inline, the chips under them in their Active
-  row, and Group by, Sort by and View as summaries that open theirs over the pane, on the popovers'
-  surface. While a search is typed, its caption names it ("Results for road"). A summary cuts its
-  value inside itself, so a row's label is whole at every text size. Its root carries the look's
-  class (`useLookRoot`), since custom properties reach only a root's own children, and the pane
-  sits beside the box, not inside it; its own surface is the look's `body`, the box's beside it.
-  **This changes 0.2.x:** the pane's lists draw their rows in the look's ink, 24 rem tall, the lit
-  one in the game's selected colour with white text, on the popovers' surface, and its chips in the
-  look's ink; the sort's summary names its direction (▲ or ▼); in the game's default style the pane
-  draws the look's dark panel, without the game's gradient. The pane draws no scope chips (the
-  search reaches other menus), no Reset menu (Options' Reset the build menu… puts everything back)
-  and no row of view buttons (VIEW carries the views, on the top row and in the pane), and the
-  triggers `SetAssetMenu`, `ClearAssetMenuScope` and `ResetAssetMenu` are gone.
+- **The pane** draws the same four lists: Filters inline, the chips under them in their Active row,
+  and Group by, Sort by and View as summaries that open theirs over the pane, on the popovers'
+  surface. One of its lists is open at a time, and a press outside leaves it open, since the pane's
+  lists are not popovers. While a search is typed, its caption names it ("Results for road"). A
+  summary cuts its value inside itself, so a row's label is whole at every text size. Its root
+  carries the look's class (`useLookRoot`), since custom properties reach only a root's own
+  children, and the pane sits beside the box, not inside it; its own surface is the look's `body`,
+  the box's beside it. The chips and the summaries sit on that body, which Bright blue turns light,
+  so they take the body's inks (`bodyChip*`, `bodyWord`, `bodyCtl*`), whose plates and text follow
+  the style together: under Bright blue and Dark grey-orange the game's menu plates and its text.
+  The FILTER popover stays dark under every style, so its chips keep the light ink. **This changes
+  0.2.x:** the pane's surface draws without the game's gradient in every style, and in the game's
+  default style it is the look's dark panel; its lists draw their rows in the look's ink, 24 rem
+  tall, the lit one in the game's selected colour with white text, on the popovers' surface; its
+  chips draw in the body's inks, and Clear filters loses the accent colour; the sort's summary names
+  its direction (▲ or ▼); two of its lists can no longer be open together. The pane draws no scope
+  chips (the search reaches other menus), no Reset menu (Options' Reset the build menu… puts
+  everything back) and no row of view buttons (VIEW carries the views, on the top row and in the
+  pane), and the triggers `SetAssetMenu`, `ClearAssetMenuScope` and `ResetAssetMenu` are gone.
 
 ## The top edge
 

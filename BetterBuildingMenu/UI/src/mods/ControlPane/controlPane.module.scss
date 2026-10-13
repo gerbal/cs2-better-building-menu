@@ -99,15 +99,15 @@
   height: 29rem;
   padding: 0 4rem 0 8rem;
   border-radius: 4rem;
-  // Vanilla's own control fill, the same the filter rail's toggles take from
-  // the Theme row opposite, so the two banks read as one idiom.
-  background-color: rgba(20, 27, 34, 1);
-  color: var(--menuText1Normal);
+  // Vanilla's own control fill, the same the filter rail's toggles take from the Theme row
+  // opposite, so the two banks read as one idiom. Fill and ink follow the style together.
+  background-color: var(--bbm-bodyCtl);
+  color: var(--bbm-bodyCtlText);
   font-size: var(--fontSizeM);
 }
 
 .pickerSummary:hover {
-  background-color: rgba(52, 63, 74, 1);
+  background-color: var(--bbm-bodyCtlHover);
 }
 
 // Cut inside the summary, never over the row's label. A flex item, so no text-overflow: Cohtml
@@ -122,7 +122,7 @@
 .caret {
   flex: 0 0 auto;
   padding-left: 4rem;
-  color: var(--menuText2Normal);
+  color: var(--bbm-bodyCtlDim);
 }
 
 // Opens UPWARD, over the pane. The pane is bottom-aligned against the bottom
@@ -143,6 +143,3 @@
 .rowChips {
   align-items: flex-start;
 }
-
-
-

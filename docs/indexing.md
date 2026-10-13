@@ -147,8 +147,9 @@ only when the game regroups without recreating the assets. A recreated category 
 `ReplacePrefabSystem` does not move its members to the new entity, so the new category starts
 empty, and vanilla, which draws no empty category, hides the tab and its assets. The walk agrees
 and places none of them, so the tab counts nothing. The tab row draws only the tabs the menu
-fills (`presentCategories`), so it hides it at the same pass. Re-reading the tabs on a partial pass is not worth it: a category removed late in the frame
-would make its menu's read fail on every partial pass rather than on the next full one.
+fills (`presentCategories`), so it hides it at the same pass. Re-reading the tabs on a partial
+pass is not worth it: a category removed late in the frame would make its menu's read fail on
+every partial pass rather than on the next full one.
 
 ## A pass that fails
 

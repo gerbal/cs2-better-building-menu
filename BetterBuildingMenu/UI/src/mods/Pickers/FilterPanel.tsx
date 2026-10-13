@@ -72,8 +72,11 @@ function useFilterRouting(): { toggle: (groupId: string, optionId: string) => vo
   return { toggle, remove };
 }
 
-/** The record of what the filters did: a chip for each filter on, each removable, and Clear filters once two are. */
-export const FilterChips = ({ className }: { className?: string }) => {
+/**
+ * The record of what the filters did: a chip for each filter on, each removable, and Clear filters
+ * once two are. On the pane's body, which follows the game's style, they take the body's inks.
+ */
+export const FilterChips = ({ className, onBody = false }: { className?: string; onBody?: boolean }) => {
   const { translate } = useLocalization();
   const chips = useFilterChips();
   const { remove } = useFilterRouting();
@@ -85,7 +88,7 @@ export const FilterChips = ({ className }: { className?: string }) => {
   const clearLabel = label("Tooltip.LABEL[BetterBuildingMenu.ClearFilters]", "Clear filters");
 
   return (
-    <div className={classNames(styles.chips, className)}>
+    <div className={classNames(styles.chips, onBody && styles.onBody, className)}>
       {chips.map((chip) => (
         <div className={styles.chip} key={chip.id}>
           <span className={styles.chipText}>{chip.label}</span>

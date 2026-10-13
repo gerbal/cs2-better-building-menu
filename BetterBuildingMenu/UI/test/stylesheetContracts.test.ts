@@ -338,6 +338,30 @@ describe("Asset menu stylesheet contracts", () => {
     }
   });
 
+  it("draws the pane's chips and summaries in the body's inks, which follow the game's style, and the popover's chips in its own", () => {
+    // The pane's surface is the look's body, which Bright blue turns light; the popover stays dark.
+    const chip = (onBody: boolean, rest: string[][], prop: string) =>
+      winnerOn(FILTER_PANEL, [onBody ? ["chips", "onBody"] : ["chips"], ...rest], prop)?.value;
+    const cases: [string[][], string, string, string][] = [
+      [[["chip"]], "background-color", "bodyChipBg", "chipBg"],
+      [[["chip"], ["chipText"]], "color", "bodyChipText", "tState"],
+      [[["chip"], ["chipRemove"]], "color", "bodyChipDim", "tDim"],
+      [[["clearAll"]], "color", "bodyWord", "tWord"],
+      [[["clearAll"]], "background-color", "bodyChipBg", "chipBg"],
+    ];
+
+    for (const [rest, prop, body, popover] of cases) {
+      const where = `${rest.map((classes) => classes.join(".")).join(" ")} ${prop}`;
+      assert.equal(chip(true, rest, prop), `var(--bbm-${body})`, where);
+      assert.equal(chip(false, rest, prop), `var(--bbm-${popover})`, where);
+    }
+
+    assert.equal(pane(".pickerSummary")["background-color"], "var(--bbm-bodyCtl)");
+    assert.equal(pane(".pickerSummary").color, "var(--bbm-bodyCtlText)");
+    assert.equal(pane(".pickerSummary:hover")["background-color"], "var(--bbm-bodyCtlHover)");
+    assert.equal(pane(".caret").color, "var(--bbm-bodyCtlDim)");
+  });
+
   it("opens the pane's menus upward, away from the bottom bar", () => {
     // The pane is bottom-aligned against the bottom bar, so a menu growing
     // downward opens off the screen.

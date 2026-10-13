@@ -86,7 +86,7 @@ export const ControlPane = memo(function ControlPane({ open, onToggle, onClose }
         <div className={classNames(styles.row, styles.rowChips)}>
           <span className={styles.rowLabel}>{label("Tooltip.LABEL[BetterBuildingMenu.ActiveFilters]", "Active")}</span>
           <div className={styles.rowValue}>
-            <FilterChips />
+            <FilterChips onBody />
           </div>
         </div>
       )}
