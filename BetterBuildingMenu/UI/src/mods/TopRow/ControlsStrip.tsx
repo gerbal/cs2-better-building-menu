@@ -3,7 +3,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 
 import filterGlyph from "images/filter.svg";
 import groupGlyph from "images/group.svg";
@@ -41,7 +41,11 @@ export function useControlCells(): ControlCell[] {
   // set away: a menu that draws no groups unless picked opens on "No groups".
   const menu = useValue(AssetMenu$);
   const groupPick = menuPickOf(useValue(AssetMenuGroups$), menu);
-  const groupDefault = menusDrawingNoGroups(useOnAllInput()).includes(menu) ? "none" : "";
+  const onAll = useOnAllInput();
+  // Memoized as the watcher memoizes it: the set counts every menu, and the strip draws far more often
+  // than the set moves.
+  const drawingNoGroups = useMemo(() => menusDrawingNoGroups(onAll), [onAll]);
+  const groupDefault = drawingNoGroups.includes(menu) ? "none" : "";
   const groupPicked = groupPick !== "" && groupPick !== groupDefault;
   const none = label("Tooltip.LABEL[BetterBuildingMenu.FilterNone]", "None");
   const filtersOn = (count: number) => label("Tooltip.LABEL[BetterBuildingMenu.FiltersOn]", "{0} on").replace("{0}", String(count));
