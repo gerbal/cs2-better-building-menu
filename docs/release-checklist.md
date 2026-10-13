@@ -57,18 +57,23 @@ On a developed save:
    `0 missing from the index`, and the `[MENU-AUDIT]` census line does not end
    in `NOT CLEAN`.
 3. **Menus.** Open Roads, Zones, Landscaping and a service menu. For each:
-   - the asset menu replaces the grid, with its tabs along its bottom edge, each with its
+   - the asset menu replaces the grid where the game's own menu sits, with the search, Sort,
+     Filter, Group, View and close along its top edge and its tabs along its bottom edge, each with its
      count, on one line (at large text the range stays and the last tabs clip), and the menu
      208 tall at its Width step;
    - tiles draw their icons, with no placeholders;
    - a search finds an asset, and Enter arms the best match;
    - a long menu offers Load more, and a list past 2,000 rows says how to narrow it;
    - every menu opens at the same width, the stored Width step.
-4. **Views.** Switch through grid, list, cards and table, drag the
-   top edge, and drag the right edge: it settles on a width.
-5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu.
+4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
+   time, and a click elsewhere closes it. Switch through Cards, List, Grid and Table in View,
+   pick a Width there, drag the top edge, and drag the right edge: it settles on a width.
+5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu. Arm a
+   terraforming brush from Landscaping: the menu stays, and answers a search.
 6. **Options.** Flip each option under Options › Better Building Menu with a
-   menu open, and see it take effect. With Replace the vanilla build menu
+   menu open, and see it take effect;
+   with Control pane on, the pane shows the same Sort, Filter, Group and View, and View › More
+   options… opens this page. With Replace the vanilla build menu
    off, every other row is greyed out and says why. Reset the build menu…
    asks first, then puts the options, the width, the height and the view
    back.

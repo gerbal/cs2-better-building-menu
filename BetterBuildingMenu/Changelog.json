@@ -7,8 +7,13 @@
       {
         "Name": "Changes",
         "Changes": [
-          "The build menu opens at the size of the game's own, with the control pane beside it. Drag its right edge to widen it: the edge settles on one of five widths, and every menu opens at the same one.",
+          "The build menu opens where the game's own does, at its size. Pick a Width under Options › Better Building Menu, or drag the menu's right edge: it settles on one of five widths, and every menu opens at the same one.",
           "If you used an earlier version, the menu opens at the width nearest the one you had.",
+          "The search, Sort, Filter, Group and View sit along the menu's top edge, with close. Each control opens its list above the menu, and a click elsewhere closes it. View also offers Width and More options…, which opens this mod's options.",
+          "The search box names the building Enter will place, or says All matches locked.",
+          "The control pane is now an option, Control pane, under Options › Better Building Menu, with the same Sort, Filter, Group and View. It starts off; if you used an earlier version, it stays as you had it.",
+          "Pick the sort that is already chosen to reverse it. Group's first choices are By tab and No groups.",
+          "While a terraforming brush is in hand, the menu stays open and keeps answering your search and filters, as the game's own menu does.",
           "Enter in the search arms the best match, wherever it sits in the list and however the list is sorted.",
           "A sort's first click puts the best first: the most Capacity, Workers, Households, Water capacity or Sewage capacity, the lowest Cost or Upkeep. Equal values go to the cheaper building.",
           "Sort by Households, Water capacity or Sewage capacity.",
@@ -16,6 +21,7 @@
           "While Replace the vanilla build menu is off, the other options are greyed out and say why.",
           "With a controller, the game's own build menu shows. Move the mouse and this menu comes back, on the same menu.",
           "The menu's tabs sit along its bottom edge, next to the toolbar: All with the menu's icon, then each tab's icon over its count. The counts follow your filters and your search, and a tab they empty stays in its place.",
+          "At the right end of the tabs, the tab you are on sits over how many buildings the list holds of how many match. The end of the list shows only Load more, or, at 2,000, how to narrow it.",
           "Education's school levels are named chips beside the Education tab.",
           "The menu follows the game's Interface style and Interface transparency."
         ]
