@@ -64,6 +64,8 @@ On a developed save:
    - tiles draw their icons, with no placeholders;
    - a search finds an asset, and Enter arms the best match;
    - a long menu offers Load more, and a list past 2,000 rows says how to narrow it;
+   - pick a building, open another menu, then this one again: it opens on that building's tab
+     with the building at the top of the list; pick a sort, and the list goes back to its top;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
    time, and a click elsewhere closes it. Switch through Cards, List, Grid and Table in View,
