@@ -214,6 +214,25 @@ namespace BetterBuildingMenu.Domain
 		public AssetMenuState KeepEnterStep(int served) =>
 			Query.EnterStep == served ? this : this with { Query = Query with { EnterStep = served } };
 
+		/// <summary>How many buildings one screen of the drawn body holds, as the UI says: the window grows to reach past it.</summary>
+		/// <remarks>
+		/// Not a start, and no narrowing: the list stays where it is and only grows, so a tall body of small
+		/// tiles has rows below its screen to scroll to. See docs/design-notes.md, "The bodies".
+		/// </remarks>
+		public AssetMenuState SetScreenSlots(int slots)
+		{
+			var next = Math.Min(Math.Max(0, slots), BuildingCatalogQuery.MaxLimit);
+
+			if (next == Query.ScreenSlots)
+			{
+				return this;
+			}
+
+			var screened = Query with { ScreenSlots = next };
+
+			return this with { Query = screened with { Limit = Math.Max(Query.Limit, screened.FirstWindow) } };
+		}
+
 		// --- Narrowing -----------------------------------------------------------
 
 		public AssetMenuState ToggleFacet(string facetId, string optionId)
@@ -351,7 +370,7 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>Navigating or reordering starts the list over, even onto what is already shown, and Enter's target with it.</summary>
 		private static BuildingCatalogQuery ResetWindow(BuildingCatalogQuery query) =>
-			query with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit, EnterStep = 0 };
+			query with { Offset = 0, Limit = query.FirstWindow, EnterStep = 0 };
 
 		/// <summary>A narrowing that changed the result set starts the window over; one that did not keeps it.</summary>
 		/// <remarks>

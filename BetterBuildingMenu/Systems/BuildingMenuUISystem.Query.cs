@@ -137,6 +137,9 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_assetMenu.LoadMoreTo(requestedLimit));
 
+		/// <summary>How many buildings one screen of the drawn body holds: the window reaches past it.</summary>
+		private void SetCatalogScreen(int slots) => Apply(_assetMenu.SetScreenSlots(slots));
+
 		/// <summary>Up or Down in the search field: Enter's target a row that can be placed further down, or up.</summary>
 		private void MoveEnterTarget(int direction) => Apply(_assetMenu.MoveEnterTarget(direction));
 

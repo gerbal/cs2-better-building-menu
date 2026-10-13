@@ -4,6 +4,7 @@
 // sheet with rules would load them ahead of the components' own sheets.
 :export {
   paneTotal: $pane-width + $pane-gap;
+  bodySideMargin: $body-side-margin;
   handleHeight: $handle-height;
   widthHandleWidth: $width-handle-width;
   widthHandleReach: $width-handle-reach;

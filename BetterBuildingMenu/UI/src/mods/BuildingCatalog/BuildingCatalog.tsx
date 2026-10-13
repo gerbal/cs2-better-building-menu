@@ -10,12 +10,15 @@ import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter, pageAnswers } from "domain/buildingSearchRank";
 import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
+import { screenSlots } from "domain/bodyGeometry";
+import { setCatalogScreenCommand } from "domain/buildingCatalogContracts";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchorKey, setAssetMenuAnchor } from "domain/assetMenuViewStore";
 import { useMenuBody } from "mods/useMenuBody";
 import { GroupedResults } from "mods/GroupedResults/GroupedResults";
 import { type GroupDimensionId } from "domain/buildingGroups";
 import { useCatalogWindow } from "./useCatalogWindow";
+import { useBodyGrid } from "./useBodyGrid";
 import { useScrollAnchor } from "./useScrollAnchor";
 import { useSearchFieldKeys } from "./useSearchFieldKeys";
 import {
@@ -40,6 +43,10 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // docs/design-notes.md, "The bodies".
   const body = useMenuBody().drawn;
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
+  // Where the body draws each building, and so how many one screen holds, which C#'s window reaches past.
+  const grid = useBodyGrid(body);
+  const slots = grid === null ? 0 : screenSlots(grid);
+  useEffect(() => send(setCatalogScreenCommand(slots)), [slots]);
 
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.

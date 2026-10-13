@@ -959,3 +959,87 @@ public sealed class SessionSortsTests
         Assert.Equal(MenuMemory.Defaults, sorts.For(null, string.Empty));
     }
 }
+
+/// <summary>The window holds more than a screen of the drawn body, so a tall body of small tiles always has rows to scroll to.</summary>
+public sealed class AssetMenuScreenTests
+{
+    private static readonly MenuOpening OnHighways = new("RoadsHighways", -1, 4206);
+
+    [Fact]
+    public void AScreenOfUnderHalfAStepKeepsTheStepAsTheWindow()
+    {
+        var screened = AssetMenuState.Initial.SetScreenSlots(20);
+
+        Assert.Equal(20, screened.Query.ScreenSlots);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, screened.Query.Limit);
+    }
+
+    // Binding: 22 columns of 64-rem tiles over a body dragged to 960 rem hold 308 a screen.
+    [Fact]
+    public void ATallScreenOfSmallTilesGrowsTheWindowToTwoScreens()
+    {
+        var screened = AssetMenuState.Initial.SetScreenSlots(308);
+
+        Assert.Equal(616, screened.Query.Limit);
+        Assert.Equal(AssetMenuState.Initial.ListStart, screened.ListStart);
+    }
+
+    [Fact]
+    public void AnAnchoredStartReachesTwoScreensPastItsRow()
+    {
+        var opened = AssetMenuState.Initial.SetScreenSlots(308).OpenMenu("Roads", _ => OnHighways);
+
+        Assert.Equal(150 + 1 + 616, opened.Query.CoveringAnchor(150).Limit);
+        Assert.Equal(616, opened.Query.Limit);
+    }
+
+    [Fact]
+    public void ANarrowingRestartsAtTheScreensFirstWindow()
+    {
+        var grown = AssetMenuState.Initial.SetScreenSlots(308).LoadMore().LoadMore();
+
+        var narrowed = grown.SetMetricRange("cost", "1000", "5000");
+
+        Assert.Equal(616, narrowed.Query.Limit);
+        Assert.Equal(308, narrowed.Query.ScreenSlots);
+    }
+
+    [Fact]
+    public void TheScreenIsNoPredicate()
+    {
+        var query = new BuildingCatalogQuery(SearchText: "lane", Limit: 300);
+
+        var screened = query with { ScreenSlots = 120 };
+
+        Assert.Same(screened, screened.ResetWindowIfPredicatesChanged(query));
+    }
+
+    [Fact]
+    public void AScreenNeverShrinksAGrownWindowAndAnUnchangedOneChangesNothing()
+    {
+        var grown = AssetMenuState.Initial.SetScreenSlots(20).LoadMoreTo(200).LoadMoreTo(300);
+
+        Assert.Equal(300, grown.SetScreenSlots(60).Query.Limit);
+        Assert.Same(grown, grown.SetScreenSlots(20));
+    }
+
+    [Theory]
+    [InlineData(-5, 0, 100)]
+    [InlineData(5000, 2000, 2000)]
+    public void AScreenOutsideTheWindowsRangeReadsAsTheNearerEnd(int slots, int kept, int limit)
+    {
+        var screened = AssetMenuState.Initial.SetScreenSlots(slots);
+
+        Assert.Equal(kept, screened.Query.ScreenSlots);
+        Assert.Equal(limit, screened.Query.Limit);
+    }
+
+    [Fact]
+    public void TheScreenReachesTheStateThroughItsTrigger()
+    {
+        Assert.Contains(
+            "private void SetCatalogScreen(int slots) => Apply(_assetMenu.SetScreenSlots(slots));",
+            ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"));
+        Assert.Contains("CreateTrigger<int>(\"SetCatalogScreen\", SetCatalogScreen);", ModSource.Text("Systems/BuildingMenuUISystem.cs"));
+    }
+}

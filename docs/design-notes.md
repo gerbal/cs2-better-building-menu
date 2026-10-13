@@ -1038,6 +1038,26 @@ tiles get a body of their own, Grid's drawing stands in for them, and `stripRedu
 tells look-alike names apart on Grid's name line, stays with it; it leaves when Grid's drawing does. The
 bodies' label plates and name planner derive what each did again.
 
+**Slots.** The list and the tiles place each building from its index alone (`bodyGrid`,
+`slotPosition`): left to right, then down, a cell and a 2 rem gap apart, inside the box less 8 rem
+each side. Cohtml has no CSS grid, and a slot is an exact place. Wider boxes add columns, never lines:
+the lines are the body's height.
+
+- **The list at 100% text:** plates at least 171 rem wide, four across the game's own 706, 27.25 tall
+  (the List plate height knob), five lines: 20 a screen. At the five 16:9 Width steps, 4 / 5 / 6 / 7 /
+  8 across.
+- **The list above 100% text,** by At large text: More buildings, one-line plates 22.375 tall and at
+  least 228 wide, 3 × 6 = 18; Whole names, two-line plates 34.56 tall, 3 × 4 = 12.
+- **The tiles:** Tile size square, ten across the game's own box from 16 rem in at 64, two lines: 20.
+  13 / 16 / 19 / 22 across at the wider steps; 68 gives 9 × 2, and 72 one line of 9.
+
+**The window holds a screen.** The UI tells C# how many buildings one screen of the drawn body holds
+(`SetCatalogScreen`); the cards, which pack their own rows, say 0. The window reaches two screens past
+its first row where a screen holds more than half a step, a step otherwise (`BuildingCatalogQuery.Reach`):
+a fresh result's first window, and an anchored start's from its row. So a body dragged tall with small
+tiles (22 × 14 = 308 a screen) always has rows below its screen to scroll to, and the poll that loads
+more can see the bottom coming. A screen is no predicate and no start: it only grows the window.
+
 **This changes 0.2.x:** one view, picked in VIEW, drew every menu, and every session opened in Cards
 (0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid
 and Table are gone, Grid's place taken by Tiles and Table's by List.

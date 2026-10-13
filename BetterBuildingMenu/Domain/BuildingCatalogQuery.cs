@@ -61,7 +61,11 @@ namespace BetterBuildingMenu.Domain
 		// How many rows that can be placed Enter's target sits past the best match, in display order;
 		// negative is up the list. Up and Down move it, and any new result puts it back at 0.
 		// See docs/design-notes.md, "The search field's keys".
-		int EnterStep = 0)
+		int EnterStep = 0,
+		// How many buildings one screen of the drawn body holds, which the UI says; 0 before it has. The
+		// window always holds more than a screen, so the list can scroll to load more. Not a predicate.
+		// See docs/design-notes.md, "The bodies".
+		int ScreenSlots = 0)
 	{
 		/// <summary>
 		/// The sort fields the picker offers, in its order.
@@ -103,6 +107,15 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>How much one Load more adds to the window.</summary>
 		public const int WindowStep = 100;
 
+		/// <summary>
+		/// How far a window reaches past its first row: a step, or two screens of the drawn body where a
+		/// screen holds more than half a step, so the rows always run past the screen's foot.
+		/// </summary>
+		public int Reach => Math.Max(WindowStep, 2 * Math.Max(0, ScreenSlots));
+
+		/// <summary>The window a fresh result starts at: <see cref="Reach"/>, up to the ceiling.</summary>
+		public int FirstWindow => Math.Min(MaxLimit, Math.Max(DefaultLimit, Reach));
+
 		/// <summary>How many rows this window holds, clamped to <see cref="MaxLimit"/>.</summary>
 		public int EffectiveLimit => Limit switch
 		{
@@ -112,9 +125,9 @@ namespace BetterBuildingMenu.Domain
 		};
 
 		/// <summary>
-		/// This query with its window grown to hold the row at <paramref name="anchorIndex"/> and a step of
-		/// rows after it, so the row can sit on the list's first line in any body; itself when the window
-		/// already does or there is no such row. Up to the ceiling, from the first row.
+		/// This query with its window grown to hold the row at <paramref name="anchorIndex"/> and a
+		/// <see cref="Reach"/> of rows after it, so the row can sit on the list's first line in any body;
+		/// itself when the window already does or there is no such row. Up to the ceiling, from the first row.
 		/// </summary>
 		/// <remarks>A row at or past the ceiling no window can hold, so it grows nothing and the list starts at its top.</remarks>
 		public BuildingCatalogQuery CoveringAnchor(int anchorIndex)
@@ -124,7 +137,7 @@ namespace BetterBuildingMenu.Domain
 				return this;
 			}
 
-			var holding = Math.Min(anchorIndex + 1 + WindowStep, MaxLimit);
+			var holding = Math.Min(anchorIndex + 1 + Reach, MaxLimit);
 
 			return holding <= EffectiveLimit ? this : this with { Limit = holding };
 		}
@@ -141,10 +154,10 @@ namespace BetterBuildingMenu.Domain
 		/// window or the target moved.
 		/// </summary>
 		/// <remarks>
-		/// A fresh predicate is a fresh set, so it restarts at <see cref="DefaultLimit"/>, and a step
+		/// A fresh predicate is a fresh set, so it restarts at <see cref="FirstWindow"/>, and a step
 		/// counted over the old set means nothing in it. Whole queries are compared rather than named
-		/// fields, so a new predicate is covered by default; Offset, Limit and EnterStep are masked out
-		/// so Load more and the keys survive.
+		/// fields, so a new predicate is covered by default; Offset, Limit, EnterStep and ScreenSlots are
+		/// masked out so Load more, the keys and the body's screen survive.
 		/// </remarks>
 		public BuildingCatalogQuery ResetWindowIfPredicatesChanged(BuildingCatalogQuery previous)
 		{
@@ -153,10 +166,10 @@ namespace BetterBuildingMenu.Domain
 				return this;
 			}
 
-			return (this with { Offset = 0, Limit = DefaultLimit, EnterStep = 0 })
-				== (previous with { Offset = 0, Limit = DefaultLimit, EnterStep = 0 })
+			return (this with { Offset = 0, Limit = DefaultLimit, EnterStep = 0, ScreenSlots = 0 })
+				== (previous with { Offset = 0, Limit = DefaultLimit, EnterStep = 0, ScreenSlots = 0 })
 					? this
-					: this with { Offset = 0, Limit = DefaultLimit, EnterStep = 0 };
+					: this with { Offset = 0, Limit = FirstWindow, EnterStep = 0 };
 		}
 	}
 }

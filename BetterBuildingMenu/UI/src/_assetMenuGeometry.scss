@@ -3,6 +3,9 @@
 // nothing extra. domain/assetMenuLayout.module.scss exports the ones the
 // arithmetic reads.
 
+// The bodies' side margin, each side: the slots are the box less these.
+$body-side-margin: 8rem;
+
 // The control plane's width, a REM value matching a column measured in PIXELS:
 // the pixel number written as rem draws two thirds of it.
 $pane-width: 379rem;

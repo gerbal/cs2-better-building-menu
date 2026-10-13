@@ -91,6 +91,8 @@ namespace BetterBuildingMenu.Systems
 		// The text those picks were parsed from, so a settings apply that left them alone pushes nothing.
 		private string? _publishedMenuViews;
 		private ValueBindingHelper<string> _AssetMenuDefaultView = null!;
+		// Above 100% text, the list's form: more buildings, or whole names.
+		private ValueBindingHelper<string> _AssetMenuAtLargeText = null!;
 		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
 		private ValueBindingHelper<TuningValues> _AssetMenuTuning = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
@@ -207,6 +209,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuViews = CreateBinding("AssetMenuViews", BodyViews.PicksOf(Mod.Settings.MenuViews));
 			_publishedMenuViews = Mod.Settings.MenuViews;
 			_AssetMenuDefaultView = CreateBinding("AssetMenuDefaultView", BodyViews.SanitizeDefault(Mod.Settings.DefaultView));
+			_AssetMenuAtLargeText = CreateBinding("AssetMenuAtLargeText", LargeText.Sanitize(Mod.Settings.AtLargeText));
 			// The open menu's own VIEW, from the VIEW list; "" goes back to Default view.
 			CreateTrigger<string>("SetAssetMenuView", SetAssetMenuView);
 			_AssetMenuTuning = CreateBinding("AssetMenuTuning", CurrentTuning());
@@ -288,6 +291,8 @@ namespace BetterBuildingMenu.Systems
 			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 			// Up and Down in the search field move Enter's target; the page says where it stops.
 			CreateTrigger<int>("MoveEnterTarget", MoveEnterTarget);
+			// How many buildings one screen of the drawn body holds, so the window reaches past it.
+			CreateTrigger<int>("SetCatalogScreen", SetCatalogScreen);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);
@@ -362,6 +367,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuWidthStep.Value = WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep);
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);
+			_AssetMenuAtLargeText.Value = LargeText.Sanitize(Mod.Settings.AtLargeText);
 			_AssetMenuTuning.Value = CurrentTuning();
 			if (!string.Equals(_publishedMenuViews, Mod.Settings.MenuViews, StringComparison.Ordinal))
 			{

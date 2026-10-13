@@ -74,6 +74,8 @@ export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", 
 export const AssetMenuViews$ = bindValue<MenuPick[]>(mod.id, "AssetMenuViews", []);
 /** Default view: "auto", the look's rule per menu, or one body for every menu without a pick. */
 export const AssetMenuDefaultView$ = bindValue<string>(mod.id, "AssetMenuDefaultView", "auto");
+/** Above 100% text: "moreBuildings", the list keeps more with names shortened, or "wholeNames". */
+export const AssetMenuAtLargeText$ = bindValue<string>(mod.id, "AssetMenuAtLargeText", "moreBuildings");
 /** What the look's Auto rule reads of every menu, counted over the whole menu once per index generation. */
 export const MenuShares$ = bindValue<MenuShare[]>(mod.id, "MenuShares", []);
 
@@ -118,7 +120,8 @@ export const SHIPPED_TUNING: Required<AssetMenuTuning> = {
 };
 
 export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", SHIPPED_TUNING);
-export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
+/** Tile size, the Tiles view's tile side: 64, as it ships, until C# answers. */
+export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 64);
 /** True while the toolbar's open menu is one the asset menu takes over. */
 export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);
 /** The mod's replace-vanilla-menus setting: one switch for both pickers. */

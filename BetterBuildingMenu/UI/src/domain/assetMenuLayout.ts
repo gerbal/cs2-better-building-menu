@@ -21,6 +21,9 @@ function sheetRem(name: string): number {
  */
 export const CONTROL_PANE_TOTAL = sheetRem("paneTotal");
 
+/** The bodies' side margin, each side: the slots are the box less these. */
+export const BODY_SIDE_MARGIN = sheetRem("bodySideMargin");
+
 /** The figures a row can state and sort by. */
 export type AssetMenuMetric = "cost" | "upkeep" | "workers" | "capacity" | "lot" | "level" | "parking";
 

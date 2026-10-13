@@ -89,6 +89,16 @@ namespace BetterBuildingMenu.Tests
 			Assert.All(largeText, value => Assert.Contains(value, Tuning.AutoLargeTextValues));
 		}
 
+		[Fact]
+		public void TheSlotsReadAtLargeTextByTheValuesCSharpStores()
+		{
+			var geometry = ModSource.Text("UI/src/domain/bodyGeometry.ts");
+			var read = Regex.Matches(geometry, "atLargeText === \"(\\w+)\"").Select(match => match.Groups[1].Value).ToList();
+
+			Assert.NotEmpty(read);
+			Assert.All(read, value => Assert.Contains(value, LargeText.Values));
+		}
+
 		[Theory]
 		[InlineData("moreBuildings", "moreBuildings")]
 		[InlineData("wholeNames", "wholeNames")]
@@ -148,6 +158,15 @@ namespace BetterBuildingMenu.Tests
 					nameof(BetterBuildingMenuSettings.ResetBuildMenu),
 				},
 				order);
+		}
+
+		[Fact]
+		public void TheUiDrawsTheShippedTileSizeAndAtLargeTextUntilCSharpAnswers()
+		{
+			var bindings = ModSource.Text("UI/src/mods/bindings.ts");
+
+			Assert.Contains($"bindValue<number>(mod.id, \"AssetMenuTileSize\", {SettingsDefaults.TileSize})", bindings);
+			Assert.Contains($"bindValue<string>(mod.id, \"AssetMenuAtLargeText\", \"{SettingsDefaults.AtLargeText}\")", bindings);
 		}
 
 		[Fact]
