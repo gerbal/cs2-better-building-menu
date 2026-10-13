@@ -24,6 +24,9 @@ import {
   visibleTableMetrics,
   catalogLayoutWidth,
   drawnBodyHeight,
+  drawnBoxHeight,
+  BOX_BOTTOM,
+  TOP_HUD_ALLOWANCE,
   TAB_ROW_BAND,
   ASSET_MENU_BOX_CHROME,
   assetMenuBoxHeight,
@@ -415,9 +418,32 @@ describe("the list under the tab row", () => {
     assert.equal(drawnBodyHeight(Number.NaN), drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT));
   });
 
-  it("follows the stored height over the whole drag, so the top edge follows the pointer from the floor up", () => {
-    for (const stored of [ASSET_MENU_MIN_HEIGHT, 120, 137.75, ASSET_MENU_DEFAULT_HEIGHT, 300, ASSET_MENU_MAX_HEIGHT]) {
+  it("follows the stored height from the drag's floor to the room under the top HUD, so the top edge follows the pointer", () => {
+    for (const stored of [ASSET_MENU_MIN_HEIGHT, 120, 137.75, ASSET_MENU_DEFAULT_HEIGHT, 300, 600, 830.25]) {
       assert.equal(drawnBodyHeight(stored), stored, String(stored));
     }
+  });
+
+  it("is the drawn box less its chrome where a tall stored height stops at the room under the top HUD", () => {
+    for (const stored of [900, ASSET_MENU_MAX_HEIGHT]) {
+      assert.equal(TOP_CHROME_HEIGHT + drawnBodyHeight(stored) + TAB_ROW_BAND, drawnBoxHeight(stored), String(stored));
+    }
+  });
+});
+
+describe("the box's drawn height", () => {
+  // The room from the box's bottom edge up to the band the top HUD holds.
+  const room = BOX_BOTTOM - TOP_HUD_ALLOWANCE;
+
+  it("is the stored height and the chrome while that fits under the top HUD", () => {
+    assert.equal(drawnBoxHeight(ASSET_MENU_DEFAULT_HEIGHT), 208);
+    assert.equal(drawnBoxHeight(600), 663.75);
+  });
+
+  it("stops at the room under the top HUD, so its top row never sits under the HUD", () => {
+    assert.equal(room, 894);
+    assert.equal(drawnBoxHeight(900), room);
+    assert.equal(drawnBoxHeight(ASSET_MENU_MAX_HEIGHT), room);
+    assert.equal(drawnBoxHeight(room - ASSET_MENU_BOX_CHROME), room, "the tallest stored height drawn whole");
   });
 });

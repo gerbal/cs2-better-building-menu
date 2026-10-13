@@ -199,8 +199,8 @@ describe("where a popover hangs", () => {
     assert.deepEqual(anchorAt(800), { top: TOP_CHROME_HEIGHT });
   });
 
-  it("opens under the top row at the drag's ceiling, where the box is squeezed to the frame above its bottom edge", () => {
-    assert.equal(drawnBoxHeight(960), BOX_BOTTOM);
+  it("opens under the top row at the drag's ceiling, where the box stops at the room under the top HUD", () => {
+    assert.equal(drawnBoxHeight(960), BOX_BOTTOM - TOP_HUD_ALLOWANCE);
     assert.deepEqual(anchorAt(960), { top: TOP_CHROME_HEIGHT });
   });
 

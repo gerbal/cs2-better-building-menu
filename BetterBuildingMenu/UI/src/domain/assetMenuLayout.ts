@@ -421,7 +421,10 @@ export const POPOVER_FILTER_HEIGHT = sheetRem("popoverFilterHeight");
  */
 export const BOX_BOTTOM = 954;
 
-/** The band along the screen's top that the game's HUD holds, with a margin: no popover opens into it. */
+/**
+ * The band along the screen's top that the game's HUD holds, with a margin: no popover opens into
+ * it, and the box stops short of it. An estimate of the HUD's height, still to be measured in game.
+ */
 export const TOP_HUD_ALLOWANCE = 60;
 
 /** The box's height: the stored body height and the chrome, the same in every look. */
@@ -430,18 +433,18 @@ export function assetMenuBoxHeight(storedHeight: number): number {
 }
 
 /**
- * The box's height as drawn: its height, squeezed by its `max-height: 100%` to the slot, which the
- * frame above the box's bottom edge stands for (`BOX_BOTTOM`).
+ * The box's height as drawn: its height, stopped at the room between its bottom edge and the top
+ * HUD's band, so a tall stored height never puts the top row under the HUD.
  */
 export function drawnBoxHeight(storedHeight: number): number {
-  return Math.min(assetMenuBoxHeight(storedHeight), BOX_BOTTOM);
+  return Math.min(assetMenuBoxHeight(storedHeight), BOX_BOTTOM - TOP_HUD_ALLOWANCE);
 }
 
 /**
- * The body's height as drawn: the box less the chrome it draws, never below the drag's floor. The
- * stored height keeps its meaning for the drag, the settings and the upgrades panel's cap. See
+ * The body's height as drawn: the drawn box less the chrome it draws, never below the drag's floor.
+ * The stored height keeps its meaning for the drag, the settings and the upgrades panel's cap. See
  * docs/design-notes.md, "The box's height".
  */
 export function drawnBodyHeight(storedHeight: number): number {
-  return Math.max(ASSET_MENU_MIN_HEIGHT, assetMenuBoxHeight(storedHeight) - TOP_CHROME_HEIGHT - TAB_ROW_BAND);
+  return Math.max(ASSET_MENU_MIN_HEIGHT, drawnBoxHeight(storedHeight) - TOP_CHROME_HEIGHT - TAB_ROW_BAND);
 }

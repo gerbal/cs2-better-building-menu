@@ -430,6 +430,13 @@ the stored height exactly, over the whole drag: the top edge follows the pointer
 The upgrades panel keeps the stored height as its cap. The settings migration's version 3 moves version 2's default, 149, to 144.25
 (see "The settings migration").
 
+**A tall box stops under the top HUD.** The box draws at the stored height and the chrome or at the
+room between its bottom edge (954 on the layout's frame) and the top HUD's band (`TOP_HUD_ALLOWANCE`,
+60), whichever is less (`drawnBoxHeight`), and the body at that less the chrome. So the top row
+never sits under the HUD: a stored body past 830.25 draws at 830.25. The stored height and the
+drag's ceiling of 960 are kept, and the popovers hang from the box as drawn. The HUD's 60 is an
+estimate, to be measured in game.
+
 ## The top row
 
 Along the box's top edge, in a band of the look's head material: a 2 rem pad, the 28 rem row, a 4

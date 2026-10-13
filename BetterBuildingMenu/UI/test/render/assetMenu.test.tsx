@@ -333,6 +333,13 @@ describe("the asset menu's tab row", () => {
   it("gives the body the stored height: the box is the body and 63.75, vanilla's 208 at the default", () => {
     assert.match(render(), /class="content [^"]*" style="height:144\.25rem"/);
   });
+
+  it("draws a tall stored height at the room under the top HUD, its top row clear of the HUD", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 900);
+
+    // The room is the box's bottom edge, 954, less the HUD's 60; the body is that less the chrome.
+    assert.match(render(), /class="content [^"]*" style="height:830\.25rem"/);
+  });
 });
 
 describe("the asset menu's top row and top edge", () => {
