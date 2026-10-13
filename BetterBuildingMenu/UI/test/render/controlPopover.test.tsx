@@ -279,6 +279,14 @@ describe("a control's popover", () => {
     assert.equal(closed, 1);
   });
 
+  it("lists no body with no menu open, as under Search everything, where a pick would have no menu to keep it", () => {
+    set("AssetMenu", "");
+    mount({ kind: "view", left: 0 });
+
+    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Width · 1", "More options…"]);
+    assert.equal(root!.root.findAll((node) => node.type === "div" && node.props.className === "divider").length, 0);
+  });
+
   it("lights the menu's own pick, and sends none back from Default view", () => {
     set("AssetMenu", "Roads");
     set("AssetMenuViews", [{ menu: "Parks & Recreation", value: "list" }, { menu: "Roads", value: "cards" }]);

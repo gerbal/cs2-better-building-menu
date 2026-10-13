@@ -995,7 +995,8 @@ inherits another's.
   view · <body>", names the body Default view gives the menu and is lit while the menu has no pick; a
   press on it takes the menu's pick away (`SetAssetMenuView("")`). A press on a body keeps it as the
   menu's pick, saved once; the save re-pushes `AssetMenuViews`, which redraws the body. The control
-  names the body drawn, with its dot while the menu has a pick of its own. Reset the build menu… takes
+  names the body drawn, with its dot while the menu has a pick of its own. With no menu open, as under
+  Search everything, VIEW lists no body, since no menu would keep the pick. Reset the build menu… takes
   every menu's pick away.
 - **SORT** is kept per menu for the session (`SessionSorts`): an open brings back the sort the menu last
   had, and every launch starts each at the game's own order. A sort picked while a query is typed is

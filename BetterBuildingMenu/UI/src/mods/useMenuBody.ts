@@ -8,6 +8,8 @@ import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 
 /** The open menu's body, and what decides it, as VIEW, the controls and the catalog read it. */
 export interface MenuBody {
+  /** The open menu, or "" for none, as under Search everything. */
+  menu: string;
   /** The menu's own VIEW pick, or "" for none. */
   pick: string;
   /** The body the menu draws with no pick: Default view, or the look's Auto. */
@@ -32,6 +34,7 @@ export function useMenuBody(): MenuBody {
   const byDefault = menuView({ menuPick: "", defaultView, auto });
 
   return {
+    menu,
     pick,
     byDefault,
     view: menuView({ menuPick: pick, defaultView, auto }),

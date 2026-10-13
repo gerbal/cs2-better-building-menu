@@ -29,9 +29,10 @@ export interface ViewOption {
 /**
  * VIEW's rows for the open menu: "Default view · <body>", lit while the menu has no pick of its own,
  * then each body, the menu's own pick lit; the drawn body's name for the control; and the pick, which
- * C# keeps for the menu and echoes, redrawing the body.
+ * C# keeps for the menu and echoes, redrawing the body. With no menu open, as under Search everything,
+ * there is no menu to keep a pick, so the list offers none.
  */
-export function useViewOptions(): { current: string; changed: boolean; options: ViewOption[]; pick: (kind: BodyKind | "") => void } {
+export function useViewOptions(): { current: string; changed: boolean; options: ViewOption[]; offered: boolean; pick: (kind: BodyKind | "") => void } {
   const { translate } = useLocalization();
   const body = useMenuBody();
   const name = (kind: DrawnBody): string => translate(BODY_LABELS[kind].key, BODY_LABELS[kind].fallback) ?? BODY_LABELS[kind].fallback;
@@ -45,6 +46,7 @@ export function useViewOptions(): { current: string; changed: boolean; options: 
       { id: "", label: byDefault, selected: body.pick === "" },
       ...VIEW_ROWS.map((kind) => ({ id: kind, label: name(kind), selected: body.pick === kind })),
     ],
+    offered: body.menu !== "",
     pick: (kind) => send({ method: "SetAssetMenuView", args: [kind] }),
   };
 }
@@ -95,7 +97,7 @@ export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void
 
   return (
     <div className={classNames(styles.list, styles.viewList)}>
-      {view.options.map((option) => (
+      {view.offered && view.options.map((option) => (
         <PickerRow
           key={option.id || "default"}
           label={option.label}
@@ -106,7 +108,7 @@ export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void
           }}
         />
       ))}
-      <div className={styles.divider} />
+      {view.offered && <div className={styles.divider} />}
       <PickerRow
         label={label("Tooltip.LABEL[BetterBuildingMenu.ViewWidth]", "Width · {0}").replace("{0}", String(step))}
         note={`${label("Tooltip.LABEL[BetterBuildingMenu.EveryMenu]", "every menu")} ›`}
