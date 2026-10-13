@@ -101,6 +101,7 @@ $standard: (
   bodyCtlHover: rgba(52, 63, 74, 1),
   bodyCtlText: ink(0.8),
   bodyCtlDim: ink(0.55),
+  bodyLabel: rgba(255, 255, 255, 1),
   seamLocked: rgba(240, 184, 74, 0.55),
   seamElse: rgba(120, 204, 236, 0.7),
   track: ink(0.08),
@@ -147,6 +148,7 @@ $standard-follow: (
   bodyCtlHover: var(--menuPanel3),
   bodyCtlText: var(--menuText1Normal),
   bodyCtlDim: var(--menuText2Normal),
+  bodyLabel: var(--menuText1Normal),
 );
 
 @mixin tokens($map) {

@@ -49,9 +49,10 @@
   // .rowValue only provides when the control hugs its content; a Dropdown that
   // stretches leaves none. 12rem, the row's own horizontal inset.
   margin-right: 12rem;
-  // Solid white, matching vanilla's row labels. --menuText1Normal is 80% here
-  // and reads as the disabled sibling of the rows beside it.
-  color: rgba(255, 255, 255, 1);
+  // Solid white, matching vanilla's row labels: --menuText1Normal is 80% in the game's default
+  // style and reads as the disabled sibling of the rows beside it. A style that turns the body
+  // light gets its own dark text.
+  color: var(--bbm-bodyLabel);
   // Bold, like every label in the bank.
   font-size: 16rem;
   font-weight: bold;

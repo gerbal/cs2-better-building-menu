@@ -304,17 +304,20 @@ looks; only Standard's tokens are written here.
   `background`) with a UI.log warning, so a radius token is one length read by each corner's
   longhand, and a colour reaches a border through `border-colors`, which writes each side's.
   `lookTokens.test.ts` and the stylesheet guard in `stylesheetContracts.test.ts` hold this.
-- **The game's interface styles.** The game puts `style--<name>` on the body, and its Bright blue and
-  Dark grey-orange styles redefine its panel, ink and accent tokens. Under either, the root's
+- **The game's interface styles.** The game puts `style--<name>` on the body, and its Bright blue
+  and Dark grey-orange styles redefine its panel, ink and accent tokens. Under either, the root's
   `followStyle` class applies one follow map (`$standard-follow`): the list from
   `--panelColorNormal`, its plates from `--menuPanel1-3`, the ink on them from `--menuText1Normal`
   and `--menuText2Normal`, the head and the popovers from `--panelColorDark`, the accents from
   `--accentColor*`. Ink pairs with the surface under it: Bright blue turns the list light and its
   ink dark, while the head, and the tab row, its readout and the top row on it, stay dark under
-  every style and keep the look's light ink. The armed fill and the lit tab's gradient are game tokens no style changes
-  (`--selectedColor`, `--gradientHighlight*`). The map leaves the entity ring to the look, and its
-  selector names the two style classes without `body`, which the game puts them on. Plates under
-  each interface style are settled with the restyle of the list.
+  every style and keep the look's light ink. The control pane's labels, chips and summaries sit on
+  the list's material, so they take its body inks (`bodyLabel`, `bodyChip*`, `bodyWord`,
+  `bodyCtl*`), which follow to `--menuPanel*` and `--menuText*`, while the FILTER popover's chips
+  keep the look's light ink. The armed fill and the lit tab's gradient are game tokens no style
+  changes (`--selectedColor`, `--gradientHighlight*`). The map leaves the entity ring to the look,
+  and its selector names the two style classes without `body`, which the game puts them on. Plates
+  under each interface style are settled with the restyle of the list.
 - **The game's interface transparency.** The game sets `--panelOpacityNormal` and
   `--panelOpacityDark` from its slider, and its own panels carry them. A look's panels would draw far
   lighter than designed if they took those values as they are, so `surfaceAlphas` scales each
@@ -467,18 +470,19 @@ control sits over it (`topRowRightInset`).
   summary cuts its value inside itself, so a row's label is whole at every text size. Its root
   carries the look's class (`useLookRoot`), since custom properties reach only a root's own
   children, and the pane sits beside the box, not inside it; its own surface is the look's `body`,
-  the box's beside it. The chips and the summaries sit on that body, which Bright blue turns light,
-  so they take the body's inks (`bodyChip*`, `bodyWord`, `bodyCtl*`), whose plates and text follow
-  the style together: under Bright blue and Dark grey-orange the game's menu plates and its text.
-  The FILTER popover stays dark under every style, so its chips keep the light ink. **This changes
-  0.2.x:** the pane's surface draws without the game's gradient in every style, and in the game's
-  default style it is the look's dark panel; its lists draw their rows in the look's ink, 24 rem
-  tall, the lit one in the game's selected colour with white text, on the popovers' surface; its
-  chips draw in the body's inks, and Clear filters loses the accent colour; the sort's summary names
-  its direction (▲ or ▼); two of its lists can no longer be open together. The pane draws no scope
-  chips (the search reaches other menus), no Reset menu (Options' Reset the build menu… puts
-  everything back) and no row of view buttons (VIEW carries the views, on the top row and in the
-  pane), and the triggers `SetAssetMenu`, `ClearAssetMenuScope` and `ResetAssetMenu` are gone.
+  the box's beside it. The row labels, the chips and the summaries sit on that body, which Bright
+  blue turns light, so they take the body's inks (`bodyLabel`, `bodyChip*`, `bodyWord`, `bodyCtl*`),
+  whose plates and text follow the style together: under Bright blue and Dark grey-orange the game's
+  menu plates and its text. The FILTER popover stays dark under every style, so its chips keep the
+  light ink. **This changes 0.2.x:** the pane's surface draws without the game's gradient in every
+  style, and in the game's default style it is the look's dark panel; its lists draw their rows in
+  the look's ink, 24 rem tall, the lit one in the game's selected colour with white text, on the
+  popovers' surface; its chips draw in the body's inks, and Clear filters loses the accent colour;
+  the sort's summary names its direction (▲ or ▼); two of its lists can no longer be open together.
+  The pane draws no scope chips (the search reaches other menus), no Reset menu (Options' Reset the
+  build menu… puts everything back) and no row of view buttons (VIEW carries the views, on the top
+  row and in the pane), and the triggers `SetAssetMenu`, `ClearAssetMenuScope` and `ResetAssetMenu`
+  are gone.
 
 ## The top edge
 

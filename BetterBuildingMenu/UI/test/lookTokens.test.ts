@@ -53,7 +53,7 @@ const INK_ON: Readonly<Record<string, string>> = {
   tabCount: "head", tabIcon: "head", amber: "head", tQuery: "fieldBg",
   armText: "arm", armNum: "arm", pillText: "pillBg", tagText: "tagBg",
   bodyChipText: "bodyChipBg", bodyChipDim: "bodyChipBg", bodyWord: "bodyChipBg",
-  bodyCtlText: "bodyCtl", bodyCtlDim: "bodyCtl",
+  bodyCtlText: "bodyCtl", bodyCtlDim: "bodyCtl", bodyLabel: "body",
 };
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */
