@@ -7,6 +7,7 @@ import {
   catalogWindowRemaining,
   isOnLineOne,
   lineOneScrollTop,
+  pageScrollTop,
 } from "../src/domain/catalogWindow.ts";
 import { ASSET_MENU_MIN_CATALOG_HEIGHT } from "../src/domain/assetMenuLayout.ts";
 
@@ -434,5 +435,17 @@ describe("putting a row on the list's first line", () => {
     assert.equal(isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop: 52, rowHeight: 20 }), false);
     assert.equal(lineOneScrollTop(Number.NaN, 350, 50), Number.NaN);
     assert.equal(lineOneScrollTop(100, Number.NaN, 50), 100);
+  });
+});
+
+describe("a page of the list", () => {
+  it("is a screen down or up, held inside the list's ends", () => {
+    // A 100-tall viewport over 1,000 of list: the scroll runs 0-900.
+    assert.equal(pageScrollTop(200, 100, 1000, 1), 300);
+    assert.equal(pageScrollTop(300, 100, 1000, -1), 200);
+    assert.equal(pageScrollTop(850, 100, 1000, 1), 900);
+    assert.equal(pageScrollTop(50, 100, 1000, -1), 0);
+    // A list that fits has nowhere to go.
+    assert.equal(pageScrollTop(0, 100, 80, 1), 0);
   });
 });

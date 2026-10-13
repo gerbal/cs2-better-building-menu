@@ -110,6 +110,11 @@ export function lineOneScrollTop(currentScrollTop: number, rowTop: number, conta
   return Math.max(0, currentScrollTop + rowTop - containerTop);
 }
 
+/** The scroll a screen down, or up, from here, held inside the list's ends: an engine need not clamp a scroll set past them. */
+export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1): number {
+  return Math.max(0, Math.min(scrollHeight - clientHeight, scrollTop + direction * clientHeight));
+}
+
 /** Whether a row sits on the first line, to a pixel: Cohtml rounds line boxes to whole device pixels. */
 export function isOnLineOne({ containerTop, rowTop }: AnchorGeometry): boolean {
   return Math.abs(rowTop - containerTop) <= 1;

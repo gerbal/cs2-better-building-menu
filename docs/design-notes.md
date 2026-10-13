@@ -904,6 +904,33 @@ row's readout states the window with the true total ("1–100 of 779"), so the l
 what the readout cannot: while the window can grow it offers Load more; once it is at the ceiling
 with rows past it (`Capped`), it says how to narrow the list instead: a tab, the search or a filter.
 
+## The search field's keys
+
+The game masks its keyboard while a text field has focus, so while the search field has focus the
+keys are BBM's, and everywhere else they stay the game's: there the arrows and PageUp and PageDown
+move the camera. Focus comes from a press on the field only. The listeners are captured on the
+document, since the app container stops keydown from bubbling, and read the key by `key` or by
+`keyCode` (`searchFieldKey`); held with Shift, Ctrl, Alt or the Windows key, the keys stay the
+field's.
+
+- **Up and Down** move Enter's target, the building the field names after "↵", a row a press through
+  the rows that can be placed, in the order the list draws them, past locked rows and built uniques,
+  stopping at the list's ends. The move is C#'s, as the target is (see "Search and sort over the whole
+  result"): the query carries `EnterStep`, how many such rows past the best match the target sits;
+  the engine walks the whole result from the best match and serves the step it takes, which the state
+  keeps, so a key held past an end moves back on the first press the other way. Any new result
+  (typing on, a filter, a sort, a grouping, a tab, an open) puts the target back on the best match;
+  Load more and an index refresh keep it. The keys send nothing until the field names a target, the
+  page answering the query in it. A move is no start: the window and the list's place stay. The field
+  names the moved target and Enter arms it, by id, wherever its row is; no row is marked and the list
+  does not scroll to the target.
+- **PageUp and PageDown** scroll the list a screen, held inside its ends (`pageScrollTop`); a page that
+  reaches the end lets the window load more, as scrolling there does.
+
+**This changes 0.2.x:** in the search field Up and Down moved the caret and PageUp and PageDown did
+nothing; now they move Enter's target and scroll the list, and Up and Down no longer move the caret in
+the field.
+
 ## Opening on the building's tab
 
 A menu opens where the player was, as the game's own does: a bar press re-arms the menu's last

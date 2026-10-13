@@ -6,6 +6,7 @@ import {
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
   loadMoreCatalogCommand,
+  moveEnterTargetCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "../src/domain/buildingCatalogContracts.ts";
@@ -19,6 +20,11 @@ import {
 } from "../src/domain/buildingCatalogRanges.ts";
 
 describe("BetterBuildingMenu UI binding contracts", () => {
+  it("names the target's move after its trigger, a row down or up a press", () => {
+    assert.deepEqual(moveEnterTargetCommand(1), { method: "MoveEnterTarget", args: [1] });
+    assert.deepEqual(moveEnterTargetCommand(-1), { method: "MoveEnterTarget", args: [-1] });
+  });
+
   it("names the window command after its trigger", () => {
     // The limit wanted, so a repeat is harmless; the backend clamps it to one step
     // and the ceiling. The name must match the CreateTrigger in BuildingMenuUISystem.OnCreate.

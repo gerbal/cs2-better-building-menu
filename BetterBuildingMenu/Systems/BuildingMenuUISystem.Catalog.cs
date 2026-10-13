@@ -77,6 +77,8 @@ namespace BetterBuildingMenu.Systems
 			var pageMs = Lap();
 			// The window the page served is the one the state keeps, so Load more grows from the anchored row.
 			_assetMenu = _assetMenu.CoverAnchor(page.AnchorIndex);
+			// And the step Enter's target takes, which stops at the list's ends.
+			_assetMenu = _assetMenu.KeepEnterStep(page.EnterStep);
 			_BuildingCatalogBinding.Value = page with
 			{
 				Status = AssetMenuState.GetPageStatus(source.Index.IsReady, page.TotalCount),

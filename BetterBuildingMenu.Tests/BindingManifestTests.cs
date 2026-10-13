@@ -139,6 +139,13 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void UpAndDownAreNamedOnBothSides()
+		{
+			Assert.Contains("MoveEnterTarget", CSharpNames());
+			Assert.Contains("MoveEnterTarget", TypeScriptNames());
+		}
+
+		[Fact]
 		public void MoreOptionsIsNamedOnBothSidesAndThePanesOldControlsAreGone()
 		{
 			Assert.Contains("OpenModOptions", CSharpNames());

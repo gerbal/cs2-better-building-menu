@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { enterDecision, isEnterForSearch, isPlainEnter } from "../src/domain/buildingSearchRank.ts";
+import { enterDecision, isEnterForSearch, isPlainEnter, searchFieldKey } from "../src/domain/buildingSearchRank.ts";
 
 // Scoring lives in BuildingCatalogRelevance.cs, and C# names the best match with
 // the page, chosen from the whole result. What is left here is what Enter does.
@@ -73,5 +73,24 @@ describe("whose Enter it is", () => {
     assert.equal(isEnterForSearch(field("INPUT"), false), false);
     assert.equal(isEnterForSearch(field("textarea"), false), false);
     assert.equal(isEnterForSearch({ tagName: "DIV", isContentEditable: true }, false), false);
+  });
+});
+
+describe("which keys the search field passes to the list", () => {
+  it("takes Up, Down, PageUp and PageDown by either spelling", () => {
+    assert.equal(searchFieldKey({ key: "ArrowDown" }), "down");
+    assert.equal(searchFieldKey({ key: "", keyCode: 38 }), "up");
+    assert.equal(searchFieldKey({ key: "PageDown" }), "pageDown");
+    assert.equal(searchFieldKey({ key: "", keyCode: 33 }), "pageUp");
+  });
+
+  it("leaves other keys, and these with a modifier, to the field", () => {
+    // Shift with an arrow selects the field's text; an input method's keys arrive as 229.
+    assert.equal(searchFieldKey({ key: "a", keyCode: 65 }), null);
+    assert.equal(searchFieldKey({ key: "ArrowLeft", keyCode: 37 }), null);
+    assert.equal(searchFieldKey({ key: "ArrowDown", keyCode: 40, shiftKey: true }), null);
+    assert.equal(searchFieldKey({ key: "", keyCode: 34, ctrlKey: true }), null);
+    assert.equal(searchFieldKey({ key: "Process", keyCode: 229 }), null);
+    assert.equal(searchFieldKey({ key: "toString" }), null);
   });
 });

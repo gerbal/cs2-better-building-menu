@@ -1,3 +1,5 @@
+import { isScrollContainer } from "domain/catalogWindow";
+
 /** The three fields the walk reads; an HTMLElement satisfies it. */
 export interface ScrollBox {
   scrollHeight: number;
@@ -41,4 +43,11 @@ export function lastCatalogRow(root: ParentNode, entryId?: number): HTMLElement 
   // Node has no HTMLElement to instanceof-check against, and the callers only
   // read getBoundingClientRect and querySelector off it.
   return row as HTMLElement | null;
+}
+
+/** The element that scrolls the list, walked up to from its last row (see lastCatalogRow); null while no row draws or the list fits. */
+export function listScroller(root: HTMLElement): HTMLElement | null {
+  const row = lastCatalogRow(root);
+
+  return row ? findScrollContainer(row, root, isScrollContainer) : null;
 }

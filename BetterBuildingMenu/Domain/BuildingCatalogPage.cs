@@ -53,7 +53,10 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>The UI puts the row on line 1 when the window holds it, and the list at its top when not.</remarks>
 		int AnchorIndex = -1,
 		/// <summary>Which start of the list this page answers; see AssetMenuState.ListStart.</summary>
-		int ListStart = 0) : IJsonWritable
+		int ListStart = 0,
+		/// <summary>How many rows that can be placed Enter's target sits past the best match, as the engine walks it.</summary>
+		/// <remarks>It stops at the list's ends, so the state keeps this, not the presses. See BuildingCatalogQuery.EnterStep.</remarks>
+		int EnterStep = 0) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -100,6 +103,8 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(AnchorIndex);
 			writer.PropertyName("listStart");
 			writer.Write(ListStart);
+			writer.PropertyName("enterStep");
+			writer.Write(EnterStep);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

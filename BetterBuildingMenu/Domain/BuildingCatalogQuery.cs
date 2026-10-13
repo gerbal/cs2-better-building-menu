@@ -57,7 +57,11 @@ namespace BetterBuildingMenu.Domain
 		// The row the list starts at, as the index's id, or 0 for none. It matches no row: only the
 		// first window's size and the page's AnchorIndex follow it.
 		// See docs/design-notes.md, "Opening on the building's tab".
-		int AnchorId = 0)
+		int AnchorId = 0,
+		// How many rows that can be placed Enter's target sits past the best match, in display order;
+		// negative is up the list. Up and Down move it, and any new result puts it back at 0.
+		// See docs/design-notes.md, "The search field's keys".
+		int EnterStep = 0)
 	{
 		/// <summary>
 		/// The sort fields the picker offers, in its order.
@@ -124,13 +128,15 @@ namespace BetterBuildingMenu.Domain
 		public string EffectiveSortColumn => string.IsNullOrWhiteSpace(SortColumn) ? "Default" : SortColumn;
 
 		/// <summary>
-		/// This query with the window shrunk back to the base chunk when any predicate
-		/// differs from <paramref name="previous"/>, unchanged when only the window moved.
+		/// This query with the window shrunk back to the base chunk, and Enter's target back on the best
+		/// match, when any predicate differs from <paramref name="previous"/>; unchanged when only the
+		/// window or the target moved.
 		/// </summary>
 		/// <remarks>
-		/// A fresh predicate is a fresh set, so it restarts at <see cref="DefaultLimit"/>.
-		/// Whole queries are compared rather than named fields, so a new predicate is
-		/// covered by default; Offset and Limit are masked out so Load more survives.
+		/// A fresh predicate is a fresh set, so it restarts at <see cref="DefaultLimit"/>, and a step
+		/// counted over the old set means nothing in it. Whole queries are compared rather than named
+		/// fields, so a new predicate is covered by default; Offset, Limit and EnterStep are masked out
+		/// so Load more and the keys survive.
 		/// </remarks>
 		public BuildingCatalogQuery ResetWindowIfPredicatesChanged(BuildingCatalogQuery previous)
 		{
@@ -139,10 +145,10 @@ namespace BetterBuildingMenu.Domain
 				return this;
 			}
 
-			return (this with { Offset = 0, Limit = DefaultLimit })
-				== (previous with { Offset = 0, Limit = DefaultLimit })
+			return (this with { Offset = 0, Limit = DefaultLimit, EnterStep = 0 })
+				== (previous with { Offset = 0, Limit = DefaultLimit, EnterStep = 0 })
 					? this
-					: this with { Offset = 0, Limit = DefaultLimit };
+					: this with { Offset = 0, Limit = DefaultLimit, EnterStep = 0 };
 		}
 	}
 }

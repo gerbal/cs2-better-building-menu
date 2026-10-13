@@ -2,9 +2,9 @@ import { useValue } from "cs2/api";
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
-import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { CATALOG_WINDOW_STEP, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
-import { findScrollContainer, lastCatalogRow } from "./catalogDom";
+import { listScroller } from "./catalogDom";
 
 export type { BuildingCatalogPageStatus };
 
@@ -105,13 +105,10 @@ export function useCatalogWindow(
       if (now - lastCheck >= LOAD_MORE_POLL_MS) {
         lastCheck = now;
 
-        // The last row, for the same reason the anchor takes it — see
-        // lastCatalogRow.
         const root = rootRef.current;
 
         if (!scroller && root) {
-          const row = lastCatalogRow(root);
-          scroller = row ? findScrollContainer(row, root, isScrollContainer) : null;
+          scroller = listScroller(root);
         }
 
         if (scroller && shouldLoadMore({

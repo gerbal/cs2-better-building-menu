@@ -184,6 +184,20 @@ namespace BetterBuildingMenu.Domain
 			return ReferenceEquals(covered, Query) ? this : this with { Query = covered };
 		}
 
+		/// <summary>Enter's target a row that can be placed further down the list, or up for a negative direction, while a search is typed.</summary>
+		/// <remarks>
+		/// A row a press, whatever the number; the page says where the walk stops, which <see cref="KeepEnterStep"/>
+		/// keeps. A move is no start: the window and the list's place stay. See docs/design-notes.md, "The search field's keys".
+		/// </remarks>
+		public AssetMenuState MoveEnterTarget(int direction) =>
+			direction == 0 || string.IsNullOrWhiteSpace(Query.SearchText)
+				? this
+				: this with { Query = Query with { EnterStep = Query.EnterStep + Math.Sign(direction) } };
+
+		/// <summary>The step the page served, which stops at the list's ends, so a key pressed past one moves back at once.</summary>
+		public AssetMenuState KeepEnterStep(int served) =>
+			Query.EnterStep == served ? this : this with { Query = Query with { EnterStep = served } };
+
 		// --- Narrowing -----------------------------------------------------------
 
 		public AssetMenuState ToggleFacet(string facetId, string optionId)
@@ -267,9 +281,9 @@ namespace BetterBuildingMenu.Domain
 			&& a.SchoolTier == b.SchoolTier
 			&& (a.StripTabs ?? Array.Empty<string>()).SequenceEqual(b.StripTabs ?? Array.Empty<string>(), StringComparer.Ordinal);
 
-		/// <summary>Navigating or reordering starts the list over, even onto what is already shown.</summary>
+		/// <summary>Navigating or reordering starts the list over, even onto what is already shown, and Enter's target with it.</summary>
 		private static BuildingCatalogQuery ResetWindow(BuildingCatalogQuery query) =>
-			query with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
+			query with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit, EnterStep = 0 };
 
 		/// <summary>A narrowing that changed the result set starts the window over; one that did not keeps it.</summary>
 		/// <remarks>

@@ -9,7 +9,7 @@ import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/Buildin
 
 // Mounted, not rendered to markup: the Enter listener is an effect. Node has no
 // document, so the few globals the catalog's effects reach for are faked here.
-type KeyEvent = { key: string; keyCode?: number; target?: unknown };
+type KeyEvent = { key: string; keyCode?: number; target?: unknown; preventDefault?: () => void };
 const globals = globalThis as unknown as Record<string, unknown>;
 let page: KeysPage = keysPage();
 
@@ -160,6 +160,22 @@ describe("Enter in the catalog", () => {
     enter();
 
     assert.deepEqual(armed(), []);
+  });
+
+  it("moves the target with Down only once the page answers the query, and from the search field", () => {
+    const down = () => press({ key: "ArrowDown", keyCode: 40, target: fakeSearchField(), preventDefault: () => undefined });
+    const moves = () => triggers.filter((call) => call.name === "MoveEnterTarget").map((call) => call.args[0]);
+    groupedPage("", null);
+    typed("clinic");
+    mount();
+
+    down();
+    assert.deepEqual(moves(), [], "the page still answers the empty search");
+
+    groupedPage("clinic", 1);
+    rerender();
+    down();
+    assert.deepEqual(moves(), [1]);
   });
 
   it("ignores other keys, and lets go of the document when it unmounts", () => {

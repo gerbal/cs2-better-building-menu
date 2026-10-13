@@ -112,7 +112,9 @@ namespace BetterBuildingMenu.Services
 			var usableColumns = ReorderableSortColumns(
 				matching, query, BuildingCatalogQuery.OfferedSortColumns);
 
-			var bestMatch = FindBestMatch(ordered, query.SearchText);
+			// Enter's target: the best match, moved by Up and Down through the rows that can be placed.
+			// See docs/design-notes.md, "The search field's keys".
+			var target = StepTarget(ordered, FindBestMatch(ordered, query.SearchText), query.EnterStep, out var enterStep);
 
 			return new BuildingCatalogPage(
 				items,
@@ -121,14 +123,15 @@ namespace BetterBuildingMenu.Services
 				limit,
 				HasMore: hasMore,
 				ReorderableSortColumns: usableColumns,
-				BestMatchId: bestMatch?.Id,
+				BestMatchId: target?.Id,
 				SearchText: query.SearchText ?? string.Empty,
-				BestMatch: bestMatch,
-				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && bestMatch is null,
+				BestMatch: target,
+				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && target is null,
 				// At the ceiling with rows past it, Load more cannot reach them: the UI says so instead.
 				Capped: limit >= BuildingCatalogQuery.MaxLimit && offset + items.Length < totalCount,
 				AnchorId: query.AnchorId,
-				AnchorIndex: anchorIndex);
+				AnchorIndex: anchorIndex,
+				EnterStep: enterStep);
 		}
 
 		/// <summary>
@@ -138,8 +141,7 @@ namespace BetterBuildingMenu.Services
 		/// </summary>
 		/// <remarks>
 		/// Over every match, not the window, so a target past the loaded rows, or under a sort
-		/// or a grouping that does not lead with it, is still the one armed. The skip rule must
-		/// stay equal to the UI's canPlace (buildingLockState.ts): Enter trusts this alone.
+		/// or a grouping that does not lead with it, is still the one armed.
 		/// </remarks>
 		private static BuildingCatalogBestMatch? FindBestMatch(IReadOnlyList<BuildingCatalogEntry> ordered, string? searchText)
 		{
@@ -156,7 +158,7 @@ namespace BetterBuildingMenu.Services
 			{
 				var entry = ordered[index];
 
-				if (entry.IsLocked || entry.IsAlreadyBuilt)
+				if (!CanArm(entry))
 				{
 					continue;
 				}
@@ -177,9 +179,49 @@ namespace BetterBuildingMenu.Services
 				return null;
 			}
 
-			var match = ordered[best];
+			return TargetAt(ordered, best);
+		}
 
-			return new BuildingCatalogBestMatch(match.Id, match.Name ?? string.Empty, match.UiMenu ?? string.Empty, best);
+		/// <summary>
+		/// Enter's target moved <paramref name="step"/> rows that can be placed from the best match, in
+		/// display order, down for a positive step; it stops at the first or last such row, and
+		/// <paramref name="served"/> is the step taken.
+		/// </summary>
+		/// <remarks>Without a best match there is nothing to move, and no step is served.</remarks>
+		private static BuildingCatalogBestMatch? StepTarget(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogBestMatch? best, int step, out int served)
+		{
+			served = 0;
+
+			if (best is null || step == 0)
+			{
+				return best;
+			}
+
+			var direction = Math.Sign(step);
+			var at = best.Index;
+
+			for (var index = best.Index + direction; index >= 0 && index < ordered.Count && served != step; index += direction)
+			{
+				if (CanArm(ordered[index]))
+				{
+					at = index;
+					served += direction;
+				}
+			}
+
+			return at == best.Index ? best : TargetAt(ordered, at);
+		}
+
+		/// <summary>Whether Enter can place a row: locked rows and built uniques it cannot.</summary>
+		/// <remarks>Equal to the UI's canPlace (buildingLockState.ts): Enter trusts this alone.</remarks>
+		private static bool CanArm(BuildingCatalogEntry entry) => !entry.IsLocked && !entry.IsAlreadyBuilt;
+
+		/// <summary>The row at a place in the display order, named as Enter's target.</summary>
+		private static BuildingCatalogBestMatch TargetAt(IReadOnlyList<BuildingCatalogEntry> ordered, int index)
+		{
+			var entry = ordered[index];
+
+			return new BuildingCatalogBestMatch(entry.Id, entry.Name ?? string.Empty, entry.UiMenu ?? string.Empty, index);
 		}
 
 		/// <summary>

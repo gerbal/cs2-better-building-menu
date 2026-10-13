@@ -266,6 +266,8 @@ namespace BetterBuildingMenu.Systems
 			// arrive comma-joined, because this bridge is happier with flat primitives.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
 			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
+			// Up and Down in the search field move Enter's target; the page says where it stops.
+			CreateTrigger<int>("MoveEnterTarget", MoveEnterTarget);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);

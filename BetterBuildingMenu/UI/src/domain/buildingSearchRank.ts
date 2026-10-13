@@ -89,3 +89,42 @@ export function isEnterForSearch(target: unknown, fromSearchField: boolean): boo
 
   return tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT" && element?.isContentEditable !== true;
 }
+
+/** A key the search field passes to the list while it has the keys. */
+export type SearchFieldKey = "up" | "down" | "pageUp" | "pageDown";
+
+const FIELD_KEYS_BY_NAME = new Map<string, SearchFieldKey>([
+  ["ArrowUp", "up"],
+  ["ArrowDown", "down"],
+  ["PageUp", "pageUp"],
+  ["PageDown", "pageDown"],
+]);
+
+const FIELD_KEYS_BY_CODE = new Map<number, SearchFieldKey>([
+  [38, "up"],
+  [40, "down"],
+  [33, "pageUp"],
+  [34, "pageDown"],
+]);
+
+/**
+ * Which of the list's keys a keydown is, by `key` or by `keyCode` (Cohtml can leave `key` empty), or
+ * null. Held with a modifier they select or edit the field's text, so they stay the field's.
+ */
+export function searchFieldKey(event: {
+  key?: unknown;
+  keyCode?: unknown;
+  shiftKey?: unknown;
+  ctrlKey?: unknown;
+  altKey?: unknown;
+  metaKey?: unknown;
+}): SearchFieldKey | null {
+  if (event.shiftKey === true || event.ctrlKey === true || event.altKey === true || event.metaKey === true) {
+    return null;
+  }
+
+  const byName = typeof event.key === "string" ? FIELD_KEYS_BY_NAME.get(event.key) : undefined;
+  const byCode = typeof event.keyCode === "number" ? FIELD_KEYS_BY_CODE.get(event.keyCode) : undefined;
+
+  return byName ?? byCode ?? null;
+}

@@ -158,6 +158,9 @@ export interface BuildingCatalogPage {
   /** Which start of the list this page answers: it moves on an open, a tab pick and a sort. */
   listStart?: number;
 
+  /** How many rows that can be placed Enter's target sits past the best match: Up and Down move it, C# stops it at the list's ends. */
+  enterStep?: number;
+
   /**
    * The row Enter arms while a search is active; null without a search or a
    * match that can be placed. C#'s answer, chosen from the whole result, because

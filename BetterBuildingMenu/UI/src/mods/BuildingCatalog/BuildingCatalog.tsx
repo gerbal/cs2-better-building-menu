@@ -26,7 +26,7 @@ import type { SortColumn } from "domain/buildingCatalogContracts";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
-import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
+import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter, pageAnswers } from "domain/buildingSearchRank";
 import { isSearchField } from "mods/TopRow/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
@@ -42,6 +42,7 @@ import {
 import { TableView } from "./TableView";
 import { useCatalogWindow } from "./useCatalogWindow";
 import { useRevealExpandedRow, useScrollAnchor } from "./useScrollAnchor";
+import { useSearchFieldKeys } from "./useSearchFieldKeys";
 import {
   BuildingCatalogGroupBy$,
   BuildingCatalogMatchesElsewhere$,
@@ -231,6 +232,10 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   );
 
   useScrollAnchor(rootRef, anchorKey, { listStart, anchorId, anchorIndex, itemCount: items.length });
+
+  // Up, Down, PageUp and PageDown while the search field has the keys; Up and Down only once the
+  // field names a target, the page answering the query in it.
+  useSearchFieldKeys(rootRef, bestMatchId !== null && pageAnswers({ searchText: pageSearch }, currentSearch ?? ""));
 
   // Enter arms the backend's best match by id, wherever its row is, so a search
   // can be finished without leaving the keyboard. One listener for every view, on

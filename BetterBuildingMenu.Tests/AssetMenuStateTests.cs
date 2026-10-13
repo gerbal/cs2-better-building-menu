@@ -641,3 +641,79 @@ public sealed class AssetMenuAnchorTests
         Assert.Equal(covered.Query.Limit, covered.Query.ResetWindowIfPredicatesChanged(covered.Query).Limit);
     }
 }
+
+/// <summary>Enter's target moved by the keys: a row a press while a search is typed, back on the best match with any new result, never a start.</summary>
+public sealed class AssetMenuEnterStepTests
+{
+    private static AssetMenuState Searched() => AssetMenuState.Initial.SelectMenu("Roads").Search("lane");
+
+    [Fact]
+    public void AKeyMovesTheTargetOneRowWhileASearchIsTyped()
+    {
+        var searched = Searched();
+
+        Assert.Equal(1, searched.MoveEnterTarget(1).Query.EnterStep);
+        Assert.Equal(-1, searched.MoveEnterTarget(-1).Query.EnterStep);
+        // A row a press, whatever number a caller sends.
+        Assert.Equal(2, searched.MoveEnterTarget(1).MoveEnterTarget(7).Query.EnterStep);
+        Assert.Same(searched, searched.MoveEnterTarget(0));
+
+        var unsearched = AssetMenuState.Initial.SelectMenu("Roads");
+        Assert.Same(unsearched, unsearched.MoveEnterTarget(1));
+    }
+
+    [Fact]
+    public void TheStateKeepsTheStepThePageServedSoAKeyPastAnEndMovesBackAtOnce()
+    {
+        // Three presses down where only two rows lie below: the page served 2.
+        var pressed = Searched().MoveEnterTarget(1).MoveEnterTarget(1).MoveEnterTarget(1);
+        var kept = pressed.KeepEnterStep(2);
+
+        Assert.Equal(2, kept.Query.EnterStep);
+        Assert.Same(kept, kept.KeepEnterStep(2));
+        Assert.Equal(1, kept.MoveEnterTarget(-1).Query.EnterStep);
+    }
+
+    [Fact]
+    public void AMoveStartsNothingAndKeepsTheWindow()
+    {
+        var opened = AssetMenuState.Initial.OpenMenu("Roads", _ => new MenuOpening("RoadsHighways", -1, 4206)).Search("lane").LoadMore();
+        var moved = opened.MoveEnterTarget(1);
+
+        Assert.Equal(opened.ListStart, moved.ListStart);
+        // A typed search has already cleared the anchor.
+        Assert.Equal(0, moved.Anchor);
+        Assert.Equal(opened.Query.Limit, moved.Query.Limit);
+        Assert.Equal(opened.Query.Offset, moved.Query.Offset);
+    }
+
+    [Fact]
+    public void ANewResultPutsTheTargetBackOnTheBestMatch()
+    {
+        var moved = Searched().MoveEnterTarget(1).MoveEnterTarget(1);
+        var changes = new (string Name, Func<AssetMenuState, AssetMenuState> Change)[]
+        {
+            ("typing on", s => s.Search("lanes")),
+            ("a filter", s => s.ToggleFacet("theme", "European")),
+            ("a range", s => s.SetMetricRange("upkeep", "10", "")),
+            ("a sort", s => s.SetSortColumn("Upkeep")),
+            ("a direction", s => s.SetDescending(true)),
+            ("a grouping", s => s.SetGroupBy("cost")),
+            ("a tab", s => s.SelectCategory("RoadsHighways")),
+            ("another menu", s => s.SelectMenu("Parks & Recreation")),
+        };
+
+        Assert.All(changes, change => Assert.True(change.Change(moved).Query.EnterStep == 0, change.Name + " kept the moved target"));
+    }
+
+    [Fact]
+    public void LoadingMoreOrTheSameSearchKeepsTheTargetWhereTheKeysPutIt()
+    {
+        var moved = Searched().MoveEnterTarget(1);
+
+        Assert.Equal(1, moved.LoadMore().Query.EnterStep);
+        Assert.Equal(1, moved.CoverAnchor(150).Query.EnterStep);
+        // A trailing space is the same search.
+        Assert.Equal(1, moved.Search("lane ").Query.EnterStep);
+    }
+}

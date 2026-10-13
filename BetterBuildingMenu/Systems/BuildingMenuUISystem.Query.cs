@@ -109,6 +109,9 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_assetMenu.LoadMoreTo(requestedLimit));
 
+		/// <summary>Up or Down in the search field: Enter's target a row that can be placed further down, or up.</summary>
+		private void MoveEnterTarget(int direction) => Apply(_assetMenu.MoveEnterTarget(direction));
+
 		private void ToggleAssetMenuFacet(string facetId, string optionId) => Apply(_assetMenu.ToggleFacet(facetId, optionId));
 
 		private void ClearAssetMenuFilters() => Apply(_assetMenu.ClearFilters());
