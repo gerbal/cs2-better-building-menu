@@ -27,6 +27,10 @@
           "Education's school levels are named chips beside the Education tab.",
           "A menu opens on the tab of the building you last picked from it, with that building at the top of the list. With nothing picked, it opens on its first tab, and Education on its first school level. Opening a menu clears the search.",
           "Picking a sort, or clicking the tab that is already lit, takes the list back to its top. Going back to that building's tab brings it back to the top.",
+          "While you type in the search box, Up and Down change the building Enter places, and Page Up and Page Down scroll the list. Esc closes an open list, then clears the search, then closes the menu.",
+          "The search box lets go of the arrow keys after Enter, picking a building or closing the menu, so they move the camera again. It shows an outline while it has the keys.",
+          "On a wider menu, each tab shows its name beside its icon when they all fit.",
+          "A small mark under the menu points to its toolbar button.",
           "The menu follows the game's Interface style and Interface transparency."
         ]
       },

@@ -66,6 +66,10 @@ On a developed save:
    - a long menu offers Load more, and a list past 2,000 rows says how to narrow it;
    - pick a building, open another menu, then this one again: it opens on that building's tab
      with the building at the top of the list; pick a sort, and the list goes back to its top;
+   - click the search box and type: Down changes the name after ↵ and Enter places that one; Esc
+     clears the search, and a second Esc closes the menu; after Enter the arrow keys move the camera;
+   - at a wider Width a menu with a few tabs names each one, and the mark under the menu sits under
+     its toolbar button;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
    time, and a click elsewhere closes it. Switch through Cards, List, Grid and Table in View,
