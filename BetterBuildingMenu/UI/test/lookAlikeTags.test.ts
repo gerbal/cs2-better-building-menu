@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { lookAlikeTags } from "../src/domain/lookAlikeTags";
+import { lookAlikeKey, lookAlikeTags } from "../src/domain/lookAlikeTags";
 import { tagFits } from "../src/domain/tileTag";
 
-const tile = (id: number, name: string, distinctWord = ""): BuildingCatalogEntry => ({ id, name, prefabName: `P${id}`, distinctWord } as BuildingCatalogEntry);
+const tile = (id: number, name: string, distinctWord = "", isLocked = false): BuildingCatalogEntry => ({ id, name, prefabName: `P${id}`, distinctWord, isLocked } as BuildingCatalogEntry);
 /** The smallest tile Tile size allows, at 100% text. */
 const fits = (text: string) => tagFits(text, 64, 1);
-const tags = (entries: BuildingCatalogEntry[], fit: (text: string, entry: BuildingCatalogEntry) => boolean = fits) => Object.fromEntries(lookAlikeTags(entries, fit));
+const tags = (entries: BuildingCatalogEntry[], tileWidth = 64, textScale = 1) => Object.fromEntries(lookAlikeTags(entries, tileWidth, textScale));
+/** No tag is said on two tiles. */
+const unique = (said: Record<string, string>) => assert.equal(new Set(Object.values(said).map((tag) => tag.toLowerCase())).size, Object.keys(said).length, JSON.stringify(said));
 
 describe("the tiles' look-alike tags", () => {
   it("tag every member of a run sharing a first word by the word that tells it apart, and no tile alone", () => {
@@ -31,7 +33,7 @@ describe("the tiles' look-alike tags", () => {
       tile(4, "UK Medium Density Housing", "Medium"),
     ]);
 
-    assert.equal(new Set(Object.values(two)).size, 4, JSON.stringify(two));
+    unique(two);
     // The run's word tells two runs apart where the next word does not fit.
     assert.deepEqual(two, { 1: "Low Row", 2: "Medium", 3: "UK Low", 4: "UK Medium" });
   });
@@ -43,7 +45,8 @@ describe("the tiles' look-alike tags", () => {
       tile(3, "UK Low Density Detached Villas", "Housing"),
     ]);
 
-    assert.equal(new Set(Object.values(run)).size, 3, JSON.stringify(run));
+    unique(run);
+    assert.equal(Object.keys(run).length, 3);
   });
 
   it("are never a bare number: a number says #02", () => {
@@ -62,27 +65,24 @@ describe("the tiles' look-alike tags", () => {
       tile(3, "housing"),
     ];
 
-    assert.deepEqual(tags(zones, (text) => tagFits(text, 100, 1)), { 1: "Density Housing", 2: "Basic" });
+    assert.deepEqual(tags(zones, 100), { 1: "Density Housing", 2: "Basic" });
     // On the smallest tile no other form fits: the tile goes untagged rather than read as Housing.
     assert.deepEqual(tags(zones), { 2: "Basic" });
   });
 
   it("never open on a separator: a distinguishing word that only parts two others gives way to the word after it", () => {
-    // Room for a word or two, never the whole name.
-    const short = (text: string) => text.length <= 10;
-    const parted = tags([tile(1, "Plaza Corner Mirrored", "Corner"), tile(2, "Plaza - Mirrored", "-")], short);
+    const parted = tags([tile(1, "Plaza Corner Mirrored", "Corner"), tile(2, "Plaza - Mirrored", "-")]);
 
     assert.deepEqual(parted, { 1: "Corner", 2: "Mirrored" });
   });
 
   it("say two words without opening or ending on a separator", () => {
-    const short = (text: string) => text.length <= 16;
     const parted = tags([
       tile(1, "Plaza Basic - Mirrored", "Basic"),
       tile(2, "Square Basic Corner", "Basic"),
       tile(3, "Plaza Long Corner", "Long"),
       tile(4, "Square Long - Wide", "Long"),
-    ], short);
+    ], 100);
 
     assert.equal(parted[1], "Basic - Mirrored", JSON.stringify(parted));
     for (const tag of Object.values(parted)) assert.doesNotMatch(tag, /^[-–—,]|[-–—,]$/u, JSON.stringify(parted));
@@ -90,9 +90,9 @@ describe("the tiles' look-alike tags", () => {
 
   it("cut a name once by the name planner where no form in words tells it apart, its distinguishing word and its numbers whole", () => {
     const wide = (text: string) => tagFits(text, 120, 1);
-    const cut = tags([tile(1, "Alpha Basic Housing Quarter 01", "Basic"), tile(2, "Alpha Basic Housing Quarter 02", "Basic")], wide);
+    const cut = tags([tile(1, "Alpha Basic Housing Quarter 01", "Basic"), tile(2, "Alpha Basic Housing Quarter 02", "Basic")], 120);
 
-    assert.equal(new Set(Object.values(cut)).size, 2, JSON.stringify(cut));
+    unique(cut);
     for (const [id, number] of [[1, "01"], [2, "02"]] as const) {
       assert.match(cut[id], /…/u, JSON.stringify(cut));
       assert.match(cut[id], /\bBasic\b/u, JSON.stringify(cut));
@@ -112,19 +112,68 @@ describe("the tiles' look-alike tags", () => {
   });
 
   it("cut a name once: never inside a word as well as between words", () => {
-    const large = (text: string) => tagFits(text, 64, 1.3);
     const bridges = tags([
       tile(1, "Four-Lane Truss Arch Bridge 1", "1"),
       tile(2, "Four-Lane Truss Arch Bridge 2", "2"),
       tile(3, "Wide Quay With Four-Lane Road 1", "1"),
       tile(4, "Wide Quay With Four-Lane Road 2", "2"),
-    ], large);
+    ], 64, 1.3);
 
     assert.deepEqual(bridges, { 1: "#01", 2: "#02", 3: "Wide… 1", 4: "Wide… 2" });
   });
 
-  it("say the word that tells a tile apart where no form tells two apart, never a longer form that tells no more", () => {
-    assert.deepEqual(tags([tile(1, "Plaza, north gate open", "open"), tile(2, "Plaza, south gate open", "open")]), { 1: "open", 2: "open" });
+  it("draw no tag two tiles would share: where no form tells them apart, neither is tagged", () => {
+    assert.deepEqual(tags([tile(1, "Plaza, north gate open", "open"), tile(2, "Plaza, south gate open", "open")]), {});
+  });
+
+  it("drop a tag two runs end on from both tiles, and only from them", () => {
+    const zones = tags([
+      tile(1, "USA NE High Density Housing", "High"),
+      tile(2, "USA NE Low Density Housing", "Low"),
+      tile(3, "USA SW High Density Housing", "High"),
+      tile(4, "USA SW Low Density Housing", "Low"),
+      tile(5, "USA Mobile Homes", "Mobile"),
+    ]);
+
+    assert.deepEqual(zones, { 5: "Mobile" });
+  });
+
+  it("say a number in its pair as #02 too", () => {
+    const bridges = tags([tile(1, "Harbor Bridge 1", "1"), tile(2, "Harbor Bridge 2", "2"), tile(3, "Canal Road 1", "1"), tile(4, "Canal Road 2", "2")]);
+
+    unique(bridges);
+    assert.match(bridges[1], /#01/u, JSON.stringify(bridges));
+    assert.doesNotMatch(Object.values(bridges).join(" "), /(^|\s)\d/u, JSON.stringify(bridges));
+  });
+
+  it("never cut a word to a single letter on either side of the mark", () => {
+    const large = tags([tile(1, "NL Low Density Gable-Roof Housing", "Gable-Roof"), tile(2, "NL Low Density Gambrel-Roof Housing", "Gambrel-Roof"), tile(3, "NL Medium Housing", "Medium")], 64, 1.5);
+
+    for (const tag of Object.values(large)) assert.doesNotMatch(tag, /^[^…]?…|…[^…]?$/u, JSON.stringify(large));
+  });
+
+  it("bound the work: ninety tiles at 150% text measure each tag a few times, not once a rem", () => {
+    let measured = 0;
+    const counting: typeof tagFits = (...args) => {
+      measured += 1;
+      return tagFits(...args);
+    };
+    const themes = ["NA", "EU", "UK", "CN", "JP", "DE", "FR", "NL", "EE", "USA"];
+    const kinds = ["Low Density Basic Housing", "Low Density Classic Housing", "Medium Density Row Housing", "Medium Density Housing", "High Density Housing", "Mixed Housing", "Low Rent Housing", "Low Density Gambrel-Roof Housing", "Low Density Waterfront Housing"];
+    const words = ["Basic", "Classic", "Row", "Medium", "High", "Mixed", "Rent", "Gambrel-Roof", "Waterfront"];
+    const zones = themes.flatMap((theme, t) => kinds.map((kind, k) => tile(t * 10 + k + 1, `${theme} ${kind}`, words[k])));
+
+    lookAlikeTags(zones, 64, 1.5, counting);
+    assert.ok(measured <= zones.length * 24, `${measured} measures for ${zones.length} tiles`);
+  });
+
+  it("key the tags on what they read, so a page pushed again with the same tiles keeps them", () => {
+    const page = [tile(1, "NA Pack", "Pack"), tile(2, "NA Mobile Homes", "Mobile")];
+
+    assert.equal(lookAlikeKey(page.map((entry) => ({ ...entry }))), lookAlikeKey(page));
+    assert.notEqual(lookAlikeKey([page[0], { ...page[1], isLocked: true }]), lookAlikeKey(page));
+    assert.notEqual(lookAlikeKey([page[0], { ...page[1], distinctWord: "Homes" }]), lookAlikeKey(page));
+    assert.notEqual(lookAlikeKey([page[0], { ...page[1], name: "NA Mobile Home" }]), lookAlikeKey(page));
   });
 
   it("never stand on a word like \"with\" alone: the word after it tells the tile apart", () => {
@@ -135,6 +184,6 @@ describe("the tiles' look-alike tags", () => {
     const run = [tile(1, "NA Pack", "Pack"), tile(2, "NA Mobile Homes", "Mobile")];
 
     assert.equal(tags(run)[1], "NA Pack");
-    assert.equal(tags(run, (text, entry) => tagFits(text, 64, 1, entry.id === 1))[1], "Pack");
+    assert.equal(tags([tile(1, "NA Pack", "Pack", true), run[1]])[1], "Pack");
   });
 });

@@ -92,23 +92,31 @@ export function tileTag(
   return { text: number ?? cutToTag(text, tileWidth, textScale), locked };
 }
 
-/** A tag's words that fit it, cut once by the name planner where they run over. */
-function cutToTag(text: string, tileWidth: number, textScale: number): string {
-  return cutToFit(text, (line) => tagFits(line, tileWidth, textScale), [], TAG_FONT * textScale, tagRoom(tileWidth) - TAG_PADDING);
+/** How a tag is cut: beside a lock glyph or not, the words it keeps, and the measure that decides it fits. */
+interface TagCut {
+  besideLock?: boolean;
+  keep?: readonly string[];
+  fits?: typeof tagFits;
 }
 
 /**
- * Words that fit a tag, cut once by the name planner where they run over: "…" where they were cut,
- * never a clip, as Cohtml draws no CSS ellipsis, every word `keep` holds and every number whole. The
- * planner measures one font and a tag the wider of two, so the room narrows from `from` until the cut
- * fits both.
+ * A tag's words that fit it, cut once by the name planner where they run over: "…" where they were cut,
+ * never a clip, as Cohtml draws no CSS ellipsis, every word `keep` holds and every number whole; the mark
+ * alone where no letter fits beside it.
  */
-export function cutToFit(text: string, fits: (line: string) => boolean, keep: readonly string[] = [], font = TAG_FONT, from = textWidth(text, font)): string {
-  if (fits(text)) return text;
+export function cutToTag(text: string, tileWidth: number, textScale: number, { besideLock = false, keep = [], fits = tagFits }: TagCut = {}): string {
+  const fitsTag = (line: string) => fits(line, tileWidth, textScale, besideLock);
+  if (fitsTag(text)) return text;
 
-  for (let room = from; room > 0; room -= 1) {
+  // From the tag's room down, each step narrowed by what the last cut ran over in the tag's measure: the
+  // planner measures one font and the tag the wider of two. A cut the planner could not fit in its own
+  // room (a kept word or a number wider than it) fits no narrower one, so the search stops there.
+  const font = TAG_FONT * textScale;
+  for (let room = Math.floor(tagRoom(tileWidth, besideLock) - TAG_PADDING); room > 0;) {
     const [line = ""] = planName(text, { width: room, lines: 1, font }, { keep }).lines;
-    if (fits(line)) return line;
+    if (fitsTag(line)) return line;
+    if (textWidth(line, font) > room) break;
+    room -= Math.max(1, Math.ceil(TAG_PADDING + textWidth(line, font, "wider") - tagRoom(tileWidth, besideLock)));
   }
 
   // No letter fits beside the mark: the mark alone still says a word was cut.

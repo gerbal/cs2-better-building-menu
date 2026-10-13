@@ -1436,19 +1436,22 @@ in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first 
 tag and no other tag says: its whole name; its distinguishing word; that word and the next; the run's
 word and that word ("UK Medium" beside "CHI Medium"), which tells two runs apart; its name cut once by
 the planner, that word and every number whole, or where that word alone is wider than the tag, the word
-cut inside it ("Gam…Roof"). A number is never bare: it says "#02". No tag opens or ends on a separator,
-and a word like "with" never stands alone: the word after it tells the tile apart ("Median" for
-"Five-Lane Road with Median"). The tags are unique on the screen where a form can make them so: members
-whose tags would read alike, in a run or across two, each take their next form. They are counted over
-every tile the body draws, which holds every tile on the screen, so a tag can change when Load more
-draws a look-alike. A tag cuts the word that tells it apart only where that word alone is wider than the
-tag: where no form that keeps it whole both fits and differs (two families' "Housing" on the smallest
-tile, or a road's "#01" at 150% text), each says that word, never a longer form that tells no more, and
-those two read alike. A tag never says another drawn tile's name, which would read as that tile: a
-member left with no other form goes untagged. On a locked tile the tag's room ends at the lock glyph,
-which it never covers, and its forms are measured in that room. A tile with no look-alike drawn with it
-draws no tag at its top: the line under the tiles names it. A tag carries `data-bbm-tag`, so the live
-check and the render tests count the tags drawn.
+cut inside it, two letters at least each side of the mark ("Gam…Roof"). A number is never bare: it says
+"#02". No tag opens or ends on a separator, and a word like "with" never stands alone: the word after it
+tells the tile apart ("Median" for "Five-Lane Road with Median"). Every tag is unique on the screen:
+members whose tags would read alike, in a run or across two, each take their next form, and a tag
+another drawn tile would also say is dropped from every tile that shares it, as is one that says another
+drawn tile's name, which would read as that tile. A shared tag tells two look-alikes apart by nothing
+and suggests they are the same; the line under the tiles and the hover card still name them. So at the
+smallest tile and at large text, where a tag holds a word or less, fewer tiles are tagged. The tags are
+counted over every tile the body draws, which holds every tile on the screen, so a tag can change, or
+drop, when Load more draws a look-alike, even one scrolled out of sight. A cut starts from the tag's
+room at the text scale and narrows by what it runs over, stopping where the planner cannot fit the kept
+word, and the tags are worked out again only when the tiles' names, distinguishing words or locks, the
+tile's width or the text scale change. On a locked tile the tag's room ends at the lock glyph, which it
+never covers, and its forms are measured in that room. A tile with no look-alike drawn with it draws no
+tag at its top: the line under the tiles names it. A tag carries `data-bbm-tag`, so the live check and
+the render tests count the tags drawn.
 
 **This changes 0.2.x:** Grid drew each tile's name with its repeated theme and category words dropped,
 which kept two look-alikes from reading alike; a tile with a look-alike drawn beside it now says only

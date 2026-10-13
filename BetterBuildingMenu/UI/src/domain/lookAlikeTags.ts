@@ -1,16 +1,12 @@
 /**
- * The tiles' look-alike tags: on the tiles drawn, those sharing a first word, whatever its case, are a
- * run of look-alikes, whose pictures alone do not tell them apart, and every member gets a tag at its top
- * left saying what does: the whole name where it fits; else the word that tells the row apart (C#'s
- * DistinctWord); else that word and the next; else the run's word and that word, which tells two runs
- * apart; else the name cut once by the name planner, that word and every number whole, or that word
- * alone cut inside it where it is wider than the tag. A number is never bare ("#02"); no tag opens or
- * ends on a separator, nor is a word like "with" alone. Each tag is unique on the screen where a form can
- * make it so, and never says another tile's name. Pure. See docs/design-notes.md, "Names".
+ * The tiles' look-alike tags: each tile drawn that shares its first word with another gets a tag saying
+ * what tells it apart, from its distinguishing word, unique on the screen or not drawn. Pure. See
+ * docs/design-notes.md, "Names".
  */
 import type { BuildingCatalogEntry } from "./buildingCatalog";
+import { isEntryLocked } from "./buildingLockState";
 import { CUT_MARK, SEPARATORS, STOP_WORDS } from "./namePlan";
-import { cutToFit } from "./tileTag";
+import { cutToTag, tagFits } from "./tileTag";
 
 /** A tag's word: a number a family counts by says "#02", never a bare digit. */
 function tagWord(word: string): string {
@@ -25,9 +21,8 @@ const says = (word: string): boolean => !SEPARATORS.has(word) && !STOP_WORDS.has
 
 /**
  * Where the word that tells a row apart sits: its distinguishing word, or past a separator or a word
- * like "with" the word after it ("Road with Median": Median); where nothing after it says more, the word
- * itself unless it only parts two others ("Flag A"); with none, its last word that says something. -1
- * where no word does.
+ * like "with" the word after it; where nothing after it says more, the word itself unless it only parts
+ * two others ("Flag A"); with none, its last word that says something. -1 where no word does.
  */
 function ownWord(words: readonly string[], distinct: string): number {
   const wanted = distinct.toLowerCase();
@@ -60,14 +55,22 @@ function pairOf(words: readonly string[], own: number): string {
   return before >= 0 ? words.slice(before, own + 1).map(tagWord).join(" ") : "";
 }
 
+/** A word cut inside it reads as that word only with two letters or more each side of the mark. */
+const READABLE_CUT = /^[^…]{2,}…[^…]{2,}$/u;
+
+/** The room a tile's tag is measured in. */
+interface TagBox {
+  tileWidth: number;
+  textScale: number;
+  fits: typeof tagFits;
+}
+
 interface Member {
   entry: BuildingCatalogEntry;
-  fits: (text: string) => boolean;
+  locked: boolean;
   /** Its tags that fit, in order; its cut joins them only once the others are spent. */
   forms: string[];
   level: number;
-  /** The word that tells it apart, alone, where that is one of its forms; else null. */
-  word: string | null;
   /** Whether its cut has been tried. */
   cut: boolean;
 }
@@ -77,47 +80,64 @@ interface Member {
  * a word like "with", that word and the next, the run's word and that word. A member none of them fits
  * takes its cut at once; with no cut either it is null, and untagged.
  */
-function memberOf(entry: BuildingCatalogEntry, fits: (text: string) => boolean): Member | null {
+function memberOf(entry: BuildingCatalogEntry, box: TagBox): Member | null {
+  const locked = isEntryLocked(entry);
   const words = wordsOf(entry);
   const own = ownWord(words, entry.distinctWord ?? "");
-  const word = own >= 0 && says(words[own]) ? tagWord(words[own]) : "";
-  const candidates = [words.join(" "), word, own >= 0 ? pairOf(words, own) : "", own > 0 ? `${words[0]} ${tagWord(words[own])}` : ""];
-  const forms = candidates.filter((form, index) => form !== "" && candidates.indexOf(form) === index && fits(form));
-  const member: Member = { entry, fits, forms, level: 0, word: forms.includes(word) ? word : null, cut: false };
+  const telling = own >= 0 && says(words[own]);
+  const candidates = [
+    words.join(" "),
+    telling ? tagWord(words[own]) : "",
+    own >= 0 ? pairOf(words, own) : "",
+    telling && own > 0 ? `${words[0]} ${tagWord(words[own])}` : "",
+  ];
+  const forms = candidates.filter((form, index) => form !== "" && candidates.indexOf(form) === index && box.fits(form, box.tileWidth, box.textScale, locked));
+  const member: Member = { entry, locked, forms, level: 0, cut: false };
 
-  return forms.length > 0 || addCut(member) ? member : null;
+  return forms.length > 0 || addCut(member, box) ? member : null;
 }
 
 /**
  * Adds a member's last tag and moves to it: its name cut once by the name planner, the word that tells
  * it apart and every number whole; else, where that word alone is wider than the tag, the word cut
- * inside it ("Gam…Roof"). False where neither fits or says what a form already does: the mark alone says
- * nothing, and a name cut inside a word as well as between words is cut twice.
+ * inside it ("Gam…Roof"). False where neither fits or says what a form already does.
  */
-function addCut(member: Member): boolean {
+function addCut(member: Member, box: TagBox): boolean {
   member.cut = true;
   const words = wordsOf(member.entry);
   const own = ownWord(words, member.entry.distinctWord ?? "");
-  const named = cutToFit(words.join(" "), member.fits, own >= 0 ? [words[own]] : []);
-  const word = own >= 0 ? cutToFit(words[own], member.fits) : CUT_MARK;
-  // One mark, and more than the mark: a word that fits whole is a form already.
-  const cut = [named, word].find((form) => form !== CUT_MARK && form.split(CUT_MARK).length === 2 && !member.forms.includes(form));
-  if (cut === undefined) return false;
+  if (own < 0) return false;
 
-  member.forms.push(cut);
+  const word = words[own];
+  const cut = (text: string, keep: readonly string[]) => cutToTag(text, box.tileWidth, box.textScale, { besideLock: member.locked, keep, fits: box.fits });
+  // A name cut keeps the word whole, so it cannot fit where the word alone does not; and one cut inside
+  // a word as well as between words is cut twice. Its numbers keep the name's own form: "#02" would
+  // cost the room that lets the cut fit at all.
+  const named = box.fits(word, box.tileWidth, box.textScale, member.locked) ? cut(words.join(" "), [word]) : CUT_MARK;
+  const inside = cut(word, []);
+  const form = [named, inside].find((text, index) => text !== CUT_MARK && (index === 0 ? text.split(CUT_MARK).length === 2 : READABLE_CUT.test(text)) && !member.forms.includes(text));
+  if (form === undefined) return false;
+
+  member.forms.push(form);
   member.level = member.forms.length - 1;
   return true;
 }
 
 /**
- * The tag of each look-alike among the tiles drawn, by entry id: runs of two or more sharing a first
- * word, whatever its case. `fits` measures a tag in its tile's own room, a locked tile's beside its lock
- * glyph. A member whose tag reads as another's, or as another tile's name, takes its next form, each
- * pass at once, until none does or none has a form left. A member out of forms whose tag another still
- * says goes back to the word that tells it apart, rather than a longer form that tells no more; a tag
- * never says another tile's name, which leaves its member untagged.
+ * What the tags read from a page: each tile's id, name, distinguishing word and lock, so a page pushed
+ * again with the same tiles keeps its tags.
  */
-export function lookAlikeTags(entries: readonly BuildingCatalogEntry[], fits: (text: string, entry: BuildingCatalogEntry) => boolean): ReadonlyMap<number, string> {
+export function lookAlikeKey(entries: readonly BuildingCatalogEntry[]): string {
+  return entries.map((entry) => `${entry.id}\u0001${entry.name || entry.prefabName}\u0001${entry.distinctWord ?? ""}\u0001${isEntryLocked(entry) ? 1 : 0}`).join("\u0002");
+}
+
+/**
+ * The tag of each look-alike among the tiles drawn, by entry id, each measured in its tile's room, a
+ * locked tile's beside its lock glyph. Members whose tags read alike, or as another tile's name, take
+ * their next forms together; a tag still said twice, or saying a name, is drawn on no tile.
+ */
+export function lookAlikeTags(entries: readonly BuildingCatalogEntry[], tileWidth: number, textScale: number, fits: typeof tagFits = tagFits): ReadonlyMap<number, string> {
+  const box: TagBox = { tileWidth, textScale, fits };
   const runs = new Map<string, BuildingCatalogEntry[]>();
   // How many tiles drawn bear each name: a tag saying one reads as that tile.
   const names = new Map<string, number>();
@@ -133,7 +153,7 @@ export function lookAlikeTags(entries: readonly BuildingCatalogEntry[], fits: (t
   }
 
   const members = [...runs.values()].filter((run) => run.length > 1).flat()
-    .map((entry) => memberOf(entry, (text) => fits(text, entry)))
+    .map((entry) => memberOf(entry, box))
     .filter((member): member is Member => member !== null);
   const said = (member: Member): string => member.forms[member.level].toLowerCase();
   const namesAnother = (member: Member): boolean => (names.get(said(member)) ?? 0) > (wordsOf(member.entry).join(" ").toLowerCase() === said(member) ? 1 : 0);
@@ -142,18 +162,17 @@ export function lookAlikeTags(entries: readonly BuildingCatalogEntry[], fits: (t
     for (const member of members) tags.set(said(member), (tags.get(said(member)) ?? 0) + 1);
     return tags;
   };
+  const clashes = (tags: Map<string, number>, member: Member): boolean => (tags.get(said(member)) ?? 0) > 1 || namesAnother(member);
 
   for (;;) {
     // Every member of a collision moves on together, read from the pass's tags, not from one another's moves.
     const tags = counted();
-    const clashing = members.filter((member) => (tags.get(said(member)) ?? 0) > 1 || namesAnother(member));
-
     let moved = false;
-    for (const member of clashing) {
+    for (const member of members.filter((each) => clashes(tags, each))) {
       if (member.level + 1 < member.forms.length) {
         member.level += 1;
         moved = true;
-      } else if (!member.cut && addCut(member)) {
+      } else if (!member.cut && addCut(member, box)) {
         moved = true;
       }
     }
@@ -161,11 +180,7 @@ export function lookAlikeTags(entries: readonly BuildingCatalogEntry[], fits: (t
     if (!moved) break;
   }
 
+  // A tag two tiles share tells them apart by nothing, and one saying a name reads as that tile.
   const tags = counted();
-  for (const member of members) {
-    if ((tags.get(said(member)) ?? 0) > 1 && member.word !== null) member.level = member.forms.indexOf(member.word);
-  }
-
-  // A tag left saying another tile's name would read as that tile: its member goes untagged.
-  return new Map(members.filter((member) => !namesAnother(member)).map((member) => [member.entry.id, member.forms[member.level]]));
+  return new Map(members.filter((member) => !clashes(tags, member)).map((member) => [member.entry.id, member.forms[member.level]]));
 }

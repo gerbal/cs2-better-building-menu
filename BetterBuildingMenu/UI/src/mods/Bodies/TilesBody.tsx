@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useMemo, useState, type ReactNode } from "react";
+import { memo, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
 import type { AssetMenuMetric } from "domain/assetMenuLayout";
@@ -11,11 +11,11 @@ import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { lookAlikeTags } from "domain/lookAlikeTags";
+import { lookAlikeKey, lookAlikeTags } from "domain/lookAlikeTags";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { tileFacts } from "domain/tileNameLine";
-import { tagFits, tagRoom, tileTag } from "domain/tileTag";
+import { tagRoom, tileTag } from "domain/tileTag";
 import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuView } from "mods/useAssetMenuView";
@@ -110,7 +110,7 @@ const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, 
           </span>
         )}
         {tag.text !== "" && (
-          // Bounded inline, as Tile size sizes the tile: a figure the tag cannot hold is said short, never cut.
+          // Bounded inline, as Tile size sizes the tile: a figure the tag cannot hold is said short, a word cut with "…".
           <span className={classNames(styles.tag, tag.locked && styles.milestone)} style={{ maxWidth: `${tagRoom(grid.cellWidth)}rem` }} data-bbm-fact="true">
             {tag.text}
           </span>
@@ -119,6 +119,20 @@ const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, 
     </BuildingHoverCard>
   );
 });
+
+/**
+ * The tiles drawn that share a first word, each tagged with what tells it apart, worked out again only
+ * when the tiles, their names, distinguishing words or locks, the tile's width or the text scale change:
+ * a page pushed again with the same tiles keeps its tags.
+ */
+function useLookAlikeTags(entries: readonly BuildingCatalogEntry[], tileWidth: number, textScale: number): ReadonlyMap<number, string> {
+  const tiles = useMemo(() => lookAlikeKey(entries), [entries]);
+  const last = useRef<{ key: string; tags: ReadonlyMap<number, string> } | null>(null);
+  const key = `${tileWidth}\u0003${textScale}\u0003${tiles}`;
+  if (last.current?.key !== key) last.current = { key, tags: lookAlikeTags(entries, tileWidth, textScale) };
+
+  return last.current.tags;
+}
 
 export interface TilesBodyProps {
   entries: BuildingCatalogEntry[];
@@ -147,11 +161,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
   const lineKnob = useValue(AssetMenuTuning$).tileNameLine ?? SHIPPED_TUNING.tileNameLine;
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
   const said = useAssetMenuView((view) => view.said);
-  // The tiles drawn that share a first word, each tagged with what tells it apart, in its own tile's room.
-  const lookAlikes = useMemo(
-    () => lookAlikeTags(entries, (text, entry) => tagFits(text, grid.cellWidth, textScale, isEntryLocked(entry))),
-    [entries, grid.cellWidth, textScale],
-  );
+  const lookAlikes = useLookAlikeTags(entries, grid.cellWidth, textScale);
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
