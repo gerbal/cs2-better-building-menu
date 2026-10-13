@@ -1405,7 +1405,8 @@ so the renders and the game draw the same lines. In order:
    engine breaks it, and never stands alone on the last line.
 2. **Cut once,** between words, the mark ending the head ("Four-Lane… Parking Road"), never leading:
    every word a cut must keep stays: the distinguishing word, matched whole, and in a search each name
-   word a typed word of two letters or more begins, as a search matches its phrase anywhere in the name.
+   word a typed word of two letters or more begins, as a search matches its phrase anywhere in the name
+   (a hyphenated word whole or by any of its parts).
    A single letter, a word like "a", "and" or "with", or a separator is never kept: it tells nothing
    apart, and kept it would hold most of a name after one keystroke. The head never ends on a word like
    "of" or "and"; a cut keeping a number comes first, so a number goes only where no word could go in

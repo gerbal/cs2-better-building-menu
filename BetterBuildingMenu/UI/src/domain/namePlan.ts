@@ -179,7 +179,7 @@ const DISTINCT = 3;
 
 /**
  * How hard a cut holds a word: the distinguishing word, matched whole; else a number; else a word a
- * typed word begins (each part of a hyphenated word); else none. A single letter or a
+ * typed word begins (a hyphenated word whole, and each of its parts); else none. A single letter or a
  * word like "of" is held only as a number.
  */
 function holdOf(word: string, keep: readonly string[], typed: readonly string[]): number {
@@ -188,7 +188,7 @@ function holdOf(word: string, keep: readonly string[], typed: readonly string[])
   if ((number || !saysNothing(word)) && keep.some((wanted) => wanted.toLowerCase() === lower)) return DISTINCT;
   if (number) return NUMBER;
   if (saysNothing(word)) return PLAIN;
-  const starts = lower.split("-").map(opening);
+  const starts = [opening(lower), ...lower.split("-").map(opening)];
   return typed.some((wanted) => !saysNothing(wanted) && starts.some((start) => start.startsWith(wanted.toLowerCase()))) ? TYPED : PLAIN;
 }
 

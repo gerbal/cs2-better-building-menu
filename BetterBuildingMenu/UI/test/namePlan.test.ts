@@ -75,6 +75,13 @@ describe("a name planned in its box", () => {
     assert.deepEqual(planName("Elementary School 2x2 Variant", plate(70, 1), { keep: ["2x2"] }).lines, [`${CUT_MARK}2x2 Variant`]);
   });
 
+  it("keeps a hyphenated name word a typed hyphenated word begins", () => {
+    const name = "Wide Quay With Four-Lane Road 1";
+
+    assert.deepEqual(planName(name, plate(110, 1)).lines, [`Wide Quay${CUT_MARK} Road 1`]);
+    assert.match(planName(name, plate(110, 1), { typed: ["four-lane"] }).lines.join(" "), /(^| )Four(-Lane|…)/u);
+  });
+
   it("drops a word before a number, and cuts a word inside before it cuts a number", () => {
     // The last word first, but never at the cost of a number while a word could go in its place.
     assert.deepEqual(planName("Plaza 2x2 Corner Large", plate(110, 1)).lines, [`Plaza 2x2${CUT_MARK} Large`]);
