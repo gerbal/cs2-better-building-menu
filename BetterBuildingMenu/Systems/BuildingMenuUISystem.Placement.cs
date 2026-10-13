@@ -1,4 +1,5 @@
-﻿using BetterBuildingMenu.Utilities;
+﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Utilities;
 using Game.Prefabs;
 using Game.Tools;
 
@@ -53,7 +54,7 @@ namespace BetterBuildingMenu.Systems
 
 		private void OnToolChanged(ToolBaseSystem tool)
 		{
-			if (tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool")
+			if (MenuTools.TakesTheScreen(tool.toolID))
 			{
 				// Another tool brings its own UI and wants the screen. Ours goes.
 				SetAssetMenuOpen(false);

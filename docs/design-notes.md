@@ -21,6 +21,16 @@ deterministic, and the divergence is accepted: cancelling a tool with Escape
 also puts the menu away. The pause menu still works, because the game opens it
 when Escape finds nothing to close, and the asset menu is gone after the first press.
 
+## Tools that take the screen
+
+A tool change closes the build menu only for a tool that brings a screen of its own: Road Builder
+and Move It (`MenuTools.TakesTheScreen`). Every other tool keeps it, as the game keeps its own
+menu: `ToolbarUISystem.OnUpdate` re-selects the armed prefab's menu whenever the active tool is not
+the area tool, so the game's menu stays up under a terraforming brush, and BBM's stays up and keeps
+answering the search and the filters. The Zone tool keeps it too: picking a zone arms it, and
+closing there would close the Zones menu the moment it was used. Back on the default tool (Escape,
+a right-click, a finished placement) the box closes as before.
+
 ## Locked artwork for vector thumbnails
 
 Vanilla silhouettes an unplaceable asset by filtering its thumbnail. Cohtml
