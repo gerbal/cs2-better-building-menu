@@ -93,7 +93,8 @@ $standard: (
   badgeBg: rgba(20, 27, 35, 0.88),
   badgeLit: rgba(12, 38, 70, 0.78),
   iconSlot: ink(0.07),
-  iconSlotRing: inset 0 0 0 1rem ink(0.16),
+  // The empty square's edge, which keeps it in sight on a plate of any kind.
+  iconSlotEdge: ink(0.16),
   chipBg: ink(0.07),
   // On the body, which a style turns light: the pane's chips and its summaries, whose ink and plate
   // follow the style together.
@@ -157,8 +158,10 @@ $standard-follow: (
   // The style's panels give the two tones and the lit plate: a locked icon's plate is bare, on the body.
   iconLocked: transparent,
   // The empty thumbnail square on a plate: the style's third panel, apart from a plate's first and a
-  // locked or built plate's second; the style has no fourth, so it meets the hovered plate's.
+  // locked or built plate's second; the style has no fourth, so its edge, in the style's second ink,
+  // keeps it in sight on the hovered plate's.
   iconSlot: var(--menuPanel3),
+  iconSlotEdge: var(--menuText2Normal),
   track: var(--menuPanel2),
   thumb: var(--menuText2Normal),
   tName: var(--menuText1Normal),

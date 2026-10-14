@@ -34,7 +34,7 @@ type Kind = "colour" | "length" | "shadow" | "gradient" | "filter";
 const KIND: Readonly<Record<string, Kind>> = {
   boxRadius: "length", radiusItem: "length", radiusTile: "length", tabRadius: "length", tagRadius: "length",
   boxShadow: "shadow", rim: "shadow", armEdge: "shadow", entRing: "shadow", focusRing: "shadow",
-  fieldRing: "shadow", iconSlotRing: "shadow", popRing: "shadow",
+  fieldRing: "shadow", popRing: "shadow",
   tabLit: "gradient",
   bodyBlur: "filter",
 };
@@ -225,6 +225,27 @@ describe("the looks' tokens", () => {
       // Bare, or a plate no style turns light, so "MS n" stands on what the body pair above pins.
       assert.ok(map.iconLocked === "transparent" || !turnsLight(map.iconLocked), selector);
       for (const other of ["icon", "iconAlt", "plateHover"]) assert.notEqual(map.iconLocked, map[other], `${selector}: iconLocked and ${other}`);
+    }
+  });
+
+  it("ring the upgrades panel's empty square in an edge apart from every plate a row draws on, the style's ink under a style", () => {
+    const list = "mods/BuildingList/buildingList.module.scss";
+    const square = declarationsOf(list, ".iconPlaceholder");
+
+    // Every side's longhand, as Cohtml drops a border shorthand fed by var(); a border-box square keeps its size.
+    for (const side of ["top", "right", "bottom", "left"]) {
+      assert.equal(square[`border-${side}-color`], "var(--bbm-iconSlotEdge)", side);
+      assert.equal(square[`border-${side}-style`], "solid", side);
+      assert.match(square[`border-${side}-width`] ?? "", /^\d*\.?\d+rem$/, side);
+    }
+    for (const selector of [...OWN, ...FOLLOW]) {
+      const map = tokens(selector);
+      for (const surface of ["plate", "plateLocked", "plateHover"]) {
+        const where = `${selector}: iconSlotEdge on ${surface}`;
+        assert.notEqual(map.iconSlotEdge, map[surface], where);
+        // On a plate a style turns light, the style's own ink, which it turns dark.
+        if (turnsLight(map[surface])) assert.ok(styleInk(map.iconSlotEdge), where);
+      }
     }
   });
 
