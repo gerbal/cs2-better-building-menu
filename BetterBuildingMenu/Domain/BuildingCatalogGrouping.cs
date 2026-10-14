@@ -514,9 +514,9 @@ namespace BetterBuildingMenu.Domain
 		{
 			// Chosen by the tier, not the entry: the key is the tier, and two entries
 			// under one key must read one heading.
-			switch (TransitTier(entry) is int tier && tier >= 0 ? TransitRole.All[tier] : null)
+			switch (TransitTier(entry) is int tier && tier >= 0 ? TransitTiers[tier] : null)
 			{
-				case TransitRole.Track:
+				case TracksTier:
 					return SubCategoryHeading(entry, PrefabSubCategory.Networks_Tracks);
 				case TransitRole.Stop:
 					return SubCategoryHeading(entry, PrefabSubCategory.Networks_Stops);
@@ -540,39 +540,50 @@ namespace BetterBuildingMenu.Domain
 			?? Text(BuildingCatalogLabels.ForSubCategory(subCategory, subCategory.ToString()))
 			?? Other;
 
+		/// <summary>The tier a track files under: a network, so it has no transit role.</summary>
+		private const string TracksTier = nameof(PrefabSubCategory.Networks_Tracks);
+
 		/// <summary>
-		/// A transit asset's place within its mode, as its rank in <see cref="TransitRole.All"/>;
+		/// A transit mode's tiers in the order it is built: the track, then where passengers
+		/// board, then the depot that runs the vehicles, then freight.
+		/// </summary>
+		private static readonly string[] TransitTiers =
+		{
+			TracksTier, TransitRole.Station, TransitRole.Stop, TransitRole.Depot, TransitRole.CargoStation,
+		};
+
+		/// <summary>
+		/// A transit asset's place within its mode, as its index in <see cref="TransitTiers"/>;
 		/// -1 for one that has none, such as a line.
 		/// </summary>
 		/// <remarks>
-		/// The role where the indexer found one. Otherwise its subcategory stands in: a building
-		/// with no transit component files with the stations, the transit building a player
-		/// looks for first, and a track or stop with no role still files with its kind.
+		/// The role where the indexer found one. Otherwise its subcategory stands in: a track by
+		/// its own, a building with no transit component with the stations, the transit building
+		/// a player looks for first, and a stop with no role still with the stops.
 		/// </remarks>
 		private static int TransitTier(BuildingCatalogEntry entry)
 		{
-			var rank = TransitRole.RankOf(entry.BuildingType);
+			var role = entry.BuildingType?.Trim();
+			var sub = (entry.SubCategory ?? string.Empty).Trim();
 
-			if (rank >= 0)
+			if (role is { Length: > 0 } && Array.IndexOf(TransitTiers, role) is var rank && rank > 0)
 			{
 				return rank;
 			}
 
-			var sub = (entry.SubCategory ?? string.Empty).Trim();
+			if (string.Equals(sub, TracksTier, StringComparison.Ordinal))
+			{
+				return Array.IndexOf(TransitTiers, TracksTier);
+			}
 
 			if (sub.StartsWith("ServiceBuildings_", StringComparison.Ordinal))
 			{
-				return TransitRole.RankOf(TransitRole.Station);
-			}
-
-			if (string.Equals(sub, nameof(PrefabSubCategory.Networks_Tracks), StringComparison.Ordinal))
-			{
-				return TransitRole.RankOf(TransitRole.Track);
+				return Array.IndexOf(TransitTiers, TransitRole.Station);
 			}
 
 			if (string.Equals(sub, nameof(PrefabSubCategory.Networks_Stops), StringComparison.Ordinal))
 			{
-				return TransitRole.RankOf(TransitRole.Stop);
+				return Array.IndexOf(TransitTiers, TransitRole.Stop);
 			}
 
 			return -1;

@@ -101,9 +101,10 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The prefab carries <c>PipelineData</c>: it is a pipe, not a network with pipes built
 		/// in.</summary>
 		public bool IsPipeline { get; set; }
-		/// <summary>The prefab carries <c>CargoTransportStationData</c>: its station moves freight,
-		/// not passengers.</summary>
+		/// <summary>The prefab carries <c>CargoTransportStationData</c>: its station moves freight.</summary>
 		public bool IsCargoStation { get; set; }
+		/// <summary>The prefab carries <c>PublicTransportStationData</c>: its station takes passengers.</summary>
+		public bool IsPublicTransportStation { get; set; }
 		/// <summary>The prefab carries <c>TransformerData</c>.</summary>
 		public bool IsTransformer { get; set; }
 		/// <summary>A transformer's power connections: each sub-net that starts and ends on one node

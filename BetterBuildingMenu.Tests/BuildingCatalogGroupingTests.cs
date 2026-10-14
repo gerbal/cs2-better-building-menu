@@ -476,8 +476,8 @@ namespace BetterBuildingMenu.Tests
 		public void UsesTheSubcategoryAsTransitsTier()
 		{
 			// Transit is the one menu whose development branch divides nothing:
-			// its branches map one to one onto its categories. Tracks, stops,
-			// lines and stations are the real split.
+			// its branches map one to one onto its categories. With no role, the
+			// subcategory still tells a track from a station.
 			var track = Entry(1) with
 			{
 				UiMenu = "Transportation",
@@ -601,7 +601,7 @@ namespace BetterBuildingMenu.Tests
 
 			var ordered = new[]
 			{
-				Transit(1, "Networks_Tracks", TransitRole.Track),
+				Transit(1, "Networks_Tracks", null),
 				Transit(2, "ServiceBuildings_Transportation", TransitRole.Station),
 				Transit(3, "Networks_Stops", TransitRole.Stop),
 				Transit(4, "ServiceBuildings_Transportation", TransitRole.Depot),
