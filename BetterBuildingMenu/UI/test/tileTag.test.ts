@@ -152,7 +152,7 @@ describe("a tile's tag", () => {
     assert.deepEqual(tag(row({ isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>), 1, "capacity"), { text: capacity, locked: false });
   });
 
-  it("in words, says a sorted count with its unit where it fits, and draws no tag where it does not, never the bare number", () => {
+  it("in words, says a sorted count with its unit where it fits, else its whole number as Standard's tag does, at 100% and 150%", () => {
     const words = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
     const crematorium = row({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500, workers: 20 });
     const inWords = (entry: BuildingCatalogEntry, sorted: Parameters<typeof tileTag>[1], width: number, scale = 1) =>
@@ -161,10 +161,15 @@ describe("a tile's tag", () => {
 
     assert.equal(inWords(crematorium, "workers", 64), "20 jobs");
     assert.equal(inWords(crematorium, "capacity", 120), `${digits} capacity`);
-    // Too wide for the smallest tile with its unit: no tag, where glyphs say the number alone.
-    assert.equal(inWords(crematorium, "capacity", 64), "");
-    assert.equal(tag(crematorium, 1, "capacity").text, digits);
-    assert.equal(inWords(row(), "capacity", 64), "");
+    // Too wide for the smallest tile with its unit: the whole number, which the Sort control names, as in glyphs.
+    for (const scale of [1, 1.5]) {
+      assert.ok(!tagFits(`${digits} capacity`, 64, scale), `${scale}`);
+      assert.equal(inWords(crematorium, "capacity", 64, scale), digits, `${scale}`);
+      assert.equal(inWords(crematorium, "capacity", 64, scale), tag(crematorium, scale, "capacity").text, `${scale}`);
+      assert.equal(inWords(row(), "capacity", 64, scale), "400", `${scale}`);
+    }
+    // A number too long for the tag alone is still not said.
+    assert.equal(inWords(row({ capacity: 123_456_789 }), "capacity", 64, 1.5), "");
     // A level says its digits, as the game gives it no unit; money keeps its short forms.
     assert.equal(inWords(row({ buildingLevel: 3 }), "level", 64), "3");
     assert.equal(inWords(row({ upkeep: 1_500_000 }), "upkeep", 64, 1.1), "¢1.5M");

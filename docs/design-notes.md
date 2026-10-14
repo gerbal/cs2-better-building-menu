@@ -1236,30 +1236,31 @@ N" in a half-locked tab (see "Label plates").
 `data-bbm-name` (the whole name's length) and `data-bbm-fact` inside it. No count reads
 `data-bbm-fact` yet; it marks the numbers for the said-once rule to come.
 
-**The tiles.** Each building is a picture tile of Tile size, the picture 4 rem smaller and inset 2. A tag
-at its foot says the plate's first number (`plateNumbers`, `tileTag`): the cost, or for a locked building
-its milestone ("MS 4", by the list's rule, `lockedFact`) or the locked word, in the look's amber, which
-reads on the tag because the tag stays dark under every interface style. Under a sort by a value other
-than the cost or the lot the tag says the value sorted by, as 0.2.x's Grid did, so a re-sort says why the
-tiles moved. A money figure the tag cannot hold whole at the text scale is said in thousands or millions
-with one decimal, in the game's own template for a total ("¢1.2M"): a cut figure reads as another number,
-a rounded one as itself. Where that is still too wide, as large text makes it on the smallest tile, the
-figure shortens a step at a time before the tag cuts anything: to no decimal, then the next unit up
-("¢1M") (`compactMoneyForms`). A tag drops a unit only where every tile beside it shares it, and keeps
-every unit that tells tiles apart: under a sort by upkeep every bill is monthly, so a building's reads
-without its month ("¢4,612", "¢16.5k"); a network's cost and upkeep read per cell ("¢44/c", "¢36.9/c"),
-the cell telling a network's figure from a building's whole one. A road's cost or upkeep and a building's
-bill fit the smallest tile at every text scale; only a mod's road dearer than ten thousand a cell outruns
-the tag at 150%, where the tile draws no tag: a figure is never cut nor clipped, as a cut number reads as
-another number. A sorted value whose unit does not fit beside it keeps its whole number and drops the
-unit ("1 000", not "1 000 stu…"), which the Sort control names, unless the unit scales with its size (see
-"Numbers said once") or the look writes units in words, where the tile draws no tag rather than a bare
-count; a number too long for the tag alone ("1 234 567" at 130% on the smallest tile) is not said. The fit is judged from the glyph advances of the game's own fonts, the wider of Overpass and
-Noto Sans per character, so it errs toward the short form; a word too wide (a long locked word) is cut
-once by the name planner, with "…", as Cohtml draws no CSS ellipsis. The advances are the one table the
-cards are sized from (`textWidth`, see "The cards"), so every letter of a unit counts its own measured
-width rather than a flat 0.65 em: a figure with narrow letters can fit whole where a flat width would
-shorten it, and one with a wide letter ("W") takes a short form sooner.
+**The tiles.** Each building is a picture tile of Tile size, the picture 4 rem smaller and inset 2. A
+tag at its foot says the plate's first number (`plateNumbers`, `tileTag`): the cost, or for a locked
+building its milestone ("MS 4", by the list's rule, `lockedFact`) or the locked word, in the look's
+amber, which reads on the tag because the tag stays dark under every interface style. Under a sort by a
+value other than the cost or the lot the tag says the value sorted by, as 0.2.x's Grid did, so a re-sort
+says why the tiles moved. A money figure the tag cannot hold whole at the text scale is said in
+thousands or millions with one decimal, in the game's own template for a total ("¢1.2M"): a cut figure
+reads as another number, a rounded one as itself. Where that is still too wide, as large text makes it
+on the smallest tile, the figure shortens a step at a time before the tag cuts anything: to no decimal,
+then the next unit up ("¢1M") (`compactMoneyForms`). A tag drops a unit only where every tile beside it
+shares it, and keeps every unit that tells tiles apart: under a sort by upkeep every bill is monthly, so
+a building's reads without its month ("¢4,612", "¢16.5k"); a network's cost and upkeep read per cell
+("¢44/c", "¢36.9/c"), the cell telling a network's figure from a building's whole one. A road's cost or
+upkeep and a building's bill fit the smallest tile at every text scale; only a mod's road dearer than
+ten thousand a cell outruns the tag at 150%, where the tile draws no tag: a figure is never cut nor
+clipped, as a cut number reads as another number. A sorted value whose unit does not fit beside it keeps
+its whole number and drops the unit ("1 000", not "1 000 stu…"), which the Sort control names, unless
+the unit scales with its size (see "Numbers said once"), in a look that writes units in words too: a
+tile with no tag would read as missing data; a number too long for the tag alone ("1 234 567" at 130% on
+the smallest tile) is not said. The fit is judged from the glyph advances of the game's own fonts, the
+wider of Overpass and Noto Sans per character, so it errs toward the short form; a word too wide (a long
+locked word) is cut once by the name planner, with "…", as Cohtml draws no CSS ellipsis. The advances
+are the one table the cards are sized from (`textWidth`, see "The cards"), so every letter of a unit
+counts its own measured width rather than a flat 0.65 em: a figure with narrow letters can fit whole
+where a flat width would shorten it, and one with a wide letter ("W") takes a short form sooner.
 
 A locked tile draws a padlock that is a raster, since a masked vector is what Cohtml cannot draw. A unique
 carries the game's own mark (`UniqueMark`, and the `unique-mark-states` mixin the list shares), sized
@@ -1499,13 +1500,14 @@ Plates in words after the number, "80 km/h", "400 patients", "20 jobs", a count 
 "1,500 capacity", a lot by its two sides (`UnitMarks`, held still by `useUnitMarks` for every body and
 the readout), so no row prints a bare count. The value a sort orders by and a card's capacity say theirs
 by the same rule (`sortedText`, `capacityFact`), in the upgrades panel's rows too, and a tile's tag says
-it or nothing (see "The bodies"); a level and a parking count stay digits, as the game gives them no
-unit and Sort names them. The word always follows the number, joined by a space rather than placed by a
-template, so a language that puts it first, or inflects it, still reads it after; the strings ship in
-English only. In words a plate draws no glyph; the readout says each value as its rows do, in every
-form, never its digits alone, and names no kind alone, since every row says its own unit; and the hover
-card draws no glyph by its key number, whose line says it by the same word rule (`keyFigure`), a count
-the game gives no unit bare under the card's "Capacity".
+it where it fits, else its whole number as Standard's does, the Sort control naming the kind (see "The
+bodies"); a level and a parking count stay digits, as the game gives them no unit and Sort names them.
+The word always follows the number, joined by a space rather than placed by a template, so a language
+that puts it first, or inflects it, still reads it after; the strings ship in English only. In words a
+plate draws no glyph; the readout says each value as its rows do, in every form, never its digits alone,
+and names no kind alone, since every row says its own unit; and the hover card draws no glyph by its key
+number, whose line says it by the same word rule (`keyFigure`), a count the game gives no unit bare
+under the card's "Capacity".
 
 ## Names
 

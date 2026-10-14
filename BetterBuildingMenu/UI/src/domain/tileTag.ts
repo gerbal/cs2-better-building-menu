@@ -3,8 +3,8 @@
  * a sort by a value the value sorted by, as 0.2.x's Grid drew it, so a re-sort says why the tiles moved.
  * A money figure too wide for the tag is said in thousands or millions, shortened a step at a time,
  * rather than cut, and where no form fits, not said; a tag drops only a unit every tile beside it shares,
- * none in a look that writes units in words, and a word that still runs over is cut by the name planner,
- * with "…". Pure. See docs/design-notes.md, "The bodies".
+ * or a sorted count's unit where it does not fit, as the Sort control names it, in either look; and a word
+ * that still runs over is cut by the name planner, with "…". Pure. See docs/design-notes.md, "The bodies".
  */
 import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
@@ -79,12 +79,12 @@ export function tileTag(
     return { text: fittingForm(compactUnitForms(text, separators), tileWidth, textScale), locked };
   }
 
-  // Any other sorted value keeps its whole number and drops its unit, which the Sort control names: a
-  // cut word reads as noise, and a number too long for the tag is not said, as a clipped one reads as a
-  // smaller one. In a look that writes units in words a tag never says a bare count, so it is left off.
-  // A word, the locked word, that still runs over is cut by the name planner, with "…".
+  // Any other sorted value keeps its whole number and drops its unit, which the Sort control names, in a
+  // look that writes units in words too: a cut word reads as noise, a tile with no tag as missing data, and
+  // a number too long for the tag is not said, as a clipped one reads as a smaller one. A word, the locked
+  // word, that still runs over is cut by the name planner, with "…".
   const number = bySort ? leadingNumber(text) : null;
-  if (number !== null) return { text: marks.mode === "glyph" && tagFits(number, tileWidth, textScale) ? number : "", locked };
+  if (number !== null) return { text: tagFits(number, tileWidth, textScale) ? number : "", locked };
   return { text: cutToTag(text, tileWidth, textScale), locked };
 }
 
