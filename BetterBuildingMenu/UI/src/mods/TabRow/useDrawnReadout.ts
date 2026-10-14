@@ -22,6 +22,7 @@ const sameReadout = (one: DrawnReadout, other: DrawnReadout): boolean =>
   one.at === other.at
   && (one.room === null ? other.room === null : other.room !== null && Math.abs(one.room - other.room) <= SAME_WIDTH)
   && (one.drawn.sep === null ? other.drawn.sep === null : other.drawn.sep !== null && Math.abs(one.drawn.sep - other.drawn.sep) <= SAME_WIDTH)
+  && one.drawn.pixel === other.drawn.pixel
   && sameWidths(one.drawn.names, other.drawn.names) && sameWidths(one.drawn.figures, other.drawn.figures);
 
 export interface DrawnReadoutRefs {
@@ -61,7 +62,8 @@ export function useDrawnReadout(status: StatusLine | null, at: string, onRead: D
       const texts = measure.current;
       if (!(rem > 0) || shown === null || !texts) return;
       // The tabs' own width, as the row shrinks them to the readout: Cohtml's scrollWidth holds what runs past.
-      const room = rowBox.clientWidth > 0 ? (rowBox.clientWidth - Math.max(tabs.offsetWidth, tabs.scrollWidth)) * rem - 2 * TAB_CELL_GAP : null;
+      // Whole pixels, each reading up to one off: a pixel less, as each text drawn counts one more.
+      const room = rowBox.clientWidth > 0 ? (rowBox.clientWidth - Math.max(tabs.offsetWidth, tabs.scrollWidth) - 1) * rem - 2 * TAB_CELL_GAP : null;
       const [name, sep, ...figures] = Array.from(texts.children) as HTMLElement[];
       // A text of no width has not been laid out: the estimate stands in for it.
       const width = (element: HTMLElement | undefined) => (element !== undefined && element.offsetWidth > 0 ? element.offsetWidth * rem : null);
@@ -76,6 +78,7 @@ export function useDrawnReadout(status: StatusLine | null, at: string, onRead: D
             return drawn === null ? [] : [[figure, drawn] as const];
           })),
           sep: width(sep),
+          pixel: rem,
         },
       };
       onRead((last) => (last !== null && sameReadout(last, next) ? last : next));

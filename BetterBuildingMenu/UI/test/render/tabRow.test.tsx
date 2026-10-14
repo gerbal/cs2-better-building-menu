@@ -7,6 +7,7 @@ import { entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { clearPointed, getAssetMenuView, resetAssetMenuView, setDrawnForm, setPointed } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
+import { TAB_CELL_GAP } from "../../src/domain/assetMenuLayout";
 import { textWidth } from "../../src/domain/textWidth";
 import { TabRow } from "../../src/mods/TabRow/TabRow";
 
@@ -565,6 +566,38 @@ describe("the readout under Status line only", () => {
       assert.deepEqual(figures, ["¢5 500/km"]);
     });
   }
+
+  it("drops the cost where the drawn name, \"·\" and cost fall short of the room by less than a pixel each, as whole pixels round them", () => {
+    const ids = Array.from({ length: 16 }, (_, at) => `Cat${at}`);
+    set("AssetMenuCategories", ids.map((id) => category(id)));
+    set("AssetMenuCategoryCounts", ids.map((id) => ({ id, count: 30 })));
+    set("AssetMenuCategory", "Cat0");
+    setBinding("options", "textScale", 1.3);
+    act(() => root!.unmount());
+    const textOf = (node: ReactTestInstance): string => node.children.map((child) => (typeof child === "string" ? child : textOf(child))).join("");
+    const font = (className: string) => (className === "statusName" ? 11 : 10) * 1.3;
+    const widthOf = (part: ReactTestInstance) => 0.9 * (textWidth(textOf(part), font(String(part.props.className))) + (part.props.className === "sep" ? 6 : 0));
+    // The name, a "·" and the cost as drawn, then the room the tabs leave them, half a pixel more (1 rem a pixel).
+    const sayAt = (tabs: (line: number) => number) => {
+      const parts = () => root!.root.find((node) => node.type === "span" && node.props.className === "statusMeasure").children as ReactTestInstance[];
+      const line = () => parts().slice(0, 3).reduce((sum, part) => sum + widthOf(part), 0);
+      const drawn = (element: { type: unknown; props: Record<string, unknown> }) => {
+        const className = String(element.props.className ?? "");
+        if (className === "tabRow") return { clientWidth: 696 };
+        if (className === "cells") return { get offsetWidth() { return tabs(line()); }, get scrollWidth() { return tabs(line()); } };
+        if (className !== "statusMeasure") return null;
+        return { get children() { return parts().map((part) => ({ offsetWidth: widthOf(part) })); } };
+      };
+      act(() => { root = create(<TabRow width={706} />, { createNodeMock: drawn }); });
+      pointAtRoad();
+      settleFrames(frames);
+      return readout().findAll((node) => node.type === "span" && node.props.className === "statusFigure").map((node) => text(node).replace(/\s/g, " "));
+    };
+
+    assert.deepEqual(sayAt((line) => 696 - 2 * TAB_CELL_GAP - line - 8), ["¢5 500/km"]);
+    act(() => root!.unmount());
+    assert.deepEqual(sayAt((line) => 696 - 2 * TAB_CELL_GAP - line - 0.5), []);
+  });
 
   it("keeps the readout's own text under the other forms", () => {
     set("AssetMenuHoverCard", "pointer");
