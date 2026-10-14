@@ -130,7 +130,9 @@ namespace BetterBuildingMenu.Services
 
 		private string ComputeExpandedCategoryId()
 		{
-			if (MenuCategoryCounts.Count(category => category.Id.Length > 0) < 2)
+			// Roads keeps one chip per category with the game's own icon: a split one
+			// draws as its branches' generic glyphs.
+			if (MenuCategoryCounts.Count(category => category.Id.Length > 0) < 2 || VanillaMenus.IsRoads(_query.UiMenu))
 			{
 				return string.Empty;
 			}

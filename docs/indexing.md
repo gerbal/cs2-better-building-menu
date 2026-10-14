@@ -367,6 +367,13 @@ render as a pair of identical marks. An international airport and a space centre
 build at an airport, so they are drawn under the Airport tab. Folds are keyed on the node prefab
 name because the label is localized: a label key would fold in English but not in German.
 
+**Roads.** The strip draws one chip per Roads category, with the game's own icon, and never splits
+one into branches (`CatalogView.ExpandedCategoryId`): a split category draws as its branches'
+generic glyphs, a road and a second roundabout for Cul-de-Sacs. Under a category, a Roads branch
+holding one building joins the category's largest branch (`RoadsLoneBranches`), so Parking's
+Parking Hall and Automated Parking Building sit with the rest of Parking instead of each heading
+a group of one. The rule counts rather than naming nodes, so a pack's lone branch folds too.
+
 ## Language changes
 
 Names the index resolves from the game's dictionary, such as milestone names, follow a language
