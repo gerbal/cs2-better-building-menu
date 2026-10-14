@@ -359,7 +359,7 @@ describe("a control's popover", () => {
     assert.equal(widthList().length, 1);
   });
 
-  it("keeps every row of VIEW and the lists beside it inside its popover at 150% text, a label too long cut by the name planner, the look's name kept", () => {
+  it("keeps every row of VIEW and the lists beside it inside its popover at 150% text, the note cut by the name planner before the label, \"Look\" kept", () => {
     set("AssetMenu", "Roads");
     setBinding("options", "textScale", 1.5);
     mount({ kind: "view", left: 0 });
@@ -381,7 +381,8 @@ describe("a control's popover", () => {
 
     assertInside();
     const look = root!.root.findAllByType(PickerRow).find((row) => row.props.label === "Look · Standard")!;
-    assert.match(drawn(look).name, /^[^]*…[^]*Standard$/);
+    assert.equal(drawn(look).name, "Look · Standard");
+    assert.match(drawn(look).note ?? "", /^every.*….*›$/);
     pick("Look · Standard");
     assertInside();
     pick("Width · 1");

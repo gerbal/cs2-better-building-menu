@@ -604,8 +604,9 @@ control sits over it (`topRowRightInset`).
   and 5; beside the pane the steps that do not fit are dimmed, and a stored one among them draws as
   the widest that fits. A click sends one `SetAssetMenuWidthStep` and keeps both lists open. A
   popover is a fixed 240 wide, so at large text a row whose label and note run past it ("Look ·
-  Standard" at 150%) has its label cut once by the name planner, the choice's own word kept ("…·
-  Standard"); the pane is wide enough not to cut.
+  Standard" at 150%) has its note cut once by the name planner ("every… ›"), the label whole, so
+  "Look" still tells it from Width; a label too long alone is cut, keeping the choice's own word, its
+  note left off. The pane is wide enough not to cut.
 - **The pane** draws the same four lists: Filters inline, the chips under them in their Active row,
   and Group by, Sort by and View as summaries that open theirs over the pane, on the popovers'
   surface. One of its lists is open at a time, and a press outside leaves it open, since the pane's
