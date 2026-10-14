@@ -104,11 +104,13 @@ On a developed save:
      game's own detail shows, and Status line only draws no card: it names the building and its
      figures at the tabs' right end;
    - in View › Look pick Plates: the menu redraws at once and the list stays open; Roads' plates say
-     their speed with its unit (80 km/h) and no symbol, and the tabs' right end says 100 km/h unless
-     shown with no symbol; Zones' look-alike tiles carry their names on a band across the top; in
+     their speed with its unit (80 km/h) and no symbol, and in Roads › Medium Roads at the widest
+     Width the tabs' right end says "100 km/h unless shown", with no symbol; Zones' look-alike tiles
+     carry their names, whole or cut, on a band across the top, or their tag where no cut fits; in
      Signature Buildings pick Tiles and read a look-alike unique or built tile: its band spans the tile
      and covers the top of the game's mark, where Standard's tag, only as wide as its text, does not
-     (take a screenshot); Options › Look reads Plates; pick Standard again;
+     (take a screenshot); Options › Look reads Plates; pick Standard again, and put Signature
+     Buildings back on Icons with View › Default view;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
    time, and a click elsewhere closes it. Pick List, Icons, Tiles and Cards in View: the menu keeps
