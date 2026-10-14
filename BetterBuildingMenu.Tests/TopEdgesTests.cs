@@ -42,7 +42,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var description = ModSource.English("Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.TopEdge]");
 
-			foreach (var words in new[] { "Whole lines", "collapses", "a tab", "typing", "double-click", "Free" })
+			foreach (var words in new[] { "Whole lines", "below the fewest lines", "collapses", "a tab", "typing", "double-click", "Free" })
 			{
 				Assert.Contains(words, description, StringComparison.Ordinal);
 			}

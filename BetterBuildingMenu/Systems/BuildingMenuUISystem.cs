@@ -331,7 +331,7 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger("ClearAssetMenuFilters", ClearAssetMenuFilters);
 				CreateTrigger<string>("SetAssetMenuStripTab", SetAssetMenuStripTab);
 			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
-			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
+			CreateTrigger<bool>("CommitAssetMenuHeight", CommitAssetMenuHeight);
 			// VIEW's More options.
 			CreateTrigger("OpenModOptions", OpenModOptions);
 			// Which of our strings the player's language lacks, for the game's words in their place.

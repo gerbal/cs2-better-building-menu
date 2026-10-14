@@ -37,6 +37,12 @@ export function isDoublePress(first: EdgePress | null, second: EdgePress): boole
 /** The box collapsed to its top row and tabs, or opened again: C# keeps it and saves only a change. */
 export const setCollapsedCommand = (collapsed: boolean): Command => ({ method: "SetAssetMenuCollapsed", args: [collapsed] });
 
+/**
+ * A height drag's release: C# saves the height it holds, and opens a collapsed box only where the release opens it,
+ * a drag from the build menu's collapsed box, never the upgrades panel's.
+ */
+export const commitHeightCommand = (opens: boolean): Command => ({ method: "CommitAssetMenuHeight", args: [opens] });
+
 /** A double press on the top edge: C# puts the box back at the game's own size, open, and saves once. */
 export const restoreSizeCommand = (): Command => ({ method: "RestoreAssetMenuSize", args: [] });
 

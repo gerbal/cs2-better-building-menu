@@ -54,7 +54,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   // docs/design-notes.md, "The top edge".
   const edges = useBoxEdges();
   const rules = { snap: edges.snap, collapsible: edges.collapsible, collapsed: useValue(AssetMenuCollapsed$) };
-  const { height: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
+  const { shownHeight: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
   // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag.
   const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged)), [edges, dragged]);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });

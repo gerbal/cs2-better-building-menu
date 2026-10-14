@@ -685,16 +685,21 @@ again only when it changes: the echo of the height sent re-renders the menu with
 box holds its floor and the readout says "Release to collapse"; the release collapses it to its top
 row and tabs, 63.75 tall on the same bottom edge (`AssetMenuCollapsed`, saved once, through
 `SetAssetMenuCollapsed`), with `data-bbm-collapsed` on the box and the popovers hung from its chrome.
-The stored height is put back, so the box opens again at it. Every open is collapsed until a tab
-press, All included, typing in the field, or a double press on the edge opens it; the tab row and the
-field send the open before their own pick, and clearing the field leaves the box as it is. Enter and
-the list's keys from the field open a collapsed box first, from a listener the top row holds while it
-is collapsed, since the body that acts on them is not drawn; they act once it is. A drag from the
-collapsed box starts at a body of nothing, under Free too: it stays collapsed until the pointer passes
-the floor, then opens there and follows the pointer; its release lands as any other, and the height's
-commit opens the box in the same save (`AssetMenuSize.Commit`), while the box stays open until the
-binding says so, so the body is never drawn again. A release back under the floor leaves it collapsed.
-A commit from the upgrades panel's drag opens a collapsed box too: it saves the one height both share.
+The stored height is put back, so the box opens again at it, and the box draws collapsed from the
+release until the binding says so, whichever of the two echoes comes first. Every open is collapsed
+until a tab press, All included, typing in the field, or a double press on the edge opens it; the tab
+row and the field send the open before their own pick, and clearing the field leaves the box as it
+is. Enter and the list's keys from the field open a collapsed box first, from a listener the top row
+holds while it is collapsed, since the body that acts on them is not drawn; they act once it is. A
+drag from the collapsed box starts at a body of nothing, under Free too: it stays collapsed until the
+pointer passes the floor, then opens there and follows the pointer, the box drawn at the drag's height
+rather than the stored one the binding holds until C# echoes the drag's (the hook's `shownHeight`).
+Its release lands as any other, and the height's commit opens the box in the same save
+(`CommitAssetMenuHeight(true)`, `AssetMenuSize.Commit`), while the box stays open at the height it
+landed on until the binding says so, so the body is never drawn again. A release back under the floor
+leaves it collapsed; under Free the readout says nothing there, since that release neither collapses
+nor lands. The upgrades panel's commit says it opens nothing, so its drag never opens the build menu,
+though it saves the one height both share.
 
 **A double press puts the game's own size back.** Two presses on the edge within 400 ms, the first a
 click and the second under three pixels from it, restore the box: the body at 144.25, the first Width
@@ -863,9 +868,9 @@ Every setting's shipped value lives in `SettingsDefaults`, whose constants the s
 initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.Apply`.
 
 - **What a reset puts back.** `Apply` writes every stored setting's shipped value: the height,
-  the Width step, the collapse (open), the upgrader flag, the control pane, Default view, At large text, Top edge, each
-  menu's own VIEW and GROUP, Replace the vanilla build menu, Searching widens automatically, Tile
-  size and the knobs. It leaves `SettingsVersion`, which records the migration, and the legacy
+  the Width step, the collapse (open), the upgrader flag, the control pane, Default view, At large
+  text, Top edge, each menu's own VIEW and GROUP, Replace the vanilla build menu, Searching widens
+  automatically, Tile size and the knobs. It leaves `SettingsVersion`, which records the migration, and the legacy
   `AssetMenuCatalogWidth` and `AssetMenuViewMode`, which only the migration reads.
 - **Then the version.** `SettingsDefaults.Reset` stores this release's settings version after the
   shipped values, keeping a later release's, so the next load migrates nothing: an upgrader put

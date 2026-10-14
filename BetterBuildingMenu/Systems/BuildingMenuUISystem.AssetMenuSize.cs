@@ -14,12 +14,12 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(height);
 		}
 
-		private void CommitAssetMenuHeight()
+		private void CommitAssetMenuHeight(bool opens)
 		{
 			// Only on release: a drag publishes on every mouse move, and
 			// writing the settings file at that rate is what the live binding avoids.
-			// A release that lands from a collapsed box opens it in the same save.
-			if (!AssetMenuSize.Commit(Mod.Settings, AssetMenuHeight.Clamp(_AssetMenuHeight)))
+			// A release that lands from the build menu's collapsed box opens it in the same save.
+			if (!AssetMenuSize.Commit(Mod.Settings, AssetMenuHeight.Clamp(_AssetMenuHeight), opens))
 			{
 				return;
 			}

@@ -60,7 +60,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var values = new FakeSettings { AssetMenuCollapsed = true };
 
-			Assert.True(AssetMenuSize.Commit(values, 202.75f));
+			Assert.True(AssetMenuSize.Commit(values, 202.75f, opens: true));
 			Assert.Equal(new FakeSettings { AssetMenuHeight = 202.75f }, values);
 		}
 
@@ -69,7 +69,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var values = new FakeSettings { AssetMenuCollapsed = true };
 
-			Assert.True(AssetMenuSize.Commit(values, AssetMenuHeight.Default + 0.05f));
+			Assert.True(AssetMenuSize.Commit(values, AssetMenuHeight.Default + 0.05f, opens: true));
 			Assert.False(values.AssetMenuCollapsed);
 		}
 
@@ -82,17 +82,32 @@ namespace BetterBuildingMenu.Tests
 		{
 			var values = new FakeSettings();
 
-			Assert.Equal(saves, AssetMenuSize.Commit(values, height));
+			Assert.Equal(saves, AssetMenuSize.Commit(values, height, opens: false));
 			Assert.Equal(saves ? height : AssetMenuHeight.Default, values.AssetMenuHeight);
 			Assert.False(values.AssetMenuCollapsed);
 		}
 
-		[Fact]
-		public void AHeightIsCommittedInOneSave()
+		[Theory]
+		[InlineData(AssetMenuHeight.Default, false)]
+		[InlineData(202.75f, true)]
+		public void AnUpgradesPanelCommitNeverOpensTheBuildMenu(float height, bool saves)
 		{
+			var values = new FakeSettings { AssetMenuCollapsed = true };
+
+			Assert.Equal(saves, AssetMenuSize.Commit(values, height, opens: false));
+			Assert.True(values.AssetMenuCollapsed);
+			Assert.Equal(height, values.AssetMenuHeight);
+		}
+
+		[Fact]
+		public void AHeightIsCommittedInOneSaveAndOpensOnlyWhereTheUISays()
+		{
+			var system = ModSource.Text("Systems/BuildingMenuUISystem.cs");
 			var commit = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.AssetMenuSize.cs"), "private void CommitAssetMenuHeight(");
 
-			Assert.Contains("if (!AssetMenuSize.Commit(Mod.Settings, AssetMenuHeight.Clamp(_AssetMenuHeight))) { return; } Mod.Settings.ApplyAndSave();", commit);
+			Assert.Contains("CreateTrigger<bool>(\"CommitAssetMenuHeight\", CommitAssetMenuHeight);", system);
+			Assert.Contains("private void CommitAssetMenuHeight(bool opens)", commit);
+			Assert.Contains("if (!AssetMenuSize.Commit(Mod.Settings, AssetMenuHeight.Clamp(_AssetMenuHeight), opens)) { return; } Mod.Settings.ApplyAndSave();", commit);
 			Assert.Single(System.Text.RegularExpressions.Regex.Matches(commit, "ApplyAndSave"));
 		}
 

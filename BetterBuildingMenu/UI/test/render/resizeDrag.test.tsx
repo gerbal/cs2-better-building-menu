@@ -320,6 +320,8 @@ describe("dragging the build menu's top edge under its rules", () => {
 
     release();
     assert.deepEqual(heights(), [174.25, 170]);
+    // An open box's commit opens nothing.
+    assert.deepEqual(triggers.at(-1)?.args, [false]);
     assert.equal(names().at(-1), "CommitAssetMenuHeight");
     assert.equal(menu.dragged, null);
   });
@@ -360,6 +362,11 @@ describe("dragging the build menu's top edge under its rules", () => {
     assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT, ASSET_MENU_DEFAULT_HEIGHT]);
     assert.deepEqual(collapsedSent(), [true]);
     assert.ok(!names().includes("CommitAssetMenuHeight"));
+    assert.equal(menu.collapsed, true, "held collapsed until C# answers");
+
+    rules.collapsed = true;
+    act(() => root!.update(<EdgeProbe />));
+    assert.equal(menu.collapsed, true);
   });
 
   it("from a collapsed box sends nothing under the floor, and a release there leaves it collapsed", () => {
@@ -383,13 +390,15 @@ describe("dragging the build menu's top edge under its rules", () => {
     move(276);
     nextFrame();
     assert.deepEqual(heights(), [124]);
+    assert.equal(menu.shownHeight, 124, "the drag's height, before C# echoes it");
 
     release();
     assert.deepEqual(heights(), [124, 120]);
     // The commit opens the box in its one save.
-    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+    assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "CommitAssetMenuHeight", args: [true] });
     assert.deepEqual(collapsedSent(), []);
     assert.equal(menu.collapsed, false, "held open until C# answers");
+    assert.equal(menu.shownHeight, 120, "where it lands, until the stored height answers");
 
     rules.collapsed = false;
     act(() => root!.update(<EdgeProbe />));
@@ -505,6 +514,13 @@ describe("the upgrades panel's drag, which keeps no rules of the build menu's", 
 
     assert.deepEqual(names(), ["SetAssetMenuHeight", "CommitAssetMenuHeight"]);
     assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT]);
+  });
+
+  it("never opens the build menu's collapsed box with its commit", () => {
+    act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 499 }));
+    act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+
+    assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "CommitAssetMenuHeight", args: [false] });
   });
 
   it("never puts the game's size back on two clicks: each is a press that commits", () => {

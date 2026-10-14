@@ -147,7 +147,7 @@
   "Options.LABEL[BetterBuildingMenu.WidthStep4]": "4 · covers the chirper",
   "Options.LABEL[BetterBuildingMenu.WidthStep5]": "5 · covers the chirper",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.TopEdge]": "Top edge",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.TopEdge]": "Where the menu's top edge settles when you drag it. Whole lines: where whole lines of buildings fit, and dragged below the lowest, the menu collapses to its search and tabs until you pick a tab, start typing or double-click the edge. Free: where you let go. While you drag, the end of the tabs says how many lines and buildings the menu shows.",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.TopEdge]": "Where the menu's top edge settles when you drag it. Whole lines: where whole lines of buildings fit, and dragged below the fewest lines, the menu collapses to its search and tabs until you pick a tab, start typing or double-click the edge. Free: where you let go. While you drag, the end of the tabs says how many lines and buildings the menu shows.",
   "Options.LABEL[BetterBuildingMenu.TopEdgeWhole]": "Whole lines",
   "Options.LABEL[BetterBuildingMenu.TopEdgeFree]": "Free",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DefaultView]": "Default view",

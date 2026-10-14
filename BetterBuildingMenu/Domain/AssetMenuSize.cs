@@ -13,18 +13,25 @@ namespace BetterBuildingMenu.Domain
 		private const float Unmoved = 0.1f;
 
 		/// <summary>
-		/// A release of a height drag: the height kept, and a collapsed box opened, as the release that lands from one
-		/// opens it. True when either moved, which is when it saves, once.
+		/// A release of a height drag: the height kept, and a collapsed box opened where <paramref name="opens"/> says
+		/// so, as a release that lands from the build menu's collapsed box does; the upgrades panel's never opens it.
+		/// True when either moved, which is when it saves, once.
 		/// </summary>
-		public static bool Commit(ISettingsValues values, float height)
+		public static bool Commit(ISettingsValues values, float height, bool opens)
 		{
-			if (Math.Abs(values.AssetMenuHeight - height) < Unmoved && !values.AssetMenuCollapsed)
+			var opened = opens && values.AssetMenuCollapsed;
+
+			if (Math.Abs(values.AssetMenuHeight - height) < Unmoved && !opened)
 			{
 				return false;
 			}
 
 			values.AssetMenuHeight = height;
-			values.AssetMenuCollapsed = false;
+
+			if (opened)
+			{
+				values.AssetMenuCollapsed = false;
+			}
 
 			return true;
 		}
