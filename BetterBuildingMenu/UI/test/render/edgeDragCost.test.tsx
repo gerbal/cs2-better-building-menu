@@ -109,14 +109,6 @@ describe("what a drag of the top edge re-renders", () => {
     });
   }
 
-  it("under Free redraws the list once at each line it gains, its slots as they were between", () => {
-    // The list draws 6 lines from 173.5 and 7 from 202.75.
-    const { renders, rowRenders } = drag("list", "free");
-
-    assert.equal(renders, 2);
-    assert.ok(rowRenders <= 2 * ALL_ROWS, `${rowRenders}`);
-  });
-
   for (const topEdge of ["whole", "free"]) {
     it(`under ${topEdge === "whole" ? "Whole lines" : "Free"} plans the tab row and its readout at most once a pointer frame, not again for the echo`, () => {
       const { tabRows } = drag("list", topEdge);
@@ -125,13 +117,16 @@ describe("what a drag of the top edge re-renders", () => {
     });
   }
 
-  // The room under the tiles grows each frame, their places do not; the icons and the cards sit centred, so they move.
-  for (const [body, textScale, rowDraws] of [["tiles", 1, 2], ["icons", 1, FRAMES], ["cards", 1, FRAMES], ["list", 1.5, 3]] as const) {
-    it(`under Free redraws the ${body} at ${textScale * 100} % at most once a pointer frame, and its rows only as their places change`, () => {
+  // Under Free the box follows the pointer and the release keeps the height let go at, but the body draws the whole
+  // lines under the pointer, so it draws again only as they change, as under Whole lines: about two renders for each
+  // line crossed, the release's own height included, and each render reads its rows once. The icons and the cards sit
+  // centred in the room, so a height between their lines would move every one of them.
+  for (const [body, textScale, crossed] of [["list", 1, 2], ["list", 1.5, 3], ["tiles", 1, 2], ["icons", 1, 2], ["cards", 1, 2]] as const) {
+    it(`under Free redraws the ${body} at ${textScale * 100} % only as the lines it draws change, not once a pointer frame`, () => {
       const { renders, rowRenders } = drag(body, "free", textScale);
 
-      assert.ok(renders <= FRAMES, `${renders}`);
-      assert.ok(rowRenders <= rowDraws * ALL_ROWS, `${rowRenders}`);
+      assert.ok(renders >= 1 && renders <= 2 * crossed, `${renders}`);
+      assert.ok(rowRenders <= renders * ALL_ROWS, `${rowRenders}`);
     });
   }
 

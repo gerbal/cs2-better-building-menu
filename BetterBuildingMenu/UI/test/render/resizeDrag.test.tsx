@@ -263,7 +263,7 @@ describe("dragging the build menu's top edge under its rules", () => {
   let root: ReactTestRenderer | undefined;
   let menu: AssetMenuHeight;
   // Whole tens stand for whole lines here: what the hook does with the rule, not the rule.
-  const rules: TopEdgeRules = { snap: (height) => Math.round(height / 10) * 10, collapsible: true, collapsed: false };
+  const rules: TopEdgeRules = { snap: (height) => Math.round(height / 10) * 10, hold: (height) => Math.round(height / 10) * 10, collapsible: true, collapsed: false };
   const EdgeProbe = () => {
     menu = useAssetMenuHeight(drawnBodyHeight, rules);
     return menu.blocker;

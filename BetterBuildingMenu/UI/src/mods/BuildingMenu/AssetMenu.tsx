@@ -53,7 +53,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   // lands on whole lines of the open body, or below the floor collapses the box to its top row and tabs. See
   // docs/design-notes.md, "The top edge".
   const edges = useBoxEdges();
-  const rules = { snap: edges.snap, collapsible: edges.collapsible, collapsed: useValue(AssetMenuCollapsed$) };
+  const rules = { snap: edges.snap, hold: edges.hold, collapsible: edges.collapsible, collapsed: useValue(AssetMenuCollapsed$) };
   const { shownHeight: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
   // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag.
   const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged)), [edges, dragged]);

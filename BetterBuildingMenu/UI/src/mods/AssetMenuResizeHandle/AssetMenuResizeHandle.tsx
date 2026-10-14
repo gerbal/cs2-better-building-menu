@@ -39,8 +39,9 @@ export interface AssetMenuHeight {
    */
   dragged: number | null;
   /**
-   * Under the build menu's rules, the height the body draws at: where the release lands, from the drag's first move
-   * until the stored height answers the release; null otherwise, when the body draws the stored height.
+   * Under the build menu's rules, the height the body draws at: the whole lines under the pointer from the drag's first
+   * move, then where the release lands until the stored height answers it; null otherwise, when the body draws the
+   * stored height.
    */
   held: number | null;
   /**
@@ -62,6 +63,11 @@ const ANSWERED = 0.01;
 export interface TopEdgeRules {
   /** Where a release lands, from the height the pointer asks for: whole lines of the open body, or under Top edge's Free that height. */
   snap: (height: number) => number;
+  /**
+   * Where the body draws while the edge moves, from the height the pointer asks for: the whole lines under it, under
+   * either Top edge value, so the body draws again only as its lines change.
+   */
+  hold: (height: number) => number;
   /** Whether a release below the body's floor collapses the box: under Whole lines; under Top edge's Free the floor holds. */
   collapsible: boolean;
   /** Whether the box is collapsed: a drag from it starts at a body of nothing, so it opens only past the floor. */
@@ -277,8 +283,8 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
     ? <div className={styles.resizeBlocker} onMouseMove={moveResize} onMouseUp={endResize} onMouseLeave={endResize} />
     : null;
 
-  // The body draws where the release lands, so between the lines it lands on it has nothing new to draw.
-  const held = dragged !== null && rules !== null ? rules.snap(dragged) : landing;
+  // The body draws the whole lines under the pointer, so between them it has nothing new to draw.
+  const held = dragged !== null && rules !== null ? rules.hold(dragged) : landing;
   const collapsed = (storedCollapsed || closing) && !opening && (dragged === null || collapses(dragged));
   // A collapsed box opened by a drag draws the drag's height at once, not the stored height the binding holds until
   // C# echoes the drag's; past the floor the dragged height is the drawn one.

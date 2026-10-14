@@ -323,6 +323,8 @@ describe("a drag on the asset menu's top edge", () => {
   let root: ReactTestRenderer | undefined;
   const readout = () => root!.root.findAll((node) => node.props["data-readout"] !== undefined)[0];
   const heights = () => triggers.filter((call) => call.name === "SetAssetMenuHeight").map((call) => call.args[0]);
+  // What the drag sent, less the body's count of its screen, which follows the height it draws.
+  const sentButScreen = () => triggers.filter((call) => call.name !== "SetCatalogScreen").map((call) => call.name);
 
   beforeEach(() => {
     resetBindings();
@@ -402,7 +404,8 @@ describe("a drag on the asset menu's top edge", () => {
     act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseUp());
 
     assert.deepEqual(heights(), [199.25, 199.25]);
-    assert.equal(triggers.at(-1)?.name, "CommitAssetMenuHeight");
+    // The body, drawn at whole lines during the drag, then counts its screen at the height let go.
+    assert.equal(sentButScreen().at(-1), "CommitAssetMenuHeight");
   });
 
   it("says below the body's floor that the release collapses the box, which holds its floor until then", () => {
@@ -450,7 +453,7 @@ describe("a drag on the asset menu's top edge", () => {
     act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseUp());
 
     assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT, ASSET_MENU_MIN_HEIGHT]);
-    assert.equal(triggers.at(-1)?.name, "CommitAssetMenuHeight");
+    assert.equal(sentButScreen().at(-1), "CommitAssetMenuHeight");
     assert.ok(!triggers.some((call) => call.name === "SetAssetMenuCollapsed"));
   });
 });

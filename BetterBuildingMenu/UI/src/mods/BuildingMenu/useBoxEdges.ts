@@ -17,6 +17,12 @@ import { useMenuBody } from "mods/useMenuBody";
 export interface BoxEdges {
   /** Where a release of the top edge lands: whole lines of the open body, or under Top edge's Free where it is let go. */
   snap: (height: number) => number;
+  /**
+   * Where the body draws while the top edge moves: the whole lines under the pointer, under Top edge's Free too, where
+   * the box follows the pointer and the release keeps the height let go at. The body then draws again only as its
+   * lines change, not every pointer frame.
+   */
+  hold: (height: number) => number;
   /** Whether a release below the body's floor collapses the box: under Whole lines; under Top edge's Free the floor holds. */
   collapsible: boolean;
   /**
@@ -63,7 +69,8 @@ export function useBoxEdges(): BoxEdges {
       widthOnly: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragWidthOnly]", "Width {0}") ?? "Width {0}",
     };
     const format = (count: number) => groupDigits(count, separators);
-    const snap = free ? clampAssetMenuHeight : (height: number) => snapToLines(height, spacing);
+    const hold = (height: number) => snapToLines(height, spacing);
+    const snap = free ? clampAssetMenuHeight : hold;
     // The slots the body would show at the height the release lands on, as the box draws it; the cards' rows alone, as a
     // card is as wide as its words.
     const heightText = (height: number): string | null => {
@@ -80,6 +87,6 @@ export function useBoxEdges(): BoxEdges {
       return widthReadout(step, screenSlots(bodyGrid({ ...input, boxWidth: width, bodyHeight, smallMenusGrow: false })), words, format);
     };
 
-    return { snap, collapsible: !free, heightText, widthText };
+    return { snap, hold, collapsible: !free, heightText, widthText };
   }, [input, cardHeight, textScale, translate, separators, free, collapsed]);
 }
