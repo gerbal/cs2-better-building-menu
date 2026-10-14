@@ -171,20 +171,30 @@ function holdsNumber(word: string): boolean {
 /** Whether a word says nothing alone: a single letter, a word like "of", or a separator. A cut never keeps one for itself. */
 const saysNothing = (word: string): boolean => [...word].length < 2 || STOP_WORDS.has(word.toLowerCase());
 
-/** The scripts whose letters have no case, as code point ranges: Hebrew, Arabic, the Indic scripts, Thai, Hangul, Hiragana, Katakana and CJK. */
+/**
+ * The scripts whose letters have no case, as code point ranges, approximately: Hebrew, Arabic, the Indic scripts,
+ * Thai, Hangul, Hiragana, Katakana and CJK, a block's few marks and signs among them, and the Indic scripts' digits.
+ */
 const UNCASED_LETTERS: readonly (readonly [number, number])[] = [
   [0x05d0, 0x05ea], [0x0620, 0x064a], [0x066e, 0x06d3], [0x0904, 0x0dff], [0x0e01, 0x0e3a], [0x0e40, 0x0e4e], [0x1100, 0x11ff], [0x3041, 0x3096], [0x309d, 0x309f], [0x30a1, 0x30fa], [0x30fc, 0x30ff],
   [0x3400, 0x4dbf], [0x4e00, 0x9fff], [0xa960, 0xa97c], [0xac00, 0xd7a3], [0xf900, 0xfaff], [0xff66, 0xff9f], [0x20000, 0x3134f],
 ];
 
+/** Other scripts' digits beyond 0-9, as code point ranges: Arabic-Indic, Persian and fullwidth. */
+const OTHER_DIGITS: readonly (readonly [number, number])[] = [[0x0660, 0x0669], [0x06f0, 0x06f9], [0xff10, 0xff19]];
+
+/** Every range a word's character may fall in beyond a cased letter and 0-9. */
+const WORD_RANGES = [...UNCASED_LETTERS, ...OTHER_DIGITS];
+
 /**
- * Whether a character is a letter or a digit. Cohtml builds no Unicode property escape, so a cased letter is one whose
- * upper and lower case differ, a digit is 0-9, and a letter of a script without case is one of `UNCASED_LETTERS`.
+ * Whether a character is a letter or a digit, approximately as the Unicode letter and number classes have it.
+ * Cohtml builds no Unicode property escape, so a cased letter is one whose upper and lower case differ, a digit
+ * is 0-9 or one of `OTHER_DIGITS`, and a letter of a script without case is one of `UNCASED_LETTERS`.
  */
 const isWordChar = (char: string): boolean => {
   if (char.toLowerCase() !== char.toUpperCase() || (char >= "0" && char <= "9")) return true;
   const point = char.codePointAt(0) ?? 0;
-  return UNCASED_LETTERS.some(([from, to]) => point >= from && point <= to);
+  return WORD_RANGES.some(([from, to]) => point >= from && point <= to);
 };
 
 /** The word as typed words begin it: lower case, any opening bracket, quote or other mark left off. */

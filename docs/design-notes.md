@@ -428,8 +428,9 @@ names it in `data-bbm-look` for the live check.
 - **Plain selectors.** The tokens' rules use class selectors only: Cohtml has no grid, `:not()`,
   `:has()`, `:is()` or `an+b` selectors, and no `text-overflow` on a flex item.
 - **No Unicode property escape.** Cohtml builds no regular expression with `\p{...}` or `\P{...}`: it throws
-  "Invalid property name" and the menu fails to load, where Node and Chromium accept it. The UI's source spells such a
-  class out (`opening` in `namePlan.ts`), and a test fails on an escape anywhere under `UI/src`.
+  "Invalid property name" and the menu fails to load, where Node and Chromium accept it. The UI's source stands in for such a
+  class by hand, approximately: a cased letter by its two cases differing, a digit or a letter of a script
+  without case by a table of ranges (`opening` in `namePlan.ts`). A test fails on an escape anywhere under `UI/src`.
 
 ## The tab row
 

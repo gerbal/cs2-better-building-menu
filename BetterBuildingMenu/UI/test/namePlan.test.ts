@@ -414,6 +414,13 @@ describe("a word as typed words begin it", () => {
     assert.equal(opening("2x2"), "2x2");
   });
 
+  it("counts the digits of other scripts as digits, as the Unicode number class did: Arabic-Indic, Persian and fullwidth", () => {
+    assert.equal(opening("(\u0663\u0664"), "\u0663\u0664");
+    assert.equal(opening("\u00AB\u06F4\u06F5"), "\u06F4\u06F5");
+    assert.equal(opening("(\uFF11\uFF12"), "\uFF11\uFF12");
+    assert.equal(opening("-\u0669"), "\u0669");
+  });
+
   it("leaves off every opening mark that is neither a letter nor a digit", () => {
     assert.equal(opening("(Large)"), "large)");
     assert.equal(opening("\"Quoted\""), "quoted\"");
