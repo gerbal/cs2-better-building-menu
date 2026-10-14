@@ -95,9 +95,24 @@ export interface StatusLine {
   name: string;
   /** In order: a locked building's milestone, the cost, the upkeep, the key number, the lot; those that fit. */
   parts: string[];
+  /** Every figure it could say, in the same order, fitting or not: what the readout measures as drawn. */
+  figures: string[];
   /** The name and the figures share one line, as the readout does above 100% text, where two lines do not fit the row. */
   oneLine: boolean;
 }
+
+/**
+ * The readout's texts as the game drew them, in rem: names and figures by their text, and a "·" with its
+ * padding; null or missing where not drawn yet, which the estimate stands in for.
+ */
+export interface StatusDrawn {
+  names: ReadonlyMap<string, number>;
+  figures: ReadonlyMap<string, number>;
+  sep: number | null;
+}
+
+/** Nothing drawn yet: every width is the estimate's. */
+export const NOTHING_DRAWN: StatusDrawn = { names: new Map(), figures: new Map(), sep: null };
 
 /** The readout's two lines' fonts at the text scale, and the room each "·" between two figures takes: tabRow.module.scss. */
 export interface StatusFonts {
@@ -114,7 +129,8 @@ const BARE_NUMBER = /^[\d\s.,'\u2019\u00A0\u202F]+$/;
  * over; then its figures with their units in words ("100 km/h"), a network's money per kilometre. Short of
  * room the lot goes first, then the upkeep, then the key number, then the cost; a locked building's
  * milestone stays. In one line (above 100% text) the name comes first and keeps its room less the
- * milestone's, and the figures that fit follow it by the same order.
+ * milestone's, and the figures that fit follow it by the same order. Each text is as wide as `drawn`
+ * says the game drew it, else as the estimate makes it.
  */
 export function statusLine(
   entry: BuildingCatalogEntry,
@@ -125,6 +141,7 @@ export function statusLine(
   room: number,
   fonts: StatusFonts,
   oneLine = false,
+  drawn: StatusDrawn = NOTHING_DRAWN,
 ): StatusLine {
   const card = pointerCardText(entry, kind, separators, words, achievedMilestone);
   const figure = (key: string): string | null => card.rows.find((row) => row.key === key)?.value ?? null;
@@ -140,8 +157,10 @@ export function statusLine(
     { text: lot === null ? null : `${words.labels.lot} ${lot}`, drop: 4 },
   ];
   let kept = all.filter((part): part is { text: string; drop: number } => part.text !== null);
-  const texts = (parts: readonly { text: string }[]) => parts.reduce((sum, part) => sum + textWidth(part.text, fonts.line), 0);
-  const width = (parts: readonly { text: string }[]) => texts(parts) + Math.max(0, parts.length - 1) * fonts.sep;
+  const figures = kept.map((part) => part.text);
+  const sep = drawn.sep ?? fonts.sep;
+  const texts = (parts: readonly { text: string }[]) => parts.reduce((sum, part) => sum + (drawn.figures.get(part.text) ?? textWidth(part.text, fonts.line)), 0);
+  const width = (parts: readonly { text: string }[]) => texts(parts) + Math.max(0, parts.length - 1) * sep;
   const fullName = entry.name || entry.prefabName || "";
   const keep = entry.distinctWord ? [entry.distinctWord] : [];
   const nameIn = (width: number) => planName(fullName, { width, lines: 1, font: fonts.name }, { keep }).lines[0] ?? "";
@@ -151,17 +170,18 @@ export function statusLine(
       const top = Math.max(...kept.map((part) => part.drop));
       kept = kept.filter((part) => part.drop !== top);
     }
-    return { name: nameIn(room), parts: kept.map((part) => part.text), oneLine };
+    return { name: nameIn(room), parts: kept.map((part) => part.text), figures, oneLine };
   }
 
   // One line: the name, then a "·" before each figure. The name is planned in what the milestone leaves it.
   const milestone = kept.filter((part) => part.drop === 0);
-  const name = nameIn(Math.max(0, room - (milestone.length > 0 ? width(milestone) + fonts.sep : 0)));
-  const line = () => textWidth(name, fonts.name) + texts(kept) + kept.length * fonts.sep;
+  const name = nameIn(Math.max(0, room - (milestone.length > 0 ? width(milestone) + sep : 0)));
+  const named = drawn.names.get(name) ?? textWidth(name, fonts.name);
+  const line = () => named + texts(kept) + kept.length * sep;
   while (line() > room && kept.some((part) => part.drop > 0)) {
     const top = Math.max(...kept.map((part) => part.drop));
     kept = kept.filter((part) => part.drop !== top);
   }
 
-  return { name, parts: kept.map((part) => part.text), oneLine };
+  return { name, parts: kept.map((part) => part.text), figures, oneLine };
 }

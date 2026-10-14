@@ -1730,15 +1730,20 @@ Any other stored value reads as beside the pointer, on every load.
   second with their units in words (`statusLine`): a locked building's milestone, the cost, the upkeep,
   the key number, the lot. Short of room the lot goes first, then the upkeep, then the key number, then
   the cost; the milestone stays; a key number that is a bare count is named ("Capacity 400"), since the
-  readout draws no glyph beside it. The room is what the tab row leaves its readout (`readoutRoom`, the
-  one number `planTabRow` reads too), so the tabs never move. While the readout names a building the rows
+  readout draws no glyph beside it. The room is what the tab row leaves its readout, so the tabs never
+  move: estimated at the text scale (`readoutRoom`, the one number `planTabRow` reads too) until the row
+  has drawn, then as drawn, the row's width less the tabs' own and the gaps before the readout
+  (`useDrawnReadout`). Its texts are measured the same way: the name, a "·" and every figure it could say
+  are drawn unseen beside the row, out of its flow, in the readout's faces, and each is as wide as drawn
+  once read, two frames on. The estimates err wide, by as much as a figure at large text, where a figure
+  the drawn room holds would go. While the readout names a building the rows
   keep the blanks the legend said: blanks that followed the pointer would flicker with every crossing, so
   the legend, with the readout's own text, comes back when the pointer leaves. The readout's two lines
   fit the row only at 100% text, so above it the status line is one line, as the readout's own is: the
   name, cut to the room less a locked building's milestone, then the figures that fit after it, a "·"
   before each, by the same order, so a larger text shows fewer figures (`StatusLine.oneLine`). The tab
   row reads the pointed building, and works the room out, only under this form: it hands the room over as
-  a function, `useStatusLine(room: () => number, keyKind)`, which is called only then, so under the other
+  a function, `useStatusLine(room: () => number, keyKind, drawn)`, which is called only then, so under the other
   two it never draws again as the pointer crosses cells.
 
 **This changes 0.2.x:** pointing at a building drew the game's tooltip over that building alone, its

@@ -114,6 +114,21 @@ describe("what Status line only says in the readout", () => {
     assert.ok(say(building({}), 400).parts.includes("400 students"));
   });
 
+  it("measures each text as the game drew it, where it has, the estimate standing in for the rest", () => {
+    const road = building({ name: "Four-Lane Road", category: "Networks", constructionCost: 5_500, upkeep: 120, costIsPerDistance: true, speedLimit: 100, capacity: null, lotWidth: 0, lotDepth: 0 });
+    const estimated = statusLine(road, "speed", separators, words, 0, 160, fonts, true);
+    const [cost] = estimated.figures;
+    // Drawn narrower than the estimates make them, the name and the cost fit the room together.
+    const drawn = { names: new Map([["Four-Lane Road", 60]]), figures: new Map([[cost, 40]]), sep: 6 };
+    const measured = statusLine(road, "speed", separators, words, 0, 110, fonts, true, drawn);
+
+    assert.deepEqual(statusLine(road, "speed", separators, words, 0, 110, fonts, true).parts, []);
+    assert.deepEqual(measured.parts, [cost]);
+    // Every figure it could say, fitting or not, in its order.
+    assert.equal(measured.figures.length, 3);
+    assert.deepEqual(measured.figures, estimated.figures);
+  });
+
   it("shortens sooner at a larger text scale, the same figures in the same order", () => {
     const school = building({ isLocked: true, unlockMilestone: 6 } as Partial<BuildingCatalogEntry>);
     const big = { name: 16.5, line: 15, sep: 12 };

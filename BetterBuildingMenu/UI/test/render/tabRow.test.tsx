@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { Profiler } from "react";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
+import { settleFrames } from "../harness/huggingNames";
 import { entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { clearPointed, getAssetMenuView, resetAssetMenuView, setDrawnForm, setPointed } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
+import { textWidth } from "../../src/domain/textWidth";
 import { TabRow } from "../../src/mods/TabRow/TabRow";
 
 const set = (name: string, value: unknown) => setBinding("BetterBuildingMenu", name, value);
@@ -413,6 +415,9 @@ describe("the tab row as the pointer crosses the cells", () => {
 
 describe("the readout under Status line only", () => {
   const globals = globalThis as unknown as Record<string, unknown>;
+  const FAKED = ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "ResizeObserver", "window"] as const;
+  const frames = new Map<number, () => void>();
+  let handles = 0;
   let saved: Record<string, unknown>;
   let timers: (() => void)[] = [];
   let root: ReactTestRenderer | undefined;
@@ -426,9 +431,15 @@ describe("the readout under Status line only", () => {
     set("AssetMenuHoverCard", "status");
     set("BuildingCatalog", { items: [], totalCount: 34, facts: { sharedValues: [], keyKind: "speed" } });
     timers = [];
-    saved = { setTimeout: globals.setTimeout, clearTimeout: globals.clearTimeout };
+    frames.clear();
+    saved = Object.fromEntries(FAKED.map((name) => [name, globals[name]]));
     globals.setTimeout = (run: () => void) => timers.push(run);
     globals.clearTimeout = () => undefined;
+    globals.requestAnimationFrame = (run: () => void) => { handles += 1; frames.set(handles, run); return handles; };
+    globals.cancelAnimationFrame = (handle: number) => frames.delete(handle);
+    globals.ResizeObserver = class { observe() { return undefined; } disconnect() { return undefined; } };
+    // A rem a pixel.
+    globals.window = { innerHeight: 1080 };
     root = mount();
   });
 
@@ -455,7 +466,8 @@ describe("the readout under Status line only", () => {
     act(() => setPointed({ entry: road(cost), cell: { x: 0, y: 0, w: 171, h: 27.25 } }));
     act(() => timers.splice(0).forEach((run) => run()));
   };
-  const named = () => root!.root.findAll((node) => node.type === "span" && node.props.className === "statusName");
+  // In the readout: the row draws the same texts unseen beside it, to measure them.
+  const named = () => readout().findAll((node) => node.type === "span" && node.props.className === "statusName");
 
   it("says the building as the page has it now, the pointed entry where the page no longer holds it", () => {
     set("BuildingCatalog", { items: [road(7_000)], totalCount: 34, facts: { sharedValues: [], keyKind: "speed" } });
@@ -501,7 +513,7 @@ describe("the readout under Status line only", () => {
     set("AssetMenuCategories", ids.map((id) => category(id)));
     set("AssetMenuCategoryCounts", ids.map((id) => ({ id, count: 30 })));
     set("AssetMenuCategory", "Cat0");
-    const figures = () => root!.root.findAll((node) => node.type === "span" && node.props.className === "statusFigure").map((node) => text(node));
+    const figures = () => readout().findAll((node) => node.type === "span" && node.props.className === "statusFigure").map((node) => text(node));
     const said = [1, 1.3, 1.5].map((scale) => {
       setBinding("options", "textScale", scale);
       act(() => root!.unmount());
@@ -516,6 +528,43 @@ describe("the readout under Status line only", () => {
       { scale: 1.5, name: "Four-Lane Road", figures: ["¢5 500/km"] },
     ]);
   });
+
+  for (const [scale, tabs, drawnTabs] of [[1.3, 16, 508], [1.5, 15, 480]] as const) {
+    it(`says the name and the cost at ${scale * 100}% text where the room the tabs leave, as drawn, holds them as drawn`, () => {
+      // The tabs as pictures over their counts; the game draws them, and the readout's texts, narrower than
+      // the estimates make them, which alone would leave no room for a figure.
+      const ids = Array.from({ length: tabs }, (_, at) => `Cat${at}`);
+      set("AssetMenuCategories", ids.map((id) => category(id)));
+      set("AssetMenuCategoryCounts", ids.map((id) => ({ id, count: 30 })));
+      set("AssetMenuCategory", "Cat0");
+      setBinding("options", "textScale", scale);
+      act(() => root!.unmount());
+      const textOf = (node: ReactTestInstance): string => node.children.map((child) => (typeof child === "string" ? child : textOf(child))).join("");
+      const font = (className: string) => (className === "statusName" ? 11 : 10) * scale;
+      const drawn = (element: { type: unknown; props: Record<string, unknown> }) => {
+        const className = String(element.props.className ?? "");
+        if (className === "tabRow") return { clientWidth: 696 };
+        if (className === "cells") return { offsetWidth: drawnTabs, scrollWidth: drawnTabs };
+        if (className !== "statusMeasure") return null;
+        return {
+          get children() {
+            const measure = root!.root.find((node) => node.type === "span" && node.props.className === "statusMeasure");
+            return measure.children.map((child) => {
+              const part = child as ReactTestInstance;
+              return { offsetWidth: 0.9 * (textWidth(textOf(part), font(String(part.props.className))) + (part.props.className === "sep" ? 6 : 0)) };
+            });
+          },
+        };
+      };
+      act(() => { root = create(<TabRow width={706} />, { createNodeMock: drawn }); });
+      pointAtRoad();
+      settleFrames(frames);
+      const figures = readout().findAll((node) => node.type === "span" && node.props.className === "statusFigure").map((node) => text(node).replace(/\s/g, " "));
+
+      assert.equal(text(named()[0]), "Four-Lane Road");
+      assert.deepEqual(figures, ["¢5 500/km"]);
+    });
+  }
 
   it("keeps the readout's own text under the other forms", () => {
     set("AssetMenuHoverCard", "pointer");

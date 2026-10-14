@@ -41,6 +41,7 @@ import { useStatusLine } from "mods/HoverCard/HoverCard";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useMenuBody } from "mods/useMenuBody";
 import styles from "./tabRow.module.scss";
+import { drawnAt, useDrawnReadout, type DrawnReadout } from "./useDrawnReadout";
 
 /**
  * A picture in a cell's icon slot, drawn as a background, whole at its own aspect: Cohtml has no
@@ -172,7 +173,13 @@ export const TabRow = ({ width }: { width: number }) => {
   const legend = legends[plan.legend] ?? [];
   // Status line only: the building pointed at, in the readout's room. The rows keep the blanks the legend
   // said, and the legend comes back when the pointer leaves. See docs/design-notes.md, "The hover card".
-  const status = useStatusLine(() => readoutRoom(row.items, width, textScale, format, form), keyKind);
+  // Its room and texts as the game drew them, once it has: the estimates err wide, and would drop a figure
+  // the room holds.
+  const [readoutRead, setReadoutRead] = useState<DrawnReadout | null>(null);
+  const readAt = `${textScale}\u0001${width}`;
+  const drawnReadout = drawnAt(readoutRead, readAt);
+  const status = useStatusLine(() => drawnReadout?.room ?? readoutRoom(row.items, width, textScale, format, form), keyKind, drawnReadout?.drawn);
+  const readoutRefs = useDrawnReadout(status, readAt, setReadoutRead);
   // The rows leave blank only what the readout says: a legend short of room says nothing, and they print it.
   // Before the paint, so the rows' blanks and the legend change on the same frame.
   const said = plan.legend === "none" ? NOTHING_SAID : stated;
@@ -213,8 +220,8 @@ export const TabRow = ({ width }: { width: number }) => {
 
   return (
     <div className={styles.band}>
-      <div className={styles.tabRow} data-clipped={plan.clipped ? "true" : undefined} data-tab-form={form}>
-        <div className={styles.cells}>
+      <div ref={readoutRefs.row} className={styles.tabRow} data-clipped={plan.clipped ? "true" : undefined} data-tab-form={form}>
+        <div ref={readoutRefs.cells} className={styles.cells}>
           {row.items.map((item) =>
             item.kind === "bracket"
               // Education's plate keeps its own form.
@@ -258,6 +265,15 @@ export const TabRow = ({ width }: { width: number }) => {
           </div>
         )}
       </div>
+      {/* What Status line only could say, drawn unseen in the readout's faces, out of the row's flow: the
+          readout says what fits as the game draws it. */}
+      {status !== null && (
+        <span ref={readoutRefs.measure} className={styles.statusMeasure} aria-hidden="true">
+          <span className={styles.statusName}>{status.name}</span>
+          <span className={styles.sep}>·</span>
+          {status.figures.map((figure, index) => <span key={index} className={styles.statusFigure}>{figure}</span>)}
+        </span>
+      )}
     </div>
   );
 };

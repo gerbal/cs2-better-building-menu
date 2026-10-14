@@ -7,7 +7,7 @@ import { memo, useEffect, useMemo, useRef, useState, type MutableRefObject, type
 import { clearPointed, getAssetMenuView, type Pointed } from "domain/assetMenuViewStore";
 import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { TAB_COUNT_SIZE, TAB_NAME_SIZE } from "domain/assetMenuLayout";
-import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type StatusLine } from "domain/hoverCard";
+import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type StatusDrawn, type StatusLine } from "domain/hoverCard";
 import { lookOf } from "domain/looks";
 import { hoverCardLabels } from "domain/hoverCardLines";
 import { coversPoint, placePointerCard, placeSlotCard, remRect, SLOT_ROOM, slotRowsKept, type Rect } from "domain/hoverCardPlace";
@@ -78,10 +78,10 @@ function useCardWords(): PointerCardWords {
  * Status line only: what the readout says of the building pointed at, in the room the tabs leave it, the
  * tabs never moving; null while nothing is pointed at, or the Hover card row picks another form. It reads
  * the pointed building, and works the room out, only under that form, and says the building as the page
- * has it now. Above 100% text the readout's two lines do not fit the row, so it draws one.
- * See docs/design-notes.md, "The hover card".
+ * has it now. Above 100% text the readout's two lines do not fit the row, so it draws one. Its texts are
+ * as wide as `drawn` says the game drew them, where it has. See docs/design-notes.md, "The hover card".
  */
-export function useStatusLine(room: () => number, keyKind: KeyKind): StatusLine | null {
+export function useStatusLine(room: () => number, keyKind: KeyKind, drawn?: StatusDrawn): StatusLine | null {
   const status = hoverCardForm(useValue(AssetMenuHoverCard$)) === "status";
   const pointed = usePointedAfterDelay(status);
   const page = useValue(BuildingCatalog$);
@@ -98,7 +98,7 @@ export function useStatusLine(room: () => number, keyKind: KeyKind): StatusLine 
     name: TAB_NAME_SIZE * textScale,
     line,
     sep: readoutSepWidth(line),
-  }, textScale > 1);
+  }, textScale > 1, drawn);
 }
 
 /**

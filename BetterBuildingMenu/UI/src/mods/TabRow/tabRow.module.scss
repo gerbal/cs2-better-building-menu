@@ -218,6 +218,19 @@ $icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
   @include read-second;
 }
 
+// Status line only's texts drawn unseen, out of the row's flow, each in its readout face, so the readout
+// says what fits as the game draws it.
+.statusMeasure {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: row;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 // A value said once, or the key kind named: its glyph beside its words, in the place line's brighter ink.
 .said {
   display: flex;
