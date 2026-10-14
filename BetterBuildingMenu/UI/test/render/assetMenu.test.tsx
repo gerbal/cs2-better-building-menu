@@ -146,6 +146,32 @@ describe("the asset menu's width strip", () => {
     assert.equal(root!.root.findAll((node) => node.props.className === "widthReach").length, 0);
   });
 
+  it("draws a strip down the box's left edge too, outside the body, and a press there starts the drag", () => {
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+    const left = root!.root.findAll((node) => node.props.className === "widthHandleLeft");
+
+    assert.equal(left.length, 1);
+    assert.equal(content.findAll((node) => node.props.className === "widthHandleLeft").length, 0);
+    assert.deepEqual(root!.root.findAll((node) => node.type === "div" && node.props["data-bbm-edge"] !== undefined).map((node) => node.props["data-bbm-edge"]).sort(), ["left", "right", "top"]);
+    act(() => left[0].props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthHandleLeft widthHandleActive").length, 1);
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthHandle widthHandleActive").length, 0, "the right strip is not the one held");
+  });
+
+  it("draws no left strip on a collapsed box, which has no body to run down", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuCollapsed", true);
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthHandleLeft").length, 0);
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthHandle").length, 1);
+  });
+
   it("draws the strip down the box's side, outside the body, so it reaches past the tab row", () => {
     act(() => {
       root = create(<AssetMenu onClose={() => {}} />);
@@ -200,6 +226,28 @@ describe("a drag on the asset menu's right edge", () => {
     // The row stays vanilla's 706; the box at 726 still fits short of the pane's room, at vanilla's edge.
     assert.equal(styleWidth("assetMenuRow"), "706rem");
     assert.equal(styleLeft("assetMenuRow"), "0rem");
+  });
+
+  it("names in the readout the step a release lands on and the buildings its width shows", () => {
+    const strip = root!.root.find((node) => node.props.className === "widthHandle");
+    act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
+    act(() => root!.root.find((node) => node.props.className === "widthBlocker").props.onMouseMove({ clientX: 600, buttons: 1 }));
+    act(() => frames.splice(0).forEach((callback) => callback()));
+    const readout = root!.root.findAll((node) => node.props["data-readout"] !== undefined)[0];
+
+    assert.equal(readout.props["data-readout"], "edge");
+    assert.deepEqual(readout.findAll((node) => node.props.className === "range")[0].children, ["Width 2 · 25 buildings"]);
+  });
+
+  it("names the step alone in a collapsed box, which draws no body to count buildings in", () => {
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuCollapsed", true));
+    const strip = root!.root.find((node) => node.props.className === "widthHandle");
+    act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
+    act(() => root!.root.find((node) => node.props.className === "widthBlocker").props.onMouseMove({ clientX: 600, buttons: 1 }));
+    act(() => frames.splice(0).forEach((callback) => callback()));
+    const readout = root!.root.findAll((node) => node.props["data-readout"] !== undefined)[0];
+
+    assert.deepEqual(readout.findAll((node) => node.props.className === "range")[0].children, ["Width 2"]);
   });
 
   it("snaps to the nearest step on release, and keeps that width until the stored step comes back", () => {

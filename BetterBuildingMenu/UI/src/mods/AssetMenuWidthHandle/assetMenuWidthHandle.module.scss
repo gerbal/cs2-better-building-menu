@@ -23,6 +23,32 @@
   border-bottom-right-radius: var(--bbm-boxRadius);
 }
 
+// The left edge's strip, the right one's mirror across the box's first 6 rem, down the body alone: the
+// tab row's first cell, All, starts inside it. Under the body's 8 rem margin, so no building sits
+// beneath it.
+.widthHandleLeft {
+  position: absolute;
+  top: $width-handle-top;
+  bottom: $tab-row-gap-above + $tab-row-height + $tab-row-pad-below;
+  left: 0;
+  width: $width-handle-width;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: url(cursor://horizontal-can-resize);
+}
+
+// With no reach beside it, it lights under the mouse by itself.
+.widthHandleLeft:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.widthHandleLeft:hover .widthGrip {
+  background-color: rgba(var(--scrollbarColor), 0.8);
+}
+
 // The game's resizer fills white under the mouse and more while dragging. The
 // strip and its reach share one hover, set from either, so they light as one.
 .widthHandleHovered,

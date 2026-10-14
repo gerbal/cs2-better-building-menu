@@ -395,3 +395,49 @@ describe("the width strip and its reach under the mouse", () => {
     assert.deepEqual(reach.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize; the edge snaps to the nearest set width"]);
   });
 });
+
+describe("dragging the build menu's left edge", () => {
+  let root: ReactTestRenderer | undefined;
+  const blocker = () => root!.root.find((node) => node.props.onMouseUp !== undefined);
+  const move = (clientX: number) => act(() => blocker().props.onMouseMove({ clientX, buttons: 1 }));
+
+  beforeEach(() => {
+    resetBindings();
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = (handle: number) => {
+      if (handle > 0) frames[handle - 1] = null;
+    };
+    act(() => {
+      root = create(<Probe width={706} step={1} snaps={PANE_HIDDEN} screen={SCREEN_PANE_HIDDEN} />);
+    });
+    act(() => drag.beginResize({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }, ASSET_MENU_WIDTH_HANDLE_WIDTH, "left"));
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  it("says which edge it holds while it is on", () => {
+    assert.equal(drag.activeEdge, "left");
+    act(() => blocker().props.onMouseUp());
+    assert.equal(drag.activeEdge, null);
+  });
+
+  it("widens the box as the pointer moves left, its left edge under it, and says the width it follows", () => {
+    move(470);
+    nextFrame();
+
+    assert.equal(drag.liveWidth, 926);
+    assert.equal(drag.dragged, 926);
+  });
+
+  it("lands the release on the nearest step and sends it once", () => {
+    move(400);
+    act(() => blocker().props.onMouseUp());
+
+    assert.deepEqual(steps(), [3]);
+    assert.equal(drag.dragged, null);
+  });
+});

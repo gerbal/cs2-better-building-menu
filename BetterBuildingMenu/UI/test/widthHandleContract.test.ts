@@ -79,6 +79,24 @@ describe("the grab strips", () => {
     assert.equal(strip.width, "6rem");
   });
 
+  it("mirror on the box's left edge, as wide, down the body alone, lit under the mouse by itself", () => {
+    const left = declarationsOf(WIDTH, ".widthHandleLeft");
+    const band = declarationsOf("mods/TabRow/tabRow.module.scss", ".band");
+    const tabBand = rem(band["padding-top"]) + rem(declarationsOf("mods/TabRow/tabRow.module.scss", ".tabRow").height) + rem(band["padding-bottom"]);
+
+    assert.equal(left.width, strip.width);
+    assert.equal(left.left, "0");
+    assert.equal(left.top, strip.top);
+    assert.equal(rem(left.bottom), tabBand, "clear of the tab row, whose All cell starts inside it");
+    assert.equal(left["z-index"], strip["z-index"]);
+    assert.ok(rem(left.width) <= BODY_SIDE_MARGIN);
+    assert.equal(fill(WIDTH, ".widthHandleLeft:hover"), "rgba(255, 255, 255, 0.1)");
+    assert.equal(fill(WIDTH, ".widthHandleLeft:hover .widthGrip"), "rgba(var(--scrollbarColor), 0.8)");
+    for (const property of ["background", "background-color", "background-image"]) {
+      assert.equal(left[property], undefined, property);
+    }
+  });
+
   it("lie clear of the tab row's readout: the band's right padding is the strip's width", () => {
     const band = declarationsOf("mods/TabRow/tabRow.module.scss", ".band");
 

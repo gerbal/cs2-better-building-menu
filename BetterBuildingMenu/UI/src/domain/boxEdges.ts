@@ -96,6 +96,10 @@ export interface EdgeWords {
   lineOnly: string;
   /** "Release to collapse", for a drag below the body's floor. */
   collapse: string;
+  /** "Width {0} · {1} buildings", for a side edge's drag. */
+  width: string;
+  /** "Width {0}", where the body cannot say how many buildings a width shows. */
+  widthOnly: string;
 }
 
 /**
@@ -112,4 +116,11 @@ export function heightReadout(lines: number, buildings: number | null, words: Ed
 /** Whether a height the top edge is dragged to collapses the box on release: below the body's floor. */
 export function collapses(height: number): boolean {
   return height < ASSET_MENU_MIN_HEIGHT;
+}
+
+/** What the readout says while a side edge is dragged: the step the release lands on, and the buildings its width shows where the body knows. */
+export function widthReadout(step: number, buildings: number | null, words: EdgeWords, format: (count: number) => string): string {
+  return buildings === null
+    ? words.widthOnly.replace("{0}", format(step))
+    : words.width.replace("{0}", format(step)).replace("{1}", format(buildings));
 }

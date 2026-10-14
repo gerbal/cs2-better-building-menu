@@ -310,6 +310,51 @@ describe("the right edge's drag", () => {
   });
 });
 
+describe("the left edge's drag", () => {
+  const open = screen();
+  const hidden = snapTargets(open);
+  const leftOf = (width: number, at = open) => boxPlacement(width, at).left;
+
+  it("keeps the drawn left edge under the pointer where the box grows left, between the slot's edge and the tool options'", () => {
+    // 16:9, the slot at 604: past 893 the box grows left from the chirper's clearance at 1,500, down to 396.
+    for (const travelled of [-30, -100, -150, -207]) {
+      const width = draggedStepWidth(706, 500, 500 + travelled, hidden, open, 1, "left");
+      near(leftOf(width), 604 + travelled, `${travelled} rem`);
+    }
+  });
+
+  it("takes the widest step for an edge at the tool options' edge or past it, and the narrowest at the slot's or right of it", () => {
+    assert.equal(draggedStepWidth(706, 500, 500 - 208, hidden, open, 1, "left"), 1475);
+    assert.equal(draggedStepWidth(706, 500, 500 - 900, hidden, open, 1, "left"), 1475);
+    assert.equal(draggedStepWidth(1091, 900, 900 + 195, hidden, open, 1, "left"), 706);
+    assert.equal(draggedStepWidth(1091, 900, 900 + 900, hidden, open, 1, "left"), 706);
+  });
+
+  it("lands from step 1 on step 2, then 3, then 5, and from step 3 back on 2, then 1", () => {
+    const landed = (from: number, travelled: number) => nearestSnapStep(draggedStepWidth(from, 500, 500 + travelled, hidden, open, 1, "left"), hidden);
+
+    assert.deepEqual([-30, -100, -208].map((travelled) => landed(706, travelled)), [2, 3, 5]);
+    assert.deepEqual([50, 150, 250].map((travelled) => landed(1091, travelled)), [3, 2, 1]);
+  });
+
+  it("keeps the drawn width until the pointer has travelled the dead zone, in either direction", () => {
+    const inside = WIDTH_DRAG_DEAD_ZONE - 0.5;
+
+    for (const travelled of [inside, -inside, 3, -3]) {
+      assert.equal(draggedStepWidth(1091, 900, 900 + travelled, hidden, open, 1, "left"), 1091, `${travelled} rem`);
+    }
+  });
+
+  it("beside the shown pane grows left from the pane's room, and stops at the widest step that fits", () => {
+    const beside = screen({ paneShown: true });
+    const besideSnaps = snapTargets(beside);
+
+    // The pane's room ends the box at 1,487: a box 30 rem left of the slot is 913 wide.
+    assert.equal(draggedStepWidth(706, 500, 470, besideSnaps, beside, 1, "left"), 913);
+    assert.equal(draggedStepWidth(706, 500, -5000, besideSnaps, beside, 1, "left"), 1091);
+  });
+});
+
 describe("the top row's right end", () => {
   it("is the box's inner edge, or 10 rem short of the chirper where the box runs over it", () => {
     const insets = [1, 2, 3, 4, 5].map((step) => {

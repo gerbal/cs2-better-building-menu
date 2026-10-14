@@ -11,14 +11,14 @@ import { TabRow } from "mods/TabRow/TabRow";
 import { useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 import { TopEdge } from "mods/TopEdge/TopEdge";
 import { TopRow } from "mods/TopRow/TopRow";
-import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
+import { AssetMenuWidthHandle, AssetMenuWidthHandleLeft, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 import { useBoxEdges } from "mods/BuildingMenu/useBoxEdges";
 import { useGameSlotLeft } from "mods/BuildingMenu/useGameSlotLeft";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { setOpenListCloser } from "mods/BuildingMenu/openListCloser";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useLookRoot } from "mods/useLookRoot";
-import { ASSET_MENU_BOX_CHROME, ASSET_MENU_WIDTH_HANDLE_REACH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
+import { ASSET_MENU_BOX_CHROME, ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
 import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
 import { controlLeftRem, popoverAnchor, toggleList, type ControlKind, type OpenList } from "domain/topRow";
 import { boxPlacement, popoverRightLimit, toolOptionsShift, topRowRightInset } from "domain/widthSteps";
@@ -58,6 +58,9 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag.
   const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged)), [edges, dragged]);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
+  // A side edge's drag says the step it lands on in the same place; it sends nothing until the release, so no echo
+  // draws it again.
+  const sideReadout = widthDrag.dragged === null ? null : edges.widthText(widthDrag.dragged, snaps);
   const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
   const shownWidth = widthDrag.liveWidth ?? menuWidth;
@@ -131,20 +134,27 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           )}
           {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
               their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
-          <TabRow width={shownWidth} edgeReadout={edgeReadout} />
+          <TabRow width={shownWidth} edgeReadout={edgeReadout ?? sideReadout} />
           {/* Down the box's right edge from under the top row to its bottom, past the tab row:
               a child of the box, not of the body, whose box would cut it. */}
           <AssetMenuWidthHandle
-            active={widthDrag.isResizing}
+            active={widthDrag.activeEdge === "right"}
             hovered={widthDrag.isHovered}
             hoverProps={widthDrag.hoverProps}
             onBeginResize={widthDrag.beginResize}
           />
+          {/* Its mirror down the left edge, over the body alone: a collapsed box has none. */}
+          {!collapsed && (
+            <AssetMenuWidthHandleLeft
+              active={widthDrag.activeEdge === "left"}
+              onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_WIDTH, "left")}
+            />
+          )}
           {/* Only beside the pane: with it hidden the menu may reach the room's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (
             <AssetMenuWidthReach
-              active={widthDrag.isResizing}
+              active={widthDrag.activeEdge === "right"}
               hovered={widthDrag.isHovered}
               hoverProps={widthDrag.hoverProps}
               onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)}

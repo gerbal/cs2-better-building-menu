@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ASSET_MENU_WIDTH_HANDLE_WIDTH, isPrimaryPress, pxPerRemFrom } from "domain/assetMenuLayout";
 import { DRAG_THRESHOLD_PX } from "domain/boxEdges";
-import { draggedStepWidth, nearestSnapStep, type WidthSnap, type WidthStepScreen } from "domain/widthSteps";
+import { draggedStepWidth, nearestSnapStep, type WidthEdge, type WidthSnap, type WidthStepScreen } from "domain/widthSteps";
 import { send } from "mods/bindings";
 import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
 
@@ -16,8 +16,12 @@ export interface AssetMenuWidthDrag {
    * stored step comes back; null otherwise, when the box draws its step.
    */
   liveWidth: number | null;
-  /** Starts a drag from a press on an element `widthRem` wide, which the press measures rem against. */
-  beginResize: (event: any, widthRem?: number) => void;
+  /** Starts a drag of one side edge from a press on an element `widthRem` wide, which the press measures rem against. */
+  beginResize: (event: any, widthRem?: number, edge?: WidthEdge) => void;
+  /** The edge a drag holds, while one is on. */
+  activeEdge: WidthEdge | null;
+  /** The width the box follows the pointer at, once a drag has moved; null otherwise, the release's settling included. */
+  dragged: number | null;
   /**
    * Covers the screen for the length of a drag so the menu keeps the mouse
    * when it leaves the strip. Null between drags; render it beside the menu.
@@ -46,9 +50,9 @@ export interface AssetMenuWidthBounds {
 }
 
 /**
- * The right edge's drag: the box follows the pointer between the narrowest and the
- * widest step the edge snaps to, and the release sends the nearest step, once. See
- * docs/design-notes.md, "The box at its Width step, and the control pane".
+ * A side edge's drag: the box follows the pointer between the narrowest and the widest step
+ * the edge snaps to, and the release sends the nearest step, once. See docs/design-notes.md,
+ * "The box at its Width step, and the control pane".
  */
 export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen }: AssetMenuWidthBounds): AssetMenuWidthDrag {
   const [isResizing, setIsResizing] = useState(false);
@@ -57,9 +61,11 @@ export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, scree
   // The snap a release sent, held until the stored step reaches it, so the box does
   // not flash the old step's width for the round trip through C#.
   const [settling, setSettling] = useState<WidthSnap | null>(null);
-  const drag = useRef<{ active: boolean; moved: boolean; startX: number; startWidth: number; last: number; pxPerRem?: number }>({
+  const [activeEdge, setActiveEdge] = useState<WidthEdge | null>(null);
+  const drag = useRef<{ active: boolean; moved: boolean; edge: WidthEdge; startX: number; startWidth: number; last: number; pxPerRem?: number }>({
     active: false,
     moved: false,
+    edge: "right",
     startX: 0,
     startWidth: 0,
     last: 0,
@@ -107,7 +113,7 @@ export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, scree
     if (next !== drawn.current) send({ method: "SetAssetMenuWidthStep", args: [next] });
   }, []);
 
-  function beginResize(event: any, widthRem: number = ASSET_MENU_WIDTH_HANDLE_WIDTH): void {
+  function beginResize(event: any, widthRem: number = ASSET_MENU_WIDTH_HANDLE_WIDTH, edge: WidthEdge = "right"): void {
     if (!isPrimaryPress(event)) return;
     event.preventDefault?.();
     event.stopPropagation?.();
@@ -117,8 +123,9 @@ export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, scree
     const pressed = event.currentTarget as Element | null | undefined;
     const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().width, widthRem);
     const from = liveWidth ?? menuWidth;
-    drag.current = { active: true, moved: false, startX: event.clientX, startWidth: from, last: from, pxPerRem };
+    drag.current = { active: true, moved: false, edge, startX: event.clientX, startWidth: from, last: from, pxPerRem };
     setIsResizing(true);
+    setActiveEdge(edge);
   }
 
   function moveResize(event: any): void {
@@ -132,7 +139,7 @@ export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, scree
     if (!state.moved && Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD_PX) return;
 
     state.moved = true;
-    state.last = draggedStepWidth(state.startWidth, state.startX, event.clientX, snaps, screen, state.pxPerRem);
+    state.last = draggedStepWidth(state.startWidth, state.startX, event.clientX, snaps, screen, state.pxPerRem, state.edge);
     pending.current.width = state.last;
 
     if (pending.current.frame === 0) {
@@ -148,6 +155,7 @@ export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, scree
     pending.current = { frame: 0, width: null };
     state.active = false;
     setIsResizing(false);
+    setActiveEdge(null);
     setDragWidth(null);
 
     // A press that never passed the threshold is a click, and a click on the strip
@@ -172,7 +180,7 @@ export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, scree
     onMouseLeave: () => setIsHovered(false),
   };
 
-  return { isResizing, liveWidth, beginResize, blocker, isHovered, hoverProps };
+  return { isResizing, liveWidth, beginResize, activeEdge, dragged: dragWidth, blocker, isHovered, hoverProps };
 }
 
 /** The strip's hint, the one place the snapping is told. */
@@ -191,17 +199,30 @@ export interface AssetMenuWidthHandleProps {
 
 /**
  * The strip down the box's right edge, from under the top row to its bottom: drag for the width, which snaps to the
- * steps. Its hint is the game's Tooltip: the game draws no title
- * attribute.
+ * steps. Its hint is the game's Tooltip: the game draws no title attribute. Its marker names the edge for the live
+ * check and the render tests.
  */
 export const AssetMenuWidthHandle = ({ active, hovered = false, hoverProps, onBeginResize }: AssetMenuWidthHandleProps) => (
   <Tooltip tooltip={useWidthHint()}>
     <div
       className={classNames(styles.widthHandle, hovered && styles.widthHandleHovered, active && styles.widthHandleActive)}
       onMouseDown={onBeginResize}
+      data-bbm-edge="right"
       {...hoverProps}
     >
       <div className={classNames(styles.widthGrip, hovered && styles.widthGripHovered, active && styles.widthGripActive)} />
+    </div>
+  </Tooltip>
+);
+
+/**
+ * The strip down the box's left edge, the right one's mirror, over the body alone: the same drag across the steps,
+ * the same hint, lit under the mouse by itself, as it has no reach to light with.
+ */
+export const AssetMenuWidthHandleLeft = ({ active, onBeginResize }: Pick<AssetMenuWidthHandleProps, "active" | "onBeginResize">) => (
+  <Tooltip tooltip={useWidthHint()}>
+    <div className={classNames(styles.widthHandleLeft, active && styles.widthHandleActive)} onMouseDown={onBeginResize} data-bbm-edge="left">
+      <div className={classNames(styles.widthGrip, active && styles.widthGripActive)} />
     </div>
   </Tooltip>
 );

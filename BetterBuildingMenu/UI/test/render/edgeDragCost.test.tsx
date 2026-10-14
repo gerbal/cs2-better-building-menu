@@ -4,7 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry, showBody } from "../harness/render";
 import { reads as bindingReads, resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
-import { TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 
@@ -130,6 +130,35 @@ describe("what a drag of the top edge re-renders", () => {
 
       assert.ok(renders <= FRAMES, `${renders}`);
       assert.ok(rowRenders <= rowDraws * ALL_ROWS, `${rowRenders}`);
+    });
+  }
+
+  // A side edge sends nothing until its release, so the stored step the body draws from holds still.
+  for (const edge of ["right", "left"] as const) {
+    it(`redraws no body and plans the tab row at most once a pointer frame through a drag of the ${edge} edge`, () => {
+      showBody("list");
+      setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(Array.from({ length: ROWS }, (_, at) => counted(at + 1))));
+      act(() => {
+        root = create(<AssetMenu onClose={() => {}} />);
+      });
+      const blocker = () => root!.root.find((node) => node.props.className === "widthBlocker");
+      const rowsAtMount = reads;
+      const rendersAtMount = bodyRenders();
+      const tabRowsAtMount = tabRowRenders();
+
+      // The strip is drawn as many pixels wide as it is rem, so a pixel is a rem; the right edge moves right, the left left.
+      const sign = edge === "right" ? 1 : -1;
+      act(() => root!.root.find((node) => node.props["data-bbm-edge"] === edge).props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
+      for (let frame = 1; frame <= FRAMES; frame++) {
+        act(() => blocker().props.onMouseMove({ clientX: 500 + sign * frame * 4, buttons: 1 }));
+        act(() => frames.splice(0).forEach((callback) => callback()));
+      }
+
+      assert.ok(rowsAtMount > 0 && rendersAtMount > 0, "the body and its rows drew at mount");
+      assert.equal(bodyRenders() - rendersAtMount, 0);
+      assert.equal(reads - rowsAtMount, 0);
+      assert.ok(tabRowRenders() - tabRowsAtMount <= FRAMES, `${tabRowRenders() - tabRowsAtMount}`);
+      act(() => blocker().props.onMouseUp());
     });
   }
 });

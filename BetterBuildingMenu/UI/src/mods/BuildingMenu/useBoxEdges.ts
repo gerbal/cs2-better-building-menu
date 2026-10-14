@@ -5,9 +5,10 @@ import { useMemo } from "react";
 import { ASSET_MENU_DEFAULT_HEIGHT, clampAssetMenuHeight, drawnBodyHeight } from "domain/assetMenuLayout";
 import { groupDigits } from "domain/assetMenuMetricFormat";
 import { bodyGrid, lineSpacing, screenSlots, type LineSpacing } from "domain/bodyGeometry";
-import { collapses, heightReadout, snapToLines, type EdgeWords } from "domain/boxEdges";
+import { collapses, heightReadout, snapToLines, widthReadout, type EdgeWords } from "domain/boxEdges";
 import { cardGeometry, cardLineSpacing } from "domain/cardsLayout";
 import { useTextScale } from "domain/textScaleSetting";
+import { nearestSnapStep, type WidthSnap } from "domain/widthSteps";
 import { AssetMenuCollapsed$, AssetMenuTopEdge$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
 import { screenPixelRem, useBodyGridInput } from "mods/BuildingCatalog/useBodyGrid";
 import { useNumberSeparators } from "mods/Bodies/useBodyWords";
@@ -25,6 +26,8 @@ export interface BoxEdges {
    * of a collapsed box, whose release does neither.
    */
   heightText: (height: number) => string | null;
+  /** What the readout says while a side edge is dragged to this width: the step the release lands on, and what it shows. */
+  widthText: (width: number, snaps: readonly WidthSnap[]) => string;
 }
 
 /**
@@ -53,6 +56,8 @@ export function useBoxEdges(): BoxEdges {
       line: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLine]", "{0} line · {1} buildings (game: {2})") ?? "{0} line · {1} buildings (game: {2})",
       lineOnly: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLineOnly]", "{0} line (game: {1})") ?? "{0} line (game: {1})",
       collapse: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragCollapse]", "Release to collapse") ?? "Release to collapse",
+      width: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragWidth]", "Width {0} · {1} buildings") ?? "Width {0} · {1} buildings",
+      widthOnly: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragWidthOnly]", "Width {0}") ?? "Width {0}",
     };
     const format = (count: number) => groupDigits(count, separators);
     const snap = free ? clampAssetMenuHeight : (height: number) => snapToLines(height, spacing);
@@ -67,6 +72,15 @@ export function useBoxEdges(): BoxEdges {
       return heightReadout(grid.lines, screenSlots(grid), words, format);
     };
 
-    return { snap, collapsible: !free, heightText };
+    // The step the release lands on, and the slots its width shows at the body's height; the step alone for the cards,
+    // and for a collapsed box, whose body is not drawn.
+    const widthText = (width: number, snaps: readonly WidthSnap[]) => {
+      const step = nearestSnapStep(width, snaps);
+      const landed = snaps.find((snap) => snap.step === step)?.width ?? width;
+      if (input === null || collapsed) return widthReadout(step, null, words, format);
+      return widthReadout(step, screenSlots(bodyGrid({ ...input, boxWidth: landed, smallMenusGrow: false })), words, format);
+    };
+
+    return { snap, collapsible: !free, heightText, widthText };
   }, [input, cardHeight, textScale, translate, separators, free, collapsed]);
 }

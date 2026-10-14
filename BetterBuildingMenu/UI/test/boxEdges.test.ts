@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { drawnBodyHeight } from "../src/domain/assetMenuLayout";
 import { bodyGrid, lineSpacing, type BodyGridInput } from "../src/domain/bodyGeometry";
-import { collapses, DOUBLE_PRESS_MS, GAME_MENU_SCREEN, heightOfLines, heightReadout, isDoublePress, restoreSizeCommand, setCollapsedCommand, snapToLines, type EdgeWords } from "../src/domain/boxEdges";
+import { collapses, DOUBLE_PRESS_MS, GAME_MENU_SCREEN, heightOfLines, heightReadout, isDoublePress, restoreSizeCommand, setCollapsedCommand, snapToLines, widthReadout, type EdgeWords } from "../src/domain/boxEdges";
 import { cardGeometry, cardLineSpacing } from "../src/domain/cardsLayout";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
 
@@ -16,6 +16,8 @@ const words: EdgeWords = {
   line: "{0} line · {1} buildings (game: {2})",
   lineOnly: "{0} line (game: {1})",
   collapse: "Release to collapse",
+  width: "Width {0} · {1} buildings",
+  widthOnly: "Width {0}",
 };
 /** The most body the box draws, under the top HUD's band. */
 const ROOM = drawnBodyHeight(ASSET_MENU_MAX_HEIGHT);
@@ -149,5 +151,15 @@ describe("a double press on the top edge", () => {
 
   it("asks C# for the game's own size, once", () => {
     assert.deepEqual(restoreSizeCommand(), { method: "RestoreAssetMenuSize", args: [] });
+  });
+});
+
+describe("the readout while a side edge is dragged", () => {
+  it("names the step the release lands on and the buildings its width shows", () => {
+    assert.equal(widthReadout(3, 30, words, String), "Width 3 · 30 buildings");
+  });
+
+  it("names the step alone where the body cannot count its buildings, as the cards", () => {
+    assert.equal(widthReadout(5, null, words, String), "Width 5");
   });
 });

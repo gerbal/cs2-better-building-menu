@@ -211,7 +211,7 @@ centre at every text scale.
   the game's own text size, steps 4 and 5 draw as step 3, which is 0.2.4's own row: the box to
   1,487 and the pane to 1,872.
 
-**The right edge snaps.** A drag shows the box following the pointer, between the narrowest and the
+**Either side edge snaps.** A drag shows the box following the pointer, between the narrowest and the
 widest step the edge can snap to; beside the pane those are only the steps that fit. Until the
 pointer has travelled 12 rem from the press, in either direction, the box keeps the width it was
 pressed at, so a release there sends nothing: where two steps share a right edge, a nudge of a few
@@ -225,7 +225,25 @@ or 5 draws as 3, and a drag back onto 3 would otherwise store 3 over the step th
 later. A menu closed mid-drag follows the same rule. The box keeps the snapped width until the
 stored step comes back from C#, so it does not flash the old width for the round trip. The drag is
 the hook's own state, so what reads the stored step, the Auto rule's Cards from width among them,
-changes at the release, not on every frame of the drag.
+changes at the release, not on every frame of the drag. While the box follows the pointer, the
+readout at the tabs' right end names the step the release lands on and the buildings its width
+shows at the body's height, "Width 3 · 30 buildings"; the cards, whose width follows their words, and
+a collapsed box, which draws no body, say the step alone. Where the pointer
+crosses the 12 rem, the box jumps by that much to the width under it and follows it from there, on
+both edges.
+
+**The left edge mirrors the right.** Its drag keeps the box's drawn left edge under the pointer, as
+far from it as the press was. The left edge moves only where the box grows left: a box keeps the
+slot's left edge up to the first three steps' limit, and stops growing at the tool options' edge, so
+on 16:9 the left edge sits at the slot's for steps 1 and 2 and at the tool options' for steps 4 and 5.
+A pointer at the slot's edge or right of it takes the narrowest step, and one at the tool options'
+edge or past it the widest; between them, the box whose left edge is under it. So from step 1 a drag
+left lands on step 2, then 3, then 5, and step 4, whose left edge is step 5's, is the right edge's,
+Options' or View's. The release, the dead zone and a release on the step drawn are the right
+edge's. Its strip is the right one's mirror across the box's first 6 rem, under the body's margin,
+and runs down the body alone: the tab row's All cell starts inside it, so the strip stops above the
+tabs, and a collapsed box, which has no body, has none. Having no reach, it lights under the mouse by
+itself.
 
 **The width strip runs down the box's right edge.** A 6 rem strip from under the top row, so close
 keeps its presses, to the box's bottom, past the tab row's band: a child of the box, not of the
