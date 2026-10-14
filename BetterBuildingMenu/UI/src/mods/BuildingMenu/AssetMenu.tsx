@@ -55,8 +55,9 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const edges = useBoxEdges();
   const rules = { snap: edges.snap, hold: edges.hold, collapsible: edges.collapsible, collapsed: useValue(AssetMenuCollapsed$) };
   const { shownHeight: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
-  // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag.
-  const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged)), [edges, dragged]);
+  // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag. Below the
+  // floor the box is drawn as the drag found it, which says whether a release there collapses it.
+  const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged, collapsed)), [edges, dragged, collapsed]);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps });
   // A side edge's drag says the step it lands on in the same place. It sends nothing until the release, and what it
   // says depends on the step alone, so it is worked out once for each step the pointer lands on.

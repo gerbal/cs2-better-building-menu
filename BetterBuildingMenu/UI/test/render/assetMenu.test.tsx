@@ -494,7 +494,7 @@ describe("the body under Top edge's Free while the top edge moves", () => {
       });
 
       for (let height = 90; height <= 420; height += 0.25) {
-        assert.equal(edges.heightText(edges.hold(height)), edges.heightText(height), `${height} rem, held at ${edges.hold(height)}`);
+        assert.equal(edges.heightText(edges.hold(height), false), edges.heightText(height, false), `${height} rem, held at ${edges.hold(height)}`);
       }
     });
   }
@@ -609,6 +609,16 @@ describe("the collapsed box", () => {
 
   it("under Top edge's Free says nothing of a drag under the floor, whose release leaves it collapsed", () => {
     act(() => setBinding("BetterBuildingMenu", "AssetMenuTopEdge", "free"));
+    pressEdge();
+    act(() => blocker().props.onMouseMove({ clientY: 450, buttons: 1 }));
+    frame();
+
+    const readout = root!.root.findAll((node) => node.props["data-readout"] !== undefined)[0];
+    assert.notEqual(readout.props["data-readout"], "edge");
+    assert.equal(readout.findAll((node) => node.children.includes("Release to collapse")).length, 0);
+  });
+
+  it("under Whole lines says nothing of a drag under the floor either, since its release leaves the box as it is", () => {
     pressEdge();
     act(() => blocker().props.onMouseMove({ clientY: 450, buttons: 1 }));
     frame();

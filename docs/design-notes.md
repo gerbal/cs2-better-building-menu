@@ -726,8 +726,8 @@ rather than the stored one the binding holds until C# echoes the drag's (the hoo
 Its release lands as any other, and the height's commit opens the box in the same save
 (`CommitAssetMenuHeight(true)`, `AssetMenuSize.Commit`), while the box stays open at the height it
 landed on until the binding says so, so the body is never drawn again. A release back under the floor
-leaves it collapsed; under Free the readout says nothing there, since that release neither collapses
-nor lands. The upgrades panel's commit says it opens nothing, so its drag never opens the build menu,
+leaves it collapsed; the readout says nothing there, under Whole lines and Free alike, since that
+release neither collapses nor lands. The upgrades panel's commit says it opens nothing, so its drag never opens the build menu,
 though it saves the one height both share.
 
 **A double press puts the game's own size back.** Two presses on the edge within 400 ms, the first a

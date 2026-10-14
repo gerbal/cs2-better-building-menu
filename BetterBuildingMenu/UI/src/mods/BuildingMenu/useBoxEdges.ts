@@ -8,7 +8,7 @@ import { bodyGrid, lineSpacing, screenSlots, type LineSpacing } from "domain/bod
 import { collapses, heightOfLines, heightReadout, snapToLines, widthReadout, type EdgeWords } from "domain/boxEdges";
 import { cardGeometry, cardLineSpacing } from "domain/cardsLayout";
 import { useTextScale } from "domain/textScaleSetting";
-import { AssetMenuCollapsed$, AssetMenuTopEdge$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
+import { AssetMenuTopEdge$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
 import { screenPixelRem, useBodyGridInput } from "mods/BuildingCatalog/useBodyGrid";
 import { useNumberSeparators } from "mods/Bodies/useBodyWords";
 import { useMenuBody } from "mods/useMenuBody";
@@ -27,10 +27,10 @@ export interface BoxEdges {
   collapsible: boolean;
   /**
    * What the readout says while the top edge is dragged to this height: the lines a release lands on, or below the
-   * floor that the release collapses the box, or leaves it collapsed; nothing under Top edge's Free below the floor
-   * of a collapsed box, whose release does neither.
+   * floor that the release collapses the box; nothing below the floor of a box drawn collapsed (`collapsed`, the drag's
+   * own), whose release leaves it as it is, under either Top edge value.
    */
-  heightText: (height: number) => string | null;
+  heightText: (height: number, collapsed: boolean) => string | null;
   /**
    * What the readout says while a side edge is dragged to a step: the step and the buildings its width shows at the
    * body's drawn height, or the step alone for the cards and where the box draws no body (a null height).
@@ -54,8 +54,6 @@ export function useBoxEdges(): BoxEdges {
   const separators = useNumberSeparators();
   // Top edge's Free keeps the height where the pointer lets go, held to the drag's range.
   const free = useValue(AssetMenuTopEdge$) === "free";
-  // A collapsed box stays so after a release below the floor, under Free too, where the readout says nothing of it.
-  const collapsed = useValue(AssetMenuCollapsed$);
 
   return useMemo(() => {
     const spacing: LineSpacing = input === null ? cardLineSpacing(cardHeight, textScale) : lineSpacing(input);
@@ -89,9 +87,9 @@ export function useBoxEdges(): BoxEdges {
     const hold = free ? fitted : (height: number) => snapToLines(height, spacing);
     const snap = free ? clampAssetMenuHeight : hold;
     // What the body would show at the height the release lands on, as the box draws it.
-    const heightText = (height: number): string | null => {
-      if (collapses(height) && !free) return words.collapse;
+    const heightText = (height: number, collapsed: boolean): string | null => {
       if (collapses(height) && collapsed) return null;
+      if (collapses(height) && !free) return words.collapse;
       const { lines, slots } = countAt(drawnBodyHeight(snap(height)));
       return heightReadout(lines, slots, words, format);
     };
@@ -102,5 +100,5 @@ export function useBoxEdges(): BoxEdges {
     };
 
     return { snap, hold, collapsible: !free, heightText, widthText };
-  }, [input, cardHeight, textScale, translate, separators, free, collapsed]);
+  }, [input, cardHeight, textScale, translate, separators, free]);
 }
