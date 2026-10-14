@@ -23,14 +23,19 @@ const page = (room: NameBox, rows: readonly (readonly [string, string])[]): Plat
 /** What each plate draws once the pass has told them apart. */
 const drawn = (plates: readonly PlateName[], typed: readonly string[] = [""]): string[] => {
   const apart = wordsApart(plates, typed);
-  return plates.map((plate) => {
-    const hints = apart.get(plate.id);
-    return planName(plate.name, plate.room, { keep: [plate.distinct, ...(hints?.keep ?? [])], typed, leads: hints?.leads ?? false }).lines.join("\n");
-  });
+  return plates.map((plate) => planApart(plate.name, plate.room, plate.distinct, typed, apart.get(plate.id)).lines.join("\n"));
 };
 
 /** Whether lines hold a word whole, a mark at most either side. */
 const whole = (text: string, word: string): boolean => text.split(/\s/).some((token) => token.replace(/^…|…$/gu, "").toLowerCase() === word.toLowerCase());
+
+/** Whether lines hold a word whole or cut inside it: its head and its tail ("As…ric"), or a head of two letters or more ("Single…"). */
+const wholeOrCut = (text: string, word: string): boolean => whole(text, word) || text.split(/\s/).some((token) => {
+  const [head = "", tail, ...more] = token.replace(/^…/u, "").toLowerCase().split(CUT_MARK);
+  const wanted = word.toLowerCase();
+  return more.length <= 1 && (more[0] ?? "") === "" && head.length > 0 && wanted.startsWith(head)
+    && (tail === undefined || tail === "" ? head.length >= 2 : wanted.endsWith(tail));
+});
 
 describe("the list's plates told apart over the page", () => {
   const at150 = roomOf(1.5, "moreBuildings");
@@ -150,7 +155,7 @@ describe("the list's plates told apart over the page", () => {
     });
   });
 
-  it("keeps the distinguishing word in a room drawn 1 to 20% narrower than the pass planned in, at 130% and 150%, wherever the plan without hints keeps it", () => {
+  it("keeps the distinguishing word in a room drawn 1 to 20% narrower than the pass planned in, at 130% and 150%, wherever the plan without hints keeps it, as the hints hold it", () => {
     for (const textScale of [1.3, 1.5]) {
       const room = roomOf(textScale, "moreBuildings");
       const seen = new Set<string>();
@@ -166,13 +171,15 @@ describe("the list's plates told apart over the page", () => {
           const where = `${plate.name} at ${textScale}, ${narrower}% narrower: ${plan.join(" / ")}`;
 
           assert.ok(planFits(plan, drawnRoom) && plan.length <= drawnRoom.lines, where);
-          if (whole(alone, plate.distinct)) assert.ok(whole(plan.join("\n"), plate.distinct), where);
+          // Whole, or cut inside where the hints let it be cut; only hints that free it may leave it out.
+          const held = apart.get(plate.id)!.held;
+          if (whole(alone, plate.distinct) && held !== "free") assert.ok((held === "cut" ? wholeOrCut : whole)(plan.join("\n"), plate.distinct), where);
         }
       }
     }
   });
 
-  it("over the base game's names in every form and search, draws fewer plates alike and never more, and keeps every planner guarantee", () => {
+  it("over the base game's names in every form and search, draws fewer plates alike and never more, and keeps every planner guarantee, the distinguishing word as the hints hold it", () => {
     for (const typedText of ["", "ro", "pa"]) {
       const typed = [typedText];
       for (const [textScale, atLargeText] of forms) {
@@ -180,6 +187,7 @@ describe("the list's plates told apart over the page", () => {
         const seen = new Set<string>();
         const plates = page(room, names.filter(([name]) => !seen.has(name) && seen.add(name) && name.toLowerCase().includes(typedText)));
         const alone = plates.map((plate) => planName(plate.name, room, { keep: [plate.distinct], typed }).lines.join("\n"));
+        const apart = wordsApart(plates, typed);
         const told = drawn(plates, typed);
         const pairs = (texts: readonly string[]) => {
           const counts = new Map<string, number>();
@@ -194,7 +202,10 @@ describe("the list's plates told apart over the page", () => {
           const lines = told[at] === "" ? [] : told[at].split("\n");
           assert.ok(planFits(lines, room) && lines.length <= room.lines, `${where}: ${plate.name} draws ${told[at]}`);
           assert.ok(lines.every((line) => line.split(CUT_MARK).length - 1 <= 2), `${where}: ${plate.name} draws ${told[at]}`);
-          if (plate.distinct !== "" && whole(alone[at], plate.distinct)) assert.ok(whole(told[at], plate.distinct), `${where}: ${plate.name} draws ${told[at]}`);
+          const held = apart.get(plate.id)?.held ?? "whole";
+          if (plate.distinct !== "" && whole(alone[at], plate.distinct) && held !== "free") {
+            assert.ok((held === "cut" ? wholeOrCut : whole)(told[at], plate.distinct), `${where}: ${plate.name} draws ${told[at]}`);
+          }
         });
       }
     }

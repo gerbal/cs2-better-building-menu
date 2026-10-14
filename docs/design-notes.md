@@ -1662,9 +1662,11 @@ so the renders and the game draw the same lines. In order:
    keeps more of what is held, then the first word: look-alikes that lose it read alike. Here a typed
    word may go where the distinguishing word cannot stay beside it: under a search for "ro" at 150% the
    parking roads draw "…Perpendicular…" and "…Angled…", never both "Four-La…ng Road". Where neither
-   the first word nor more fits, rows of two families can still read alike ("…Perpendicular…"). Only where none of these fits is the whole name cut inside its words, then the mark
-   put first; where not even the mark fits, no line is drawn. The planner never draws a line wider than
-   its room, so a one-word name never runs into the numbers beside it.
+   the first word nor more fits, rows of two families can still read alike ("…Perpendicular…"), which
+   the list's pass over the page parts (below). Only where none of these fits is the whole name cut
+   inside its words, then the mark put first; where not even the mark fits, no line is drawn. The
+   planner never draws a line wider than its room, so a one-word name never runs into the numbers
+   beside it.
 
 **Plates told apart over the page.** The planner cuts each name alone, so two names can cut alike ("NA…
 Aluminum…" for NA Low and NA Tall Aluminum Fence at 150%) and read as one building. The list makes one
@@ -1676,9 +1678,18 @@ name draws is planned again keeping, beside its distinguishing word, the word of
 the others hold ("…Tall Aluminum…"); else with the mark leading, its first word dropped (`leads`:
 "…Angled…" beside "Two… Angled…"); else both. The first plan that keeps its distinguishing word as whole
 as before and draws apart from every plate stands, so the pass never draws alike two plates that were
-not, and each plan is the planner's, with every guarantee it gives. Where no such plan fits (the
-Perpendicular Parking Roads at 130% and 150%, whose "…Perpendicular…" leaves no room for more), the
-plates still read alike. The pass plans each plate in its estimate's room, as the plate first plans it,
+not, and each plan is the planner's, with every guarantee it gives. A plan that lands on the text a
+plate of a third name draws is tried once more keeping the word of its own that name lacks: Garden Bed
+01 Corner Low kept with "Corner" draws as 02 Corner Low, told apart before it ("Garden Bed… Corner
+Low"), and kept with "01" too draws apart ("G…n Bed 01 Corner Low", under the search "garden bed" at
+130%). Where every name drawn alike holds the distinguishing word, the word tells none of them apart,
+and no plan keeping it whole may part them (Four-Lane and Five-Lane Asymmetric Road at 150%, each
+"…Asymmetric Road"): there a plan that cuts it inside stands where none keeps it whole ("Four-Lane
+As…ric…", `held: "cut"`), and where no plan holds it at all, one with the plate's own word and not that
+one ("Two-Lane Divided…" beside "Two-Lane Pe…lar…" and "…Perpendicular…" for the Perpendicular Parking
+Roads at 150%, `held: "free"`). Either is given only to a plate that still draws as another, in a group
+of a family's few (six or fewer): a pair's second plate keeps its own cut once its first is told apart,
+and one plate of a large group drawn apart would leave the rest alike. The pass plans each plate in its estimate's room, as the plate first plans it,
 so it finds each plan kept and plans again only the few drawn alike, each kept by its hints, and a Load
 more or a view switch plans no name twice. Each group's names and their words are read once, so a group
 costs its size, not its square. Each group has its own budget: the smallest go first, and a group is
@@ -1690,8 +1701,9 @@ hints, so six NA Low Aluminum Fence never use up the tries NA Tall needs; and a 
 600 plans with hints. A pass over plates that draw alone as the last pass's did (an Up or Down step
 moves Enter's mark, narrowing two rooms) answers as that pass did. The pass judges its hints in each
 plate's estimate, and the room as drawn can be narrower, where the words they add could crowd out the
-one that tells the row apart: a plate draws with its hints only where that plan keeps its distinguishing
-word whole wherever the plan without them does, else without them (`planApart`).
+one that tells the row apart: a plate draws with its hints only where that plan holds its distinguishing
+word as the hints say, whole or cut inside it, wherever the plan without them keeps it whole, else
+without them; a plan freed of the word draws as it is (`planApart`).
 
 **Only the names near the screen are planned.** A body plans the names on the lines on or near its
 screen (`nearLines`): a screen behind the first line on screen and a screen ahead of the screen, moving

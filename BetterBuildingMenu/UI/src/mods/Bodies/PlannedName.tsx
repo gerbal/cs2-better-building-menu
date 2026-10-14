@@ -66,7 +66,7 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
   const boxRef = useRef<HTMLSpanElement>(null);
   // A room drawn for one name, type, line count, typed text or kept words says nothing of another: they
   // start from the estimate again in the same render, not a frame late.
-  const key = `${name}\n${font}\n${lines}\n${typed}\n${distinct}\n${apart?.keep.join(" ") ?? ""}\n${apart?.leads ?? false}`;
+  const key = `${name}\n${font}\n${lines}\n${typed}\n${distinct}\n${apart?.keep.join(" ") ?? ""}\n${apart?.leads ?? false}\n${apart?.held ?? ""}`;
   const [state, setState] = useState<{ key: string; drawn: DrawnRoom }>({ key, drawn: UNDRAWN });
   const drawn = state.key === key ? state.drawn : UNDRAWN;
   if (state.key !== key) setState({ key, drawn });
