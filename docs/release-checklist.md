@@ -118,8 +118,18 @@ On a developed save:
    Group: the next open of that menu keeps it, another menu does not. Pick Cards in Roads at
    Width 3: cards as wide as their names, three rows, 11 or more, the tabs' labels among them;
    pick a building, then open Roads again: it opens on All, at that card. Pick a Width in View,
-   drag the top edge, and drag the right edge: it settles on a width. At
-   the wider Widths, the tool options sit left of the menu with none of their buttons under it.
+   and drag the right edge and the left edge: each settles on a width, the tabs' right end naming
+   the step and how many buildings it shows while the edge moves. At the wider Widths, the tool
+   options sit left of the menu with none of their buttons under it. With Options › Top edge on
+   Whole lines, drag the top edge up in Roads: the tabs' right end counts the lines and buildings
+   ("7 lines · 28 buildings (game: 18)"), and the release settles on whole lines. Drag it to the
+   bottom: the tabs' right end says "Release to collapse", and the release collapses the menu to
+   its search and tabs; close and reopen the menu: still collapsed; a tab (All too) or typing a
+   letter opens it at the height it had, and a drag back up opens it where it lands. Collapse it
+   again and double-click the edge: it opens at the game's own size, the first Width. A single
+   click on the edge changes nothing. Set Top edge to Free: a drag lands where the pointer lets
+   go, a drag to the bottom holds the least height and never collapses, and a double-click still
+   restores the game's size.
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu. Arm a
    terraforming brush from Landscaping: the menu stays, and answers a search.
 6. **Options.** Flip each option under Options › Better Building Menu with a
@@ -127,14 +137,15 @@ On a developed save:
    same Sort, Filter, Group and View, and View › More options… opens this page.
    With Replace the vanilla build menu off, every other row is greyed out and
    says why. Reset the build menu… asks first, then puts the options, the
-   width, the height and each menu's View and Group back; a menu open and
-   grouped by Cost goes back to its own grouping at once.
+   width, the height and each menu's View and Group back, and opens a collapsed
+   menu; a menu open and grouped by Cost goes back to its own grouping at once.
 7. **An upgrader.** Start from a settings file 0.2.4 wrote, with the pane shown in
-   it: the pane stays shown, and the menu opens at the Width step nearest the
-   width it had, in Cards, on All.
+   it: the pane stays shown, the menu opens at the Width step nearest the
+   width it had, in Cards, on All, and Top edge reads Free.
 8. **Upgrades.** On a release that touches them, open the upgrades picker from
    a placed service building: its frame and rows draw in the Look, Standard and Plates alike, and a
-   row's tooltip card reads light on the game's dark tooltip.
+   row's tooltip card reads light on the game's dark tooltip. Its top strip drags its height as
+   before: never collapsing it, never settling on lines, a double-click doing nothing.
 9. **Controller.** On a release that touches the hand-off, with a gamepad:
    the game's own build menu shows, and moving the mouse brings this one
    back on the same menu.
