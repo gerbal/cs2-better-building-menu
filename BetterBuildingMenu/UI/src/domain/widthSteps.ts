@@ -1,6 +1,6 @@
 /**
  * The build menu's Width steps on this screen: their widths, the width a stored step draws
- * at, and the steps the right edge snaps to. The widths are C#'s rule (WidthSteps.cs), from
+ * at, and the steps a side edge snaps to. The widths are C#'s rule (WidthSteps.cs), from
  * sharedContracts.generated.ts; where the box sits is the UI's. See docs/design-notes.md,
  * "The Width steps".
  */
@@ -51,7 +51,7 @@ export interface WidthStepScreen {
   slotLeft?: number;
 }
 
-/** A step the right edge can snap to, and the width it draws at. */
+/** A step a side edge can snap to, and the width it draws at. */
 export interface WidthSnap {
   step: number;
   width: number;
@@ -195,7 +195,7 @@ export function popoverRightLimit(placement: BoxPlacement, width: number, aspect
   return Math.min(width, screenWidth(aspect) - CHIRPER_CLEARANCE_OFFSET - placement.left);
 }
 
-/** The steps the right edge snaps to, narrowest first: beside the shown pane, only those that fit. */
+/** The steps a side edge snaps to, narrowest first: beside the shown pane, only those that fit. */
 export function snapTargets(screen: WidthStepScreen): WidthSnap[] {
   const widths = widthStepWidths(screen.aspect);
   return WIDTH_STEP_NUMBERS
@@ -223,19 +223,6 @@ function widthWithEdgeAt(edge: number, screen: WidthStepScreen): number {
   return Math.min(edge - toolOptionsEdge(screen.textScale), reach);
 }
 
-/**
- * The box whose drawn left edge sits at `edge`. A box keeps the game's slot's left edge until it reaches the first
- * three steps' limit, and stops growing left at the tool options' edge, so its left edge moves only between the two:
- * an edge at the slot's left or right of it takes the narrowest box, and one at the tool options' edge or past it
- * the widest, both held to the steps the edge snaps to.
- */
-function widthWithLeftAt(edge: number, screen: WidthStepScreen): number {
-  if (edge >= slotLeft(screen)) return 0;
-  if (edge <= toolOptionsEdge(screen.textScale)) return screenWidth(screen.aspect);
-
-  return growsTo(screen) - edge;
-}
-
 /** Which of the box's side edges a width drag holds. */
 export type WidthEdge = "left" | "right";
 
@@ -248,9 +235,10 @@ export const WIDTH_DRAG_DEAD_ZONE = 12;
 
 /**
  * The width a drag from `startX` to `currentX` shows, held between the narrowest and the widest
- * step the edge snaps to. Short of the dead zone it is the width pressed; past it, the box whose
- * drawn right edge, or left edge for a drag on the left, sits under the pointer, as far from it as
- * the press was. `pxPerRem` is measured off the strip as it was pressed.
+ * step the edge snaps to. Short of the dead zone it is the width pressed. Past it, a drag on the
+ * right is the box whose drawn right edge sits under the pointer, as far from it as the press was;
+ * a drag on the left widens the box by the pointer's travel, a rem for a rem, as the left edge
+ * cannot place steps that share a slot edge. `pxPerRem` is measured off the strip as it was pressed.
  */
 export function draggedStepWidth(
   startWidth: number,
@@ -262,8 +250,7 @@ export function draggedStepWidth(
   edge: WidthEdge = "right"
 ): number {
   const travelled = dragDistanceRem(startX, currentX, pxPerRem);
-  const startLeft = boxPlacement(startWidth, screen).left;
-  const raw = edge === "left" ? widthWithLeftAt(startLeft + travelled, screen) : widthWithEdgeAt(startLeft + startWidth + travelled, screen);
+  const raw = edge === "left" ? startWidth - travelled : widthWithEdgeAt(boxPlacement(startWidth, screen).left + startWidth + travelled, screen);
   if (!Number.isFinite(raw) || snaps.length === 0 || Math.abs(travelled) < WIDTH_DRAG_DEAD_ZONE) return startWidth;
 
   const widths = snaps.map((snap) => snap.width);

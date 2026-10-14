@@ -119,7 +119,8 @@ On a developed save:
    Width 3: cards as wide as their names, three rows, 11 or more, the tabs' labels among them;
    pick a building, then open Roads again: it opens on All, at that card. Pick a Width in View,
    and drag the right edge and the left edge: each settles on a width, the tabs' right end naming
-   the step and how many buildings it shows while the edge moves. At the wider Widths, the tool
+   the step and how many buildings it shows while the edge moves; the left strip lights under the
+   mouse, stops above the tabs, and widens the menu as far as the pointer travels. At the wider Widths, the tool
    options sit left of the menu with none of their buttons under it. With Options › Top edge on
    Whole lines, drag the top edge up in Roads: the tabs' right end counts the lines and buildings
    ("7 lines · 28 buildings (game: 18)"), and the release settles on whole lines. Drag it to the

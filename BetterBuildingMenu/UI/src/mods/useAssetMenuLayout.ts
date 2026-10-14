@@ -13,7 +13,7 @@ export interface AssetMenuLayout {
   /** The build menu: the stored step's width on this screen, narrowed or swapped where it does not fit. */
   menuWidth: number;
   paneShown: boolean;
-  /** The steps the right edge snaps to. */
+  /** The steps a side edge snaps to. */
   snaps: WidthSnap[];
   /** What decides where the box sits: the screen's aspect, the text scale and the pane. */
   screen: WidthStepScreen;

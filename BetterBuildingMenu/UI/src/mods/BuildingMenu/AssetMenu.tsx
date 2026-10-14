@@ -21,7 +21,7 @@ import { useLookRoot } from "mods/useLookRoot";
 import { ASSET_MENU_BOX_CHROME, ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
 import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
 import { controlLeftRem, popoverAnchor, toggleList, type ControlKind, type OpenList } from "domain/topRow";
-import { boxPlacement, popoverRightLimit, toolOptionsShift, topRowRightInset } from "domain/widthSteps";
+import { boxPlacement, nearestSnapStep, popoverRightLimit, toolOptionsShift, topRowRightInset } from "domain/widthSteps";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 import { AssetMenuCollapsed$ } from "mods/bindings";
@@ -58,9 +58,14 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag.
   const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged)), [edges, dragged]);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
-  // A side edge's drag says the step it lands on in the same place; it sends nothing until the release, so no echo
-  // draws it again.
-  const sideReadout = widthDrag.dragged === null ? null : edges.widthText(widthDrag.dragged, snaps);
+  // A side edge's drag says the step it lands on in the same place. It sends nothing until the release, and what it
+  // says depends on the step alone, so it is worked out once for each step the pointer lands on.
+  const sideStep = widthDrag.dragged === null ? null : nearestSnapStep(widthDrag.dragged, snaps);
+  const sideWidth = snaps.find((snap) => snap.step === sideStep)?.width ?? widthDrag.dragged;
+  const sideReadout = useMemo(
+    () => (sideStep === null || sideWidth === null ? null : edges.widthText(sideStep, sideWidth, !collapsed)),
+    [edges, sideStep, sideWidth, collapsed]
+  );
   const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
   const shownWidth = widthDrag.liveWidth ?? menuWidth;

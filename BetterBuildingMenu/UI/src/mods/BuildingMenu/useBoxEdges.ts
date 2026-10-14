@@ -8,7 +8,6 @@ import { bodyGrid, lineSpacing, screenSlots, type LineSpacing } from "domain/bod
 import { collapses, heightReadout, snapToLines, widthReadout, type EdgeWords } from "domain/boxEdges";
 import { cardGeometry, cardLineSpacing } from "domain/cardsLayout";
 import { useTextScale } from "domain/textScaleSetting";
-import { nearestSnapStep, type WidthSnap } from "domain/widthSteps";
 import { AssetMenuCollapsed$, AssetMenuTopEdge$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
 import { screenPixelRem, useBodyGridInput } from "mods/BuildingCatalog/useBodyGrid";
 import { useNumberSeparators } from "mods/Bodies/useBodyWords";
@@ -26,8 +25,11 @@ export interface BoxEdges {
    * of a collapsed box, whose release does neither.
    */
   heightText: (height: number) => string | null;
-  /** What the readout says while a side edge is dragged to this width: the step the release lands on, and what it shows. */
-  widthText: (width: number, snaps: readonly WidthSnap[]) => string;
+  /**
+   * What the readout says while a side edge is dragged to a step: the step and the buildings its width shows at the
+   * body's height, or the step alone for the cards and where the box draws no body.
+   */
+  widthText: (step: number, width: number, drawsBody: boolean) => string;
 }
 
 /**
@@ -72,13 +74,9 @@ export function useBoxEdges(): BoxEdges {
       return heightReadout(grid.lines, screenSlots(grid), words, format);
     };
 
-    // The step the release lands on, and the slots its width shows at the body's height; the step alone for the cards,
-    // and for a collapsed box, whose body is not drawn.
-    const widthText = (width: number, snaps: readonly WidthSnap[]) => {
-      const step = nearestSnapStep(width, snaps);
-      const landed = snaps.find((snap) => snap.step === step)?.width ?? width;
-      if (input === null || collapsed) return widthReadout(step, null, words, format);
-      return widthReadout(step, screenSlots(bodyGrid({ ...input, boxWidth: landed, smallMenusGrow: false })), words, format);
+    const widthText = (step: number, width: number, drawsBody: boolean) => {
+      if (input === null || !drawsBody) return widthReadout(step, null, words, format);
+      return widthReadout(step, screenSlots(bodyGrid({ ...input, boxWidth: width, smallMenusGrow: false })), words, format);
     };
 
     return { snap, collapsible: !free, heightText, widthText };

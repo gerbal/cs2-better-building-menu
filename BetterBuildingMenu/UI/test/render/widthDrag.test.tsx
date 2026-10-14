@@ -425,19 +425,19 @@ describe("dragging the build menu's left edge", () => {
     assert.equal(drag.activeEdge, null);
   });
 
-  it("widens the box as the pointer moves left, its left edge under it, and says the width it follows", () => {
+  it("widens the box as the pointer moves left, a rem for a rem, and says the width it follows", () => {
     move(470);
     nextFrame();
 
-    assert.equal(drag.liveWidth, 926);
-    assert.equal(drag.dragged, 926);
+    assert.equal(drag.liveWidth, 736);
+    assert.equal(drag.dragged, 736);
   });
 
   it("lands the release on the nearest step and sends it once", () => {
     move(400);
     act(() => blocker().props.onMouseUp());
 
-    assert.deepEqual(steps(), [3]);
+    assert.deepEqual(steps(), [2]);
     assert.equal(drag.dragged, null);
   });
 });

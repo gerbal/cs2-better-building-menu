@@ -314,44 +314,84 @@ describe("the left edge's drag", () => {
   const open = screen();
   const hidden = snapTargets(open);
   const leftOf = (width: number, at = open) => boxPlacement(width, at).left;
+  const widthAt = (from: number, travelled: number, edge: "left" | "right", snaps = hidden, at = open) =>
+    draggedStepWidth(from, 500, 500 + travelled, snaps, at, 1, edge);
+  const landed = (from: number, travelled: number, edge: "left" | "right" = "left") => nearestSnapStep(widthAt(from, travelled, edge), hidden);
 
-  it("keeps the drawn left edge under the pointer where the box grows left, between the slot's edge and the tool options'", () => {
-    // 16:9, the slot at 604: past 893 the box grows left from the chirper's clearance at 1,500, down to 396.
-    for (const travelled of [-30, -100, -150, -207]) {
-      const width = draggedStepWidth(706, 500, 500 + travelled, hidden, open, 1, "left");
-      near(leftOf(width), 604 + travelled, `${travelled} rem`);
+  it("widens the box by the pointer's travel from the width pressed, one rem for one, so a step is not skipped", () => {
+    // 16:9: steps 1 and 2 share the slot's left edge, so no left edge says which of them the pointer holds.
+    for (const travelled of [-13, -30, -100]) {
+      near(widthAt(706, travelled, "left"), 706 - travelled, `${travelled} rem`);
     }
   });
 
-  it("takes the widest step for an edge at the tool options' edge or past it, and the narrowest at the slot's or right of it", () => {
-    assert.equal(draggedStepWidth(706, 500, 500 - 208, hidden, open, 1, "left"), 1475);
-    assert.equal(draggedStepWidth(706, 500, 500 - 900, hidden, open, 1, "left"), 1475);
-    assert.equal(draggedStepWidth(1091, 900, 900 + 195, hidden, open, 1, "left"), 706);
-    assert.equal(draggedStepWidth(1091, 900, 900 + 900, hidden, open, 1, "left"), 706);
+  it("keeps the drawn left edge under the pointer where it moves", () => {
+    // Step 3 (1091) stands with its left edge at 409; narrowing it moves that edge with the pointer, down to the slot's 604.
+    for (const travelled of [30, 100, 150, 195]) {
+      near(leftOf(widthAt(1091, travelled, "left")), 409 + travelled, `${travelled} rem`);
+    }
   });
 
-  it("lands from step 1 on step 2, then 3, then 5, and from step 3 back on 2, then 1", () => {
-    const landed = (from: number, travelled: number) => nearestSnapStep(draggedStepWidth(from, 500, 500 + travelled, hidden, open, 1, "left"), hidden);
-
-    assert.deepEqual([-30, -100, -208].map((travelled) => landed(706, travelled)), [2, 3, 5]);
-    assert.deepEqual([50, 150, 250].map((travelled) => landed(1091, travelled)), [3, 2, 1]);
+  it("lands from step 1 on step 2 past the midpoint toward it, then 3, then 4, then 5", () => {
+    assert.deepEqual([-13, -90, -100, -280, -290, -400, -500, -900].map((travelled) => landed(706, travelled)), [1, 1, 2, 2, 3, 3, 4, 5]);
   });
 
-  it("keeps the drawn width until the pointer has travelled the dead zone, in either direction", () => {
+  it("lands from step 3 narrower past the midpoint toward each step, and wider the same way", () => {
+    assert.deepEqual([50, 100, 200, 290, 300, 900].map((travelled) => landed(1091, travelled)), [3, 2, 2, 2, 1, 1]);
+    assert.deepEqual([-50, -100, -200, -300, -900].map((travelled) => landed(1091, travelled)), [3, 4, 4, 5, 5]);
+  });
+
+  it("holds the drawn width until the pointer has travelled the dead zone, in either direction", () => {
     const inside = WIDTH_DRAG_DEAD_ZONE - 0.5;
 
     for (const travelled of [inside, -inside, 3, -3]) {
-      assert.equal(draggedStepWidth(1091, 900, 900 + travelled, hidden, open, 1, "left"), 1091, `${travelled} rem`);
+      assert.equal(widthAt(1091, travelled, "left"), 1091, `${travelled} rem`);
     }
   });
 
-  it("beside the shown pane grows left from the pane's room, and stops at the widest step that fits", () => {
+  for (const edge of ["left", "right"] as const) {
+    for (const step of [1, 2, 3, 4, 5]) {
+      const from = drawnStepWidth(step, open);
+
+      it(`from step ${step} the ${edge} edge's width never runs against the pointer and stays among the steps, both ways`, () => {
+        const widest = Math.max(...hidden.map((snap) => snap.width));
+        const narrowest = Math.min(...hidden.map((snap) => snap.width));
+        // The pointer sweeps from one side of the screen to the other; a drag toward the box narrows it on the left, widens it on the right.
+        for (const sign of [1, -1]) {
+          let before = from;
+          for (let travelled = 0; travelled <= 900; travelled++) {
+            const width = widthAt(from, sign * travelled, edge);
+            assert.ok(width >= narrowest && width <= widest, `${sign * travelled} rem: ${width}`);
+            assert.ok((sign * (edge === "left" ? -1 : 1)) * (width - before) >= -1e-9, `${sign * travelled} rem: ${before} to ${width}`);
+            before = width;
+          }
+        }
+      });
+    }
+  }
+
+  for (const step of [1, 2, 3, 4, 5]) {
+    const from = drawnStepWidth(step, open);
+
+    it(`from step ${step} the left edge never jumps: past the dead zone each rem of travel moves the width by at most a rem, both ways`, () => {
+      for (const sign of [1, -1]) {
+        let before = widthAt(from, sign * WIDTH_DRAG_DEAD_ZONE, "left");
+        assert.ok(Math.abs(before - from) <= WIDTH_DRAG_DEAD_ZONE + 1e-9, `${sign * WIDTH_DRAG_DEAD_ZONE} rem: ${from} to ${before}`);
+        for (let travelled = WIDTH_DRAG_DEAD_ZONE + 1; travelled <= 900; travelled++) {
+          const width = widthAt(from, sign * travelled, "left");
+          assert.ok(Math.abs(width - before) <= 1 + 1e-9, `${sign * travelled} rem: ${before} to ${width}`);
+          before = width;
+        }
+      }
+    });
+  }
+
+  it("beside the shown pane widens the same way, and stops at the widest step that fits", () => {
     const beside = screen({ paneShown: true });
     const besideSnaps = snapTargets(beside);
 
-    // The pane's room ends the box at 1,487: a box 30 rem left of the slot is 913 wide.
-    assert.equal(draggedStepWidth(706, 500, 470, besideSnaps, beside, 1, "left"), 913);
-    assert.equal(draggedStepWidth(706, 500, -5000, besideSnaps, beside, 1, "left"), 1091);
+    near(widthAt(706, -30, "left", besideSnaps, beside), 736);
+    assert.equal(widthAt(706, -5000, "left", besideSnaps, beside), 1091);
   });
 });
 

@@ -228,22 +228,23 @@ the hook's own state, so what reads the stored step, the Auto rule's Cards from 
 changes at the release, not on every frame of the drag. While the box follows the pointer, the
 readout at the tabs' right end names the step the release lands on and the buildings its width
 shows at the body's height, "Width 3 · 30 buildings"; the cards, whose width follows their words, and
-a collapsed box, which draws no body, say the step alone. Where the pointer
-crosses the 12 rem, the box jumps by that much to the width under it and follows it from there, on
-both edges.
+a collapsed box, which draws no body, say the step alone. On the right edge, where the box grows left
+with its edge fixed, the width under the pointer replaces the width pressed as the pointer crosses the
+12 rem, as far as a step away; the left edge has no such jump.
 
-**The left edge mirrors the right.** Its drag keeps the box's drawn left edge under the pointer, as
-far from it as the press was. The left edge moves only where the box grows left: a box keeps the
-slot's left edge up to the first three steps' limit, and stops growing at the tool options' edge, so
-on 16:9 the left edge sits at the slot's for steps 1 and 2 and at the tool options' for steps 4 and 5.
-A pointer at the slot's edge or right of it takes the narrowest step, and one at the tool options'
-edge or past it the widest; between them, the box whose left edge is under it. So from step 1 a drag
-left lands on step 2, then 3, then 5, and step 4, whose left edge is step 5's, is the right edge's,
-Options' or View's. The release, the dead zone and a release on the step drawn are the right
-edge's. Its strip is the right one's mirror across the box's first 6 rem, under the body's margin,
-and runs down the body alone: the tab row's All cell starts inside it, so the strip stops above the
-tabs, and a collapsed box, which has no body, has none. Having no reach, it lights under the mouse by
-itself.
+**The left edge mirrors the right.** Its drag widens the box by the pointer's travel, a rem for a
+rem, from the width pressed, and narrows it the same way, so it passes through the widths between
+the steps as the right edge does and the release snaps to the nearest step. The box's left edge
+cannot place the steps itself: it keeps the slot's left edge up to the first three steps' limit, and
+stops growing at the tool options' edge, so on 16:9 steps 1 and 2 share the slot's, and 4 and 5 the
+tool options'. A left edge placed under the pointer would jump a whole step the moment the pointer
+passed the slot's edge, so the travel decides, and where the box does grow left, as from step 3,
+its left edge is under the pointer. A drag from step 1 lands on step 2 past the midpoint toward it,
+then 3, 4 and 5, and the pointer reaches the wider steps only by a longer drag than the box's left
+edge would need. The release, the dead zone and a release on the step drawn are the right edge's.
+Its strip is the right one's mirror across the box's first 6 rem, under the body's margin, and runs
+down the body alone: the tab row's All cell starts inside it, so the strip stops above the tabs, and
+a collapsed box, which has no body, has none. Having no reach, it lights under the mouse by itself.
 
 **The width strip runs down the box's right edge.** A 6 rem strip from under the top row, so close
 keeps its presses, to the box's bottom, past the tab row's band: a child of the box, not of the

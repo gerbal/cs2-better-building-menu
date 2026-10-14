@@ -126,8 +126,8 @@ namespace BetterBuildingMenu
 		/// Which of the build menu's five widths it draws at, from 1, the game's own, to 5.
 		/// </summary>
 		/// <remarks>
-		/// A number rather than a width, because the widths follow the screen. The menu's right edge
-		/// writes the same value. See <see cref="Domain.WidthSteps"/>.
+		/// A number rather than a width, because the widths follow the screen. The menu's side edges
+		/// write the same value. See <see cref="Domain.WidthSteps"/>.
 		/// </remarks>
 		[SettingsUISection(SETTINGS, UIUX)]
 		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(WidthStepItems))]

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry, showBody } from "../harness/render";
+import { setTranslation, resetTranslations } from "../harness/stubs/cs2-l10n";
 import { reads as bindingReads, resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
@@ -52,6 +53,7 @@ describe("what a drag of the top edge re-renders", () => {
   afterEach(() => {
     act(() => root?.unmount());
     root = undefined;
+    resetTranslations();
     Object.assign(globals, saved);
   });
 
@@ -133,9 +135,14 @@ describe("what a drag of the top edge re-renders", () => {
     });
   }
 
-  // A side edge sends nothing until its release, so the stored step the body draws from holds still.
+  // A side edge sends nothing until its release, so the stored step the body draws from holds still. The readout's
+  // words count its computations: each one calls its template's replace once, and a computation is one bodyGrid.
   for (const edge of ["right", "left"] as const) {
-    it(`redraws no body and plans the tab row at most once a pointer frame through a drag of the ${edge} edge`, () => {
+    it(`redraws no body, plans the tab row at most once a pointer frame and works the ${edge} edge's readout out once a step`, () => {
+      let computed = 0;
+      const counting = (template: string) => ({ replace: (from: string, to: string) => (computed++, template.replace(from, to)) }) as unknown as string;
+      setTranslation("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragWidth]", counting("Width {0} · {1} buildings"));
+      setTranslation("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragWidthOnly]", counting("Width {0}"));
       showBody("list");
       setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(Array.from({ length: ROWS }, (_, at) => counted(at + 1))));
       act(() => {
@@ -152,12 +159,16 @@ describe("what a drag of the top edge re-renders", () => {
       for (let frame = 1; frame <= FRAMES; frame++) {
         act(() => blocker().props.onMouseMove({ clientX: 500 + sign * frame * 4, buttons: 1 }));
         act(() => frames.splice(0).forEach((callback) => callback()));
+        // Anything else that draws the menu again mid-drag.
+        act(() => setBinding("BetterBuildingMenu", "AssetMenuAllCount", frame));
       }
 
       assert.ok(rowsAtMount > 0 && rendersAtMount > 0, "the body and its rows drew at mount");
       assert.equal(bodyRenders() - rendersAtMount, 0);
       assert.equal(reads - rowsAtMount, 0);
-      assert.ok(tabRowRenders() - tabRowsAtMount <= FRAMES, `${tabRowRenders() - tabRowsAtMount}`);
+      assert.ok(tabRowRenders() - tabRowsAtMount <= 2 * FRAMES, `${tabRowRenders() - tabRowsAtMount}`);
+      // 240 rem of travel crosses at most four midpoints from the first step.
+      assert.ok(computed >= 1 && computed <= 5, `${computed}`);
       act(() => blocker().props.onMouseUp());
     });
   }

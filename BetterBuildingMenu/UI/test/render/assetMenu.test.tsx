@@ -377,6 +377,18 @@ describe("a drag on the asset menu's top edge", () => {
     assert.equal(box().props["data-bbm-collapsed"], "true");
   });
 
+  it("names the step alone in a side drag begun while the box shows collapsed before C# has said so", () => {
+    move(540);
+    frame();
+    act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseUp());
+    const strip = root!.root.find((node) => node.props.className === "widthHandle");
+    act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
+    act(() => root!.root.find((node) => node.props.className === "widthBlocker").props.onMouseMove({ clientX: 600, buttons: 1 }));
+    frame();
+
+    assert.deepEqual(readout().findAll((node) => node.props.className === "range")[0].children, ["Width 2"]);
+  });
+
   it("under Top edge's Free holds the floor below it, counts the lines drawn there, and saves it", () => {
     act(() => setBinding("BetterBuildingMenu", "AssetMenuTopEdge", "free"));
     move(540);
