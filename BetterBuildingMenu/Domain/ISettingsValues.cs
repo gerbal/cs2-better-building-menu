@@ -27,6 +27,8 @@ namespace BetterBuildingMenu.Domain
 
 		string MenuLook { get; set; }
 
+		string TopEdge { get; set; }
+
 		string MenuGroups { get; set; }
 
 		string MenuViews { get; set; }

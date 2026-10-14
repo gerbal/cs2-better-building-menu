@@ -11,6 +11,7 @@ import { useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHa
 import { TopEdge } from "mods/TopEdge/TopEdge";
 import { TopRow } from "mods/TopRow/TopRow";
 import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
+import { useBoxEdges } from "mods/BuildingMenu/useBoxEdges";
 import { useGameSlotLeft } from "mods/BuildingMenu/useGameSlotLeft";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { setOpenListCloser } from "mods/BuildingMenu/openListCloser";
@@ -46,8 +47,10 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const row = useRef<HTMLDivElement>(null);
   const slotLeft = useGameSlotLeft(row, unmeasured.textScale);
   const screen = slotLeft === undefined ? unmeasured : { ...unmeasured, slotLeft };
-  // The top edge drags from the body as drawn, which a tall stored height exceeds under the top HUD.
-  const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight(drawnBodyHeight);
+  // The top edge drags from the body as drawn, which a tall stored height exceeds under the top HUD, and its release
+  // lands on whole lines of the open body. See docs/design-notes.md, "The top edge".
+  const edges = useBoxEdges();
+  const { height: catalogHeight, isResizing, beginResize, blocker, dragged, held } = useAssetMenuHeight(drawnBodyHeight, edges);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
   const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
@@ -113,11 +116,12 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}
             style={{ height: `${drawnBodyHeight(catalogHeight)}rem` }}
           >
-            <BuildingCatalogComponent />
+            {/* While the edge moves the body draws where the release lands, and so draws again only as that changes. */}
+            <BuildingCatalogComponent heldHeight={held} />
           </div>
           {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
               their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
-          <TabRow width={shownWidth} />
+          <TabRow width={shownWidth} edgeReadout={dragged === null ? null : edges.heightText(dragged)} />
           {/* Down the box's right edge from under the top row to its bottom, past the tab row:
               a child of the box, not of the body, whose box would cut it. */}
           <AssetMenuWidthHandle

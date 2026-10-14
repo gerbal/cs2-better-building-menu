@@ -138,6 +138,7 @@ namespace BetterBuildingMenu.Tests
 			new object[] { nameof(BetterBuildingMenuSettings.DefaultView), BodyViews.DefaultViews, OptionRows.DefaultViewLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.AtLargeText), LargeText.Values, OptionRows.AtLargeTextLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.HoverCard), HoverCards.Values, OptionRows.HoverCardLabelIds },
+			new object[] { nameof(BetterBuildingMenuSettings.TopEdge), TopEdges.Values, OptionRows.TopEdgeLabelIds },
 		};
 
 		[Theory]
@@ -164,7 +165,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void LookLeadsAndDefaultViewSitsAfterWidthAtLargeTextAfterTileSizeAndHoverCardAfterIt()
+		public void LookLeadsTopEdgeFollowsWidthAndDefaultViewSitsAfterItAtLargeTextAfterTileSizeAndHoverCardAfterIt()
 		{
 			var order = typeof(BetterBuildingMenuSettings)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -177,6 +178,7 @@ namespace BetterBuildingMenu.Tests
 				{
 					nameof(BetterBuildingMenuSettings.MenuLook),
 					nameof(BetterBuildingMenuSettings.AssetMenuWidthStep),
+					nameof(BetterBuildingMenuSettings.TopEdge),
 					nameof(BetterBuildingMenuSettings.DefaultView),
 					nameof(BetterBuildingMenuSettings.AssetMenuTileSize),
 					nameof(BetterBuildingMenuSettings.AtLargeText),

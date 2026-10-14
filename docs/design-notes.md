@@ -646,6 +646,37 @@ strip draws nothing; under the mouse, a 75 × 4 pill on the edge and the game's 
 label is the game's Tooltip. The drag measures rem against the strip's own 8 rem. The upgrades
 panel keeps its strip as its first row.
 
+**A release lands on whole lines.** A press on the edge becomes a drag only once the pointer has
+moved three pixels, so a click sends nothing. While the drag moves, the edge follows the pointer and
+the readout at the tabs' right end says what the release does: "7 lines · 28 buildings (game: 18)",
+the whole lines of the open body the release lands on, the buildings they show at the box's width,
+and the game's own menu's eighteen beside them; the cards, whose width follows their words, say their
+rows alone. The tabs keep their form, and a long line clips the last of them until the release, as a
+long range does; the rows keep what the readout said. The release sends the height of the whole lines
+nearest the pointer's (`snapToLines`), never under the drag's floor or over its ceiling: in the list
+five make the game's own 144.25 and four the fewest, 115; the tiles keep their name line under their
+lines. Each body's lines are its own form's (`lineSpacing`, `cardLineSpacing`), a small menu's grown
+plates left out, and the height is the one at which the body draws those lines. The upgrades panel's
+drag keeps none of this: it moves at the first pixel and saves where it ends.
+
+**The Top edge row** (UI/UX, after Width) picks how a release settles: Whole lines, as above, or
+Free, where the pointer lets go, held to the drag's floor and ceiling. Under Free a press still
+becomes a drag at three pixels, and the readout counts the lines and buildings the body draws at
+the pointer's height. A new player and Reset get Whole lines; the settings migration's version 5
+gives an upgrader Free (see "The settings migration"). The binding is `AssetMenuTopEdge`, "whole"
+or "free". **This changes 0.2.x:** its drag saved the height where the pointer let go; a new
+player's now lands on whole lines, an upgrader's stays free, and a height saved before is kept
+until the next drag.
+
+**What a drag redraws.** While the edge moves, the body draws at the height the release lands on,
+not the pointer's: the hook's `held`, which `AssetMenu` hands the catalog as `heldHeight` until the
+stored height answers the release. The box follows the pointer and clips the body's last line, or
+leaves room under it, until the release; the body draws again only as the lines the release lands
+on change, and not at the release. Under Free that height is the pointer's, so the body draws at
+most once a frame, and its rows only as its lines change: a grid that places every slot alike keeps
+its object (`sameGrid`), and a tile keeps its render while its slot holds (`sameSlots`), as the
+room under the tiles grows.
+
 ## The notch
 
 Under the box's bottom edge a small trapezoid marks the lit bar button: 38.4 rem across its top,
@@ -738,8 +769,8 @@ settings are saved once, only if a value moved. It works on `ISettingsValues`, w
 class implements, so its tests never build the settings class. A second load finds the version
 current and changes nothing; a version above this release's, a later release's, is left alone.
 On every load of a file at this version or earlier, a stored Width step outside 1 to 5 becomes
-1, and a Default view or At large text the rows do not offer reads as shipped, and is saved; a later
-release's file is not touched.
+1, and a Default view, At large text, Hover card, Look or Top edge the rows do not offer reads as
+shipped, and is saved; a later release's file is not touched.
 
 **Version 2, the Width steps.**
 - The hidden `Upgrader` is set for an upgrader (see "Who is an upgrader").
@@ -775,6 +806,10 @@ release's file is not touched.
 
 **This changes 0.2.x:** every player's Tile size moves to 64, once.
 
+**Version 5, the top edge.** An upgrader's Top edge becomes Free, so their drag keeps settling where
+the pointer lets go, as 0.2.x's did; everyone else keeps Whole lines, as it ships. It reads the
+upgrader flag version 2 stored. Free differs from the initializer, so the game writes the key.
+
 **It cannot tell a choice from an old default.** A player who chose 420, 155 or 735 by hand moves
 with the defaults, once.
 
@@ -801,9 +836,9 @@ Every setting's shipped value lives in `SettingsDefaults`, whose constants the s
 initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.Apply`.
 
 - **What a reset puts back.** `Apply` writes every stored setting's shipped value: the height,
-  the Width step, the upgrader flag, the control pane, Default view, At large text, each menu's own
-  VIEW and GROUP, Replace the vanilla build menu, Searching widens automatically, Tile size and the
-  knobs. It leaves `SettingsVersion`, which records the migration, and the legacy
+  the Width step, the upgrader flag, the control pane, Default view, At large text, Top edge, each
+  menu's own VIEW and GROUP, Replace the vanilla build menu, Searching widens automatically, Tile
+  size and the knobs. It leaves `SettingsVersion`, which records the migration, and the legacy
   `AssetMenuCatalogWidth` and `AssetMenuViewMode`, which only the migration reads.
 - **Then the version.** `SettingsDefaults.Reset` stores this release's settings version after the
   shipped values, keeping a later release's, so the next load migrates nothing: an upgrader put

@@ -32,6 +32,8 @@ namespace BetterBuildingMenu.Tests
 
 		public string MenuLook { get; set; } = SettingsDefaults.MenuLook;
 
+		public string TopEdge { get; set; } = SettingsDefaults.TopEdge;
+
 		public string MenuGroups { get; set; } = SettingsDefaults.NoPicks;
 
 		public string MenuViews { get; set; } = SettingsDefaults.NoPicks;
@@ -223,9 +225,9 @@ namespace BetterBuildingMenu.Tests
 		public static readonly string FullWidthPaneHidden = SettingsFile.Text("{\"AssetMenuCatalogWidth\": 1476, \"ControlPaneShown\": false}");
 
 		/// <summary>At this release's version, at version 2's default and at a height chosen afterwards: both are the player's.</summary>
-		public static readonly string MigratedHeight149 = SettingsFile.Text("{\"SettingsVersion\": 4, \"AssetMenuHeight\": 149}");
+		public static readonly string MigratedHeight149 = SettingsFile.Text("{\"SettingsVersion\": 5, \"AssetMenuHeight\": 149}");
 
-		public static readonly string MigratedHeight420 = SettingsFile.Text("{\"SettingsVersion\": 4, \"AssetMenuHeight\": 420}");
+		public static readonly string MigratedHeight420 = SettingsFile.Text("{\"SettingsVersion\": 5, \"AssetMenuHeight\": 420}");
 
 		/// <summary>A later release's version.</summary>
 		public static readonly string LaterVersion = SettingsFile.Text("{\"SettingsVersion\": 7, \"AssetMenuHeight\": 420}");

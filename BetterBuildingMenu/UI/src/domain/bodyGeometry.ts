@@ -127,6 +127,32 @@ export interface BodyGridInput {
   tileNameLine?: boolean;
 }
 
+/**
+ * How a body's lines stack, as the top edge's release snaps to them: from one line to the next, the gap under the
+ * last, the room the first keeps above it and the last below it, and the room the body keeps under its lines.
+ */
+export interface LineSpacing {
+  pitch: number;
+  gap: number;
+  edge: number;
+  below: number;
+}
+
+/**
+ * The lines the list, the tiles or the icons stack in, at this text scale and these settings, whatever the body's
+ * height: the list's plate in its form, the tiles' side with the name line kept under them, the icons' side. A
+ * small menu's grown plates are left out: they share whatever height the body has.
+ */
+export function lineSpacing(input: Pick<BodyGridInput, "body" | "textScale" | "atLargeText" | "tileSize" | "iconSize" | "plateHeight" | "tileNameLine">): LineSpacing {
+  if (input.body === "icons") return { pitch: (input.iconSize ?? ICON_SIZE) + SLOT_GAP, gap: SLOT_GAP, edge: 0, below: 0 };
+  if (input.body === "tiles") return { pitch: input.tileSize + SLOT_GAP, gap: SLOT_GAP, edge: 0, below: input.tileNameLine ?? true ? TILE_NAME_LINE_MIN : 0 };
+
+  const form = listForm(input.textScale, input.atLargeText);
+  const plate = form === "plate2" ? input.plateHeight : form === "plate1" ? PLATE1_HEIGHT : PLATE_WHOLE_HEIGHT;
+
+  return { pitch: plate + SLOT_GAP, gap: SLOT_GAP, edge: form === "plate1" ? PLATE1_OVERHANG : 0, below: 0 };
+}
+
 /** The list's form: the two-line plate at 100% text; above it, At large text's choice. */
 export function listForm(textScale: number, atLargeText: string): ListForm {
   if (!(textScale > 1)) return "plate2";
@@ -154,6 +180,12 @@ export function deviceRem(innerHeight: number): number {
 /** Whether two grids place every slot alike: each of their numbers the same. */
 export function sameGrid(one: BodyGrid, other: BodyGrid): boolean {
   return (Object.keys(one) as (keyof BodyGrid)[]).every((key) => one[key] === other[key]);
+}
+
+/** Whether two grids place and size every slot alike, whatever room they leave around the slots, as under the tiles. */
+export function sameSlots(one: BodyGrid, other: BodyGrid): boolean {
+  return one.cols === other.cols && one.cellWidth === other.cellWidth && one.cellHeight === other.cellHeight
+    && one.pitchX === other.pitchX && one.pitchY === other.pitchY && one.x0 === other.x0 && one.y0 === other.y0;
 }
 
 /** The slots for a body at this box, height, text scale and settings. */

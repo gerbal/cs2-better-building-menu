@@ -9,7 +9,7 @@ import type { NumberSeparators } from "domain/assetMenuMetricFormat";
 import type { UnitMarks } from "domain/rowNumbers";
 import type { AssetMenuMetric } from "domain/assetMenuLayout";
 import { NO_SECTIONS } from "domain/bodyCells";
-import { labelPlace, screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
+import { labelPlace, sameSlots, screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { lookAlikeKey, lookAlikeTags } from "domain/lookAlikeTags";
@@ -59,6 +59,10 @@ interface TileProps {
   achievedMilestone: number;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
+
+/** A tile draws again only where its props change, its grid only where its slot moves or resizes: the name line's room grows under a drag. */
+const sameTile = (one: TileProps, other: TileProps): boolean =>
+  (Object.keys(one) as (keyof TileProps)[]).every((key) => (key === "grid" ? sameSlots(one.grid, other.grid) : Object.is(one[key], other[key])));
 
 /**
  * One building as a picture tile, with a tag at its foot: its cost, or why a locked one waits, or under
@@ -132,7 +136,7 @@ const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, 
       )}
     </Button>
   );
-});
+}, sameTile);
 
 /**
  * The tiles drawn that share a first word or a family, each tagged with what tells it apart, worked out

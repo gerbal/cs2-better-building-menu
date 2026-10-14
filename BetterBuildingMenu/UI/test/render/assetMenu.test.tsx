@@ -217,6 +217,73 @@ describe("a drag on the asset menu's right edge", () => {
   });
 });
 
+describe("a drag on the asset menu's top edge", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let frames: Array<() => void> = [];
+  let root: ReactTestRenderer | undefined;
+  const readout = () => root!.root.findAll((node) => node.props["data-readout"] !== undefined)[0];
+  const heights = () => triggers.filter((call) => call.name === "SetAssetMenuHeight").map((call) => call.args[0]);
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    saved = globals.document;
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = () => undefined;
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    // The edge is drawn as many pixels tall as it is rem, so a pixel is a rem.
+    const edge = root!.root.find((node) => node.props.className === "topEdge");
+    act(() => edge.props.onMouseDown({ button: 0, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }));
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved;
+  });
+
+  const move = (clientY: number) => act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseMove({ clientY, buttons: 1 }));
+  const frame = () => act(() => frames.splice(0).forEach((callback) => callback()));
+
+  it("says in the readout the lines the release lands on and the buildings they show, beside the game's own", () => {
+    move(445);
+    frame();
+
+    assert.equal(readout().props["data-readout"], "edge");
+    assert.deepEqual(readout().findAll((node) => node.props.className === "range")[0].children, ["7 lines · 28 buildings (game: 18)"]);
+  });
+
+  it("lands the release on those lines, and the readout says the menu's own again", () => {
+    move(445);
+    frame();
+    act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseUp());
+
+    assert.deepEqual(heights(), [199.25, 202.75]);
+    assert.notEqual(readout().props["data-readout"], "edge");
+  });
+
+  it("says nothing of a press that has not moved", () => {
+    assert.notEqual(readout().props["data-readout"], "edge");
+  });
+
+  it("under Top edge's Free keeps the release where it is let go, and the readout counts the lines drawn there", () => {
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuTopEdge", "free"));
+    move(445);
+    frame();
+
+    assert.deepEqual(readout().findAll((node) => node.props.className === "range")[0].children, ["6 lines · 24 buildings (game: 18)"]);
+    act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseUp());
+
+    assert.deepEqual(heights(), [199.25, 199.25]);
+    assert.equal(triggers.at(-1)?.name, "CommitAssetMenuHeight");
+  });
+});
+
 describe("the game's tool options column beside the box", () => {
   const globals = globalThis as unknown as Record<string, unknown>;
   let saved: unknown;

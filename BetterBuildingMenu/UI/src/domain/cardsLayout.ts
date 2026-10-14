@@ -6,7 +6,7 @@
  */
 import type { NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
-import { SLOT_GAP, wholeLines } from "./bodyGeometry";
+import { SLOT_GAP, wholeLines, type LineSpacing } from "./bodyGeometry";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
 import type { NameBox } from "./namePlan";
@@ -81,6 +81,11 @@ export function cardGeometry(knobHeight: number, bodyHeight: number, textScale: 
   const y0 = lines > 1 ? Math.max(0, Math.floor(((body - (lines * height + (lines - 1) * rowGap)) / 2) * 100) / 100) : 0;
 
   return { height, lines, rowGap, y0, pitchY: height + rowGap };
+}
+
+/** The cards' rows, as the top edge's release snaps to them: a card's height, a slot's gap apart at the least. */
+export function cardLineSpacing(knobHeight: number, textScale: number): LineSpacing {
+  return { pitch: cardGeometry(knobHeight, 0, textScale).height + SLOT_GAP, gap: SLOT_GAP, edge: 0, below: 0 };
 }
 
 /** What a card says: its name, then its lot, cost and capacity; a locked card's milestone; the value sorted by. */

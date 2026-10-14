@@ -39,6 +39,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>Every menu drawn in Standard, the look BBM recommends.</summary>
 		public const string MenuLook = Looks.Standard;
 
+		/// <summary>A drag of the top edge settles on whole lines of the open body.</summary>
+		public const string TopEdge = TopEdges.Whole;
+
 		/// <summary>Every stored setting back to how it ships.</summary>
 		/// <remarks>
 		/// Not the settings version, which records the migration, nor the legacy width and view, which
@@ -52,6 +55,7 @@ namespace BetterBuildingMenu.Domain
 			values.AtLargeText = AtLargeText;
 			values.HoverCard = HoverCard;
 			values.MenuLook = MenuLook;
+			values.TopEdge = TopEdge;
 			values.MenuGroups = NoPicks;
 			values.MenuViews = NoPicks;
 			values.Upgrader = false;

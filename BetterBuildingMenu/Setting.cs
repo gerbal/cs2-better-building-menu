@@ -126,6 +126,14 @@ namespace BetterBuildingMenu
 		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AssetMenuWidthStepDescription))]
 		public int AssetMenuWidthStep { get; set; } = Domain.WidthSteps.DefaultStep;
 
+		/// <summary>How the build menu's top edge settles when dragged: on whole lines of the open body, or where the pointer lets go.</summary>
+		/// <remarks>An upgrader's starts Free, through the settings migration. See <see cref="Domain.TopEdges"/>.</remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(TopEdgeItems))]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(TopEdgeDescription))]
+		public string TopEdge { get; set; } = Domain.SettingsDefaults.TopEdge;
+
 		/// <summary>
 		/// The body every menu without a VIEW pick of its own draws: Auto, the look's rule per menu, or
 		/// one body for all.
@@ -395,6 +403,8 @@ namespace BetterBuildingMenu
 
 		private LocalizedString HoverCardDescription() => RowDescription(nameof(HoverCard));
 
+		private LocalizedString TopEdgeDescription() => RowDescription(nameof(TopEdge));
+
 		private LocalizedString MenuLookDescription() => RowDescription(nameof(MenuLook));
 
 		/// <summary>The Width row's choices: the five steps, by their labels.</summary>
@@ -416,6 +426,9 @@ namespace BetterBuildingMenu
 
 		/// <summary>The Hover card row's three choices, by their labels.</summary>
 		private static DropdownItem<string>[] HoverCardItems() => StringItems(Domain.HoverCards.Values, Domain.OptionRows.HoverCardLabelIds);
+
+		/// <summary>The Top edge row's two choices, by their labels.</summary>
+		private static DropdownItem<string>[] TopEdgeItems() => StringItems(Domain.TopEdges.Values, Domain.OptionRows.TopEdgeLabelIds);
 
 		private static DropdownItem<string>[] WhatCountsItems() => StringItems(Domain.Tuning.WhatCountsValues, Domain.OptionRows.WhatCountsLabelIds);
 

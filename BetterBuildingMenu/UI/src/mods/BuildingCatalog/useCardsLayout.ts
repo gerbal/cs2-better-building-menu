@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { useLocalization } from "cs2/l10n";
 import { useMemo } from "react";
 
-import { BODY_SIDE_MARGIN, drawnBodyHeight } from "domain/assetMenuLayout";
+import { BODY_SIDE_MARGIN } from "domain/assetMenuLayout";
 import { groupDigits } from "domain/assetMenuMetricFormat";
 import { bodyOrder, NO_SECTIONS } from "domain/bodyCells";
 import type { BodyKind } from "domain/bodyChoice";
@@ -14,9 +14,9 @@ import { sectionLabel } from "domain/vanillaServiceLabels";
 import { useTextScale } from "domain/textScaleSetting";
 import { useBlockLabels } from "mods/Bodies/useBodyCells";
 import { useNumberSeparators, useStateWords, useUnitMarks } from "mods/Bodies/useBodyWords";
-import { AssetMenuHeight$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
+import { AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { screenPixelRem } from "./useBodyGrid";
+import { screenPixelRem, useDrawnBodyHeight } from "./useBodyGrid";
 
 /** Where a cell sits in the cards' box, and how big it is, in rem. */
 export interface CardPlace {
@@ -52,9 +52,10 @@ export function useCardsLayout(
   entries: readonly BuildingCatalogEntry[],
   sections: readonly CatalogSection[] = NO_SECTIONS,
   offset: number = 0,
+  held: number | null = null,
 ): CardsLayout | null {
   const { menuWidth } = useAssetMenuLayout();
-  const bodyHeight = drawnBodyHeight(useValue(AssetMenuHeight$));
+  const bodyHeight = useDrawnBodyHeight(held);
   const textScale = useTextScale();
   const knob = useValue(AssetMenuTuning$).cardHeight ?? SHIPPED_TUNING.cardHeight;
   const blockLabels = useBlockLabels();

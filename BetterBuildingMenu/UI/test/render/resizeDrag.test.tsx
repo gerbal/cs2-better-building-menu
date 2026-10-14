@@ -11,7 +11,7 @@ import {
   drawnBodyHeight,
   TOP_EDGE_HEIGHT,
 } from "../../src/domain/assetMenuLayout";
-import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
+import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight, type TopEdgeRules } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 
 // A frame clock the test advances by hand, so "one per frame" can be counted.
 const globals = globalThis as unknown as Record<string, unknown>;
@@ -253,5 +253,116 @@ describe("dragging the build menu's top edge from a stored height above the room
     release();
 
     assert.deepEqual(heights(), [830.25]);
+  });
+});
+
+describe("dragging the build menu's top edge under its rules", () => {
+  let root: ReactTestRenderer | undefined;
+  let menu: AssetMenuHeight;
+  // Whole tens stand for whole lines here: what the hook does with the rule, not the rule.
+  const rules: TopEdgeRules = { snap: (height) => Math.round(height / 10) * 10 };
+  const EdgeProbe = () => {
+    menu = useAssetMenuHeight(drawnBodyHeight, rules);
+    return menu.blocker;
+  };
+
+  beforeEach(() => {
+    resetBindings();
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = (handle: number) => {
+      if (handle > 0) frames[handle - 1] = null;
+    };
+    act(() => {
+      root = create(<EdgeProbe />);
+    });
+    // The edge is drawn as many pixels tall as it is rem, so a pixel is a rem here.
+    act(() => menu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }, TOP_EDGE_HEIGHT));
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  const move = (clientY: number) => act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY, buttons: 1 }));
+  const release = () => act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+
+  it("sends nothing for a click, nor for a press that moves less than three pixels", () => {
+    move(498);
+    nextFrame();
+    release();
+
+    assert.deepEqual(names(), []);
+    assert.equal(menu.isResizing, false);
+  });
+
+  it("follows the pointer each frame, then lands the release on whole lines and saves it", () => {
+    move(470);
+    nextFrame();
+    assert.deepEqual(heights(), [174.25], "the edge under the pointer, 30 rem up from 144.25");
+    assert.equal(menu.dragged, 174.25);
+
+    release();
+    assert.deepEqual(heights(), [174.25, 170]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+    assert.equal(menu.dragged, null);
+  });
+
+  it("lands a release from a move the frame has not sent yet", () => {
+    move(470);
+    move(463);
+    release();
+
+    assert.deepEqual(heights(), [180]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+  });
+
+  it("lands as a release does when the menu goes away mid-drag", () => {
+    move(470);
+    nextFrame();
+    act(() => root!.unmount());
+    root = undefined;
+
+    assert.deepEqual(heights(), [174.25, 170]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+  });
+
+  it("sends nothing when the menu goes away after a press that never moved", () => {
+    act(() => root!.unmount());
+    root = undefined;
+
+    assert.deepEqual(names(), []);
+  });
+});
+
+describe("the upgrades panel's drag, which keeps no rules of the build menu's", () => {
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    resetBindings();
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = (handle: number) => {
+      if (handle > 0) frames[handle - 1] = null;
+    };
+    act(() => {
+      root = create(<Probe />);
+    });
+    act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  it("moves at the first pixel and saves where it ends, on no line", () => {
+    act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 499 }));
+    act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+
+    assert.deepEqual(heights(), [ASSET_MENU_DEFAULT_HEIGHT + 1]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+    assert.equal(assetMenu.dragged, null);
   });
 });

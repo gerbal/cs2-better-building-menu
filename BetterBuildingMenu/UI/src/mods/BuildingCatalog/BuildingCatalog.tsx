@@ -37,13 +37,18 @@ import {
 } from "mods/bindings";
 import styles from "./buildingCatalog.module.scss";
 
+export interface BuildingCatalogProps {
+  /** While the top edge is dragged, the height the body draws at: where the release lands. See docs/design-notes.md, "The top edge". */
+  heldHeight?: number | null;
+}
+
 /**
- * Memoised, and takes no props: it re-renders on its own bindings only, not on
- * every keystroke that re-renders the asset menu around it. A width step and a
- * height-drag echo do re-render it, since the Auto rule reads the step and the
- * slots read both; the memoised body below them is spared.
+ * Memoised, and takes one prop that changes only as a drag's lines do: it re-renders on its own bindings,
+ * not on every keystroke that re-renders the asset menu around it. A width step and a height-drag echo do
+ * re-render it, since the Auto rule reads the step and the slots read both; the memoised body below them is
+ * spared.
  */
-export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
+export const BuildingCatalogComponent = memo(function BuildingCatalogComponent({ heldHeight = null }: BuildingCatalogProps) {
   const { translate } = useLocalization();
   const currentSearch = useValue(CurrentSearch$);
   // The menu's body: a typed search's, its own VIEW pick, Default view, or the look's Auto. See
@@ -56,8 +61,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const { items, totalCount, visibleCount, offset, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, sections, facts, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
   // Where the body draws each building, and so how many one screen holds, which C#'s window reaches past:
   // the slots of the list and the tiles, or the cards the packer places in a screen's rows.
-  const grid = useBodyGrid(body, items, sections, offset);
-  const cards = useCardsLayout(body, items, sections, offset);
+  const grid = useBodyGrid(body, items, sections, offset, heldHeight);
+  const cards = useCardsLayout(body, items, sections, offset, heldHeight);
   const slots = grid !== null ? screenSlots(grid) : cards?.screen ?? 0;
   useEffect(() => send(setCatalogScreenCommand(slots)), [slots]);
   const facets = useValue(AssetMenuFacets$);

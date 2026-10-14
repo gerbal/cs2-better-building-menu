@@ -80,6 +80,8 @@ export const AssetMenuAtLargeText$ = bindValue<string>(mod.id, "AssetMenuAtLarge
 export const AssetMenuLook$ = bindValue<string>(mod.id, "AssetMenuLook", "standard");
 /** The hover card's form: "pointer", beside the pointer, until C# answers; "slot", the game's detail slot; or "status", the readout. */
 export const AssetMenuHoverCard$ = bindValue<string>(mod.id, "AssetMenuHoverCard", "pointer");
+/** How the top edge's drag settles: "whole", on whole lines of the open body, until C# answers; or "free", where it is let go. */
+export const AssetMenuTopEdge$ = bindValue<string>(mod.id, "AssetMenuTopEdge", "whole");
 /** What the look's Auto rule reads of every menu, counted over the whole menu once per index generation. */
 export const MenuShares$ = bindValue<MenuShare[]>(mod.id, "MenuShares", []);
 

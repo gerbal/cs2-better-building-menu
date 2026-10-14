@@ -4,16 +4,10 @@ import classNames from "classnames";
 import { useEffect, useRef, useState } from "react";
 
 import { ASSET_MENU_WIDTH_HANDLE_WIDTH, isPrimaryPress, pxPerRemFrom } from "domain/assetMenuLayout";
+import { DRAG_THRESHOLD_PX } from "domain/boxEdges";
 import { draggedStepWidth, nearestSnapStep, type WidthSnap, type WidthStepScreen } from "domain/widthSteps";
 import { send } from "mods/bindings";
 import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
-
-/**
- * How far the pointer must travel, in pixels, before a press becomes a drag. A
- * hand wobbles a pixel or two inside a click, and that must stay a click: one
- * counted as a drag would move the menu to a step the player never chose.
- */
-export const DRAG_THRESHOLD_PX = 3;
 
 export interface AssetMenuWidthDrag {
   isResizing: boolean;

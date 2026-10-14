@@ -51,6 +51,13 @@ namespace BetterBuildingMenu.Domain
 			"Options.LABEL[BetterBuildingMenu.HoverCardStatus]",
 		};
 
+		/// <summary>The Top edge row's labels, one per value of <see cref="TopEdges.Values"/>.</summary>
+		public static readonly IReadOnlyList<string> TopEdgeLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.TopEdgeWhole]",
+			"Options.LABEL[BetterBuildingMenu.TopEdgeFree]",
+		};
+
 		/// <summary>The What counts knob's labels, one per value of <see cref="Tuning.WhatCountsValues"/>.</summary>
 		public static readonly IReadOnlyList<string> WhatCountsLabelIds = new[]
 		{

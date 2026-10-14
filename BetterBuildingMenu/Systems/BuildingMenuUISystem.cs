@@ -101,6 +101,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<string> _AssetMenuAtLargeText = null!;
 		// What shows when the pointer rests on a building: the UI draws the form.
 		private ValueBindingHelper<string> _AssetMenuHoverCard = null!;
+		// How the top edge's drag settles: the UI snaps it to whole lines, or keeps it free.
+		private ValueBindingHelper<string> _AssetMenuTopEdge = null!;
 		// How every menu is drawn: the finished look, read from Options and written by VIEW's Look.
 		private ValueBindingHelper<string> _AssetMenuLook = null!;
 		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
@@ -223,6 +225,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuDefaultView = CreateBinding("AssetMenuDefaultView", BodyViews.SanitizeDefault(Mod.Settings.DefaultView));
 			_AssetMenuAtLargeText = CreateBinding("AssetMenuAtLargeText", LargeText.Sanitize(Mod.Settings.AtLargeText));
 			_AssetMenuHoverCard = CreateBinding("AssetMenuHoverCard", HoverCards.Sanitize(Mod.Settings.HoverCard));
+			_AssetMenuTopEdge = CreateBinding("AssetMenuTopEdge", TopEdges.Sanitize(Mod.Settings.TopEdge));
 			// Read/write like the Width step: VIEW's Look sends the pick, which saves once.
 			_AssetMenuLook = CreateBinding("AssetMenuLook", "SetAssetMenuLook", Looks.Sanitize(Mod.Settings.MenuLook), SetAssetMenuLook);
 			// The open menu's own VIEW, from the VIEW list; "" goes back to Default view.
@@ -413,6 +416,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);
 			_AssetMenuAtLargeText.Value = LargeText.Sanitize(Mod.Settings.AtLargeText);
 			_AssetMenuHoverCard.Value = HoverCards.Sanitize(Mod.Settings.HoverCard);
+			_AssetMenuTopEdge.Value = TopEdges.Sanitize(Mod.Settings.TopEdge);
 			_AssetMenuLook.Value = Looks.Sanitize(Mod.Settings.MenuLook);
 			_AssetMenuTuning.Value = CurrentTuning();
 			if (!string.Equals(_publishedMenuViews, Mod.Settings.MenuViews, StringComparison.Ordinal))

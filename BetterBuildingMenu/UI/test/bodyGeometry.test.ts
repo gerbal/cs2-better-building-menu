@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { bodyCells, type BlockLabels } from "../src/domain/bodyCells";
-import { bodyGrid, deviceRem, labelPlace, labelSlots, listForm, nearLines, screenLine, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
+import { bodyGrid, deviceRem, labelPlace, labelSlots, lineSpacing, listForm, nearLines, screenLine, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
+import { heightOfLines } from "../src/domain/boxEdges";
 import type { BuildingCatalogEntry, CatalogSection } from "../src/domain/buildingCatalog";
 import { CATALOG_WINDOW_SCROLL_THRESHOLD, CATALOG_WINDOW_STEP, shouldLoadMore } from "../src/domain/catalogWindow";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
@@ -440,6 +441,30 @@ describe("the lines on or near the screen", () => {
       // A whole screen behind it, and no more than half a screen beyond that.
       assert.ok(from <= Math.max(0, first - lines) && from > first - lines - half, `${first}: from ${from}`);
       assert.ok(to >= first + 2 * lines, `${first}: to ${to}`);
+    }
+  });
+});
+
+describe("the lines a release of the top edge lands on", () => {
+  it("are the lines each body draws at that height, a device pixel short or not", () => {
+    const forms: Partial<BodyGridInput>[] = [
+      {},
+      { textScale: 1.3 },
+      { textScale: 1.3, atLargeText: "wholeNames" },
+      { body: "tiles" },
+      { body: "tiles", tileNameLine: false },
+      { body: "tiles", tileSize: 100 },
+      { body: "icons" },
+      { plateHeight: 34 },
+    ];
+
+    for (const form of forms) {
+      for (const lines of [2, 4, 5, 7, 12]) {
+        const height = heightOfLines(lines, lineSpacing(input(form)));
+        for (const pixelRem of [0, 1.5]) {
+          assert.equal(bodyGrid(input({ ...form, bodyHeight: height - pixelRem, pixelRem })).lines, lines, `${JSON.stringify(form)} at ${lines} lines, ${pixelRem} short`);
+        }
+      }
     }
   });
 });

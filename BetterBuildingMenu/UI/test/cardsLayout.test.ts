@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
 import { bodyLines, SLOT_GAP } from "../src/domain/bodyGeometry";
-import { cardGeometry, cardNameBox, cardText, cardWidth, CARD_GAP, labelNameBox, labelWidth, packCards } from "../src/domain/cardsLayout";
+import { cardGeometry, cardLineSpacing, cardNameBox, cardText, cardWidth, CARD_GAP, labelNameBox, labelWidth, packCards } from "../src/domain/cardsLayout";
+import { heightOfLines } from "../src/domain/boxEdges";
 import { planName } from "../src/domain/namePlan";
 import { fontSizeRatio } from "../src/domain/textScale";
 import { pageScrollTop } from "../src/domain/catalogWindow";
@@ -24,6 +25,14 @@ const entry = (over: Partial<BuildingCatalogEntry> = {}) => ({
 describe("the cards' geometry", () => {
   it("makes a card 46 tall, three rows in the game's own body a little over 3 apart", () => {
     assert.deepEqual(cardGeometry(46, 144.25, 1), { height: 46, lines: 3, rowGap: 3.125, y0: 0, pitchY: 49.125 });
+  });
+
+  it("stacks the rows a release of the top edge lands on as the body draws them", () => {
+    for (const [knob, textScale] of [[46, 1], [50, 1], [46, 1.5]]) {
+      for (const rows of [2, 3, 5]) {
+        assert.equal(cardGeometry(knob, heightOfLines(rows, cardLineSpacing(knob, textScale)), textScale).lines, rows, `${knob} at ${textScale}, ${rows} rows`);
+      }
+    }
   });
 
   it("makes the Card height knob's 50 two rows, 4 apart, the block centred in the body", () => {

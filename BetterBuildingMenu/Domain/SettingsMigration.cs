@@ -23,14 +23,14 @@ namespace BetterBuildingMenu.Domain
 	/// Pure, over <see cref="ISettingsValues"/>, so tests never build the settings class. Only a
 	/// value that was an earlier release's default moves, and a new player's control pane goes off.
 	/// A per-load sanitiser also brings a Width step outside its range to the first, and reads a
-	/// Default view, At large text, Hover card or Look the row does not offer as shipped, but only in a
-	/// file at this version or earlier: a later release's file is left whole. See docs/design-notes.md, "The
+	/// Default view, At large text, Hover card, Look or Top edge the row does not offer as shipped, but
+	/// only in a file at this version or earlier: a later release's file is left whole. See docs/design-notes.md, "The
 	/// settings migration".
 	/// </remarks>
 	public static class SettingsMigration
 	{
-		/// <summary>This release's settings version: 1 is 0.2.5's, 2 the Width steps', 3 the top row's, 4 the bodies'.</summary>
-		public const int Current = 4;
+		/// <summary>This release's settings version: 1 is 0.2.5's, 2 the Width steps', 3 the top row's, 4 the bodies', 5 the top edge's.</summary>
+		public const int Current = 5;
 
 		/// <summary>The version that introduced the Width steps, and the one question the upgrader test is asked for.</summary>
 		internal const int WidthStepsVersion = 2;
@@ -40,6 +40,9 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The version that gave each menu its body: Tile size's new default, and the view 0.2.5 kept as Default view.</summary>
 		internal const int BodiesVersion = 4;
+
+		/// <summary>The version that gave the top edge its whole lines, and an upgrader the Top edge's Free.</summary>
+		internal const int TopEdgeVersion = 5;
 
 		/// <summary>The heights earlier releases shipped as their default: 420, from 0.2.3 to 0.2.5, and an unreleased build's 155.</summary>
 		public static readonly IReadOnlyList<float> EarlierDefaultHeights = new[] { 420f, 155f };
@@ -91,6 +94,12 @@ namespace BetterBuildingMenu.Domain
 				ToBodies(values, changes);
 			}
 
+			// Reads the flag version 2 stored.
+			if (from < TopEdgeVersion && TopEdgeVersion <= target)
+			{
+				ToTopEdge(values, changes);
+			}
+
 			// On every load at this version or earlier: a hand edit or a bad write can leave a step the
 			// UI has no width for, or a row a value it does not offer. A later release's file is left
 			// alone, its values included.
@@ -101,6 +110,7 @@ namespace BetterBuildingMenu.Domain
 				Set(nameof(ISettingsValues.AtLargeText), values.AtLargeText, LargeText.Sanitize(values.AtLargeText), value => values.AtLargeText = value, changes);
 				Set(nameof(ISettingsValues.HoverCard), values.HoverCard, HoverCards.Sanitize(values.HoverCard), value => values.HoverCard = value, changes);
 				Set(nameof(ISettingsValues.MenuLook), values.MenuLook, Looks.Sanitize(values.MenuLook), value => values.MenuLook = value, changes);
+				Set(nameof(ISettingsValues.TopEdge), values.TopEdge, TopEdges.Sanitize(values.TopEdge), value => values.TopEdge = value, changes);
 			}
 
 			if (from < target)
@@ -182,6 +192,18 @@ namespace BetterBuildingMenu.Domain
 
 			var view = BodyViews.FromRemembered(values.AssetMenuViewMode) ?? (values.Upgrader ? BodyViews.Cards : BodyViews.Auto);
 			Set(nameof(ISettingsValues.DefaultView), values.DefaultView, view, value => values.DefaultView = value, changes);
+		}
+
+		/// <summary>
+		/// Version 5, the top edge: an upgrader's drag keeps settling where the pointer lets go, Free;
+		/// everyone else's lands on whole lines, as it ships.
+		/// </summary>
+		private static void ToTopEdge(ISettingsValues values, List<string> changes)
+		{
+			if (values.Upgrader)
+			{
+				Set(nameof(ISettingsValues.TopEdge), values.TopEdge, TopEdges.Free, value => values.TopEdge = value, changes);
+			}
 		}
 
 		/// <summary>The width a 0.2.4 player had: the width they dragged to, or for the default, the room beside the pane.</summary>

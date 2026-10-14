@@ -1,5 +1,5 @@
 import { useValue } from "cs2/api";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 import { drawnBodyHeight } from "domain/assetMenuLayout";
 import { bodyCells } from "domain/bodyCells";
@@ -19,18 +19,22 @@ export function screenPixelRem(): number {
 }
 
 /**
- * The slots of the body the menu draws, at the box's width, the body's height, the text scale and the
- * settings that size them; null for Cards, which packs its own rows. The window and its labels tell a
- * grown list how many slots it draws.
+ * The body's height as drawn: the stored one, or `held`, the one a drag of the top edge holds it at, where the
+ * release lands, so the body draws again only as that changes. See docs/design-notes.md, "The top edge".
  */
-export function useBodyGrid(
-  body: BodyKind,
-  entries: readonly BuildingCatalogEntry[],
-  sections: readonly CatalogSection[],
-  offset: number,
-): BodyGrid | null {
+export function useDrawnBodyHeight(held: number | null = null): number {
+  const stored = useValue(AssetMenuHeight$);
+  return drawnBodyHeight(held ?? stored);
+}
+
+/**
+ * What sizes the slots of the body the menu draws: the box's width, the body's height, the text scale and the
+ * settings; null for Cards, which packs its own rows. Read by the body and by the box's edges, whose readout
+ * counts the slots a drag would show.
+ */
+export function useBodyGridInput(body: BodyKind, held: number | null = null): BodyGridInput | null {
   const { menuWidth } = useAssetMenuLayout();
-  const bodyHeight = drawnBodyHeight(useValue(AssetMenuHeight$));
+  const bodyHeight = useDrawnBodyHeight(held);
   const textScale = useTextScale();
   const atLargeText = useValue(AssetMenuAtLargeText$);
   const tileSize = useValue(AssetMenuTileSize$);
@@ -42,16 +46,31 @@ export function useBodyGrid(
   const pixelRem = screenPixelRem();
   // The open menu's whole row count, fixed per menu, so no tab or filter resizes a small menu's plates.
   const menuRows = useOpenMenuShare().share?.rows ?? 0;
-  const blockLabels = useBlockLabels();
   // The look's tiles: Standard's keep a name line under them, Plates' sit centred in the body.
   const tileNameLine = lookOf(useValue(AssetMenuLook$)).tileNameLine;
 
-  const input = useMemo<BodyGridInput | null>(
+  return useMemo<BodyGridInput | null>(
     () => (body === "cards"
       ? null
       : { body, boxWidth: menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow, tileNameLine }),
     [body, menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow, tileNameLine]
   );
+}
+
+/**
+ * The slots of the body the menu draws, at the box's width, the body's height, the text scale and the
+ * settings that size them; null for Cards, which packs its own rows. The window and its labels tell a
+ * grown list how many slots it draws.
+ */
+export function useBodyGrid(
+  body: BodyKind,
+  entries: readonly BuildingCatalogEntry[],
+  sections: readonly CatalogSection[],
+  offset: number,
+  held: number | null = null,
+): BodyGrid | null {
+  const input = useBodyGridInput(body, held);
+  const blockLabels = useBlockLabels();
   const plain = useMemo(() => (input === null ? null : bodyGrid(input)), [input]);
   // The columns never depend on the growth, so the slots counted at them hold for the grown grid; a
   // count, so a new page that draws as many slots keeps the grid.
@@ -62,9 +81,13 @@ export function useBodyGrid(
 
   // The grown grid where the slots grow it; else the plain one, the very object, so a page that draws
   // more slots of the same grid redraws none of the cells already drawn.
-  return useMemo(() => {
+  const grid = useMemo(() => {
     if (input === null || plain === null || plain.form === "tile" || plain.form === "icon") return plain;
     const grown = bodyGrid({ ...input, drawnSlots });
     return sameGrid(grown, plain) ? plain : grown;
   }, [input, plain, drawnSlots]);
+  // The grid drawn last while every slot sits alike, so a height that moves no slot, as a drag's, redraws none.
+  const drawn = useRef(grid);
+  if (grid === null || drawn.current === null || !sameGrid(grid, drawn.current)) drawn.current = grid;
+  return drawn.current;
 }

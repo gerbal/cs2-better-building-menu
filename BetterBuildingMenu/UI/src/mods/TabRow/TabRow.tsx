@@ -80,11 +80,18 @@ function legendWords(translate: (id: string, fallback?: string | null) => string
   };
 }
 
+export interface TabRowProps {
+  /** The box's width as drawn, in rem. */
+  width: number;
+  /** While an edge of the box is dragged, what the readout says of it; null otherwise. */
+  edgeReadout?: string | null;
+}
+
 /**
  * The menu's tabs along the box's bottom edge, under the list: All, then the game's tabs with their
  * branches or levels, each with its count, on one line. See docs/design-notes.md, "The tab row".
  */
-export const TabRow = ({ width }: { width: number }) => {
+export const TabRow = ({ width, edgeReadout = null }: TabRowProps) => {
   const { translate } = useLocalization();
   const page = useValue(BuildingCatalog$);
   // During a load the index has counted nothing yet: no count has arrived, nor the total.
@@ -170,6 +177,9 @@ export const TabRow = ({ width }: { width: number }) => {
   // Named above the first step where every tab fits so. See docs/design-notes.md, "The tab row".
   const form = tabForm(row.items, { place, range, legends }, width, textScale, format, namesAllowed);
   const plan = planTabRow(row.items, { place, range, legends }, width, textScale, format, form);
+  // While an edge is dragged the readout says what the release does, in the range's place: the tabs keep their form
+  // and a long line clips the last of them, as a long range does, while the rows keep what the readout said.
+  const shownPlan = edgeReadout === null ? plan : planTabRow(row.items, { place: "", range: edgeReadout }, width, textScale, format, form);
   const legend = legends[plan.legend] ?? [];
   // Status line only: the building pointed at, in the readout's room. The rows keep the blanks the legend
   // said, and the legend comes back when the pointer leaves. See docs/design-notes.md, "The hover card".
@@ -222,7 +232,7 @@ export const TabRow = ({ width }: { width: number }) => {
 
   return (
     <div className={styles.band}>
-      <div ref={readoutRefs.row} className={styles.tabRow} data-clipped={plan.clipped ? "true" : undefined} data-tab-form={form}>
+      <div ref={readoutRefs.row} className={styles.tabRow} data-clipped={shownPlan.clipped ? "true" : undefined} data-tab-form={form}>
         <div ref={readoutRefs.cells} className={styles.cells}>
           {row.items.map((item) =>
             item.kind === "bracket"
@@ -232,7 +242,13 @@ export const TabRow = ({ width }: { width: number }) => {
           )}
         </div>
         <div className={styles.spacer} />
-        {status !== null ? (
+        {edgeReadout !== null ? (
+          <div className={styles.readout} data-readout="edge">
+            <span className={styles.line}>
+              <span className={styles.range}>{edgeReadout}</span>
+            </span>
+          </div>
+        ) : status !== null ? (
           <div className={styles.readout} data-readout="status">
             {/* Two lines at 100% text, the name over the figures; above it one, the name then its figures. */}
             {!status.oneLine && <span className={styles.statusName}>{status.name}</span>}
