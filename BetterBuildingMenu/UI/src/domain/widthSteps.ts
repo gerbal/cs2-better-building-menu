@@ -212,17 +212,6 @@ export function nearestSnapStep(width: number, snaps: readonly WidthSnap[]): num
   return nearest?.step ?? WIDTH_STEP_DEFAULT;
 }
 
-/**
- * The widest box whose drawn right edge is no further right than `edge`. A box grows left, its
- * edge fixed, once it reaches the first three steps' limit, so the edge only moves again past
- * the width that fills the room: an edge at the limit or beyond takes that width.
- */
-function widthWithEdgeAt(edge: number, screen: WidthStepScreen): number {
-  const reach = edge >= growsTo(screen) ? Infinity : edge - slotLeft(screen);
-
-  return Math.min(edge - toolOptionsEdge(screen.textScale), reach);
-}
-
 /** Which of the box's side edges a width drag holds. */
 export type WidthEdge = "left" | "right";
 
@@ -235,22 +224,21 @@ export const WIDTH_DRAG_DEAD_ZONE = 12;
 
 /**
  * The width a drag from `startX` to `currentX` shows, held between the narrowest and the widest
- * step the edge snaps to. Short of the dead zone it is the width pressed. Past it, a drag on the
- * right is the box whose drawn right edge sits under the pointer, as far from it as the press was;
- * a drag on the left widens the box by the pointer's travel, a rem for a rem, as the left edge
- * cannot place steps that share a slot edge. `pxPerRem` is measured off the strip as it was pressed.
+ * step the edge snaps to. Short of the dead zone it is the width pressed. Past it, either edge
+ * widens the box by the pointer's travel outward, a rem for a rem, and narrows it by its travel
+ * inward: steps share a slot edge on either side, so no edge placed under the pointer could tell
+ * them apart, and the travel never skips a step. `pxPerRem` is measured off the strip as it was pressed.
  */
 export function draggedStepWidth(
   startWidth: number,
   startX: number,
   currentX: number,
   snaps: readonly WidthSnap[],
-  screen: WidthStepScreen,
   pxPerRem?: number,
   edge: WidthEdge = "right"
 ): number {
   const travelled = dragDistanceRem(startX, currentX, pxPerRem);
-  const raw = edge === "left" ? startWidth - travelled : widthWithEdgeAt(boxPlacement(startWidth, screen).left + startWidth + travelled, screen);
+  const raw = edge === "left" ? startWidth - travelled : startWidth + travelled;
   if (!Number.isFinite(raw) || snaps.length === 0 || Math.abs(travelled) < WIDTH_DRAG_DEAD_ZONE) return startWidth;
 
   const widths = snaps.map((snap) => snap.width);

@@ -57,7 +57,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const { shownHeight: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
   // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag.
   const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged)), [edges, dragged]);
-  const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
+  const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps });
   // A side edge's drag says the step it lands on in the same place. It sends nothing until the release, and what it
   // says depends on the step alone, so it is worked out once for each step the pointer lands on.
   const sideStep = widthDrag.dragged === null ? null : nearestSnapStep(widthDrag.dragged, snaps);

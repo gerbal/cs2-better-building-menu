@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CONTROL_PANE_TOTAL } from "../src/domain/assetMenuLayout.ts";
-import { WIDTH_STEPS_REFERENCE, WIDTH_STEP_REFERENCE_ASPECT } from "../src/domain/sharedContracts.generated.ts";
+import { LAYOUT_HEIGHT, WIDTH_STEPS_REFERENCE, WIDTH_STEP_REFERENCE_ASPECT } from "../src/domain/sharedContracts.generated.ts";
 import {
   CHIRPER_CLEARANCE_OFFSET,
   REFERENCE_ASPECT,
@@ -228,74 +228,136 @@ describe("on a screen narrower than 16:9", () => {
   });
 });
 
-describe("the right edge's drag", () => {
+describe("a side edge's drag", () => {
+  const open = screen();
+  const hidden = snapTargets(open);
   const snaps = snapTargets(screen({ paneShown: true }));
+  const widthAt = (from: number, travelled: number, edge: "left" | "right", among = hidden) =>
+    draggedStepWidth(from, 500, 500 + travelled, among, 1, edge);
 
   it("follows the pointer between the narrowest and the widest step it snaps to", () => {
-    const shown = screen({ paneShown: true });
-
-    assert.equal(draggedStepWidth(706, 500, 650, snaps, shown, 1), 856);
-    assert.equal(draggedStepWidth(706, 500, -5000, snaps, shown, 1), 706);
-    assert.equal(draggedStepWidth(706, 500, 5000, snaps, shown, 1), 1091);
+    assert.equal(draggedStepWidth(706, 500, 650, snaps, 1), 856);
+    assert.equal(draggedStepWidth(706, 500, -5000, snaps, 1), 706);
+    assert.equal(draggedStepWidth(706, 500, 5000, snaps, 1), 1091);
   });
 
   it("falls back to the 720p scale when the strip could not be measured", () => {
-    near(draggedStepWidth(706, 500, 520, snaps, screen({ paneShown: true })), 706 + 20 / (2 / 3));
+    near(draggedStepWidth(706, 500, 520, snaps), 706 + 20 / (2 / 3));
   });
 
-  it("keeps the drawn right edge under the pointer across all five steps, where the box grows left too", () => {
-    // 16:9, the pane hidden: the edge is at 1,310 for step 1, 1,497 for step 2, 1,500 for step 3, and
-    // 1,676 and 1,871 for 4 and 5. Past 1,500 the box grows left, its edge fixed, so a width that
-    // follows the pointer's distance alone would leave the edge short of the pointer from there on.
-    const open = screen();
-    const hidden = snapTargets(open);
-    const edgeAt = (width: number) => boxPlacement(width, open).left + width;
-
-    for (const travelled of [50, 150, 187, 190, 250, 366, 400, 500, 561]) {
-      const width = draggedStepWidth(706, 500, 500 + travelled, hidden, open, 1);
-      near(edgeAt(width), 1310 + travelled, `${travelled} rem on`);
+  it("widens the box by the pointer's travel from the width pressed, a rem for a rem, on either edge", () => {
+    // Outward is right for the right edge and left for the left; from step 3 the box grows left with its right edge
+    // fixed, and the width still follows the travel, not the edge.
+    for (const travelled of [13, 30, 100, 150]) {
+      near(widthAt(706, travelled, "right"), 706 + travelled, `right, ${travelled} rem`);
+      near(widthAt(706, -travelled, "left"), 706 + travelled, `left, ${travelled} rem`);
+      near(widthAt(1091, travelled, "right"), 1091 + travelled, `right from step 3, ${travelled} rem`);
+      near(widthAt(1091, -travelled, "right"), 1091 - travelled, `right from step 3 back, ${travelled} rem`);
     }
   });
 
-  it("keeps the drawn right edge under the pointer beside the shown pane too, up to the third step's", () => {
-    // Beside the pane the third step's edge is the pane's limit, 1,487: step 2 already sits there.
-    const beside = screen({ paneShown: true });
-    const besideSnaps = snapTargets(beside);
-    const edgeAt = (width: number) => boxPlacement(width, beside).left + width;
-
-    for (const travelled of [50, 100, 150, 177]) {
-      near(edgeAt(draggedStepWidth(706, 500, 500 + travelled, besideSnaps, beside, 1)), 1310 + travelled, `${travelled} rem on`);
+  it("keeps the drawn edge under the pointer where that edge moves", () => {
+    const leftOf = (width: number) => boxPlacement(width, open).left;
+    // Step 1 keeps the slot's left edge up to the first three steps' limit, so its right edge moves with the pointer;
+    // step 3 (1091) stands with its left edge at 409, and narrowing it moves that edge with the pointer, to the slot's.
+    for (const travelled of [30, 100, 150, 189]) {
+      near(leftOf(widthAt(706, travelled, "right")) + widthAt(706, travelled, "right"), 1310 + travelled, `right, ${travelled} rem`);
     }
-    assert.equal(draggedStepWidth(706, 500, 500 + 300, besideSnaps, beside, 1), 1091, "held at the widest step");
+    for (const travelled of [30, 100, 150, 195]) {
+      near(leftOf(widthAt(1091, travelled, "left")), 409 + travelled, `left, ${travelled} rem`);
+    }
   });
 
-  it("keeps the drawn width until the pointer has travelled the dead zone, in either direction", () => {
-    const open = screen();
-    const hidden = snapTargets(open);
+  it("beside the shown pane widens the same way on either edge, and stops at the widest step that fits", () => {
+    near(widthAt(706, 30, "right", snaps), 736);
+    near(widthAt(706, -30, "left", snaps), 736);
+    assert.equal(widthAt(706, 5000, "right", snaps), 1091);
+    assert.equal(widthAt(706, -5000, "left", snaps), 1091);
+  });
+
+  it("keeps the drawn width until the pointer has travelled the dead zone, in either direction, on either edge", () => {
     const inside = WIDTH_DRAG_DEAD_ZONE - 0.5;
 
-    for (const travelled of [inside, -inside, 3, -3]) {
-      assert.equal(draggedStepWidth(1091, 900, 900 + travelled, hidden, open, 1), 1091, `${travelled} rem`);
+    for (const edge of ["left", "right"] as const) {
+      for (const travelled of [inside, -inside, 3, -3]) {
+        assert.equal(widthAt(1091, travelled, edge), 1091, `${edge}, ${travelled} rem`);
+      }
+      assert.ok(widthAt(1091, -WIDTH_DRAG_DEAD_ZONE, edge) !== 1091, `${edge}: followed from the dead zone's edge`);
+      assert.ok(widthAt(1091, WIDTH_DRAG_DEAD_ZONE, edge) !== 1091, `${edge}: followed from the dead zone's edge, the other way`);
     }
-    assert.ok(draggedStepWidth(1091, 900, 900 - WIDTH_DRAG_DEAD_ZONE, hidden, open, 1) < 1091, "followed from the dead zone's edge");
-    assert.ok(draggedStepWidth(1091, 900, 900 + WIDTH_DRAG_DEAD_ZONE, hidden, open, 1) > 1091, "followed from the dead zone's edge, wider");
   });
 
-  it("starts from where the box is drawn, so a drag from step 3 follows its edge too", () => {
-    const open = screen();
-    const hidden = snapTargets(open);
+  it("lands from step 1 on step 2 past the midpoint toward it, then 3, then 4, on either edge alike", () => {
+    // 16:9's steps: 706, 893, 1,091, 1,280 and 1,475.
+    const travels = [13, 90, 100, 280, 290, 400, 500, 600];
+    const landed = (edge: "left" | "right") =>
+      travels.map((travelled) => nearestSnapStep(widthAt(706, edge === "right" ? travelled : -travelled, edge), hidden));
 
-    // Step 3's edge is at 1,500: a pointer 100 rem on puts the edge at 1,600, a box 1,204 wide.
-    near(draggedStepWidth(1091, 900, 1000, hidden, open, 1), 1204);
-    near(draggedStepWidth(1091, 900, 800, hidden, open, 1), 1400 - 604, "100 rem back, short of the flat stretch");
+    assert.deepEqual(landed("right"), [1, 1, 2, 2, 3, 3, 4, 4]);
+    assert.deepEqual(landed("left"), [1, 1, 2, 2, 3, 3, 4, 4]);
   });
 
-  it("takes the widest width for an edge at the flat stretch's end, and the narrower for one a pixel short", () => {
-    const open = screen();
-    const hidden = snapTargets(open);
+  it("lands from step 3 narrower past the midpoint toward each step, and wider the same way, on either edge alike", () => {
+    for (const edge of ["left", "right"] as const) {
+      const outward = edge === "right" ? 1 : -1;
+      const landed = (travels: number[]) => travels.map((travelled) => nearestSnapStep(widthAt(1091, outward * travelled, edge), hidden));
 
-    assert.equal(draggedStepWidth(706, 500, 500 + 190, hidden, open, 1), 1104);
-    assert.equal(draggedStepWidth(706, 500, 500 + 189, hidden, open, 1), 896 - 1);
+      assert.deepEqual(landed([-50, -100, -200, -290, -300]), [3, 2, 2, 2, 1], `${edge}, narrower`);
+      assert.deepEqual(landed([50, 100, 200, 300]), [3, 4, 4, 5], `${edge}, wider`);
+    }
+  });
+
+  // The pointer stays on the screen: a drag ends where it leaves. The press is on the edge as the box draws it, so the
+  // travel runs from that edge's place to either side of the screen.
+  const ASPECTS = [["16:9", SIXTEEN_NINE], ["21:9", TWENTY_ONE_NINE]] as const;
+  const reach = (aspect: number, step: number, edge: "left" | "right") => {
+    const at = screen({ aspect });
+    const from = drawnStepWidth(step, at);
+    const pressed = boxPlacement(from, at).left + (edge === "right" ? from : 0);
+    return { at, from, toLeft: -pressed, toRight: LAYOUT_HEIGHT * aspect - pressed };
+  };
+
+  for (const [name, aspect] of ASPECTS) {
+    for (const edge of ["left", "right"] as const) {
+      for (const step of [1, 2, 3, 4, 5]) {
+        it(`on ${name} from step ${step} the ${edge} edge never jumps, never runs against the pointer and stays among the steps, either way the pointer goes on the screen`, () => {
+          const { at, from, toLeft, toRight } = reach(aspect, step, edge);
+          const among = snapTargets(at);
+          const widest = Math.max(...among.map((snap) => snap.width));
+          const narrowest = Math.min(...among.map((snap) => snap.width));
+          const outward = edge === "right" ? 1 : -1;
+
+          for (const [sign, limit] of [[1, toRight], [-1, -toLeft]] as const) {
+            let before = from;
+            for (let travelled = 0; travelled <= limit; travelled++) {
+              const width = widthAt(from, sign * travelled, edge, among);
+              const what = `${sign * travelled} rem: ${before} to ${width}`;
+              assert.ok(width >= narrowest && width <= widest, what);
+              assert.ok(sign * outward * (width - before) >= -1e-9, what);
+              // Past the dead zone a rem of travel moves the width by a rem at most; across it, by the dead zone at most.
+              assert.ok(Math.abs(width - before) <= (travelled === WIDTH_DRAG_DEAD_ZONE ? WIDTH_DRAG_DEAD_ZONE : 1) + 1e-9, what);
+              before = width;
+            }
+          }
+        });
+      }
+    }
+  }
+
+  it("reaches step 1 from every step on either edge, and step 5 from step 1 on neither before the pointer meets the screen's edge", () => {
+    // The widest step a drag lands on with the pointer at the screen's edge outward, and the narrowest inward.
+    const farthest = (aspect: number, edge: "left" | "right") => [1, 2, 3, 4, 5].map((step) => {
+      const { at, from, toLeft, toRight } = reach(aspect, step, edge);
+      const among = snapTargets(at);
+      const outward = edge === "right" ? toRight : toLeft;
+      const inward = edge === "right" ? toLeft : toRight;
+      return [nearestSnapStep(widthAt(from, outward, edge, among), among), nearestSnapStep(widthAt(from, inward, edge, among), among)];
+    });
+
+    assert.deepEqual(farthest(SIXTEEN_NINE, "right"), [[4, 1], [4, 1], [5, 1], [5, 1], [5, 1]]);
+    assert.deepEqual(farthest(SIXTEEN_NINE, "left"), [[4, 1], [5, 1], [5, 1], [5, 1], [5, 1]]);
+    assert.deepEqual(farthest(TWENTY_ONE_NINE, "right"), [[4, 1], [4, 1], [4, 1], [5, 1], [5, 1]]);
+    assert.deepEqual(farthest(TWENTY_ONE_NINE, "left"), [[4, 1], [5, 1], [5, 1], [5, 1], [5, 1]]);
   });
 
   it("lands on the nearest step, a tie on the narrower", () => {
@@ -307,91 +369,6 @@ describe("the right edge's drag", () => {
 
   it("answers the first step when there is nothing to snap to", () => {
     assert.equal(nearestSnapStep(900, []), 1);
-  });
-});
-
-describe("the left edge's drag", () => {
-  const open = screen();
-  const hidden = snapTargets(open);
-  const leftOf = (width: number, at = open) => boxPlacement(width, at).left;
-  const widthAt = (from: number, travelled: number, edge: "left" | "right", snaps = hidden, at = open) =>
-    draggedStepWidth(from, 500, 500 + travelled, snaps, at, 1, edge);
-  const landed = (from: number, travelled: number, edge: "left" | "right" = "left") => nearestSnapStep(widthAt(from, travelled, edge), hidden);
-
-  it("widens the box by the pointer's travel from the width pressed, one rem for one, so a step is not skipped", () => {
-    // 16:9: steps 1 and 2 share the slot's left edge, so no left edge says which of them the pointer holds.
-    for (const travelled of [-13, -30, -100]) {
-      near(widthAt(706, travelled, "left"), 706 - travelled, `${travelled} rem`);
-    }
-  });
-
-  it("keeps the drawn left edge under the pointer where it moves", () => {
-    // Step 3 (1091) stands with its left edge at 409; narrowing it moves that edge with the pointer, down to the slot's 604.
-    for (const travelled of [30, 100, 150, 195]) {
-      near(leftOf(widthAt(1091, travelled, "left")), 409 + travelled, `${travelled} rem`);
-    }
-  });
-
-  it("lands from step 1 on step 2 past the midpoint toward it, then 3, then 4, then 5", () => {
-    assert.deepEqual([-13, -90, -100, -280, -290, -400, -500, -900].map((travelled) => landed(706, travelled)), [1, 1, 2, 2, 3, 3, 4, 5]);
-  });
-
-  it("lands from step 3 narrower past the midpoint toward each step, and wider the same way", () => {
-    assert.deepEqual([50, 100, 200, 290, 300, 900].map((travelled) => landed(1091, travelled)), [3, 2, 2, 2, 1, 1]);
-    assert.deepEqual([-50, -100, -200, -300, -900].map((travelled) => landed(1091, travelled)), [3, 4, 4, 5, 5]);
-  });
-
-  it("holds the drawn width until the pointer has travelled the dead zone, in either direction", () => {
-    const inside = WIDTH_DRAG_DEAD_ZONE - 0.5;
-
-    for (const travelled of [inside, -inside, 3, -3]) {
-      assert.equal(widthAt(1091, travelled, "left"), 1091, `${travelled} rem`);
-    }
-  });
-
-  for (const edge of ["left", "right"] as const) {
-    for (const step of [1, 2, 3, 4, 5]) {
-      const from = drawnStepWidth(step, open);
-
-      it(`from step ${step} the ${edge} edge's width never runs against the pointer and stays among the steps, both ways`, () => {
-        const widest = Math.max(...hidden.map((snap) => snap.width));
-        const narrowest = Math.min(...hidden.map((snap) => snap.width));
-        // The pointer sweeps from one side of the screen to the other; a drag toward the box narrows it on the left, widens it on the right.
-        for (const sign of [1, -1]) {
-          let before = from;
-          for (let travelled = 0; travelled <= 900; travelled++) {
-            const width = widthAt(from, sign * travelled, edge);
-            assert.ok(width >= narrowest && width <= widest, `${sign * travelled} rem: ${width}`);
-            assert.ok((sign * (edge === "left" ? -1 : 1)) * (width - before) >= -1e-9, `${sign * travelled} rem: ${before} to ${width}`);
-            before = width;
-          }
-        }
-      });
-    }
-  }
-
-  for (const step of [1, 2, 3, 4, 5]) {
-    const from = drawnStepWidth(step, open);
-
-    it(`from step ${step} the left edge never jumps: past the dead zone each rem of travel moves the width by at most a rem, both ways`, () => {
-      for (const sign of [1, -1]) {
-        let before = widthAt(from, sign * WIDTH_DRAG_DEAD_ZONE, "left");
-        assert.ok(Math.abs(before - from) <= WIDTH_DRAG_DEAD_ZONE + 1e-9, `${sign * WIDTH_DRAG_DEAD_ZONE} rem: ${from} to ${before}`);
-        for (let travelled = WIDTH_DRAG_DEAD_ZONE + 1; travelled <= 900; travelled++) {
-          const width = widthAt(from, sign * travelled, "left");
-          assert.ok(Math.abs(width - before) <= 1 + 1e-9, `${sign * travelled} rem: ${before} to ${width}`);
-          before = width;
-        }
-      }
-    });
-  }
-
-  it("beside the shown pane widens the same way, and stops at the widest step that fits", () => {
-    const beside = screen({ paneShown: true });
-    const besideSnaps = snapTargets(beside);
-
-    near(widthAt(706, -30, "left", besideSnaps, beside), 736);
-    assert.equal(widthAt(706, -5000, "left", besideSnaps, beside), 1091);
   });
 });
 

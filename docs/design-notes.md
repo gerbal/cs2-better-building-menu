@@ -214,37 +214,37 @@ centre at every text scale.
 **Either side edge snaps.** A drag shows the box following the pointer, between the narrowest and the
 widest step the edge can snap to; beside the pane those are only the steps that fit. Until the
 pointer has travelled 12 rem from the press, in either direction, the box keeps the width it was
-pressed at, so a release there sends nothing: where two steps share a right edge, a nudge of a few
-pixels would otherwise take the wider or the narrower. Past 12 rem the dragged box is the one whose
-drawn right edge is under the pointer, as far from it as the press was; where the box grows left
-with its edge fixed, as between steps 2 and 3 on 16:9, no width moves the edge, so a pointer at that
-edge or past it takes the widest box that holds it. The release snaps by width to the nearest step,
-a tie to the narrower, and sends one `SetAssetMenuWidthStep`, which C# keeps and saves only when it
-changes. A release on the step the box already draws sends nothing: beside the pane a stored step 4
-or 5 draws as 3, and a drag back onto 3 would otherwise store 3 over the step the pane keeps for
-later. A menu closed mid-drag follows the same rule. The box keeps the snapped width until the
-stored step comes back from C#, so it does not flash the old width for the round trip. The drag is
-the hook's own state, so what reads the stored step, the Auto rule's Cards from width among them,
-changes at the release, not on every frame of the drag. While the box follows the pointer, the
-readout at the tabs' right end names the step the release lands on and the buildings its width
-shows at the body's height, "Width 3 · 30 buildings"; the cards, whose width follows their words, and
-a collapsed box, which draws no body, say the step alone. On the right edge, where the box grows left
-with its edge fixed, the width under the pointer replaces the width pressed as the pointer crosses the
-12 rem, as far as a step away; the left edge has no such jump.
+pressed at, so a release there sends nothing: where two steps share an edge, a nudge of a few
+pixels would otherwise take the wider or the narrower. Past 12 rem either edge widens the box by the
+pointer's travel outward from the width pressed, a rem for a rem, and narrows it by the travel
+inward (`draggedStepWidth`), so the box passes through the widths between the steps and the release
+lands on the nearest; as the pointer crosses the 12 rem the box moves those 12 rem at once, and no
+edge jumps further. The edges cannot place the steps themselves: on 16:9 steps 1 and 2 share the
+slot's left edge, 2 and 3 all but share the right edge short of the chirper (1,497 and 1,500), and
+4 and 5 the tool options' edge, so an edge put under the pointer would jump a whole step where the
+pointer passed a shared one. Where the edge held does move, it stays under the pointer, as the right
+edge from step 1 to step 3's limit and the left edge back from step 3 to the slot's; where the box
+grows on its other side, the pointer leaves the edge. A far step takes as much travel as the widths
+differ by, and the drag ends where the pointer leaves the screen: on 16:9 and 21:9 a drag from step
+1 by either edge lands on step 4 at most, so step 5 is a second drag, or Options' or View's Width;
+from step 2 the left edge reaches it, and the right edge from step 3 on 16:9 and step 4 on 21:9. The
+release snaps by width to the nearest step, a tie to the narrower, and sends one
+`SetAssetMenuWidthStep`, which C# keeps and saves only when it changes. A release on the step the
+box already draws sends nothing: beside the pane a stored step 4 or 5 draws as 3, and a drag back
+onto 3 would otherwise store 3 over the step the pane keeps for later. A menu closed mid-drag
+follows the same rule. The box keeps the snapped width until the stored step comes back from C#, so
+it does not flash the old width for the round trip. The drag is the hook's own state, so what reads
+the stored step, the Auto rule's Cards from width among them, changes at the release, not on every
+frame of the drag. While the box follows the pointer, the readout at the tabs' right end names the
+step the release lands on and the buildings its width shows at the body's height as the box draws
+it, "Width 3 · 30 buildings"; the cards, whose width follows their words, and a collapsed box, which
+draws no body, say the step alone.
 
-**The left edge mirrors the right.** Its drag widens the box by the pointer's travel, a rem for a
-rem, from the width pressed, and narrows it the same way, so it passes through the widths between
-the steps as the right edge does and the release snaps to the nearest step. The box's left edge
-cannot place the steps itself: it keeps the slot's left edge up to the first three steps' limit, and
-stops growing at the tool options' edge, so on 16:9 steps 1 and 2 share the slot's, and 4 and 5 the
-tool options'. A left edge placed under the pointer would jump a whole step the moment the pointer
-passed the slot's edge, so the travel decides, and where the box does grow left, as from step 3,
-its left edge is under the pointer. A drag from step 1 lands on step 2 past the midpoint toward it,
-then 3, 4 and 5, and the pointer reaches the wider steps only by a longer drag than the box's left
-edge would need. The release, the dead zone and a release on the step drawn are the right edge's.
-Its strip is the right one's mirror across the box's first 6 rem, under the body's margin, and runs
-down the body alone: the tab row's All cell starts inside it, so the strip stops above the tabs, and
-a collapsed box, which has no body, has none. Having no reach, it lights under the mouse by itself.
+**The left edge mirrors the right.** Its drag is the right edge's with outward to the left: the
+same travel, dead zone, snap and release on the step drawn. Its strip is the right one's mirror
+across the box's first 6 rem, under the body's margin, and runs down the body alone: the tab row's
+All cell starts inside it, so the strip stops above the tabs, and a collapsed box, which has no
+body, has none. Having no reach, it lights under the mouse by itself.
 
 **The width strip runs down the box's right edge.** A 6 rem strip from under the top row, so close
 keeps its presses, to the box's bottom, past the tab row's band: a child of the box, not of the

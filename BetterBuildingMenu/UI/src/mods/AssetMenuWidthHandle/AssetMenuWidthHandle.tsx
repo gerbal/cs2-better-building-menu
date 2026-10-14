@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ASSET_MENU_WIDTH_HANDLE_WIDTH, isPrimaryPress, pxPerRemFrom } from "domain/assetMenuLayout";
 import { DRAG_THRESHOLD_PX } from "domain/boxEdges";
-import { draggedStepWidth, nearestSnapStep, type WidthEdge, type WidthSnap, type WidthStepScreen } from "domain/widthSteps";
+import { draggedStepWidth, nearestSnapStep, type WidthEdge, type WidthSnap } from "domain/widthSteps";
 import { send } from "mods/bindings";
 import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
 
@@ -45,8 +45,6 @@ export interface AssetMenuWidthBounds {
   /** The step the box draws: the stored one, or beside the pane the widest that fits. */
   drawnStep: number;
   snaps: readonly WidthSnap[];
-  /** Where the box sits on this screen, which the drag follows with the box's right edge. */
-  screen: WidthStepScreen;
 }
 
 /**
@@ -54,7 +52,7 @@ export interface AssetMenuWidthBounds {
  * the edge snaps to, and the release sends the nearest step, once. See docs/design-notes.md,
  * "The box at its Width step, and the control pane".
  */
-export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen }: AssetMenuWidthBounds): AssetMenuWidthDrag {
+export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps }: AssetMenuWidthBounds): AssetMenuWidthDrag {
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [dragWidth, setDragWidth] = useState<number | null>(null);
@@ -139,7 +137,7 @@ export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, scree
     if (!state.moved && Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD_PX) return;
 
     state.moved = true;
-    state.last = draggedStepWidth(state.startWidth, state.startX, event.clientX, snaps, screen, state.pxPerRem, state.edge);
+    state.last = draggedStepWidth(state.startWidth, state.startX, event.clientX, snaps, state.pxPerRem, state.edge);
     pending.current.width = state.last;
 
     if (pending.current.frame === 0) {

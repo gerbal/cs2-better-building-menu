@@ -30,11 +30,10 @@ interface ProbeProps {
   step: number;
   drawnStep?: number;
   snaps: readonly WidthSnap[];
-  screen?: WidthStepScreen;
 }
 
-const Probe = ({ width, step, drawnStep = step, snaps, screen = SCREEN_BESIDE_THE_PANE }: ProbeProps) => {
-  drag = useAssetMenuWidthDrag({ menuWidth: width, step, drawnStep, snaps, screen });
+const Probe = ({ width, step, drawnStep = step, snaps }: ProbeProps) => {
+  drag = useAssetMenuWidthDrag({ menuWidth: width, step, drawnStep, snaps });
   return drag.blocker;
 };
 
@@ -46,8 +45,8 @@ const press = (clientX = 500, button = 0) =>
 
 describe("dragging the build menu's right edge", () => {
   let root: ReactTestRenderer | undefined;
-  const mount = (width = 706, step = 1, snaps: readonly WidthSnap[] = BESIDE_THE_PANE, drawnStep = step, screen = SCREEN_BESIDE_THE_PANE) => act(() => {
-    root = create(<Probe width={width} step={step} drawnStep={drawnStep} snaps={snaps} screen={screen} />);
+  const mount = (width = 706, step = 1, snaps: readonly WidthSnap[] = BESIDE_THE_PANE, drawnStep = step) => act(() => {
+    root = create(<Probe width={width} step={step} drawnStep={drawnStep} snaps={snaps} />);
   });
   const update = (width: number, step: number) => act(() => {
     root!.update(<Probe width={width} step={step} snaps={BESIDE_THE_PANE} />);
@@ -105,18 +104,17 @@ describe("dragging the build menu's right edge", () => {
   });
 
   it("sends the narrower step for a release halfway between two", () => {
-    // Beside the pane step 2's edge is at 1,487: 83.5 rem back puts it at 1,403.5, a box 799.5 wide
-    // from the slot's 604, halfway to 706.
+    // 93.5 rem back from step 2's 893 is a box 799.5 wide, halfway to 706.
     mount(893, 2);
     press();
-    move(416.5);
+    move(406.5);
     release();
 
     assert.deepEqual(steps(), [1]);
   });
 
   it("snaps to the widest step with the pane hidden", () => {
-    mount(706, 1, PANE_HIDDEN, 1, SCREEN_PANE_HIDDEN);
+    mount(706, 1, PANE_HIDDEN, 1);
     press();
     move(5000);
     release();
@@ -179,18 +177,18 @@ describe("dragging the build menu's right edge", () => {
     move(480);
     nextFrame();
 
-    assert.equal(drag.liveWidth, 863, "from the snapped 893, whose edge is at 1,487, not the stored 706");
+    assert.equal(drag.liveWidth, 873, "20 rem narrower than the snapped 893, not the stored 706");
   });
 
-  it("puts the drawn right edge under the pointer, where the box grows left to hold its edge", () => {
-    // Pane hidden on 16:9: step 1's edge is at 1,310, the box grows left to hold its edge at 1,500,
-    // and 4 and 5 run on to 1,676 and 1,871.
-    mount(706, 1, PANE_HIDDEN, 1, SCREEN_PANE_HIDDEN);
+  it("widens the box by the pointer's travel past the width where the box starts to grow left", () => {
+    // Pane hidden on 16:9: past step 3's 1,091 the box grows left with its right edge at 1,500, and the width still
+    // follows the pointer's travel, so step 4 is 574 rem of it from step 1.
+    mount(706, 1, PANE_HIDDEN, 1);
     press();
-    move(500 + 366);
+    move(500 + 574);
     nextFrame();
 
-    assert.equal(drag.liveWidth, 1280, "step 4's box, whose edge is the pointer's");
+    assert.equal(drag.liveWidth, 1280, "step 4's width");
   });
 
   it("changes nothing on a press and release that never moved", () => {
@@ -291,7 +289,7 @@ describe("dragging the build menu's right edge", () => {
       const screen: WidthStepScreen = { aspect: 16 / 9, textScale, paneShown };
       const drawnStep = drawnStepOf(stored, screen);
       const nudge = (travelled: number) => {
-        mount(drawnStepWidth(drawnStep, screen), stored, snapTargets(screen), drawnStep, screen);
+        mount(drawnStepWidth(drawnStep, screen), stored, snapTargets(screen), drawnStep);
         press();
         move(500 + travelled);
         release();
@@ -308,9 +306,13 @@ describe("dragging the build menu's right edge", () => {
       });
 
       it(`follows ${name} once the pointer is past the dead zone`, () => {
-        nudge(-WIDTH_DRAG_DEAD_ZONE - 1);
+        const from = drawnStepWidth(drawnStep, screen);
+        mount(from, stored, snapTargets(screen), drawnStep);
+        press();
+        move(500 - WIDTH_DRAG_DEAD_ZONE - 1);
+        nextFrame();
 
-        assert.deepEqual(steps(), [2]);
+        assert.equal(drag.liveWidth, from - WIDTH_DRAG_DEAD_ZONE - 1);
       });
     }
   });
@@ -361,7 +363,7 @@ describe("the width strip", () => {
 describe("the width strip and its reach under the mouse", () => {
   let hook: AssetMenuWidthDrag;
   const Both = () => {
-    hook = useAssetMenuWidthDrag({ menuWidth: 706, step: 1, drawnStep: 1, snaps: BESIDE_THE_PANE, screen: SCREEN_BESIDE_THE_PANE });
+    hook = useAssetMenuWidthDrag({ menuWidth: 706, step: 1, drawnStep: 1, snaps: BESIDE_THE_PANE });
     return (
       <>
         <AssetMenuWidthHandle active={hook.isResizing} hovered={hook.isHovered} hoverProps={hook.hoverProps} onBeginResize={hook.beginResize} />
@@ -409,7 +411,7 @@ describe("dragging the build menu's left edge", () => {
       if (handle > 0) frames[handle - 1] = null;
     };
     act(() => {
-      root = create(<Probe width={706} step={1} snaps={PANE_HIDDEN} screen={SCREEN_PANE_HIDDEN} />);
+      root = create(<Probe width={706} step={1} snaps={PANE_HIDDEN} />);
     });
     act(() => drag.beginResize({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }, ASSET_MENU_WIDTH_HANDLE_WIDTH, "left"));
   });
