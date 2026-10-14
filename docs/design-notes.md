@@ -431,7 +431,10 @@ names it in `data-bbm-look` for the live check.
   every style and keep the look's light ink. The top row's open control is the exception on it: under
   a style its fill is the style's bright accent (`ctlOpen`), on which no light ink reads, so its word,
   glyph, caret, value and dot take the style's inverted ink (`ctlOpenWord`, `ctlOpenValue`,
-  `ctlOpenSet`, `ctlOpenDot`), dark under both; in the look they are the closed control's inks. The
+  `ctlOpenSet`, `ctlOpenDot`), dark under both; in the look they are the closed control's inks. A
+  popover's row and FILTER's chip buttons (a chip's remove, Clear filters) take the same fill under
+  the pointer, in the popover and on the pane, and the same inks with it, a dimmed row's word and a
+  row's note in `ctlOpenDim`; the lit row keeps the selected fill and its ink. The
   control pane's labels, chips and summaries sit on the list's material, so they take its body inks
   (`bodyLabel`, `bodyChip*`, `bodyWord`, `bodyCtl*`), which follow to `--menuPanel*` and
   `--menuText*`, while the FILTER popover's chips keep the look's light ink. The armed fill and the lit tab's gradient are game tokens no style

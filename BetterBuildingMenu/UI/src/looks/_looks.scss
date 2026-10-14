@@ -81,11 +81,14 @@ $standard: (
   fieldRing: inset 0 0 0 1rem ink(0.28),
   ctlStrip: ink(0.05),
   ctlOpen: rgba(30, 131, 170, 0.22),
-  // The open control's inks on that fill: a closed control's in the look, which the style turns over.
+  // The open control's inks on that fill: a closed control's in the look, which the style turns over. A
+  // popover's row and FILTER's chip buttons take the fill under the pointer, and these inks with it; the dim
+  // one is a dimmed row's word and a row's note.
   ctlOpenWord: ink(0.55),
   ctlOpenValue: ink(0.72),
   ctlOpenSet: #fff,
   ctlOpenDot: rgb(120, 204, 236),
+  ctlOpenDim: ink(0.4),
   divider: ink(0.1),
   hair: transparent,
   slotBg: rgba(98, 128, 138, 0.34),
@@ -185,6 +188,7 @@ $standard-follow: (
   ctlOpenValue: var(--menuText1Inverted),
   ctlOpenSet: var(--menuText1Inverted),
   ctlOpenDot: var(--menuText1Inverted),
+  ctlOpenDim: var(--menuText1Inverted),
   bodyChipBg: var(--menuPanel1),
   bodyChipText: var(--menuText1Normal),
   bodyChipDim: var(--menuText2Normal),

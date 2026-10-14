@@ -75,6 +75,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["tNum2", "plateLocked"], ["tCost", "plateLocked"], ["tName", "body"],
   // The top row's open control: its word, glyph and caret, its value, a set value and its dot, on the open fill.
   ["ctlOpenWord", "ctlOpen"], ["ctlOpenValue", "ctlOpen"], ["ctlOpenSet", "ctlOpen"], ["ctlOpenDot", "ctlOpen"],
+  // A popover's row under the pointer, its dimmed word and its note; FILTER's chip buttons under the pointer.
+  ["ctlOpenDim", "ctlOpen"],
 ];
 
 /** Each fill and the surface it sits on: a style that turns the surface light must set the fill apart on it. */
@@ -320,6 +322,30 @@ describe("the looks' tokens", () => {
     for (const selector of FOLLOW) assert.ok(styleAccent(tokens(selector).ctlOpen), selector);
   });
 
+  it("draw a popover's rows and FILTER's chip buttons under the pointer in the open control's inks, the look's as before", () => {
+    const list = (selector: string) => declarationsOf("mods/Pickers/pickerList.module.scss", selector);
+    const filter = (selector: string) => declarationsOf("mods/Pickers/filterPanel.module.scss", selector);
+
+    assert.deepEqual([list(".list .row:hover")["background-color"], list(".list .row:hover").color], ["var(--bbm-ctlOpen)", "var(--bbm-ctlOpenValue)"]);
+    assert.equal(list(".list .dim:hover").color, "var(--bbm-ctlOpenDim)");
+    assert.equal(list(".list .row:hover .note").color, "var(--bbm-ctlOpenDim)");
+    // The lit row keeps the selected fill under the pointer, and its ink with it.
+    assert.equal(list(".list .lit:hover .note").color, "var(--bbm-armText)");
+    for (const selector of [".chip .chipRemove:hover", ".chips.onBody .chipRemove:hover"]) {
+      assert.equal(filter(selector).color, "var(--bbm-ctlOpenSet)", selector);
+    }
+    for (const selector of [".chips .clearAll:hover", ".chips.onBody .clearAll:hover"]) {
+      assert.deepEqual([filter(selector)["background-color"], filter(selector).color], ["var(--bbm-ctlOpen)", "var(--bbm-ctlOpenWord)"], selector);
+    }
+    // In the look, the inks each draws in off the pointer: a row's, a dimmed word's and a note's, a chip's remove
+    // glyph lit, and Clear filters' word, the pane's too.
+    for (const own of OWN) {
+      const map = tokens(own);
+      assert.deepEqual([map.ctlOpenValue, map.ctlOpenDim, map.ctlOpenSet, map.ctlOpenWord], [map.tState, map.tDim, map.tStateSet, map.tWord], own);
+      assert.equal(map.bodyWord, map.tWord, own);
+    }
+  });
+
   it("keep the open control's ink at 3:1 or more on the accent under Bright blue and Dark grey-orange", () => {
     // The game's own values for the two styles' accent and inverted ink, composited as they draw.
     const STYLES = {
@@ -337,7 +363,7 @@ describe("the looks' tokens", () => {
       const map = tokens(`:global(.${style}) .standard.followStyle`);
       const read = (token: string) => values[/^var\((--[\w-]+)\)$/.exec(token)?.[1] as keyof typeof values];
       const ground = read(map.ctlOpen);
-      for (const ink of ["ctlOpenWord", "ctlOpenValue", "ctlOpenSet", "ctlOpenDot"]) {
+      for (const ink of ["ctlOpenWord", "ctlOpenValue", "ctlOpenSet", "ctlOpenDot", "ctlOpenDim"]) {
         const [light, dark] = [luminance(ground), luminance(over(read(map[ink]), ground))].sort((one, other) => other - one);
         assert.ok((light + 0.05) / (dark + 0.05) >= 3, `${style}: ${ink} on ${map.ctlOpen}`);
       }

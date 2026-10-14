@@ -29,13 +29,25 @@
   white-space: nowrap;
 }
 
+// Under the pointer, the open control's fill and its inks: the style's accent under the game's light styles,
+// where the row's light inks do not read. The lit row keeps the selected fill and its ink.
 .list .row:hover {
   background-color: var(--bbm-ctlOpen);
+  color: var(--bbm-ctlOpenValue);
+}
+
+.list .dim:hover,
+.list .row:hover .note {
+  color: var(--bbm-ctlOpenDim);
 }
 
 .list .lit,
 .list .lit:hover {
   background-color: var(--bbm-popOn);
+  color: var(--bbm-armText);
+}
+
+.list .lit:hover .note {
   color: var(--bbm-armText);
 }
 

@@ -55,9 +55,11 @@
   text-align: center;
 }
 
+// Under the pointer, the open control's fill and its ink on it: the style's accent under the game's light
+// styles, where the chip's light inks do not read.
 .chip .chipRemove:hover {
   background-color: var(--bbm-ctlOpen);
-  color: var(--bbm-tStateSet);
+  color: var(--bbm-ctlOpenSet);
 }
 
 // The icon variant pins a square width, and this carries a word.
@@ -77,6 +79,7 @@
 
 .chips .clearAll:hover {
   background-color: var(--bbm-ctlOpen);
+  color: var(--bbm-ctlOpenWord);
 }
 
 // On the pane's body, which follows the game's style: the body's inks, plate and ink together. The
@@ -95,7 +98,7 @@
 }
 
 .chips.onBody .chipRemove:hover {
-  color: var(--bbm-tStateSet);
+  color: var(--bbm-ctlOpenSet);
 }
 
 .chips.onBody .clearAll {
@@ -105,4 +108,5 @@
 
 .chips.onBody .clearAll:hover {
   background-color: var(--bbm-ctlOpen);
+  color: var(--bbm-ctlOpenWord);
 }

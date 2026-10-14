@@ -410,9 +410,11 @@ describe("Asset menu stylesheet contracts", () => {
       assert.equal(chip(false, rest, prop), `var(--bbm-${popover})`, where);
     }
 
-    // Three classes on the body outrank the hovers on a tie, so the body restates them.
-    assert.equal(declarationsOf(FILTER_PANEL, ".chips.onBody .chipRemove:hover").color, "var(--bbm-tStateSet)");
+    // Three classes on the body outrank the hovers on a tie, so the body restates them: the open control's fill and
+    // its ink on it.
+    assert.equal(declarationsOf(FILTER_PANEL, ".chips.onBody .chipRemove:hover").color, "var(--bbm-ctlOpenSet)");
     assert.equal(declarationsOf(FILTER_PANEL, ".chips.onBody .clearAll:hover")["background-color"], "var(--bbm-ctlOpen)");
+    assert.equal(declarationsOf(FILTER_PANEL, ".chips.onBody .clearAll:hover").color, "var(--bbm-ctlOpenWord)");
 
     assert.equal(pane(".rowLabel").color, "var(--bbm-bodyLabel)");
     assert.equal(pane(".pickerSummary")["background-color"], "var(--bbm-bodyCtl)");
