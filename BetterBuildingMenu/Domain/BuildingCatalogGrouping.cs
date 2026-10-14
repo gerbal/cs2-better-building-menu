@@ -259,8 +259,8 @@ namespace BetterBuildingMenu.Domain
 				}
 
 				// Transit before the branch, because its branches divide nothing: they run
-				// one to one with its categories. What each asset is for is the real split —
-				// tracks, stations, stops, depots, freight, then the lines.
+				// one to one with its categories. What each asset is for is the real split.
+				// See docs/design-notes.md, "Transit tiers".
 				if (IsTransitMenu(entry.UiMenu))
 				{
 					var tier = TransitTier(entry);

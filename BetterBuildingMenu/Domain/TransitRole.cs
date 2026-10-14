@@ -12,6 +12,7 @@ namespace BetterBuildingMenu.Domain
 	/// mixes the depot that runs its vehicles with the stations they call at. Read off
 	/// the components vanilla authors each kind with, as <see cref="BuildingRole"/> is.
 	/// A track is a network, not a building, and is told apart by its subcategory.
+	/// See docs/design-notes.md, "Transit tiers".
 	/// </remarks>
 	public static class TransitRole
 	{
