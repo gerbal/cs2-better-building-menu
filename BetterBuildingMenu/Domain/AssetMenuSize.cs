@@ -38,15 +38,21 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>
 		/// A double press on the top edge: the game's own size, the body at its default and the first Width step, open.
-		/// True when any of the three moved, which is when it saves.
+		/// A height within a release's tolerance of the default already is it, as <see cref="Commit"/> reads it, and is
+		/// kept. True when any of the three moved, which is when it saves.
 		/// </summary>
 		public static bool Restore(ISettingsValues values)
 		{
-			var moved = !values.AssetMenuHeight.Equals(AssetMenuHeight.Default)
+			var heightMoved = Math.Abs(values.AssetMenuHeight - AssetMenuHeight.Default) >= Unmoved;
+			var moved = heightMoved
 				|| values.AssetMenuWidthStep != WidthSteps.DefaultStep
 				|| values.AssetMenuCollapsed;
 
-			values.AssetMenuHeight = AssetMenuHeight.Default;
+			if (heightMoved)
+			{
+				values.AssetMenuHeight = AssetMenuHeight.Default;
+			}
+
 			values.AssetMenuWidthStep = WidthSteps.DefaultStep;
 			values.AssetMenuCollapsed = false;
 

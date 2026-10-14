@@ -35,6 +35,27 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(new FakeSettings(), values);
 		}
 
+		[Theory]
+		[InlineData(144.2501f)]
+		[InlineData(144.2f)]
+		[InlineData(144.3f)]
+		public void ADoublePressAtAHeightWithinTheCommitsToleranceOfTheGamesOwnMovesNothing(float height)
+		{
+			var values = new FakeSettings { AssetMenuHeight = height };
+
+			Assert.False(AssetMenuSize.Restore(values));
+			Assert.Equal(new FakeSettings { AssetMenuHeight = height }, values);
+		}
+
+		[Fact]
+		public void ADoublePressAtAHeightPastThatToleranceMovesIt()
+		{
+			var values = new FakeSettings { AssetMenuHeight = 144.4f };
+
+			Assert.True(AssetMenuSize.Restore(values));
+			Assert.Equal(AssetMenuHeight.Default, values.AssetMenuHeight);
+		}
+
 		[Fact]
 		public void ADoublePressLeavesEveryOtherSettingAlone()
 		{
