@@ -218,15 +218,16 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
       font: NAME_FONT * textScale,
     },
   }])), [cells, from, to, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks, enterId, textScale]);
-  // The plates drawn alike told apart over those near the screen, after the paint: a keystroke draws each
-  // name's own cut at once, and the few drawn alike are planned again a frame later. Hints worked out for
-  // another search are none. See docs/design-notes.md, "Names".
-  const [told, setTold] = useState<{ typed: string; hints: ReadonlyMap<number, ApartHints> }>({ typed, hints: NO_HINTS });
+  // The plates drawn alike told apart over those near the screen. A first draw or a keystroke draws each
+  // name's own cut at once, and the few drawn alike are planned again a frame later, after the paint; once
+  // the search has had its pass, a move of the window, a sort or a look tells the plates it draws apart in
+  // the same draw, so no frame shows hints worked out for other plates. See docs/design-notes.md, "Names".
+  const [passed, setPassed] = useState<string | null>(null);
+  const settled = passed === typed;
+  const apart = useMemo<ReadonlyMap<number, ApartHints>>(() => (settled ? wordsApart(nearPlates, typed.split(/\s+/)) : NO_HINTS), [settled, nearPlates, typed]);
   useEffect(() => {
-    const hints = wordsApart(nearPlates, typed.split(/\s+/));
-    setTold((last) => (last.typed === typed && last.hints === hints ? last : { typed, hints }));
-  }, [nearPlates, typed]);
-  const apart = told.typed === typed ? told.hints : NO_HINTS;
+    if (!settled) setPassed(typed);
+  }, [settled, typed]);
 
   return (
     <div ref={body} className={styles.body} data-bbm-view="list">

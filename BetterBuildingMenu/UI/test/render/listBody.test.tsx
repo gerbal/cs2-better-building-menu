@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { Profiler } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { declarationsOf } from "../harness/compiledCss";
 import { linesOf, plannedNames } from "../harness/huggingNames";
@@ -45,6 +46,32 @@ describe("the list", () => {
     assert.match(html, /left:519rem;top:0rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="4"/);
     // The menu's one hover card says each building: no plate carries a tooltip of its own.
     assert.equal(count(html, /data-tooltip/), 0);
+  });
+
+  it("tells plates apart in the same draw as a sort or a look changes them, so no frame shows the last pass's hints", () => {
+    setBinding("options", "textScale", 1.5);
+    const fences = [entry(1, { name: "NA Low Aluminum Fence", distinctWord: "Aluminum" }), entry(2, { name: "NA Tall Aluminum Fence", distinctWord: "Aluminum" })];
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const saved = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+    let root: ReactTestRenderer | undefined;
+    let commits = 0;
+    const draw = () => <Profiler id="list" onRender={() => { commits += 1; }}>{body(fences, { over: { textScale: 1.5 } })}</Profiler>;
+    const names = () => plannedNames(root!).map((name) => linesOf(name).join(" "));
+    try {
+      act(() => { root = create(draw()); });
+      for (const change of [() => setBinding("BetterBuildingMenu", "AssetMenuLook", "plates"), () => setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Workers")]) {
+        const before = commits;
+        act(() => { change(); root!.update(draw()); });
+
+        assert.equal(commits - before, 1, "one commit, its hints its own");
+        assert.notEqual(names()[0], names()[1], names().join(" | "));
+      }
+    } finally {
+      act(() => root?.unmount());
+      Object.assign(globals, saved);
+    }
   });
 
   it("draws two plates the planner cuts alike apart at 150% text a frame after the paint, each keeping its distinguishing word", () => {
