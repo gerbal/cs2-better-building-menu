@@ -428,10 +428,13 @@ names it in `data-bbm-look` for the live check.
   and `--menuText2Normal`, the head and the popovers from `--panelColorDark`, the accents from
   `--accentColor*`. Ink pairs with the surface under it: Bright blue turns the list light and its
   ink dark, while the head, and the tab row, its readout and the top row on it, stay dark under
-  every style and keep the look's light ink. The control pane's labels, chips and summaries sit on
-  the list's material, so they take its body inks (`bodyLabel`, `bodyChip*`, `bodyWord`,
-  `bodyCtl*`), which follow to `--menuPanel*` and `--menuText*`, while the FILTER popover's chips
-  keep the look's light ink. The armed fill and the lit tab's gradient are game tokens no style
+  every style and keep the look's light ink. The top row's open control is the exception on it: under
+  a style its fill is the style's bright accent (`ctlOpen`), on which no light ink reads, so its word,
+  glyph, caret, value and dot take the style's inverted ink (`ctlOpenWord`, `ctlOpenValue`,
+  `ctlOpenSet`, `ctlOpenDot`), dark under both; in the look they are the closed control's inks. The
+  control pane's labels, chips and summaries sit on the list's material, so they take its body inks
+  (`bodyLabel`, `bodyChip*`, `bodyWord`, `bodyCtl*`), which follow to `--menuPanel*` and
+  `--menuText*`, while the FILTER popover's chips keep the look's light ink. The armed fill and the lit tab's gradient are game tokens no style
   changes (`--selectedColor`, `--gradientHighlight*`). The map leaves the entity ring to the look,
   and its selector names the two style classes without `body`, which the game puts them on. Every
   look takes the one follow map, so under a style Plates' plates and tiles follow the style as

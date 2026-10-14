@@ -261,3 +261,27 @@
   border-radius: 2rem;
   background-color: var(--bbm-dot);
 }
+
+// On the open fill, the open control's own inks: under the game's light styles the fill is the style's
+// accent, where the closed control's light inks do not read. Four classes on the glyph and the caret,
+// over the three above.
+.strip .open .word {
+  color: var(--bbm-ctlOpenWord);
+}
+
+.strip .cell.open .controlGlyph,
+.strip .cell.open .caret {
+  background-color: var(--bbm-ctlOpenWord);
+}
+
+.strip .open .value {
+  color: var(--bbm-ctlOpenValue);
+}
+
+.strip .open .set {
+  color: var(--bbm-ctlOpenSet);
+}
+
+.strip .open .dot {
+  background-color: var(--bbm-ctlOpenDot);
+}

@@ -73,6 +73,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   // The upgrades panel: a row's inks under the pointer, a locked row's too, and the list's own ink on its body.
   ["tName", "plateHover"], ["tNum2", "plateHover"], ["tCost", "plateHover"], ["tLocked", "plateHover"],
   ["tNum2", "plateLocked"], ["tCost", "plateLocked"], ["tName", "body"],
+  // The top row's open control: its word, glyph and caret, its value, a set value and its dot, on the open fill.
+  ["ctlOpenWord", "ctlOpen"], ["ctlOpenValue", "ctlOpen"], ["ctlOpenSet", "ctlOpen"], ["ctlOpenDot", "ctlOpen"],
 ];
 
 /** Each fill and the surface it sits on: a style that turns the surface light must set the fill apart on it. */
@@ -87,6 +89,10 @@ const FILL_ON: readonly (readonly [fill: string, surface: string])[] = [
 const turnsLight = (value: string): boolean => /--panelColorNormal|--menuPanel/.test(value);
 /** Ink that comes from the style itself, which Bright blue turns dark. */
 const styleInk = (value: string): boolean => /--menuText|--menuTitle/.test(value);
+/** A surface in the style's own bright accent, which each style redefines and no light ink reads on. */
+const styleAccent = (value: string): boolean => /--accentColor/.test(value);
+/** The ink a style draws on its accent: its inverted ink, dark under both styles. */
+const ON_ACCENT = "var(--menuText1Inverted)";
 
 describe("the looks' tokens", () => {
   it("give every look and every interface style the keys Standard declares, and no others", () => {
@@ -138,6 +144,7 @@ describe("the looks' tokens", () => {
       for (const [ink, surface] of INK_ON) {
         const where = `${selector}: ${ink} on ${surface}`;
         if (turnsLight(map[surface])) assert.ok(styleInk(map[ink]), where);
+        else if (styleAccent(map[surface])) assert.equal(map[ink], ON_ACCENT, where);
         else assert.ok(!/--menuText1Normal|--menuText2Normal/.test(map[ink]), where);
       }
     }
@@ -294,10 +301,55 @@ describe("the looks' tokens", () => {
     assert.deepEqual([panel(".content")["background-color"], panel(".content").color], ["var(--bbm-body)", "var(--bbm-tName)"]);
   });
 
+  it("draw the top row's open control in its own inks, the look's as before and the style's inverted ink on the style's accent", () => {
+    const strip = (selector: string) => declarationsOf("mods/TopRow/topRow.module.scss", selector);
+
+    assert.equal(strip(".strip .open")["background-color"], "var(--bbm-ctlOpen)");
+    assert.deepEqual(
+      [strip(".strip .open .word").color, strip(".strip .cell.open .controlGlyph")["background-color"], strip(".strip .cell.open .caret")["background-color"]],
+      ["var(--bbm-ctlOpenWord)", "var(--bbm-ctlOpenWord)", "var(--bbm-ctlOpenWord)"],
+    );
+    assert.equal(strip(".strip .open .value").color, "var(--bbm-ctlOpenValue)");
+    assert.equal(strip(".strip .open .set").color, "var(--bbm-ctlOpenSet)");
+    assert.equal(strip(".strip .open .dot")["background-color"], "var(--bbm-ctlOpenDot)");
+    // In the look, the inks a closed control draws in, so the look's open control reads as it did.
+    for (const own of OWN) {
+      const map = tokens(own);
+      assert.deepEqual([map.ctlOpenWord, map.ctlOpenValue, map.ctlOpenSet, map.ctlOpenDot], [map.tWord, map.tState, map.tStateSet, map.dot], own);
+    }
+    for (const selector of FOLLOW) assert.ok(styleAccent(tokens(selector).ctlOpen), selector);
+  });
+
+  it("keep the open control's ink at 3:1 or more on the accent under Bright blue and Dark grey-orange", () => {
+    // The game's own values for the two styles' accent and inverted ink, composited as they draw.
+    const STYLES = {
+      "style--bright-blue": { "--accentColorDark": [0, 139, 220, 1], "--menuText1Inverted": [0, 18, 51, 0.8] },
+      "style--dark-grey-orange": { "--accentColorDark": [220, 132, 0, 1], "--menuText1Inverted": [29, 29, 29, 0.8] },
+    } as const;
+    const channel = (value: number) => {
+      const unit = value / 255;
+      return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = ([r, g, b]: readonly number[]) => 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    const over = ([r, g, b, a]: readonly number[], ground: readonly number[]) => [r, g, b].map((value, at) => value * a + ground[at] * (1 - a));
+
+    for (const [style, values] of Object.entries(STYLES)) {
+      const map = tokens(`:global(.${style}) .standard.followStyle`);
+      const read = (token: string) => values[/^var\((--[\w-]+)\)$/.exec(token)?.[1] as keyof typeof values];
+      const ground = read(map.ctlOpen);
+      for (const ink of ["ctlOpenWord", "ctlOpenValue", "ctlOpenSet", "ctlOpenDot"]) {
+        const [light, dark] = [luminance(ground), luminance(over(read(map[ink]), ground))].sort((one, other) => other - one);
+        assert.ok((light + 0.05) / (dark + 0.05) >= 3, `${style}: ${ink} on ${map.ctlOpen}`);
+      }
+    }
+  });
+
   it("keep the top row's ink light under every style, since its band stays dark", () => {
     // The head is the style's dark panel, so no ink on it may be the style's own, which Bright blue
-    // turns dark for its light list.
+    // turns dark for its light list. The open control sits on the style's accent, and the test above
+    // pins its inks.
     const inks = everyDeclaration("mods/TopRow/topRow.module.scss")
+      .filter(({ selectors }) => !selectors.some((selector) => selector.includes(".open")))
       .filter(({ prop }) => prop === "color" || prop === "background-color")
       .map(({ value }) => /^var\(--bbm-(\w+)\)$/.exec(value)?.[1])
       .filter((key): key is string => key !== undefined);

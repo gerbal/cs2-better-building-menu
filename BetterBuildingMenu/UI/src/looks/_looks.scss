@@ -81,6 +81,11 @@ $standard: (
   fieldRing: inset 0 0 0 1rem ink(0.28),
   ctlStrip: ink(0.05),
   ctlOpen: rgba(30, 131, 170, 0.22),
+  // The open control's inks on that fill: a closed control's in the look, which the style turns over.
+  ctlOpenWord: ink(0.55),
+  ctlOpenValue: ink(0.72),
+  ctlOpenSet: #fff,
+  ctlOpenDot: rgb(120, 204, 236),
   divider: ink(0.1),
   hair: transparent,
   slotBg: rgba(98, 128, 138, 0.34),
@@ -173,7 +178,13 @@ $standard-follow: (
   dot: var(--accentColorLight),
   entMark: var(--accentColorLight),
   focusRing: inset 0 0 0 1.5rem var(--accentColorNormal),
+  // The open control takes the style's bright accent, and the ink the style draws on it: its inverted
+  // ink, dark under both styles, where the look's light ink would not read.
   ctlOpen: var(--accentColorDark),
+  ctlOpenWord: var(--menuText1Inverted),
+  ctlOpenValue: var(--menuText1Inverted),
+  ctlOpenSet: var(--menuText1Inverted),
+  ctlOpenDot: var(--menuText1Inverted),
   bodyChipBg: var(--menuPanel1),
   bodyChipText: var(--menuText1Normal),
   bodyChipDim: var(--menuText2Normal),
