@@ -14,9 +14,10 @@ namespace BetterBuildingMenu.Domain
 	{
 		/// <summary>
 		/// Every role the indexer can produce, in the order a primary is resolved.
-		/// Exposed so the filter UI offers exactly the set that is reachable.
+		/// Exposed so the filter UI offers exactly the set that is reachable. The transit
+		/// roles come last: they are resolved only when no service role is.
 		/// </summary>
-		public static IReadOnlyList<string> Known => Priority;
+		public static IReadOnlyList<string> Known => KnownRoles;
 
 		/// <summary>
 		/// Priority when a prefab carries several service components: the entry holds
@@ -45,6 +46,9 @@ namespace BetterBuildingMenu.Domain
 			"PostFacility",
 			"TelecomFacility",
 		};
+
+		// After Priority, which static initialisers read in declaration order.
+		private static readonly string[] KnownRoles = Priority.Concat(TransitRole.All).ToArray();
 
 		/// <summary>
 		/// The single role to file a prefab under, or null when it has none.

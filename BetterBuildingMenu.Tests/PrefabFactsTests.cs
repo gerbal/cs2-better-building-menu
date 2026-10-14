@@ -968,5 +968,51 @@ namespace BetterBuildingMenu.Tests
 			Assert.Null(PrefabFacts.ResourceName(Game.Economy.Resource.NoResource));
 			Assert.Null(PrefabFacts.ResourceName(Game.Economy.Resource.Coal | Game.Economy.Resource.Oil));
 		}
+
+		[Fact]
+		public void ATransitAssetIsFiledByWhatItIsFor()
+		{
+			var station = Apply(new PrefabSnapshot { TransportStationData = new TransportStationData() });
+			var cargo = Apply(new PrefabSnapshot { TransportStationData = new TransportStationData(), IsCargoStation = true });
+			var depot = Apply(new PrefabSnapshot { TransportDepotData = new TransportDepotData { m_TransportType = TransportType.Bus, m_VehicleCapacity = 20 } });
+			var stop = Apply(new PrefabSnapshot { TransportStopData = new TransportStopData { m_TransportType = TransportType.Bus } }, PrefabCategory.Networks);
+			var track = Apply(new PrefabSnapshot { TrackData = new TrackData { m_TrackType = TrackTypes.Train } }, PrefabCategory.Networks);
+
+			Assert.Equal(TransitRole.Station, station.BuildingTypeName);
+			Assert.Equal(TransitRole.CargoStation, cargo.BuildingTypeName);
+			Assert.Equal(TransitRole.Depot, depot.BuildingTypeName);
+			Assert.Equal(TransitRole.Stop, stop.BuildingTypeName);
+			Assert.Equal(TransitRole.Track, track.BuildingTypeName);
+			// No figure of its own: the depot's vehicles stay a fact, not a Capacity.
+			Assert.Null(depot.Capacity);
+			Assert.Equal(20, FactValue(depot, "depotVehicles"));
+		}
+
+		[Fact]
+		public void ATransitRoleNeverOutranksAServiceOrMakesARoadATrack()
+		{
+			// A station that also runs vehicles is found where passengers board.
+			var both = Apply(new PrefabSnapshot
+			{
+				TransportStationData = new TransportStationData(),
+				TransportDepotData = new TransportDepotData { m_VehicleCapacity = 5 },
+			});
+			var fireStation = Apply(new PrefabSnapshot
+			{
+				FireStationData = new FireStationData { m_FireEngineCapacity = 4 },
+				TransportDepotData = new TransportDepotData { m_VehicleCapacity = 5 },
+			});
+			var tramRoad = Apply(new PrefabSnapshot
+			{
+				RoadData = new RoadData(),
+				TrackData = new TrackData { m_TrackType = TrackTypes.Tram },
+			}, PrefabCategory.Networks);
+			var untypedTrack = Apply(new PrefabSnapshot { TrackData = new TrackData() }, PrefabCategory.Networks);
+
+			Assert.Equal(TransitRole.Station, both.BuildingTypeName);
+			Assert.Equal("FireStation", fireStation.BuildingTypeName);
+			Assert.Null(tramRoad.BuildingTypeName);
+			Assert.Null(untypedTrack.BuildingTypeName);
+		}
 	}
 }

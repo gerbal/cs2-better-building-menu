@@ -132,6 +132,7 @@ namespace BetterBuildingMenu.Systems
 				RequiredResource = GetExtractorFeature(entity),
 				LotSizes = zones.LotSizesOf(entity.Index),
 				IsPipeline = EntityManager.HasComponent<PipelineData>(entity),
+				IsCargoStation = EntityManager.HasComponent<CargoTransportStationData>(entity),
 				IsTransformer = EntityManager.HasComponent<TransformerData>(entity),
 				PollutionScale = _pollutionScale,
 			};

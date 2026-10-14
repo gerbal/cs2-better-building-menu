@@ -1,3 +1,5 @@
+using System.Linq;
+
 using BetterBuildingMenu.Domain;
 using Xunit;
 
@@ -79,5 +81,13 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal("TelecomFacility", BuildingRole.ResolvePrimary(new[] { "TelecomFacility" }));
 		}
 
+		[Fact]
+		public void TransitRolesAreKnownAndComeAfterEveryService()
+		{
+			var known = BuildingRole.Known.ToList();
+
+			Assert.All(TransitRole.All, role => Assert.Contains(role, known));
+			Assert.True(known.IndexOf("TelecomFacility") < known.IndexOf(TransitRole.All[0]));
+		}
 	}
 }

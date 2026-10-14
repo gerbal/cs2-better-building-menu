@@ -623,8 +623,11 @@ namespace BetterBuildingMenu.Domain
 			// The first role that has a figure, so Capacity is always a figure in its own role's
 			// unit: a water treatment plant's pumping station holds nothing, and its sewage is what
 			// it is for. Only a building whose roles all hold nothing is filed by rank alone.
+			// Transit last, and with no figure of its own: a service building that also
+			// carries a stop or a depot is filed by its service.
 			var primary = BuildingRole.ResolvePrimary(roles.Where(role => capacityOf[role] > 0))
-				?? BuildingRole.ResolvePrimary(roles);
+				?? BuildingRole.ResolvePrimary(roles)
+				?? TransitRole.Of(snapshot);
 			prefabIndex.BuildingTypeName = primary;
 
 			if (primary is not null && capacityOf.TryGetValue(primary, out var capacity))
