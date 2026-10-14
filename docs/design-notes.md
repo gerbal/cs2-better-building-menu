@@ -693,17 +693,19 @@ or "free". **This changes 0.2.x:** its drag saved the height where the pointer l
 player's now lands on whole lines, an upgrader's stays free, and a height saved before is kept
 until the next drag.
 
-**What a drag redraws.** While the edge moves, the body draws at the whole lines under the pointer,
-not the pointer's height: the hook's `held`, from the rules' `hold`, which `AssetMenu` hands the
-catalog as `heldHeight` until the stored height answers the release. The box follows the pointer and
-clips the body's last line, or leaves room under it, until the release; the body draws again only as
-those lines change. Under Whole lines they are where the release lands, so the release draws nothing
-new; under Free the release keeps the height let go at, and the body draws once more there. Free so
-costs a drag what Whole lines does: the icons and the cards sit centred in the room, and a body drawn
-at the pointer's height would move every one of them, and repack every card, each frame. A grid that
-places every slot alike keeps its object (`sameGrid`), and a tile keeps its render while its slot
-holds (`sameSlots`). The readout is worked out once a frame, and the tab row, memoised, plans again
-only when it changes: the echo of the height sent re-renders the menu with the same drag.
+**What a drag redraws.** While the edge moves, the body draws at whole lines, not the pointer's
+height: the hook's `held`, from the rules' `hold`, which `AssetMenu` hands the catalog as
+`heldHeight` until the stored height answers the release. Under Whole lines those are the lines the
+release lands on; under Free, where the release keeps the height let go at, the lines that height
+draws, the floor's below it, which are the lines the readout counts (one count, `countAt`, serves
+both), so the body never lays out a line the box would clip and the release drop. The box follows
+the pointer and leaves room under the last line until the release; the body draws again only as
+those lines change, and under Free once more at the release, at the height let go. Free so costs a
+drag what Whole lines does: the icons and the cards sit centred in the room, and a body drawn at the
+pointer's height would move every one of them, and repack every card, each frame. A grid that places
+every slot alike keeps its object (`sameGrid`), and a tile keeps its render while its slot holds
+(`sameSlots`). The readout is worked out once a frame, and the tab row, memoised, plans again only
+when it changes: the echo of the height sent re-renders the menu with the same drag.
 
 **Below the floor the box collapses.** Under Whole lines, dragged below the body's floor of 108, the
 box holds its floor and the readout says "Release to collapse"; the release collapses it to its top

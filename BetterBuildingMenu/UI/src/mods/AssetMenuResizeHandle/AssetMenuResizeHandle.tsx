@@ -39,9 +39,9 @@ export interface AssetMenuHeight {
    */
   dragged: number | null;
   /**
-   * Under the build menu's rules, the height the body draws at: the whole lines under the pointer from the drag's first
-   * move, then where the release lands until the stored height answers it; null otherwise, when the body draws the
-   * stored height.
+   * Under the build menu's rules, the height the body draws at: the whole lines the rules hold it at from the drag's
+   * first move, then where the release lands until the stored height answers it; null otherwise, when the body draws
+   * the stored height.
    */
   held: number | null;
   /**
@@ -64,8 +64,8 @@ export interface TopEdgeRules {
   /** Where a release lands, from the height the pointer asks for: whole lines of the open body, or under Top edge's Free that height. */
   snap: (height: number) => number;
   /**
-   * Where the body draws while the edge moves, from the height the pointer asks for: the whole lines under it, under
-   * either Top edge value, so the body draws again only as its lines change.
+   * Where the body draws while the edge moves, from the height the pointer asks for: whole lines, under either Top edge
+   * value, so the body draws again only as its lines change.
    */
   hold: (height: number) => number;
   /** Whether a release below the body's floor collapses the box: under Whole lines; under Top edge's Free the floor holds. */
@@ -287,7 +287,7 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
     ? <div className={styles.resizeBlocker} onMouseMove={moveResize} onMouseUp={endResize} onMouseLeave={endResize} />
     : null;
 
-  // The body draws the whole lines under the pointer, so between them it has nothing new to draw.
+  // The body draws whole lines, so between them it has nothing new to draw.
   const held = dragged !== null && rules !== null ? rules.hold(dragged) : landing;
   // While a drag is on, the box as the press found it; then as the settings keep it, or as a release holds it.
   const drawnCollapsed = isResizing ? resizeState.current.collapsed : (storedCollapsed || closing) && !opening;

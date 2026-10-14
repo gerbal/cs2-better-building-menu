@@ -8,6 +8,7 @@ import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, drawnBodyHeight, TOP_CHROME_HEIGHT, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
 import { releasedLooks } from "../../src/domain/looks";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
+import { useBoxEdges, type BoxEdges } from "../../src/mods/BuildingMenu/useBoxEdges";
 import { openListCloser, setOpenListCloser } from "../../src/mods/BuildingMenu/openListCloser";
 
 // The lengths AssetMenu writes inline, read off the markup by the element's first class.
@@ -456,6 +457,47 @@ describe("a drag on the asset menu's top edge", () => {
     assert.equal(sentButScreen().at(-1), "CommitAssetMenuHeight");
     assert.ok(!triggers.some((call) => call.name === "SetAssetMenuCollapsed"));
   });
+});
+
+describe("the body under Top edge's Free while the top edge moves", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let root: ReactTestRenderer | undefined;
+  let edges: BoxEdges;
+  const EdgesProbe = () => {
+    edges = useBoxEdges();
+    return null;
+  };
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    saved = globals.window;
+    globals.window = { innerHeight: 1080 };
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.window = saved;
+  });
+
+  // The box follows the pointer and the release keeps the height let go at, so the body is held at the lines that
+  // height draws, the ones the readout counts: never a line more, which the box would clip and the release drop.
+  for (const [body, textScale] of [["list", 1], ["list", 1.5], ["tiles", 1], ["icons", 1], ["cards", 1]] as const) {
+    it(`holds the ${body} at ${textScale * 100} % at the lines the readout counts, past a line's midpoint and below the floor too`, () => {
+      showBody(body);
+      setBinding("BetterBuildingMenu", "AssetMenuTopEdge", "free");
+      setBinding("options", "textScale", textScale);
+      act(() => {
+        root = create(<EdgesProbe />);
+      });
+
+      for (let height = 90; height <= 420; height += 0.25) {
+        assert.equal(edges.heightText(edges.hold(height)), edges.heightText(height), `${height} rem, held at ${edges.hold(height)}`);
+      }
+    });
+  }
 });
 
 describe("the collapsed box", () => {

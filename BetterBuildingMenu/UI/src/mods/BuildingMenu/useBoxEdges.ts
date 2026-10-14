@@ -2,10 +2,10 @@ import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import { useMemo } from "react";
 
-import { ASSET_MENU_DEFAULT_HEIGHT, clampAssetMenuHeight, drawnBodyHeight } from "domain/assetMenuLayout";
+import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT, clampAssetMenuHeight, drawnBodyHeight } from "domain/assetMenuLayout";
 import { groupDigits } from "domain/assetMenuMetricFormat";
 import { bodyGrid, lineSpacing, screenSlots, type LineSpacing } from "domain/bodyGeometry";
-import { collapses, heightReadout, snapToLines, widthReadout, type EdgeWords } from "domain/boxEdges";
+import { collapses, heightOfLines, heightReadout, snapToLines, widthReadout, type EdgeWords } from "domain/boxEdges";
 import { cardGeometry, cardLineSpacing } from "domain/cardsLayout";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenuCollapsed$, AssetMenuTopEdge$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
@@ -18,9 +18,9 @@ export interface BoxEdges {
   /** Where a release of the top edge lands: whole lines of the open body, or under Top edge's Free where it is let go. */
   snap: (height: number) => number;
   /**
-   * Where the body draws while the top edge moves: the whole lines under the pointer, under Top edge's Free too, where
-   * the box follows the pointer and the release keeps the height let go at. The body then draws again only as its
-   * lines change, not every pointer frame.
+   * Where the body draws while the top edge moves: whole lines, the ones the release lands on, or under Top edge's Free,
+   * where the box follows the pointer and the release keeps the height let go at, the ones that height draws. The body
+   * then draws again only as its lines change, not every pointer frame.
    */
   hold: (height: number) => number;
   /** Whether a release below the body's floor collapses the box: under Whole lines; under Top edge's Free the floor holds. */
@@ -69,17 +69,31 @@ export function useBoxEdges(): BoxEdges {
       widthOnly: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragWidthOnly]", "Width {0}") ?? "Width {0}",
     };
     const format = (count: number) => groupDigits(count, separators);
-    const hold = (height: number) => snapToLines(height, spacing);
+    // The lines the body draws at a body height, and the slots they show (the cards' rows alone, as a card is as wide
+    // as its words): the one count the readout says and Free's hold keeps, worked out once for each height a frame asks.
+    let counted: { bodyHeight: number; lines: number; slots: number | null } | null = null;
+    const countAt = (bodyHeight: number) => {
+      if (counted?.bodyHeight === bodyHeight) return counted;
+      if (input === null) {
+        counted = { bodyHeight, lines: cardGeometry(cardHeight, bodyHeight, textScale, screenPixelRem()).lines, slots: null };
+      } else {
+        const grid = bodyGrid({ ...input, bodyHeight, smallMenusGrow: false });
+        counted = { bodyHeight, lines: grid.lines, slots: screenSlots(grid) };
+      }
+      return counted;
+    };
+    // Under Free the release keeps the height let go at, so the body is held at the whole lines that height draws, the
+    // floor's below it; under Whole lines, at the lines the release lands on.
+    const fitted = (height: number) =>
+      Math.max(ASSET_MENU_MIN_HEIGHT, heightOfLines(Math.max(1, countAt(drawnBodyHeight(clampAssetMenuHeight(height))).lines), spacing));
+    const hold = free ? fitted : (height: number) => snapToLines(height, spacing);
     const snap = free ? clampAssetMenuHeight : hold;
-    // The slots the body would show at the height the release lands on, as the box draws it; the cards' rows alone, as a
-    // card is as wide as its words.
+    // What the body would show at the height the release lands on, as the box draws it.
     const heightText = (height: number): string | null => {
       if (collapses(height) && !free) return words.collapse;
       if (collapses(height) && collapsed) return null;
-      const landed = drawnBodyHeight(snap(height));
-      if (input === null) return heightReadout(cardGeometry(cardHeight, landed, textScale, screenPixelRem()).lines, null, words, format);
-      const grid = bodyGrid({ ...input, bodyHeight: landed, smallMenusGrow: false });
-      return heightReadout(grid.lines, screenSlots(grid), words, format);
+      const { lines, slots } = countAt(drawnBodyHeight(snap(height)));
+      return heightReadout(lines, slots, words, format);
     };
 
     const widthText = (step: number, width: number, bodyHeight: number | null) => {
