@@ -181,9 +181,9 @@ export function shouldShowHeading(nodes: readonly GroupNode<unknown>[]): boolean
 }
 
 /**
- * Whether one group of a headed level draws its own heading. A sub-group of
- * one building names nothing its card does not, so only a top-level group
- * heads a single building.
+ * Whether one group of a headed level draws its own heading in the grid. A
+ * sub-group of one building names nothing its card does not, so only a
+ * top-level group heads a single building. The table heads them all.
  */
 export function headsGroup(node: GroupNode<unknown>, depth: number): boolean {
   return depth === 0 || node.count > 1;
@@ -258,7 +258,10 @@ export function flattenGroupedRows<T extends GroupedEntry>(
     const withHeadings = shouldShowHeading(level);
 
     for (const node of level) {
-      if (withHeadings && headsGroup(node, depth)) {
+      // Every group of a headed level, a single building's included: unlike
+      // the grid's tiles, a row has no box of its own, so a bare one reads as
+      // part of the group headed above it. headsGroup is the grid's rule.
+      if (withHeadings) {
         out.push({
           kind: "heading",
           key: `h:${node.path.join("/")}`,

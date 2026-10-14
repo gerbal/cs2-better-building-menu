@@ -187,9 +187,10 @@ describe("Flattening groups for the table", () => {
     assert.deepEqual(rows.map(line), ["  # Roads", "Alley", "Road", "  # Bridges", "Quay", "Viaduct"]);
   });
 
-  it("draws no sub-heading over a single building, and leaves it in place", () => {
-    // The card already names the one building, so a sub-heading over it says it
-    // twice and spends a line on it. A top-level group of one still heads.
+  it("heads every sub-group of a headed level, a single building's included", () => {
+    // A table row sits flush under the heading above it, with no box or indent
+    // of its own, so a bare Firewatch Tower would read as one of the Stations.
+    // The grid can leave a lone tile bare; the table cannot.
     const rows = flattenGroupedRows(
       [
         item(1, ["Fire", "Station"], { name: "Fire Station" }),
@@ -207,6 +208,7 @@ describe("Flattening groups for the table", () => {
       "  # Station",
       "Fire Station",
       "Fire Station 2",
+      "  # Tower",
       "Firewatch Tower",
       "  # Depot",
       "Depot",
