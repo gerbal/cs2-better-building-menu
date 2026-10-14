@@ -91,6 +91,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<int> _ActivePrefabId = null!;
 		private ValueBindingHelper<float> _AssetMenuHeight = null!;
 		private ValueBindingHelper<int> _AssetMenuWidthStep = null!;
+		// Whether the box is collapsed to its top row and tabs: read/write, the top edge, a tab and typing set it.
+		private ValueBindingHelper<bool> _AssetMenuCollapsed = null!;
 		private ValueBindingHelper<bool> _ControlPaneShown = null!;
 		// Each menu's own VIEW and Default view, as the settings keep them: the UI picks the body.
 		private ValueBindingHelper<MenuPick[]> _AssetMenuViews = null!;
@@ -218,6 +220,10 @@ namespace BetterBuildingMenu.Systems
 				"SetAssetMenuWidthStep",
 				WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep),
 				SetAssetMenuWidthStep);
+			// Read/write like the Width step, and seeded so a box collapsed last session opens collapsed on its first frame.
+			_AssetMenuCollapsed = CreateBinding("AssetMenuCollapsed", "SetAssetMenuCollapsed", Mod.Settings.AssetMenuCollapsed, SetAssetMenuCollapsed);
+			// A double press on the top edge: the game's own size, saved once.
+			CreateTrigger("RestoreAssetMenuSize", RestoreAssetMenuSize);
 			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
 			// Seeded here like the pane, so the first frame draws each menu's body.
 			_AssetMenuViews = CreateBinding("AssetMenuViews", BodyViews.PicksOf(Mod.Settings.MenuViews, Knobs.DeveloperMode));
@@ -412,6 +418,7 @@ namespace BetterBuildingMenu.Systems
 			// screen, a tool, SetDefaults) redraw the asset menu at once.
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
 			_AssetMenuWidthStep.Value = WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep);
+			_AssetMenuCollapsed.Value = Mod.Settings.AssetMenuCollapsed;
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);
 			_AssetMenuAtLargeText.Value = LargeText.Sanitize(Mod.Settings.AtLargeText);

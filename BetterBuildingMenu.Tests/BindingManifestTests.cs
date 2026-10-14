@@ -121,6 +121,16 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheCollapseAndTheRestoreAreNamedOnBothSides()
+		{
+			foreach (var name in new[] { "AssetMenuCollapsed", "SetAssetMenuCollapsed", "RestoreAssetMenuSize" })
+			{
+				Assert.Contains(name, CSharpNames());
+				Assert.Contains(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
 		public void TheAllCountIsNamedOnBothSides()
 		{
 			Assert.Contains("AssetMenuAllCount", CSharpNames());

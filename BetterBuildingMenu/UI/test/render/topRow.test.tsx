@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { fakeSearchField, keysPage } from "../harness/fakeKeys";
+import { fakeField, fakeSearchField, keysPage } from "../harness/fakeKeys";
 import { count, renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
@@ -115,6 +115,102 @@ describe("the top row's search field", () => {
 
     assert.deepEqual(triggers.map((call) => [call.name, ...call.args]), [["SearchChanged", ""]]);
     act(() => root!.unmount());
+  });
+});
+
+describe("the top row's search field and the collapsed box", () => {
+  let root: ReactTestRenderer | undefined;
+  const type = (value: string) => act(() => root!.root.find((node) => typeof node.props.onChange === "function" && node.props.className === "input").props.onChange({ target: { value } }));
+
+  beforeEach(() => {
+    resetBindings();
+    resetTranslations();
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  it("opens a collapsed box as the player types, so the results show", () => {
+    set("AssetMenuCollapsed", true);
+    act(() => {
+      root = create(row());
+    });
+    type("f");
+
+    assert.deepEqual(triggers.map((call) => [call.name, ...call.args]), [["SetAssetMenuCollapsed", false], ["SearchChanged", "f"]]);
+  });
+
+  it("leaves a collapsed box collapsed when the field is cleared, and an open one alone", () => {
+    set("AssetMenuCollapsed", true);
+    act(() => {
+      root = create(row());
+    });
+    type("");
+    act(() => set("AssetMenuCollapsed", false));
+    type("four");
+
+    assert.deepEqual(triggers.map((call) => [call.name, ...call.args]), [["SearchChanged", ""], ["SearchChanged", "four"]]);
+  });
+});
+
+describe("the search field's keys in a collapsed box", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const saved = globals.document;
+  let root: ReactTestRenderer | undefined;
+  let page = keysPage();
+  const field = fakeSearchField("four");
+  const key = (name: string, keyCode: number, target: unknown = field) => {
+    const event = { key: name, keyCode, target, prevented: false, preventDefault: () => (event.prevented = true) };
+    act(() => page.keydown(event));
+    return event;
+  };
+  const opens = () => triggers.filter((call) => call.name === "SetAssetMenuCollapsed").map((call) => call.args[0]);
+
+  beforeEach(() => {
+    resetBindings();
+    resetTranslations();
+    page = keysPage(field);
+    globals.document = page.document;
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved;
+  });
+
+  it("opens the box first on Enter or a list key from the field, as the body that acts on them is not drawn", () => {
+    seedSearch();
+    set("AssetMenuCollapsed", true);
+    act(() => {
+      root = create(row());
+    });
+
+    key("Enter", 13);
+    const down = key("ArrowDown", 40);
+    key("", 34);
+
+    assert.deepEqual(opens(), [false, false, false]);
+    assert.equal(down.prevented, true, "the one-line field has no use for it");
+  });
+
+  it("leaves the box collapsed for other keys, for keys from elsewhere, and listens to nothing once open", () => {
+    seedSearch();
+    set("AssetMenuCollapsed", true);
+    act(() => {
+      root = create(row());
+    });
+
+    key("f", 70);
+    key("Enter", 13, fakeField("other"));
+    key("ArrowDown", 40, null);
+    act(() => set("AssetMenuCollapsed", false));
+    key("Enter", 13);
+
+    assert.deepEqual(opens(), []);
+    assert.equal(page.listeners(), 0);
   });
 });
 

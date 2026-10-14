@@ -68,6 +68,8 @@ export const AssetMenuExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod.id
 export const AssetMenuHeight$ = bindValue<number>(mod.id, "AssetMenuHeight", ASSET_MENU_DEFAULT_HEIGHT);
 /** The build menu's Width step, 1 to 5, a new player's 1 until C# answers; see BuildingMenuUISystem.AssetMenuSize. */
 export const AssetMenuWidthStep$ = bindValue<number>(mod.id, "AssetMenuWidthStep", WIDTH_STEP_DEFAULT);
+/** Whether the box is collapsed to its top row and tabs: open until C# answers. See BuildingMenuUISystem.AssetMenuSize. */
+export const AssetMenuCollapsed$ = bindValue<boolean>(mod.id, "AssetMenuCollapsed", false);
 /** Whether the control pane is shown beside the build menu: a new player's off until C# answers. */
 export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", false);
 /** Each menu's own VIEW, as the settings keep it: a menu not in it draws Default view's body. */

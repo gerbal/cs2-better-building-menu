@@ -38,10 +38,12 @@
 }
 
 // The top strip's pill on its side: the game's scrollbar thumb at rest, brightening
-// in white as the thumb does, at once and never in the accent.
+// in white as the thumb does, at once and never in the accent. Never past its strip, which a
+// collapsed box makes shorter than the pill.
 .widthGrip {
   width: 4rem;
   height: 75rem;
+  max-height: 100%;
   border-radius: 2rem;
   background-color: rgba(var(--scrollbarColor), 0.6);
 }

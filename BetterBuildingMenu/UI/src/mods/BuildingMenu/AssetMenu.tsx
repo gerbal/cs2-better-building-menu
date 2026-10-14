@@ -1,3 +1,4 @@
+import { useValue } from "cs2/api";
 import classNames from "classnames";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
@@ -17,12 +18,13 @@ import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { setOpenListCloser } from "mods/BuildingMenu/openListCloser";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useLookRoot } from "mods/useLookRoot";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
+import { ASSET_MENU_BOX_CHROME, ASSET_MENU_WIDTH_HANDLE_REACH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
 import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
 import { controlLeftRem, popoverAnchor, toggleList, type ControlKind, type OpenList } from "domain/topRow";
 import { boxPlacement, popoverRightLimit, toolOptionsShift, topRowRightInset } from "domain/widthSteps";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
+import { AssetMenuCollapsed$ } from "mods/bindings";
 import { gameClasses } from "mods/gameModules";
 
 const AssetMenuTheme = gameClasses("game-ui/game/components/asset-menu/asset-menu.module.scss");
@@ -47,10 +49,12 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const row = useRef<HTMLDivElement>(null);
   const slotLeft = useGameSlotLeft(row, unmeasured.textScale);
   const screen = slotLeft === undefined ? unmeasured : { ...unmeasured, slotLeft };
-  // The top edge drags from the body as drawn, which a tall stored height exceeds under the top HUD, and its release
-  // lands on whole lines of the open body. See docs/design-notes.md, "The top edge".
+  // The top edge drags from the body as drawn, which a tall stored height exceeds under the top HUD; its release
+  // lands on whole lines of the open body, or below the floor collapses the box to its top row and tabs. See
+  // docs/design-notes.md, "The top edge".
   const edges = useBoxEdges();
-  const { height: catalogHeight, isResizing, beginResize, blocker, dragged, held } = useAssetMenuHeight(drawnBodyHeight, edges);
+  const rules = { snap: edges.snap, collapsible: edges.collapsible, collapsed: useValue(AssetMenuCollapsed$) };
+  const { height: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
   const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
@@ -102,6 +106,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           className={classNames(styles.toolContainer, look.className)}
           style={{ width: `${shownWidth}rem`, ...look.style } as CSSProperties}
           data-bbm-look={look.id}
+          data-bbm-collapsed={collapsed ? "true" : undefined}
         >
           {/* The search field, the controls, the hosted tab-bar buttons and close, along the box's
               top edge. See docs/design-notes.md, "The top row". */}
@@ -112,13 +117,16 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             onToggle={togglePopover}
             onClose={onClose}
           />
-          <div
-            className={classNames(styles.content, AssetMenuTheme.assetPanel)}
-            style={{ height: `${drawnBodyHeight(catalogHeight)}rem` }}
-          >
-            {/* While the edge moves the body draws where the release lands, and so draws again only as that changes. */}
-            <BuildingCatalogComponent heldHeight={held} />
-          </div>
+          {/* A collapsed box draws no body. */}
+          {!collapsed && (
+            <div
+              className={classNames(styles.content, AssetMenuTheme.assetPanel)}
+              style={{ height: `${drawnBodyHeight(catalogHeight)}rem` }}
+            >
+              {/* While the edge moves the body draws where the release lands, and so draws again only as that changes. */}
+              <BuildingCatalogComponent heldHeight={held} />
+            </div>
+          )}
           {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
               their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
           <TabRow width={shownWidth} edgeReadout={dragged === null ? null : edges.heightText(dragged)} />
@@ -147,7 +155,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           <ControlPopover
             open={popover}
             limit={popoverRightLimit(placement, shownWidth, screen.aspect)}
-            anchor={popoverAnchor(drawnBoxHeight(catalogHeight))}
+            anchor={popoverAnchor(collapsed ? ASSET_MENU_BOX_CHROME : drawnBoxHeight(catalogHeight))}
             onClose={closeList}
           />
           {/* The building pointed at, above the box, inside its root so it takes the look, hidden while a

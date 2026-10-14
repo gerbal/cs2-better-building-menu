@@ -4,12 +4,41 @@
  */
 import { ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT, clampAssetMenuHeight } from "./assetMenuLayout";
 import type { LineSpacing } from "./bodyGeometry";
+import type { Command } from "./command";
 
 /**
  * How far the pointer must travel, in pixels, before a press becomes a drag. A hand wobbles a pixel or two inside a
  * click, and that must stay a click: one counted as a drag would move the menu where the player never asked.
  */
 export const DRAG_THRESHOLD_PX = 3;
+
+/**
+ * The longest from one press on the top edge to the next that makes them a double press, in milliseconds. Timed here,
+ * as the first press raises the drag's blocker, so the edge never hears a double click.
+ */
+export const DOUBLE_PRESS_MS = 400;
+
+/** A press on the top edge, where and when, for the next to tell a double press by. */
+export interface EdgePress {
+  at: number;
+  x: number;
+  y: number;
+}
+
+/** Whether a press is the second of a double press: soon enough after the first, in its place, the first a click. */
+export function isDoublePress(first: EdgePress | null, second: EdgePress): boolean {
+  return first !== null
+    && second.at - first.at >= 0
+    && second.at - first.at <= DOUBLE_PRESS_MS
+    && Math.abs(second.x - first.x) < DRAG_THRESHOLD_PX
+    && Math.abs(second.y - first.y) < DRAG_THRESHOLD_PX;
+}
+
+/** The box collapsed to its top row and tabs, or opened again: C# keeps it and saves only a change. */
+export const setCollapsedCommand = (collapsed: boolean): Command => ({ method: "SetAssetMenuCollapsed", args: [collapsed] });
+
+/** A double press on the top edge: C# puts the box back at the game's own size, open, and saves once. */
+export const restoreSizeCommand = (): Command => ({ method: "RestoreAssetMenuSize", args: [] });
 
 /** The buildings the game's own build menu shows at its size, which the readout names beside a drag's. */
 export const GAME_MENU_SCREEN = 18;
@@ -51,6 +80,8 @@ export interface EdgeWords {
   lines: string;
   /** "{0} lines (game: {1})", where the body cannot say how many buildings its lines hold. */
   linesOnly: string;
+  /** "Release to collapse", for a drag below the body's floor. */
+  collapse: string;
 }
 
 /**
@@ -61,4 +92,9 @@ export function heightReadout(lines: number, buildings: number | null, words: Ed
   return buildings === null
     ? words.linesOnly.replace("{0}", format(lines)).replace("{1}", format(GAME_MENU_SCREEN))
     : words.lines.replace("{0}", format(lines)).replace("{1}", format(buildings)).replace("{2}", format(GAME_MENU_SCREEN));
+}
+
+/** Whether a height the top edge is dragged to collapses the box on release: below the body's floor. */
+export function collapses(height: number): boolean {
+  return height < ASSET_MENU_MIN_HEIGHT;
 }

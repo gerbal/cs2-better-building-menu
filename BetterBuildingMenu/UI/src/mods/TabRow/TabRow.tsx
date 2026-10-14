@@ -13,6 +13,7 @@ import { LEGEND_FORMS, legendParts, NOTHING_SAID, shownKinds, statedValues, type
 import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "domain/textScaleSetting";
 import { NO_TIER_BRACKET } from "domain/menuProgression";
+import { setCollapsedCommand } from "domain/boxEdges";
 import { arrivedCount, cellsOf, cssUrl, planTabRow, readoutRange, readoutRoom, tabForm, tabRow, type TabCell, type TabForm } from "domain/tabRow";
 import type { VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
@@ -23,6 +24,7 @@ import {
   AssetMenuCategories$,
   AssetMenuCategory$,
   AssetMenuCategoryCounts$,
+  AssetMenuCollapsed$,
   AssetMenuExpandedCategories$,
   AssetMenus$,
   AssetMenuSchoolTier$,
@@ -112,6 +114,7 @@ export const TabRow = ({ width, edgeReadout = null }: TabRowProps) => {
   const bracket = useValue(AssetMenuTierBracket$) ?? NO_TIER_BRACKET;
   const selectedTier = useValue(AssetMenuSchoolTier$) ?? -1;
   const searching = (useValue(CurrentSearch$) ?? "").trim() !== "";
+  const collapsed = useValue(AssetMenuCollapsed$);
   // On unless C# says Never: the binding's fallback is the shipped value.
   const namesAllowed = useValue(AssetMenuTuning$)?.tabNames !== false;
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
@@ -199,6 +202,8 @@ export const TabRow = ({ width, edgeReadout = null }: TabRowProps) => {
   useLayoutEffect(() => () => setReadoutSaid(NOTHING_SAID), []);
 
   const select = (cell: TabCell) => {
+    // A tab, All among them, opens a collapsed box: the list it picks is what the player wants to see.
+    if (collapsed) send(setCollapsedCommand(false));
     if (cell.kind === "branch") send({ method: "SetAssetMenuStripTab", args: [cell.id] });
     else if (cell.kind === "tier") send({ method: "SetAssetMenuSchoolTier", args: [Number(cell.id)] });
     // All sends the empty category, which clears every narrowing.

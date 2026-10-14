@@ -122,6 +122,19 @@ describe("the tab row", () => {
     assert.match(html, /class="segment">.*url\(&quot;Media\/Game\/Icons\/Education\.svg&quot;\).*<span class="name">Elementary School<\/span><span class="count">22<\/span>/s);
   });
 
+  it("opens a collapsed box before a tab, All included, picks its list; an open box is left alone", () => {
+    seedRoads();
+    set("AssetMenuCollapsed", true);
+    press(mount(), "All · 779");
+    set("AssetMenuCollapsed", false);
+    press(mount(), "SmallRoads · 30");
+
+    assert.deepEqual(
+      triggers.map((call) => [call.name, ...call.args]),
+      [["SetAssetMenuCollapsed", false], ["SetAssetMenuCategory", ""], ["SetAssetMenuCategory", "SmallRoads"]]
+    );
+  });
+
   it("sends the pick each cell stands for: All, a tab, a level and a branch", () => {
     seedRoads();
     const roads = mount();

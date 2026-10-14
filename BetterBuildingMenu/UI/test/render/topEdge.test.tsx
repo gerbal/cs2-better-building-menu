@@ -11,7 +11,11 @@ describe("the top edge", () => {
     const root = edge(false);
 
     assert.equal(root.findByProps({ className: "topEdge" }).props.title, undefined);
-    assert.deepEqual(root.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize"]);
+    assert.deepEqual(root.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize · double-click for the game's size"]);
+  });
+
+  it("names its edge for the live check and the render tests", () => {
+    assert.equal(edge(false).findByProps({ className: "topEdge" }).props["data-bbm-edge"], "top");
   });
 
   it("shows its grip pressed while a drag is on", () => {

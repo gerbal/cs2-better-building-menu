@@ -51,6 +51,7 @@ namespace BetterBuildingMenu.Domain
 		{
 			values.AssetMenuHeight = AssetMenuHeight.Default;
 			values.AssetMenuWidthStep = WidthSteps.DefaultStep;
+			values.AssetMenuCollapsed = false;
 			values.DefaultView = DefaultView;
 			values.AtLargeText = AtLargeText;
 			values.HoverCard = HoverCard;

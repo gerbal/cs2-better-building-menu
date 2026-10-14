@@ -85,8 +85,10 @@ describe("the grab strips", () => {
     assert.equal(band["padding-right"], strip.width);
   });
 
-  it("carry a side pill as long as the top one, half as thick", () => {
+  it("carry a side pill as long as the top one, half as thick, never past its strip", () => {
     assert.equal(grip.height, topGrip.width);
+    // A collapsed box's strip runs down its tab row alone, shorter than the pill.
+    assert.equal(grip["max-height"], "100%");
     assert.equal(rem(grip.width), rem(topGrip.height) / 2);
     assert.equal(rem(grip["border-radius"]), rem(grip.width) / 2);
   });

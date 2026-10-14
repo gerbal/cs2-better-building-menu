@@ -7,11 +7,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   ASSET_MENU_RESIZE_HANDLE_HEIGHT,
   clampAssetMenuHeight,
+  dragDistanceRem,
   draggedAssetMenuHeight,
   isPrimaryPress,
   pxPerRemFrom,
 } from "domain/assetMenuLayout";
-import { DRAG_THRESHOLD_PX } from "domain/boxEdges";
+import { collapses, DRAG_THRESHOLD_PX, isDoublePress, restoreSizeCommand, setCollapsedCommand, type EdgePress } from "domain/boxEdges";
 
 import styles from "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 import { AssetMenuHeight$, send } from "mods/bindings";
@@ -27,13 +28,21 @@ export interface AssetMenuHeight {
    * when it leaves the strip. Null between drags; render it beside the panel.
    */
   blocker: JSX.Element | null;
-  /** Under the build menu's rules, the height a drag that has moved asks for, held to the drag's range; null otherwise. */
+  /**
+   * Under the build menu's rules, the height a drag that has moved asks for, held to the drag's ceiling, and below
+   * the body's floor where the pointer is; null otherwise.
+   */
   dragged: number | null;
   /**
    * Under the build menu's rules, the height the body draws at: where the release lands, from the drag's first move
    * until the stored height answers the release; null otherwise, when the body draws the stored height.
    */
   held: number | null;
+  /**
+   * Under the build menu's rules, whether the box draws collapsed to its top row and tabs: as the settings keep it,
+   * until a drag from it passes the floor, and open from a release that opens it until C# answers.
+   */
+  collapsed: boolean;
 }
 
 /** How near the stored height must come to a release's, which C# keeps as a float, to answer it. */
@@ -41,14 +50,35 @@ const ANSWERED = 0.01;
 
 /**
  * What only the build menu's top edge does with a drag; the upgrades panel's keeps a plain clamp and commit. A press
- * becomes a drag only once the pointer has moved, so a click sends nothing. See docs/design-notes.md, "The top edge".
+ * becomes a drag only once the pointer has moved, so a click sends nothing, and two clicks in place are a double
+ * press. See docs/design-notes.md, "The top edge".
  */
 export interface TopEdgeRules {
   /** Where a release lands, from the height the pointer asks for: whole lines of the open body, or under Top edge's Free that height. */
   snap: (height: number) => number;
+  /** Whether a release below the body's floor collapses the box: under Whole lines; under Top edge's Free the floor holds. */
+  collapsible: boolean;
+  /** Whether the box is collapsed: a drag from it starts at a body of nothing, so it opens only past the floor. */
+  collapsed: boolean;
 }
 
 const asStored = (height: number): number => height;
+
+interface ResizeState {
+  active: boolean;
+  /** Whether the pointer has moved far enough to make the press a drag. */
+  moved: boolean;
+  /** Whether a frame of this drag has sent a height to the binding. */
+  sent: boolean;
+  press: EdgePress;
+  startY: number;
+  /** The body's height the drag starts from: as drawn, or nothing for a collapsed box. */
+  startHeight: number;
+  /** The stored height when the press came, which a release that collapses the box puts back. */
+  stored: number;
+  collapsed: boolean;
+  pxPerRem?: number;
+}
 
 /**
  * One height for both panels. The drag runs through the live binding and only
@@ -62,11 +92,17 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
   const [dragged, setDragged] = useState<number | null>(null);
   // Where the last release landed, until the stored height answers it.
   const [landing, setLanding] = useState<number | null>(null);
-  const resizeState = useRef<{ active: boolean; moved: boolean; startY: number; startHeight: number; pxPerRem?: number }>({
+  // A release that opened a collapsed box, which holds it open until C# answers.
+  const [opening, setOpening] = useState(false);
+  const resizeState = useRef<ResizeState>({
     active: false,
     moved: false,
+    sent: false,
+    press: { at: 0, x: 0, y: 0 },
     startY: 0,
     startHeight: 0,
+    stored: 0,
+    collapsed: false,
   });
   // Read when the menu goes away mid-drag, after the render that last passed them.
   const edge = useRef(rules);
@@ -75,8 +111,11 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
   // The height the pointer last asked for, sent once per frame: the mouse can
   // report several moves a frame, and each echo re-renders the asset menu.
   const pending = useRef<{ frame: number; height: number | null }>({ frame: 0, height: null });
-  // The height the pointer last asked for, sent or not, which a release under the build menu's rules lands from.
-  const dragging = useRef<number | null>(null);
+  // What the pointer last asked for, sent or not, which a release under the build menu's rules lands from: the height
+  // held to the ceiling, under the floor or not, and the height the box draws for it.
+  const asked = useRef<{ raw: number; drawn: number } | null>(null);
+  // The last press that stayed a click, which the next press may make a double press.
+  const lastClick = useRef<EdgePress | null>(null);
 
   const height = clampAssetMenuHeight(useValue(AssetMenuHeight$));
 
@@ -86,31 +125,41 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
 
     if (next !== null) {
       send({ method: "SetAssetMenuHeight", args: [next] });
-      if (edge.current !== null) setDragged(next);
+      resizeState.current.sent = true;
     }
+    // Once a frame, as the height is sent: the readout follows the drag, under the floor too.
+    if (edge.current !== null) setDragged(asked.current?.raw ?? null);
   }
 
   /**
-   * Where a drag ends, as its release, or the menu going away, ends it. Under the build menu's rules a press that
-   * never moved sends nothing, and one that did lands on whole lines, the height it returns; the plain drag sends
-   * where it ended.
+   * Where a drag ends, as its release, or the menu going away, ends it. The plain drag sends where it ended. Under
+   * the build menu's rules a press that never moved sends nothing; a drag below the floor collapses the box, or leaves
+   * a collapsed one so, the stored height kept; any other lands on whole lines, the height it returns, and its commit
+   * opens a collapsed box in the same save.
    */
   function settle(): number | null {
     const state = resizeState.current;
-    const last = pending.current.height;
+    const unsent = pending.current.height;
     pending.current = { frame: 0, height: null };
     const rulesNow = edge.current;
 
     if (rulesNow === null) {
-      if (last !== null) send({ method: "SetAssetMenuHeight", args: [last] });
+      if (unsent !== null) send({ method: "SetAssetMenuHeight", args: [unsent] });
       send({ method: "CommitAssetMenuHeight", args: [] });
       return null;
     }
 
-    const asked = dragging.current;
-    if (!state.moved || asked === null) return null;
+    const last = asked.current;
+    if (!state.moved || last === null) return null;
 
-    const landed = rulesNow.snap(asked);
+    if (collapses(last.raw) && (state.collapsed || rulesNow.collapsible)) {
+      // The binding back where the press found it: the next open draws the stored height.
+      if (state.sent) send({ method: "SetAssetMenuHeight", args: [state.stored] });
+      if (!state.collapsed) send(setCollapsedCommand(true));
+      return null;
+    }
+
+    const landed = rulesNow.snap(last.drawn);
     send({ method: "SetAssetMenuHeight", args: [landed] });
     send({ method: "CommitAssetMenuHeight", args: [] });
     return landed;
@@ -119,6 +168,11 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
   useEffect(() => {
     if (landing !== null && Math.abs(height - landing) < ANSWERED) setLanding(null);
   }, [height, landing]);
+
+  const storedCollapsed = rules?.collapsed === true;
+  useEffect(() => {
+    if (opening && !storedCollapsed) setOpening(false);
+  }, [opening, storedCollapsed]);
 
   // The asset menu going away mid-drag (closed by a key or by the game) ends the
   // drag as a release does. Left unsaved, the dragged height would sit in the
@@ -135,12 +189,34 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
     if (!isPrimaryPress(event)) return;
     event.preventDefault?.();
     event.stopPropagation?.();
+    const press: EdgePress = { at: Date.now(), x: event.clientX, y: event.clientY };
+
+    // Under the build menu's rules, the second press of a double press puts the box back at the game's own size and
+    // starts no drag.
+    if (edge.current !== null && isDoublePress(lastClick.current, press)) {
+      lastClick.current = null;
+      send(restoreSizeCommand());
+      return;
+    }
+
     // Rem follows the resolution and the pointer reports pixels, so the ratio is
     // measured off the strip just pressed: drawn, and a known rem tall.
     const pressed = event.currentTarget as Element | null | undefined;
     const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().height, heightRem);
-    resizeState.current = { active: true, moved: false, startY: event.clientY, startHeight: drawnAt(height), pxPerRem };
-    dragging.current = null;
+    // A box held open for C#'s answer is drawn open, and a drag from it starts where it is drawn.
+    const collapsed = edge.current?.collapsed === true && !opening;
+    resizeState.current = {
+      active: true,
+      moved: false,
+      sent: false,
+      press,
+      startY: event.clientY,
+      startHeight: collapsed ? 0 : drawnAt(height),
+      stored: height,
+      collapsed,
+      pxPerRem,
+    };
+    asked.current = null;
     setLanding(null);
     setIsResizing(true);
   }
@@ -157,9 +233,12 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
     if (edge.current !== null && !state.moved && !(Math.abs(event.clientY - state.startY) >= DRAG_THRESHOLD_PX)) return;
 
     state.moved = true;
-    const asked = drawnAt(draggedAssetMenuHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
-    pending.current.height = asked;
-    dragging.current = asked;
+    const drawn = drawnAt(draggedAssetMenuHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
+    // Below the floor the pointer's own height, which says the release collapses the box; above it, as drawn.
+    const raw = Math.min(drawn, state.startHeight + dragDistanceRem(event.clientY, state.startY, state.pxPerRem));
+    asked.current = { raw, drawn };
+    // A collapsed box stays so until the drag passes the floor, so nothing is sent under it.
+    pending.current.height = edge.current !== null && state.collapsed && collapses(raw) ? null : drawn;
 
     if (pending.current.frame === 0) {
       pending.current.frame = requestAnimationFrame(flushHeight);
@@ -167,14 +246,20 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
   }
 
   function endResize(): void {
-    if (!resizeState.current.active) return;
+    const state = resizeState.current;
+    if (!state.active) return;
 
     // The last position first, so the commit saves where the drag ended.
     cancelAnimationFrame(pending.current.frame);
-    resizeState.current.active = false;
+    state.active = false;
     setIsResizing(false);
     setDragged(null);
-    setLanding(settle());
+    // A press that stayed a click is the first half of a double press.
+    lastClick.current = state.moved ? null : state.press;
+    const landed = settle();
+    setLanding(landed);
+    // A release that lands from a collapsed box opens it; the box stays open until the binding says so.
+    if (state.collapsed && landed !== null) setOpening(true);
   }
 
   const blocker = isResizing
@@ -183,8 +268,9 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
 
   // The body draws where the release lands, so between the lines it lands on it has nothing new to draw.
   const held = dragged !== null && rules !== null ? rules.snap(dragged) : landing;
+  const collapsed = storedCollapsed && !opening && (dragged === null || collapses(dragged));
 
-  return { height, isResizing, beginResize, blocker, dragged, held };
+  return { height, isResizing, beginResize, blocker, dragged, held, collapsed };
 }
 
 export interface AssetMenuResizeHandleProps {
@@ -192,8 +278,8 @@ export interface AssetMenuResizeHandleProps {
   onBeginResize: (event: any) => void;
 }
 
-/** The height strips' hint, the build menu's top edge's and the upgrades panel's. */
-export function useHeightHint(): string {
+/** The upgrades panel's strip's hint. */
+function useHeightHint(): string {
   const { translate } = useLocalization();
   return translate("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize";
 }

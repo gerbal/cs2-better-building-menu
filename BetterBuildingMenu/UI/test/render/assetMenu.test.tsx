@@ -5,7 +5,7 @@ import { selectorsOf } from "../harness/compiledCss";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_CHROME_HEIGHT, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_CHROME_HEIGHT, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
 import { releasedLooks } from "../../src/domain/looks";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 import { openListCloser, setOpenListCloser } from "../../src/mods/BuildingMenu/openListCloser";
@@ -281,6 +281,105 @@ describe("a drag on the asset menu's top edge", () => {
 
     assert.deepEqual(heights(), [199.25, 199.25]);
     assert.equal(triggers.at(-1)?.name, "CommitAssetMenuHeight");
+  });
+
+  it("says below the body's floor that the release collapses the box, which holds its floor until then", () => {
+    move(540);
+    frame();
+
+    assert.deepEqual(readout().findAll((node) => node.props.className === "range")[0].children, ["Release to collapse"]);
+    assert.equal(root!.root.findAll((node) => node.props["data-bbm-collapsed"] === "true").length, 0);
+  });
+
+  it("under Top edge's Free holds the floor below it, counts the lines drawn there, and saves it", () => {
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuTopEdge", "free"));
+    move(540);
+    frame();
+
+    assert.notDeepEqual(readout().findAll((node) => node.props.className === "range")[0].children, ["Release to collapse"]);
+    assert.match(String(readout().findAll((node) => node.props.className === "range")[0].children[0]), /^\d+ lines · \d+ buildings \(game: 18\)$/);
+    act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseUp());
+
+    assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT, ASSET_MENU_MIN_HEIGHT]);
+    assert.equal(triggers.at(-1)?.name, "CommitAssetMenuHeight");
+    assert.ok(!triggers.some((call) => call.name === "SetAssetMenuCollapsed"));
+  });
+});
+
+describe("the collapsed box", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let frames: Array<() => void> = [];
+  let root: ReactTestRenderer | undefined;
+  const box = () => root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ")[0] === "toolContainer");
+  const bodies = () => root!.root.findAll((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+  const blocker = () => root!.root.find((node) => node.props.className === "resizeBlocker");
+  const frame = () => act(() => frames.splice(0).forEach((callback) => callback()));
+  const pressEdge = () => {
+    const edge = root!.root.find((node) => node.props.className === "topEdge");
+    act(() => edge.props.onMouseDown({ button: 0, clientX: 300, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }));
+  };
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    saved = globals.document;
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = () => undefined;
+    setBinding("BetterBuildingMenu", "AssetMenuCollapsed", true);
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved;
+  });
+
+  it("draws the top row and the tabs alone, and says so", () => {
+    assert.equal(box().props["data-bbm-collapsed"], "true");
+    assert.equal(bodies().length, 0);
+    assert.equal(box().findAll((node) => node.props.className === "topBand").length, 1);
+    assert.equal(box().findAll((node) => node.props.className === "band").length, 1);
+  });
+
+  it("opens with the list once a drag from it passes the body's floor", () => {
+    pressEdge();
+    act(() => blocker().props.onMouseMove({ clientY: 450, buttons: 1 }));
+    frame();
+    assert.equal(bodies().length, 0, "under the floor it stays collapsed");
+
+    act(() => blocker().props.onMouseMove({ clientY: 380, buttons: 1 }));
+    frame();
+    assert.equal(bodies().length, 1);
+    assert.equal(box().props["data-bbm-collapsed"], undefined);
+  });
+
+  it("stays open after a release that opens it, through C#'s answer, with the body it drew", () => {
+    pressEdge();
+    act(() => blocker().props.onMouseMove({ clientY: 380, buttons: 1 }));
+    frame();
+    const drawn = bodies()[0];
+    act(() => blocker().props.onMouseUp());
+
+    assert.equal(bodies().length, 1, "open before C# answers");
+    assert.equal(bodies()[0], drawn, "the same body, not drawn again");
+    assert.equal(triggers.at(-1)?.name, "CommitAssetMenuHeight");
+
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuCollapsed", false));
+    assert.equal(bodies().length, 1);
+    assert.equal(box().props["data-bbm-collapsed"], undefined);
+  });
+
+  it("opens again when C# says so", () => {
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuCollapsed", false));
+
+    assert.equal(bodies().length, 1);
+    assert.equal(box().props["data-bbm-collapsed"], undefined);
   });
 });
 

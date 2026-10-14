@@ -19,6 +19,8 @@ namespace BetterBuildingMenu.Domain
 
 		int AssetMenuWidthStep { get; set; }
 
+		bool AssetMenuCollapsed { get; set; }
+
 		string DefaultView { get; set; }
 
 		string AtLargeText { get; set; }

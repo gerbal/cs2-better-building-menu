@@ -3,20 +3,22 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import enterMark from "images/enter.svg";
 import find from "images/find.svg";
 import { CLOSE_GAP, CLOSE_SIZE, TOP_ROW_INSET } from "domain/assetMenuLayout";
+import { setCollapsedCommand } from "domain/boxEdges";
 import { searchChangedCommand } from "domain/buildingCatalogContracts";
+import { isPlainEnter, searchFieldKey } from "domain/buildingSearchRank";
 import { textInputText } from "domain/textInput";
 import { useTextScale } from "domain/textScaleSetting";
 import { enterTarget, fieldNeeds, placeholderWords, planControls, planField, type ControlKind } from "domain/topRow";
-import { AssetMenu$, BuildingCatalog$, CurrentSearch$, IsSearchLoading$, send, UntranslatedKeys$ } from "mods/bindings";
+import { AssetMenu$, AssetMenuCollapsed$, BuildingCatalog$, CurrentSearch$, IsSearchLoading$, send, UntranslatedKeys$ } from "mods/bindings";
 import { GameTextInput } from "mods/gameModules";
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { ControlsStrip, useControlCells } from "./ControlsStrip";
-import { blurSearchField, noteSearchField } from "./searchField";
+import { blurSearchField, isSearchField, noteSearchField } from "./searchField";
 import styles from "./topRow.module.scss";
 
 export interface TopRowProps {
@@ -33,6 +35,30 @@ export interface TopRowProps {
 }
 
 /**
+ * In a collapsed box, Enter and the list's keys from the search field open it first: the body that acts on them is
+ * not drawn, so the key acts once it is. Captured, as the body's own key listeners are, since the app container
+ * stops keydown from bubbling; listening only while the box is collapsed. See docs/design-notes.md, "The top edge".
+ */
+function useOpenOnFieldKeys(collapsed: boolean): void {
+  useEffect(() => {
+    if (!collapsed || typeof document === "undefined") return undefined;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (!isSearchField(event.target)) return;
+      const listKey = searchFieldKey(event) !== null;
+      if (!listKey && !isPlainEnter(event)) return;
+
+      // The one-line field has no use for the list's keys.
+      if (listKey) event.preventDefault();
+      send(setCollapsedCommand(false));
+    };
+
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [collapsed]);
+}
+
+/**
  * The box's top row: the search field, Sort, Filter, Group and View, whatever other mods add to the
  * game's tab bar, and close. See docs/design-notes.md, "The top row".
  */
@@ -44,6 +70,7 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
   const menu = useValue(AssetMenu$) ?? "";
   const page = useValue(BuildingCatalog$);
   const untranslated = useValue(UntranslatedKeys$) ?? [];
+  const collapsed = useValue(AssetMenuCollapsed$);
   const scale = useTextScale();
   const cells = useControlCells();
   // The field's own focus, from the game's TextInput: its ring says it has the keys.
@@ -51,6 +78,7 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
   // The box can go while the field has focus (a tool that takes the screen, the game's close,
   // Replace switched off): let go of the keys first, while the field is still on the page.
   useLayoutEffect(() => () => blurSearchField(), []);
+  useOpenOnFieldKeys(collapsed);
 
   const label = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
   const target = enterTarget(page, query);
@@ -80,7 +108,10 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
     // So the catalog's Enter listener can tell this box from other text fields.
     noteSearchField(event?.target);
     const text = textInputText(event);
-    if (text !== undefined) send(searchChangedCommand(text));
+    if (text === undefined) return;
+    // Typing opens a collapsed box, so its results show; a cleared field leaves it as it is.
+    if (collapsed && text.trim() !== "") send(setCollapsedCommand(false));
+    send(searchChangedCommand(text));
   };
 
   return (

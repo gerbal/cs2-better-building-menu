@@ -22,6 +22,8 @@ namespace BetterBuildingMenu.Tests
 
 		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;
 
+		public bool AssetMenuCollapsed { get; set; }
+
 		public int AssetMenuWidthStep { get; set; } = WidthSteps.DefaultStep;
 
 		public string DefaultView { get; set; } = SettingsDefaults.DefaultView;

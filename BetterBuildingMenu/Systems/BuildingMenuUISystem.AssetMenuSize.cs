@@ -18,13 +18,12 @@ namespace BetterBuildingMenu.Systems
 		{
 			// Only on release: a drag publishes on every mouse move, and
 			// writing the settings file at that rate is what the live binding avoids.
-			var height = AssetMenuHeight.Clamp(_AssetMenuHeight);
-			if (Math.Abs(Mod.Settings.AssetMenuHeight - height) < 0.1f)
+			// A release that lands from a collapsed box opens it in the same save.
+			if (!AssetMenuSize.Commit(Mod.Settings, AssetMenuHeight.Clamp(_AssetMenuHeight)))
 			{
 				return;
 			}
 
-			Mod.Settings.AssetMenuHeight = height;
 			Mod.Settings.ApplyAndSave();
 		}
 
@@ -42,6 +41,33 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			Mod.Settings.AssetMenuWidthStep = step;
+			Mod.Settings.ApplyAndSave();
+		}
+
+		/// <summary>The box collapsed to its top row and tabs, or opened again: kept, and saved only when it changes.</summary>
+		/// <remarks>See docs/design-notes.md, "The top edge".</remarks>
+		private void SetAssetMenuCollapsed(bool collapsed)
+		{
+			// As the Width step: the binding takes what the UI sent, and the file only a change.
+			_AssetMenuCollapsed.Value = collapsed;
+
+			if (Mod.Settings.AssetMenuCollapsed == collapsed)
+			{
+				return;
+			}
+
+			Mod.Settings.AssetMenuCollapsed = collapsed;
+			Mod.Settings.ApplyAndSave();
+		}
+
+		/// <summary>A double press on the top edge: the game's own size, open, saved once; the apply re-pushes the three bindings.</summary>
+		private void RestoreAssetMenuSize()
+		{
+			if (!AssetMenuSize.Restore(Mod.Settings))
+			{
+				return;
+			}
+
 			Mod.Settings.ApplyAndSave();
 		}
 

@@ -661,8 +661,9 @@ drag keeps none of this: it moves at the first pixel and saves where it ends.
 
 **The Top edge row** (UI/UX, after Width) picks how a release settles: Whole lines, as above, or
 Free, where the pointer lets go, held to the drag's floor and ceiling. Under Free a press still
-becomes a drag at three pixels, and the readout counts the lines and buildings the body draws at
-the pointer's height. A new player and Reset get Whole lines; the settings migration's version 5
+becomes a drag at three pixels, the readout counts the lines and buildings the body draws at
+the pointer's height, and a drag below the floor holds the floor and saves it: only Whole lines
+collapses the box (below). A new player and Reset get Whole lines; the settings migration's version 5
 gives an upgrader Free (see "The settings migration"). The binding is `AssetMenuTopEdge`, "whole"
 or "free". **This changes 0.2.x:** its drag saved the height where the pointer let go; a new
 player's now lands on whole lines, an upgrader's stays free, and a height saved before is kept
@@ -676,6 +677,29 @@ on change, and not at the release. Under Free that height is the pointer's, so t
 most once a frame, and its rows only as its lines change: a grid that places every slot alike keeps
 its object (`sameGrid`), and a tile keeps its render while its slot holds (`sameSlots`), as the
 room under the tiles grows.
+
+**Below the floor the box collapses.** Under Whole lines, dragged below the body's floor of 108, the
+box holds its floor and the readout says "Release to collapse"; the release collapses it to its top
+row and tabs, 63.75 tall on the same bottom edge (`AssetMenuCollapsed`, saved once, through
+`SetAssetMenuCollapsed`), with `data-bbm-collapsed` on the box and the popovers hung from its chrome.
+The stored height is put back, so the box opens again at it. Every open is collapsed until a tab
+press, All included, typing in the field, or a double press on the edge opens it; the tab row and the
+field send the open before their own pick, and clearing the field leaves the box as it is. Enter and
+the list's keys from the field open a collapsed box first, from a listener the top row holds while it
+is collapsed, since the body that acts on them is not drawn; they act once it is. A drag from the
+collapsed box starts at a body of nothing, under Free too: it stays collapsed until the pointer passes
+the floor, then opens there and follows the pointer; its release lands as any other, and the height's
+commit opens the box in the same save (`AssetMenuSize.Commit`), while the box stays open until the
+binding says so, so the body is never drawn again. A release back under the floor leaves it collapsed.
+A commit from the upgrades panel's drag opens a collapsed box too: it saves the one height both share.
+
+**A double press puts the game's own size back.** Two presses on the edge within 400 ms, the first a
+click and the second under three pixels from it, restore the box: the body at 144.25, the first Width
+step, open, saved once (`RestoreAssetMenuSize`, `AssetMenuSize.Restore`), under Whole lines and Free
+alike. The second press starts no drag. The double press is timed here, since the first press raises
+the drag's blocker and the edge never hears a double click. The edge's hint says both: "Drag to resize
+· double-click for the game's size"; its marker is `data-bbm-edge="top"`. The upgrades panel never
+collapses and never restores.
 
 ## The notch
 
@@ -836,7 +860,7 @@ Every setting's shipped value lives in `SettingsDefaults`, whose constants the s
 initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.Apply`.
 
 - **What a reset puts back.** `Apply` writes every stored setting's shipped value: the height,
-  the Width step, the upgrader flag, the control pane, Default view, At large text, Top edge, each
+  the Width step, the collapse (open), the upgrader flag, the control pane, Default view, At large text, Top edge, each
   menu's own VIEW and GROUP, Replace the vanilla build menu, Searching widens automatically, Tile
   size and the knobs. It leaves `SettingsVersion`, which records the migration, and the legacy
   `AssetMenuCatalogWidth` and `AssetMenuViewMode`, which only the migration reads.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { lineSpacing, type BodyGridInput } from "../src/domain/bodyGeometry";
-import { GAME_MENU_SCREEN, heightOfLines, heightReadout, snapToLines, type EdgeWords } from "../src/domain/boxEdges";
+import { collapses, DOUBLE_PRESS_MS, GAME_MENU_SCREEN, heightOfLines, heightReadout, isDoublePress, restoreSizeCommand, setCollapsedCommand, snapToLines, type EdgeWords } from "../src/domain/boxEdges";
 import { cardLineSpacing } from "../src/domain/cardsLayout";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
 
@@ -9,7 +9,7 @@ const spacingOf = (over: Partial<BodyGridInput>) =>
   lineSpacing({ body: "list", textScale: 1, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, ...over });
 const list = spacingOf({});
 const tiles = spacingOf({ body: "tiles" });
-const words: EdgeWords = { lines: "{0} lines · {1} buildings (game: {2})", linesOnly: "{0} lines (game: {1})" };
+const words: EdgeWords = { lines: "{0} lines · {1} buildings (game: {2})", linesOnly: "{0} lines (game: {1})", collapse: "Release to collapse" };
 
 describe("where a release of the top edge lands", () => {
   it("lands on whole List lines: five make the game's own 144.25, seven 202.75", () => {
@@ -63,5 +63,41 @@ describe("the readout while the top edge is dragged", () => {
 
   it("writes each number as the language groups it", () => {
     assert.equal(heightReadout(32, 1280, words, (count) => count.toLocaleString("en-US")), "32 lines · 1,280 buildings (game: 18)");
+  });
+});
+
+describe("a release below the body's floor", () => {
+  it("collapses the box under the floor, and nowhere from the floor up", () => {
+    assert.equal(collapses(ASSET_MENU_MIN_HEIGHT - 0.01), true);
+    assert.equal(collapses(0), true);
+    assert.equal(collapses(ASSET_MENU_MIN_HEIGHT), false);
+    assert.equal(collapses(ASSET_MENU_DEFAULT_HEIGHT), false);
+  });
+
+  it("tells C# the box collapsed or opened, which it saves", () => {
+    assert.deepEqual(setCollapsedCommand(true), { method: "SetAssetMenuCollapsed", args: [true] });
+    assert.deepEqual(setCollapsedCommand(false), { method: "SetAssetMenuCollapsed", args: [false] });
+  });
+});
+
+describe("a double press on the top edge", () => {
+  const first = { at: 1000, x: 500, y: 300 };
+
+  it("is a second press within 400 ms of a click, under three pixels from it", () => {
+    assert.equal(DOUBLE_PRESS_MS, 400);
+    assert.equal(isDoublePress(first, { at: 1400, x: 502, y: 298 }), true);
+    assert.equal(isDoublePress(first, { at: 1000, x: 500, y: 300 }), true);
+  });
+
+  it("is not one later, three pixels or more away, after no click, or with the clock gone back", () => {
+    assert.equal(isDoublePress(first, { at: 1401, x: 500, y: 300 }), false);
+    assert.equal(isDoublePress(first, { at: 1200, x: 503, y: 300 }), false);
+    assert.equal(isDoublePress(first, { at: 1200, x: 500, y: 297 }), false);
+    assert.equal(isDoublePress(null, { at: 1200, x: 500, y: 300 }), false);
+    assert.equal(isDoublePress(first, { at: 900, x: 500, y: 300 }), false);
+  });
+
+  it("asks C# for the game's own size, once", () => {
+    assert.deepEqual(restoreSizeCommand(), { method: "RestoreAssetMenuSize", args: [] });
   });
 });

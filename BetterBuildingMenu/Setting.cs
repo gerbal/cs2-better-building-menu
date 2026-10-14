@@ -39,6 +39,15 @@ namespace BetterBuildingMenu
 		public float AssetMenuHeight { get; set; } = Domain.AssetMenuHeight.Default;
 
 		/// <summary>
+		/// Whether the box is collapsed to its top row and tabs, by a drag of its top edge below the body's floor under Top
+		/// edge's Whole lines. Every open is collapsed until a tab, typing, a double press on the edge or a drag of it past
+		/// the floor opens it.
+		/// </summary>
+		/// <remarks>Hidden: the top edge is where it is set. See docs/design-notes.md, "The top edge".</remarks>
+		[SettingsUIHidden]
+		public bool AssetMenuCollapsed { get; set; }
+
+		/// <summary>
 		/// The width 0.2.4 stored for the build menu, or <see
 		/// cref="Domain.AssetMenuCatalogWidth.Default"/> for the room beside the control pane.
 		/// </summary>

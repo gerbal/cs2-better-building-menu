@@ -11,6 +11,7 @@ import {
   drawnBodyHeight,
   TOP_EDGE_HEIGHT,
 } from "../../src/domain/assetMenuLayout";
+import { DOUBLE_PRESS_MS } from "../../src/domain/boxEdges";
 import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight, type TopEdgeRules } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 
 // A frame clock the test advances by hand, so "one per frame" can be counted.
@@ -260,14 +261,20 @@ describe("dragging the build menu's top edge under its rules", () => {
   let root: ReactTestRenderer | undefined;
   let menu: AssetMenuHeight;
   // Whole tens stand for whole lines here: what the hook does with the rule, not the rule.
-  const rules: TopEdgeRules = { snap: (height) => Math.round(height / 10) * 10 };
+  const rules: TopEdgeRules = { snap: (height) => Math.round(height / 10) * 10, collapsible: true, collapsed: false };
   const EdgeProbe = () => {
     menu = useAssetMenuHeight(drawnBodyHeight, rules);
     return menu.blocker;
   };
 
+  // Every press here comes at a known time, so two of them are a double press by their places alone.
+  const now = Date.now;
+  let clock = 0;
+
   beforeEach(() => {
     resetBindings();
+    clock = 1000;
+    Date.now = () => clock;
     frames = [];
     globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
     globals.cancelAnimationFrame = (handle: number) => {
@@ -277,16 +284,22 @@ describe("dragging the build menu's top edge under its rules", () => {
       root = create(<EdgeProbe />);
     });
     // The edge is drawn as many pixels tall as it is rem, so a pixel is a rem here.
-    act(() => menu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }, TOP_EDGE_HEIGHT));
+    act(() => menu.beginResize({ clientX: 300, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }, TOP_EDGE_HEIGHT));
   });
 
   afterEach(() => {
     act(() => root?.unmount());
     root = undefined;
+    rules.collapsible = true;
+    rules.collapsed = false;
+    Date.now = now;
   });
 
   const move = (clientY: number) => act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY, buttons: 1 }));
   const release = () => act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+  const press = (clientX = 300, clientY = 500) =>
+    act(() => menu.beginResize({ clientX, clientY, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }, TOP_EDGE_HEIGHT));
+  const collapsedSent = () => triggers.filter((call) => call.name === "SetAssetMenuCollapsed").map((call) => call.args[0]);
 
   it("sends nothing for a click, nor for a press that moves less than three pixels", () => {
     move(498);
@@ -334,6 +347,124 @@ describe("dragging the build menu's top edge under its rules", () => {
 
     assert.deepEqual(names(), []);
   });
+
+  it("collapses the box on a release below the floor, puts the stored height back and saves nothing of it", () => {
+    move(540);
+    nextFrame();
+    assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT], "the box holds its floor while the drag is under it");
+    assert.equal(menu.dragged, 104.25);
+
+    release();
+    assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT, ASSET_MENU_DEFAULT_HEIGHT]);
+    assert.deepEqual(collapsedSent(), [true]);
+    assert.ok(!names().includes("CommitAssetMenuHeight"));
+  });
+
+  it("from a collapsed box sends nothing under the floor, and a release there leaves it collapsed", () => {
+    release();
+    rules.collapsed = true;
+    act(() => root!.update(<EdgeProbe />));
+    press(300, 400);
+    move(350);
+    nextFrame();
+    assert.equal(menu.dragged, 50, "a drag from a collapsed box starts at a body of nothing");
+
+    release();
+    assert.deepEqual(names(), []);
+  });
+
+  it("from a collapsed box opens past the floor, lands on whole lines and saves the box open", () => {
+    release();
+    rules.collapsed = true;
+    act(() => root!.update(<EdgeProbe />));
+    press(300, 400);
+    move(276);
+    nextFrame();
+    assert.deepEqual(heights(), [124]);
+
+    release();
+    assert.deepEqual(heights(), [124, 120]);
+    // The commit opens the box in its one save.
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+    assert.deepEqual(collapsedSent(), []);
+    assert.equal(menu.collapsed, false, "held open until C# answers");
+
+    rules.collapsed = false;
+    act(() => root!.update(<EdgeProbe />));
+    assert.equal(menu.collapsed, false);
+  });
+
+  it("from a collapsed box puts the stored height back on a release under the floor after passing it", () => {
+    release();
+    rules.collapsed = true;
+    act(() => root!.update(<EdgeProbe />));
+    press(300, 400);
+    move(276);
+    nextFrame();
+    move(350);
+    nextFrame();
+    assert.equal(menu.collapsed, true);
+
+    release();
+    assert.deepEqual(heights(), [124, ASSET_MENU_DEFAULT_HEIGHT]);
+    assert.deepEqual(collapsedSent(), []);
+    assert.ok(!names().includes("CommitAssetMenuHeight"));
+  });
+
+  it("under Top edge's Free holds the floor below it and lands there, never collapsing", () => {
+    rules.collapsible = false;
+    move(540);
+    nextFrame();
+    assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT]);
+    assert.equal(menu.collapsed, false);
+
+    release();
+    assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT, rules.snap(ASSET_MENU_MIN_HEIGHT)]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+    assert.deepEqual(collapsedSent(), []);
+  });
+
+  it("puts the game's own size back on two clicks in place, and starts no drag", () => {
+    release();
+    press(301, 501);
+
+    assert.deepEqual(names(), ["RestoreAssetMenuSize"]);
+    assert.equal(menu.isResizing, false);
+  });
+
+  it("puts the game's own size back on two clicks under Top edge's Free too", () => {
+    rules.collapsible = false;
+    release();
+    press(300, 500);
+
+    assert.deepEqual(names(), ["RestoreAssetMenuSize"]);
+  });
+
+  it("takes a second press after 400 ms as a press of its own", () => {
+    release();
+    clock += DOUBLE_PRESS_MS + 1;
+    press();
+
+    assert.equal(menu.isResizing, true);
+    assert.deepEqual(names(), []);
+  });
+
+  it("takes a second press three pixels from the first as a press of its own", () => {
+    release();
+    press(303, 500);
+
+    assert.equal(menu.isResizing, true);
+    assert.deepEqual(names(), []);
+  });
+
+  it("takes a press after a drag as a press of its own", () => {
+    move(470);
+    release();
+    press();
+
+    assert.equal(menu.isResizing, true);
+    assert.ok(!names().includes("RestoreAssetMenuSize"), names().join(", "));
+  });
 });
 
 describe("the upgrades panel's drag, which keeps no rules of the build menu's", () => {
@@ -364,5 +495,21 @@ describe("the upgrades panel's drag, which keeps no rules of the build menu's", 
     assert.deepEqual(heights(), [ASSET_MENU_DEFAULT_HEIGHT + 1]);
     assert.equal(names().at(-1), "CommitAssetMenuHeight");
     assert.equal(assetMenu.dragged, null);
+  });
+
+  it("never collapses below the floor: it holds the floor and saves it", () => {
+    act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 600 }));
+    act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+
+    assert.deepEqual(names(), ["SetAssetMenuHeight", "CommitAssetMenuHeight"]);
+    assert.deepEqual(heights(), [ASSET_MENU_MIN_HEIGHT]);
+  });
+
+  it("never puts the game's size back on two clicks: each is a press that commits", () => {
+    act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+    act(() => assetMenu.beginResize({ clientX: 0, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
+    act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+
+    assert.deepEqual(names(), ["CommitAssetMenuHeight", "CommitAssetMenuHeight"]);
   });
 });
