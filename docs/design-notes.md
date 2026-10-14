@@ -712,9 +712,10 @@ box holds its floor and the readout says "Release to collapse"; the release coll
 row and tabs, 63.75 tall on the same bottom edge (`AssetMenuCollapsed`, saved once, through
 `SetAssetMenuCollapsed`), with `data-bbm-collapsed` on the box and the popovers hung from its chrome.
 The stored height is put back, so the box opens again at it, and the box draws collapsed from the
-release until the binding says so, whichever of the two echoes comes first. A new press lets this
-hold go, and the opening release's below: its drag carries the box as drawn, so a second release
-inside the same round trip, whose answer alone the binding shows, leaves no hold behind. Every open is collapsed
+release until the binding says so, whichever of the two echoes comes first. A drag's first move lets
+this hold go, and the opening release's below: the drag carries the box as drawn, so a second
+release inside the same round trip, whose answer alone the binding shows, leaves no hold behind; a
+click, which moves nothing, keeps it. Every open is collapsed
 until a tab press, All included, typing in the field, or a double press on the edge opens it; the tab
 row and the field send the open before their own pick, and clearing the field leaves the box as it
 is. Enter and the list's keys from the field open a collapsed box first, from a listener the top row

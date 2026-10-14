@@ -232,11 +232,6 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
       pxPerRem,
     };
     asked.current = null;
-    setLanding(null);
-    // The drag carries the box as drawn, so the holds go: one left over would outlast a release C# answers in the same
-    // round trip as this drag's, whose answer alone the binding would show.
-    setOpening(false);
-    setClosing(false);
     setIsResizing(true);
   }
 
@@ -251,6 +246,13 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
     // Under the build menu's rules, a hand's wobble inside a click moves nothing.
     if (edge.current !== null && !state.moved && !(Math.abs(event.clientY - state.startY) >= DRAG_THRESHOLD_PX)) return;
 
+    if (!state.moved) {
+      // The drag carries the box as drawn, so a release's holds go once it moves: one left over would outlast a release
+      // C# answers in the same round trip as this drag's, whose answer alone the binding would show. A click keeps them.
+      setLanding(null);
+      setOpening(false);
+      setClosing(false);
+    }
     state.moved = true;
     const drawn = drawnAt(draggedAssetMenuHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
     // Below the floor the pointer's own height, which says the release collapses the box; above it, as drawn.
@@ -276,7 +278,8 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
     // A press that stayed a click is the first half of a double press.
     lastClick.current = state.moved ? null : state.press;
     const { landed, collapsing } = settle();
-    setLanding(landed);
+    // A click lands nothing, and leaves where the last release landed.
+    if (state.moved) setLanding(landed);
     // A release that lands from a collapsed box opens it, and one below the floor collapses an open box: the box stays
     // so until the binding says so.
     if (state.collapsed && landed !== null) setOpening(true);

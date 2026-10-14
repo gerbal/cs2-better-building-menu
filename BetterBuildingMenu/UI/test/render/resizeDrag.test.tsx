@@ -443,6 +443,32 @@ describe("dragging the build menu's top edge under its rules", () => {
     assert.equal(menu.collapsed, false);
   });
 
+  it("keeps a collapsing release's hold through a click before C# answers, which moves nothing", () => {
+    move(540);
+    nextFrame();
+    release();
+    press(300, 400);
+    release();
+
+    assert.deepEqual(collapsedSent(), [true]);
+    assert.equal(menu.collapsed, true, "still held collapsed until C# answers");
+  });
+
+  it("keeps an opening release's hold through a click before C# answers, which moves nothing", () => {
+    release();
+    rules.collapsed = true;
+    act(() => root!.update(<EdgeProbe />));
+    press(300, 400);
+    move(270);
+    nextFrame();
+    release();
+    press(300, 200);
+    release();
+
+    assert.equal(menu.collapsed, false, "still held open until C# answers");
+    assert.equal(menu.shownHeight, 130, "at the height it landed on");
+  });
+
   it("lets an opening release's hold go at the next press, so a collapsing release before C# answers leaves the box collapsed", () => {
     release();
     rules.collapsed = true;
