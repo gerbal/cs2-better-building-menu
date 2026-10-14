@@ -48,6 +48,26 @@ namespace BetterBuildingMenu
 		[SettingsUIHidden]
 		public bool ControlPaneShown { get; set; } = true;
 
+		/// <summary>
+		/// The settings file's format version: 0 in a file no release has stepped, raised at
+		/// load by <see cref="Domain.SettingsVersionStep"/>.
+		/// </summary>
+		/// <remarks>
+		/// No initializer, and left out of SetDefaults: the game writes a key only once it differs
+		/// from the default object's. See docs/design-notes.md, "The release marker and the
+		/// settings version".
+		/// </remarks>
+		[SettingsUIHidden]
+		public int SettingsVersion { get; set; }
+
+		/// <summary>
+		/// The view the player last picked in the control pane, or <see
+		/// cref="Domain.AssetMenuViewMode.None"/> before any pick.
+		/// </summary>
+		/// <remarks>Hidden: the control pane is where it is set.</remarks>
+		[SettingsUIHidden]
+		public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;
+
 		// On by default: replacing the build menu is what this mod is for. Turning it off
 		// restores the vanilla menu wholesale, including the Zones button's own hierarchy.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
@@ -76,6 +96,7 @@ namespace BetterBuildingMenu
 			AssetMenuHeight = Domain.AssetMenuHeight.Default;
 			AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default;
 			ControlPaneShown = true;
+			AssetMenuViewMode = Domain.AssetMenuViewMode.None;
 			ReplaceVanillaBuildMenu = true;
 			AutoWidenSearch = false;
 			AssetMenuTileSize = DefaultTileSize;

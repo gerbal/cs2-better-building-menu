@@ -56,5 +56,21 @@ namespace BetterBuildingMenu.Systems
 			Mod.Settings.ControlPaneShown = shown;
 			Mod.Settings.ApplyAndSave();
 		}
+
+		private void SetAssetMenuViewMode(string picked)
+		{
+			// The binding helper has already published what the UI sent: publish the kept
+			// value over it, then save only a pick that changes the file.
+			var view = AssetMenuViewMode.Sanitize(picked);
+			_AssetMenuViewMode.Value = view;
+
+			if (!AssetMenuViewMode.ShouldSave(Mod.Settings.AssetMenuViewMode, view))
+			{
+				return;
+			}
+
+			Mod.Settings.AssetMenuViewMode = view;
+			Mod.Settings.ApplyAndSave();
+		}
 	}
 }
