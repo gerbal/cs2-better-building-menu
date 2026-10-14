@@ -1574,23 +1574,26 @@ Aluminum…" for NA Low and NA Tall Aluminum Fence at 150%) and read as one buil
 pass over the plates near the screen, beside the tiles' look-alike tags (`wordsApart`), after the paint:
 a keystroke draws each name's own cut at once, and the few drawn alike are planned again a frame later.
 Each plate drawn as another plate of a different name draws is planned again keeping, beside its
-distinguishing word, the word of its own
-the fewest of the others hold ("…Tall Aluminum…"); else with the mark leading, its first word dropped
-(`leads`: "…Angled…" beside "Two… Angled…"); else both. The first plan that keeps its distinguishing word
-as whole as before and draws apart from every plate stands, so the pass never draws alike two plates that
-were not, and each plan is the planner's, with every guarantee it gives. Where no such plan fits (the
-Perpendicular Parking Roads at 130% and 150%, whose "…Perpendicular…" leaves no room for more), the
-plates still read alike. The pass plans each plate in its estimate's room, as the plate first plans it,
-so it finds each plan kept and plans again only the few drawn alike, each kept by its hints, and a Load
-more or a view switch plans no name twice. Each group's names and their words are read once, so a group
-costs its size, not its square. Each group has its own budget: the smallest go first, and a group is left
-once three of its plates in a row are told apart by no try, so a group of thousands no try parts never
-spends what a later pair needs; and a pass asks for at most 600 plans with hints. A pass over plates
-that draw alone as the last pass's did (an Up or Down step moves Enter's mark, narrowing two rooms)
-answers as that pass did. The pass judges
-its hints in each plate's estimate, and the room as drawn can be narrower, where the words they add could
-crowd out the one that tells the row apart: a plate draws with its hints only where that plan keeps its
-distinguishing word whole wherever the plan without them does, else without them (`planApart`).
+distinguishing word, the word of its own the fewest of the others hold ("…Tall Aluminum…"); else with
+the mark leading, its first word dropped (`leads`: "…Angled…" beside "Two… Angled…"); else both. The
+first plan that keeps its distinguishing word as whole as before and draws apart from every plate
+stands, so the pass never draws alike two plates that were not, and each plan is the planner's, with
+every guarantee it gives. Where no such plan fits (the Perpendicular Parking Roads at 130% and 150%,
+whose "…Perpendicular…" leaves no room for more), the plates still read alike. The pass plans each plate
+in its estimate's room, as the plate first plans it, so it finds each plan kept and plans again only the
+few drawn alike, each kept by its hints, and a Load more or a view switch plans no name twice. Each
+group's names and their words are read once, so a group costs its size, not its square. Each group has
+its own budget: the smallest go first, and a group is left once three of its names in a row are told
+apart by no try, past its first six, so a group of thousands no try parts never spends what a later pair
+needs, while a family's first names are each tried (Garden Bed 02's Corner, Narrow and Quadrant High
+find only cuts Garden Bed 01 draws, and Wide, fourth, is still told apart); a name the group holds twice
+is tried once, each plate of it taking its first's hints, so six NA Low Aluminum Fence never use up the
+tries NA Tall needs; and a pass asks for at most 600 plans with hints. A pass over plates that draw
+alone as the last pass's did (an Up or Down step moves Enter's mark, narrowing two rooms) answers as
+that pass did. The pass judges its hints in each plate's estimate, and the room as drawn can be
+narrower, where the words they add could crowd out the one that tells the row apart: a plate draws with
+its hints only where that plan keeps its distinguishing word whole wherever the plan without them does,
+else without them (`planApart`).
 
 **Only the names near the screen are planned.** A body plans the names on the lines on or near its
 screen (`nearLines`): a screen behind the first line on screen and a screen ahead of the screen, moving

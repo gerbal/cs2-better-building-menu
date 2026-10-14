@@ -56,6 +56,31 @@ describe("the list's plates told apart over the page", () => {
     assert.ok(told.some((text) => text.startsWith(CUT_MARK)), told.join(" | "));
   });
 
+  it("draws Garden Bed 02 Wide High apart from Corner, Narrow and Quadrant High at 130% text, where the three before it find only cuts Garden Bed 01 draws", () => {
+    const at130 = roomOf(1.3, "moreBuildings");
+    const beds = page(at130, names.filter(([name]) => name.startsWith("Garden Bed")));
+    const text = (told: string[], name: string) => told[beds.findIndex((plate) => plate.name === name)];
+    const alone = beds.map((plate) => planName(plate.name, plate.room, { keep: [plate.distinct] }).lines.join("\n"));
+    const told = drawn(beds);
+    const shapes = ["Corner", "Narrow", "Quadrant"].map((shape) => `Garden Bed 02 ${shape} High`);
+
+    assert.ok([...shapes, "Garden Bed 02 Wide High"].every((name) => text(alone, name) === text(alone, shapes[0])), alone.join(" | "));
+    assert.ok(shapes.every((name) => text(told, name) !== text(told, "Garden Bed 02 Wide High")), told.join(" | "));
+    assert.match(text(told, "Garden Bed 02 Wide High"), /Wide/);
+  });
+
+  it("draws NA Tall Aluminum Fence apart after six NA Low Aluminum Fence, which share one name and so try once", () => {
+    const fences = page(at150, [...Array.from({ length: 6 }, () => ["NA Low Aluminum Fence", "Aluminum"] as const), ["NA Tall Aluminum Fence", "Aluminum"]]);
+    const planned = plansWorkedOut();
+    const told = drawn(fences);
+
+    assert.ok(told.slice(0, 6).every((text) => text !== told[6]), told.join(" | "));
+    assert.match(told[6], /Tall/);
+    // The six Lows draw as one, their name planned with hints once.
+    assert.equal(new Set(told.slice(0, 6)).size, 1, told.join(" | "));
+    assert.ok(plansWorkedOut() - planned <= 2 + 2 * 3, `${plansWorkedOut() - planned} plans`);
+  });
+
   it("leaves a page with no two plates alike as it is, and plans no name again on the next pass", () => {
     const plain = page(at150, [["Elementary School", ""], ["High School", ""], ["University", ""]]);
     wordsApart(plain, [""]);
