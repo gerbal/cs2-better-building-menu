@@ -27,9 +27,9 @@ export interface BoxEdges {
   heightText: (height: number) => string | null;
   /**
    * What the readout says while a side edge is dragged to a step: the step and the buildings its width shows at the
-   * body's height, or the step alone for the cards and where the box draws no body.
+   * body's drawn height, or the step alone for the cards and where the box draws no body (a null height).
    */
-  widthText: (step: number, width: number, drawsBody: boolean) => string;
+  widthText: (step: number, width: number, bodyHeight: number | null) => string;
 }
 
 /**
@@ -40,7 +40,8 @@ export interface BoxEdges {
 export function useBoxEdges(): BoxEdges {
   const { translate } = useLocalization();
   const body = useMenuBody().drawn;
-  // At a fixed height, which the readout replaces with the dragged one, so a height's echo builds nothing again.
+  // At a fixed height, which each readout replaces with the one it counts at, the dragged height or the body's drawn
+  // one, so a height's echo builds nothing again.
   const input = useBodyGridInput(body, ASSET_MENU_DEFAULT_HEIGHT);
   const textScale = useTextScale();
   const cardHeight = useValue(AssetMenuTuning$).cardHeight ?? SHIPPED_TUNING.cardHeight;
@@ -74,9 +75,9 @@ export function useBoxEdges(): BoxEdges {
       return heightReadout(grid.lines, screenSlots(grid), words, format);
     };
 
-    const widthText = (step: number, width: number, drawsBody: boolean) => {
-      if (input === null || !drawsBody) return widthReadout(step, null, words, format);
-      return widthReadout(step, screenSlots(bodyGrid({ ...input, boxWidth: width, smallMenusGrow: false })), words, format);
+    const widthText = (step: number, width: number, bodyHeight: number | null) => {
+      if (input === null || bodyHeight === null) return widthReadout(step, null, words, format);
+      return widthReadout(step, screenSlots(bodyGrid({ ...input, boxWidth: width, bodyHeight, smallMenusGrow: false })), words, format);
     };
 
     return { snap, collapsible: !free, heightText, widthText };

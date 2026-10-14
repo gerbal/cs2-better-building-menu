@@ -62,9 +62,11 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   // says depends on the step alone, so it is worked out once for each step the pointer lands on.
   const sideStep = widthDrag.dragged === null ? null : nearestSnapStep(widthDrag.dragged, snaps);
   const sideWidth = snaps.find((snap) => snap.step === sideStep)?.width ?? widthDrag.dragged;
+  // It counts at the body's height as the box draws it, and a collapsed box draws none.
+  const sideBodyHeight = collapsed ? null : drawnBodyHeight(catalogHeight);
   const sideReadout = useMemo(
-    () => (sideStep === null || sideWidth === null ? null : edges.widthText(sideStep, sideWidth, !collapsed)),
-    [edges, sideStep, sideWidth, collapsed]
+    () => (sideStep === null || sideWidth === null ? null : edges.widthText(sideStep, sideWidth, sideBodyHeight)),
+    [edges, sideStep, sideWidth, sideBodyHeight]
   );
   const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.

@@ -265,6 +265,57 @@ describe("a drag on the asset menu's right edge", () => {
   });
 });
 
+describe("a side edge's readout in a box stored at another height", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: Record<string, unknown> = {};
+  let frames: Array<() => void> = [];
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    saved = { document: globals.document, requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    Object.assign(globals, saved);
+  });
+
+  /** What the readout says 100 rem into a drag of the right edge from step 1, in this body at this stored height. */
+  const sideReadout = (body: "list" | "tiles", height: number): unknown => {
+    showBody(body);
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", height);
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    // The strip is drawn as many pixels wide as it is rem, so a pixel is a rem.
+    const strip = root!.root.find((node) => node.props["data-bbm-edge"] === "right");
+    act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
+    act(() => root!.root.find((node) => node.props.className === "widthBlocker").props.onMouseMove({ clientX: 600, buttons: 1 }));
+    act(() => frames.splice(0).forEach((callback) => callback()));
+    const readout = root!.root.findAll((node) => node.props["data-readout"] !== undefined)[0];
+    return readout.findAll((node) => node.props.className === "range")[0].children[0];
+  };
+
+  // Step 2's 893 rem at the body the box draws: the list's 5 columns over 5 lines or 13, the tiles' 13 over 2 or 6.
+  for (const [body, height, words] of [
+    ["list", 144.25, "Width 2 · 25 buildings"],
+    ["list", 400, "Width 2 · 65 buildings"],
+    ["tiles", 144.25, "Width 2 · 26 buildings"],
+    ["tiles", 400, "Width 2 · 78 buildings"],
+  ] as const) {
+    it(`counts the buildings step 2 shows in the ${body} at the box's drawn height, ${height}`, () => {
+      assert.equal(sideReadout(body, height), words);
+    });
+  }
+});
+
 describe("a drag on the asset menu's top edge", () => {
   const globals = globalThis as unknown as Record<string, unknown>;
   let saved: Record<string, unknown> = {};
