@@ -8,15 +8,12 @@ namespace BetterBuildingMenu.Tests
 {
 	public sealed class StripTabIconProbeTests
 	{
-		// Any menu but Roads, which draws no branch chips at all.
-		private const string Menu = "Services";
-
 		private static BuildingCatalogEntry E(int id, string name, string category, string uiCategory, string branch, int depth, string? thumb, string? fallback, int priority = 0) =>
 			new BuildingCatalogEntry(
 				Id: id, PrefabName: name, Name: name, Category: category, SubCategory: category + "_Roads",
 				Thumbnail: thumb ?? "", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
 				HasParking: false, IsVanilla: true, PdxModsId: "")
-				with { UiMenu = Menu, UiCategory = uiCategory, DevTreeBranch = branch, DevTreeBranchDepth = depth, FallbackThumbnail = fallback, UiCategoryPriority = priority };
+				with { UiMenu = "Roads", UiCategory = uiCategory, DevTreeBranch = branch, DevTreeBranchDepth = depth, FallbackThumbnail = fallback, UiCategoryPriority = priority };
 
 		[Fact]
 		public void TabsSharingOneCategoryDoNotAllDrawItsGlyph()
@@ -32,7 +29,7 @@ namespace BetterBuildingMenu.Tests
 				E(4, "Ambulance Depot", "ServiceBuildings", "HealthcareHealthcare", "Emergency", 3, "thumbnail://AmbulanceDepot01?width=128", "Media/Game/Icons/Healthcare.svg"),
 				E(5, "Cemetery", "ServiceBuildings", "HealthcareDeathcare", "Deathcare", 4, "thumbnail://Cemetery01?width=128", "Media/Game/Icons/Deathcare.svg"),
 			};
-			var view = new CatalogView(fixture, new BuildingCatalogQuery(UiMenu: Menu));
+			var view = new CatalogView(fixture, new BuildingCatalogQuery(UiMenu: "Roads"));
 
 			var icons = view.StripTabs.Select(tab => tab.Icon).ToArray();
 
@@ -55,7 +52,7 @@ namespace BetterBuildingMenu.Tests
 				E(2, "Tram Stop", "ServiceBuildings", "TransportTram", "Tram Stops", 1, "thumbnail://TramStop01?width=128", "Media/Game/Icons/Transportation.svg")
 					with { DevTreeBranchIcon = "Media/Game/Icons/Tram.svg" },
 			};
-			var view = new CatalogView(fixture, new BuildingCatalogQuery(UiMenu: Menu));
+			var view = new CatalogView(fixture, new BuildingCatalogQuery(UiMenu: "Roads"));
 
 			Assert.All(view.StripTabs, tab => Assert.Equal("Media/Game/Icons/Tram.svg", tab.Icon));
 		}
@@ -63,8 +60,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TwoBranchesSharingOneCategoryGlyphGetTheirOwnPictures()
 		{
-			// Several categories, one (Parking) with two branches, so the strip axis
-			// is the development tree. A glyph two tabs would share gives way to
+			// Roads: several categories, one (Parking) with two branches, so the strip
+			// axis is the development tree. A glyph two tabs would share gives way to
 			// asset renders that say which tab is which; alone, it distinguishes.
 			var fixture = new[]
 			{
@@ -73,7 +70,7 @@ namespace BetterBuildingMenu.Tests
 				E(3, "Parking Hall", "ServiceBuildings", "RoadsParking", "Underground Parking", 2, "thumbnail://ParkingHall02?width=128", "Media/Game/Icons/Parking.svg"),
 				E(4, "Parking Lot", "ServiceBuildings", "RoadsParking", "Parking Lots", 1, "thumbnail://ParkingLot01?width=128", "Media/Game/Icons/Parking.svg"),
 			};
-			var view = new CatalogView(fixture, new BuildingCatalogQuery(UiMenu: Menu));
+			var view = new CatalogView(fixture, new BuildingCatalogQuery(UiMenu: "Roads"));
 
 			Assert.Equal("development", view.StripAxis);
 

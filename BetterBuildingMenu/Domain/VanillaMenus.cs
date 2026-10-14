@@ -9,8 +9,7 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Two names, not a table: the menu tree answers everything else. Zones is here
-	/// to honour the ReplaceVanillaZonesMenu setting, Roads for NetworkMenuExtension
-	/// and RoadsLoneBranches.
+	/// to honour the ReplaceVanillaZonesMenu setting, Roads for NetworkMenuExtension.
 	/// </remarks>
 	public static class VanillaMenus
 	{
@@ -20,9 +19,6 @@ namespace BetterBuildingMenu.Domain
 
 		public static bool IsZones(string? menu) =>
 			string.Equals(menu?.Trim(), Zones, StringComparison.OrdinalIgnoreCase);
-
-		public static bool IsRoads(string? menu) =>
-			string.Equals(menu?.Trim(), Roads, StringComparison.OrdinalIgnoreCase);
 
 		/// <summary>The education menu, matched the way the UI's isEducationMenu matches it.</summary>
 		public static bool IsEducation(string? menu) =>

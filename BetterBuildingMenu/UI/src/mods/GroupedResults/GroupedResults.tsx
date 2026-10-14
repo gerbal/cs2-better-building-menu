@@ -6,9 +6,6 @@ import {
   groupTreeFromPaths,
   fitGroupLabel,
   fitLabelToWidth,
-  headingBands,
-  headsGroup,
-  levelDrawsHeading,
   shouldShowHeading,
   type GroupNode,
 } from "domain/buildingGroups";
@@ -137,9 +134,9 @@ const GroupHeading = ({
 };
 
 /**
- * One group: its heading, and its line's reserved room above it. `.groupHeading`
+ * One group: its heading, and the row's reserved room above it. `.groupHeading`
  * is out of flow so a long name cannot widen the group past its tiles, which
- * also means it cannot push the height — hence a reserve, the LINE's. See below.
+ * also means it cannot push the height — hence a reserve, the ROW's. See below.
  */
 const GroupBox = ({
   className,
@@ -147,7 +144,6 @@ const GroupBox = ({
   heading,
   reserve,
   onHeight,
-  elementRef,
   children,
 }: {
   className: string;
@@ -155,16 +151,14 @@ const GroupBox = ({
   heading: { label: string; estimate: string; count: number; nested: boolean } | null;
   reserve: number | null;
   onHeight: (px: number) => void;
-  elementRef: (element: HTMLDivElement | null) => void;
   children: ReactNode;
 }): JSX.Element => (
   <div
-    ref={elementRef}
     className={className}
     data-group-depth={depth}
-    // EVERY group on a headed line, headed or not, or an unlabeled group's tiles
-    // sit a heading's height above its labelled neighbour's and the line loses
-    // its shared baseline. With no heading on the line, reserve stays null.
+    // EVERY group in the row, headed or not, or an unlabeled group's tiles sit
+    // a heading's height above its labelled neighbour's and the row loses its
+    // shared baseline. With no heading anywhere, reserve stays null.
     style={reserve !== null ? { paddingTop: `${reserve}px` } : undefined}
   >
     {heading && (
@@ -181,10 +175,9 @@ const GroupBox = ({
 );
 
 /**
- * A row of sibling groups, each reserving the TALLEST heading on the line it
- * wrapped onto (headingBands). Tighter per-group reserves would leave
- * neighbouring tiles off a shared baseline, which reads as a broken grid;
- * padding cannot re-wrap, so the lines it is measured against settle.
+ * A row of sibling groups, all reserving the TALLEST heading's height. Tighter
+ * per-group reserves would leave neighbouring tiles off a shared baseline,
+ * which reads as a broken grid; padding cannot re-wrap, so this settles.
  */
 const GroupRow = ({
   className,
@@ -200,69 +193,23 @@ const GroupRow = ({
   }[];
 }): JSX.Element => {
   const [heights, setHeights] = useState<Record<string, number>>({});
-  const [tops, setTops] = useState<Record<string, number>>({});
-  const rowRef = useRef<HTMLDivElement>(null);
-  const elements = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const measured = Object.values(heights);
+  const reserve = measured.length > 0 ? Math.max(...measured) : null;
 
   const record = (key: string) => (px: number) =>
     setHeights((current) => (current[key] === px ? current : { ...current, [key]: px }));
 
-  const measure = useRef(() => {});
-  measure.current = () => {
-    const next: Record<string, number> = {};
-
-    for (const group of groups) {
-      const top = elements.current[group.key]?.offsetTop;
-
-      if (typeof top === "number") {
-        next[group.key] = top;
-      }
-    }
-
-    setTops((current) => {
-      const keys = Object.keys(next);
-      const same = keys.length === Object.keys(current).length && keys.every((key) => current[key] === next[key]);
-      return same ? current : next;
-    });
-  };
-
-  // After every commit, and whenever the row resizes: a width change re-wraps
-  // the groups onto different lines without anything here re-rendering.
-  useEffect(() => measure.current());
-  useEffect(() => {
-    const row = rowRef.current;
-
-    if (!row || typeof ResizeObserver !== "function") {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => measure.current());
-    observer.observe(row);
-
-    return () => observer.disconnect();
-  }, []);
-
-  const bands = headingBands(
-    groups.map((group) => ({
-      key: group.key,
-      top: tops[group.key] ?? null,
-      heading: group.heading ? heights[group.key] ?? null : null,
-    }))
-  );
-
   return (
-    <div ref={rowRef} className={className}>
+    <div className={className}>
       {groups.map((group) => (
         <GroupBox
           key={group.key}
           className={group.className}
           depth={group.depth}
           heading={group.heading}
-          reserve={bands[group.key] ?? null}
+          reserve={reserve}
           onHeight={record(group.key)}
-          elementRef={(element) => {
-            elements.current[group.key] = element;
-          }}
         >
           {group.body}
         </GroupBox>
@@ -333,7 +280,7 @@ export const GroupedResults = memo(function GroupedResults({
     // GroupBox equalises that within a row but not ACROSS rows, so where some
     // siblings' children are headed, the rest keep the reserve too.
     const someChildRowIsHeaded = nodes.some(
-      (node) => node.children.length > 0 && levelDrawsHeading(node.children, depth + 1)
+      (node) => node.children.length > 0 && shouldShowHeading(node.children)
     );
 
     const boxes = nodes.map((node) => {
@@ -341,14 +288,11 @@ export const GroupedResults = memo(function GroupedResults({
       // sits alone and its children's on the next. One sub-group draws no
       // heading, so that group reads as a leaf and flows like one.
       const band = node.children.length > 1;
-      // No heading, so no row reserved for one. Three cases: an only child, whose
-      // heading shouldShowHeading already hides; a sub-group of one building
-      // (headsGroup); and a nested name repeating its parent's, which the dev
-      // tree produces for a category's base branch.
+      // No heading, so no row reserved for one. Two cases: an only child, whose
+      // heading shouldShowHeading already hides; and a nested name repeating
+      // its parent's, which the dev tree produces for a category's base branch.
       const unlabeled =
-        !showHeadings
-        || !headsGroup(node, depth)
-        || (depth > 0 && parentLabel !== null && node.label === parentLabel);
+        !showHeadings || (depth > 0 && parentLabel !== null && node.label === parentLabel);
       // Drawing no heading is not the same as reserving no row for one: when
       // the parent row says a neighbour reserves, this one matches or the two
       // sets of tiles stop lining up.
@@ -371,7 +315,7 @@ export const GroupedResults = memo(function GroupedResults({
             node.children,
             depth + 1,
             node.label,
-            someChildRowIsHeaded && !levelDrawsHeading(node.children, depth + 1)
+            someChildRowIsHeaded && !shouldShowHeading(node.children)
           )
           : renderLeaf(node.entries),
       };

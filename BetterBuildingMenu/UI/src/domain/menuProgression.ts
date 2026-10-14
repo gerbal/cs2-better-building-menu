@@ -32,8 +32,7 @@ export function expandedTabsFor(
 /**
  * What a tab's tooltip says, which is more than the tab carries: a density tab
  * is drawn IN ITS FAMILY'S PLACE, so nothing else on the row names the family.
- * `label` marks those; a self-naming development branch has none, and arrives
- * with its id as the label (MenuBranchCount.DisplayLabel).
+ * `label` marks those; a self-naming development branch has none.
  */
 export function branchTabTooltip(
   tab: MenuBranchCount | null | undefined,
@@ -41,7 +40,7 @@ export function branchTabTooltip(
 ): string {
   const tier = (tab?.label ?? "").trim();
 
-  if (tier === "" || tier === tab?.id) {
+  if (tier === "") {
     return tab?.id ?? "";
   }
 
