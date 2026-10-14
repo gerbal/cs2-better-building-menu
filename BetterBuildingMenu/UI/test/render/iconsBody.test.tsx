@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { huggingNames, linesOf, plannedNames, settleFrames } from "../harness/huggingNames";
 import { assertCellsTellThePointer } from "../harness/pointing";
 import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { bodyGrid, type BodyGridInput } from "../../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
+import { planName } from "../../src/domain/namePlan";
 import { IconsBody } from "../../src/mods/Bodies/IconsBody";
 
 const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
@@ -122,4 +125,49 @@ describe("the icons", () => {
     assert.equal(count(html, /class="nameBand"/), 3);
     assert.match(html, /data-bbm-name="10"/);
   });
+});
+
+describe("the icons with names, as the game lays out a band", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const FAKED = ["window", "requestAnimationFrame", "cancelAnimationFrame", "ResizeObserver"] as const;
+  let root: ReactTestRenderer | undefined;
+  let saved: Record<string, unknown>;
+  const frames = new Map<number, () => void>();
+  let handles = 0;
+
+  beforeEach(() => {
+    resetBindings();
+    saved = Object.fromEntries(FAKED.map((name) => [name, globals[name]]));
+    frames.clear();
+    // A rem a pixel.
+    globals.window = { innerHeight: 1080 };
+    globals.requestAnimationFrame = (run: () => void) => { handles += 1; frames.set(handles, run); return handles; };
+    globals.cancelAnimationFrame = (handle: number) => frames.delete(handle);
+    globals.ResizeObserver = class { observe() { return undefined; } disconnect() { return undefined; } };
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    Object.assign(globals, saved);
+  });
+
+  for (const scale of [1, 1.3]) {
+    it(`keep each name as planned in its band's room at ${scale * 100}% text, the band only as wide as its lines`, () => {
+      setBinding("options", "textScale", scale);
+      const names = ["Boulder 01", "Stone Head 03", "Concession Kiosk 2"];
+      act(() => {
+        root = create(<IconsBody entries={names.map((name, at) => entry(at + 1, { name }))} grid={grid({ textScale: scale })} onPlace={() => undefined} named />, { createNodeMock: huggingNames(() => root!) });
+      });
+      settleFrames(frames);
+
+      const drawn = plannedNames(root!);
+      assert.equal(drawn.length, names.length);
+      for (const name of drawn) {
+        const room = { width: name.props.width as number, lines: name.props.lines as number, font: name.props.font as number };
+        assert.deepEqual(linesOf(name), planName(name.props.name as string, room, { keep: [""], typed: [""] }).lines, name.props.name as string);
+        assert.ok(linesOf(name).length > 0, name.props.name as string);
+      }
+    });
+  }
 });

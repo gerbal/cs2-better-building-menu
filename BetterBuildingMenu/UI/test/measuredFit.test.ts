@@ -55,6 +55,18 @@ describe("the room a drawn name's lines may take", () => {
     assert.equal(drawnRoom(room, { clientWidth: 60 }, [{ clientWidth: 64, offsetWidth: 64, scrollWidth: 65 }], 1.5), room);
   });
 
+  it("never narrows below the widest line drawn: a box that hugs its lines says nothing of the room", () => {
+    // The lines drew 60 px wide, 90 rem, where the estimate makes the widest 96 rem: a box no wider than
+    // its lines is a box sized to them, and planning in it would cut the name a step every frame.
+    const hugged = { clientWidth: 60, offsetWidth: 60, scrollWidth: 60 };
+    const room = { box: 150, fit: 1 };
+
+    assert.equal(drawnRoom(undrawn, { clientWidth: 60 }, [hugged], 1.5, true, 96), undrawn);
+    assert.equal(drawnRoom(room, { clientWidth: 60 }, [hugged], 1.5, true, 96), room);
+    // A box wider than the widest line is still the room it gives, narrower than the estimate or not.
+    assert.deepEqual(drawnRoom(room, { clientWidth: 80 }, [hugged], 1.5, true, 96), { box: 120, fit: 1 });
+  });
+
   it("keeps the estimate while the box has not been laid out", () => {
     // Cohtml reports 0 for an element it has not laid out, and the previous text's width for one whose
     // text just changed; a zero box is the first case and must not count as overflow.

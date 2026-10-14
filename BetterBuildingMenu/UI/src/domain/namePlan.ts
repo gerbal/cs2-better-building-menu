@@ -589,6 +589,11 @@ export function planFits(lines: readonly string[], box: NameBox): boolean {
   return lines.every((line) => runWidth(line, box) <= box.width);
 }
 
+/** A drawn line's width by the estimate, in the box's type and tracking. */
+export function lineWidth(line: string, box: NameBox): number {
+  return runWidth(line, box);
+}
+
 /** A run of a drawn line: plain, or a typed word, which is drawn in a span of its own. */
 export interface NameRun {
   text: string;

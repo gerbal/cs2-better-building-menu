@@ -109,7 +109,8 @@ const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textSca
       )}
       {nameLines > 0 && (
         <span className={styles.nameBand}>
-          <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={nameLines} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} />
+          {/* The absolute band sizes the name to its lines, so its box is no room: the room is the estimate. */}
+          <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={nameLines} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} hugs />
         </span>
       )}
     </Button>

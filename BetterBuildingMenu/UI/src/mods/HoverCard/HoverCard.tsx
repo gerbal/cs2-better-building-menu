@@ -271,7 +271,8 @@ const PointerCard = memo(function PointerCard({ pointed, boxRef, pointer }: Card
         {locked && <img className={styles.lockGlyph} src="coui://betterbuildingmenu/LockRaster.png" alt="" aria-hidden="true" />}
       </span>
       <span className={styles.column} style={{ minWidth: `${NAME_ROOM * textScale}rem` }}>
-        <PlannedName className={styles.name} name={entry.name || entry.prefabName} width={NAME_ROOM * textScale} lines={NAME_LINES} font={NAME_FONT * textScale} marked={false} />
+        {/* The column sizes the name to its lines, so its box is no room: the room is the estimate. */}
+        <PlannedName className={styles.name} name={entry.name || entry.prefabName} width={NAME_ROOM * textScale} lines={NAME_LINES} font={NAME_FONT * textScale} marked={false} hugs />
         {text.rows.length > 0 && (
           <span className={styles.table}>
             {text.rows.map((row) => (

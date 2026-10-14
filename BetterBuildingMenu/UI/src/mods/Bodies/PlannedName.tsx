@@ -3,7 +3,7 @@ import { memo, useEffect, useRef, useState } from "react";
 
 import { deviceRem } from "domain/bodyGeometry";
 import { drawnRoom, type DrawnRoom } from "domain/measuredFit";
-import { nameRuns, planFits } from "domain/namePlan";
+import { lineWidth, nameRuns, planFits } from "domain/namePlan";
 import { planApart, type ApartHints } from "domain/platesApart";
 import styles from "./plannedName.module.scss";
 
@@ -43,8 +43,8 @@ const NO_BOX = { clientWidth: 0 };
 /**
  * A name planned over its lines, each line a box of its own, whole where it fits and cut once where it
  * does not; the hover card and the aria-label carry the whole of it. The room is the body's estimate
- * until a frame has drawn the name, then the box as drawn, narrowed by any line the estimate said fits
- * that ran past it. It never widens again until the name, its type, its lines, the typed text or the
+ * until a frame has drawn the name, then the box as drawn, never narrower than its widest line, narrowed
+ * by any line the estimate said fits that ran past it. It never widens again until the name, its type, its lines, the typed text or the
  * distinguishing word change. See docs/design-notes.md, "Names".
  */
 export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", apart, typed = "", dim = false, hugs = false, marked = true, className }: PlannedNameProps) {
@@ -59,12 +59,14 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
   // Each word typed is kept on its own: a search matches its phrase anywhere in the name.
   const plan = planApart(name, room, distinct, typed.split(/\s+/), apart);
   const fitted = planFits(plan.lines, room);
+  // The widest line by the estimate: a box drawn narrower is sized to its lines, not to the room.
+  const widest = Math.max(0, ...plan.lines.map((line) => lineWidth(line, room)));
 
   useEffect(() => {
     const box = boxRef.current;
     if (!box) return;
     const measure = () => {
-      const next = drawnRoom(drawn, hugs ? NO_BOX : box, Array.from(box.children) as HTMLElement[], deviceRem(window.innerHeight), fitted);
+      const next = drawnRoom(drawn, hugs ? NO_BOX : box, Array.from(box.children) as HTMLElement[], deviceRem(window.innerHeight), fitted, widest);
       if (next !== drawn) setState({ key, drawn: next });
     };
     // Never in the tick of the render: Cohtml reports the PREVIOUS text's
@@ -89,7 +91,7 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, [key, drawn, hugs, fitted]);
+  }, [key, drawn, hugs, fitted, widest]);
 
   return (
     <span ref={boxRef} className={classNames(styles.planned, className)} data-bbm-name={marked ? name.length : undefined}>

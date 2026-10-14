@@ -1585,8 +1585,11 @@ flex row sizes whatever the name holds, narrowed by the most any line ran past i
 plan the estimate says fits narrows the room: a line the estimate already says overruns is no evidence
 about the box. Each narrowing is by what ran over and the room never widens again, so the plan settles
 once its lines draw inside the box, or once the room is too narrow for any line and none is drawn. A
-box that hugs its line (the tiles' name line) gives no room as drawn, and only a line drawn past it
-narrows the plan. It never reads widths in the render's own tick, where Cohtml reports the previous
+box that hugs its lines gives no room as drawn, and only a line drawn past it narrows the plan: the tiles'
+name line, the hover card's column, which aligns its items to its start, and the icons' absolute name
+band, where the game sizes the name's box to its lines. Any box drawn narrower than the widest line by
+the estimate is read the same way, so no host can narrow a name a step every frame until it draws
+nothing. It never reads widths in the render's own tick, where Cohtml reports the previous
 text's, nor where the screen's rem is unknown. A name planned to its lines draws no third line at any
 text scale. The plate's markers stay:
 `data-bbm-name` on the name's box carries the whole name's length, a building's only (a label's planned

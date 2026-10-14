@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import type { RefObject } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { huggingNames, linesOf, plannedNames, settleFrames } from "../harness/huggingNames";
 import { catalogPage, entry, showBody } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { clearPointed, getAssetMenuView, resetAssetMenuView, setPointed } from "../../src/domain/assetMenuViewStore";
@@ -122,6 +123,23 @@ describe("the hover card", () => {
     // Cohtml never draws a title: the card says everything itself.
     assert.equal(root!.root.findAll((node) => typeof node.props.title === "string").length, 0);
   });
+
+  for (const scale of [1, 1.3]) {
+    it(`names the building on one line at ${scale * 100}% text in its column, which is only as wide as the name`, () => {
+      setBinding("options", "textScale", scale);
+      act(() => {
+        root = create(<HoverCard boxRef={boxRef} hidden={false} />, {
+          createNodeMock: huggingNames(() => root!, () => ({ getBoundingClientRect: () => rect(0, 0, 240, 98), children: [], clientWidth: 0, querySelectorAll: () => [] })),
+        });
+      });
+      point(1, "Four-Lane Road 1");
+      wait(150);
+      settleFrames(frames);
+
+      assert.equal(card().length, 1);
+      assert.deepEqual(linesOf(plannedNames(root!)[0]), ["Four-Lane Road 1"]);
+    });
+  }
 
   it("reads no other cell where its place above the box fits, as nothing there can cover one", () => {
     const queried: string[] = [];

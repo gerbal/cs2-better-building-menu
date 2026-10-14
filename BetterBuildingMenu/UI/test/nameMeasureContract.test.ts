@@ -30,7 +30,7 @@ describe("a planned name measures what Cohtml has laid out", () => {
   it("narrows only on a plan that fits its room by the estimate, and starts again for a new search or word", () => {
     // A plan the estimate says overruns would narrow its room on every measure, without end.
     assert.match(tileName, /const fitted = planFits\(plan\.lines, room\);/);
-    assert.match(tileName, /drawnRoom\([^;]*, fitted\);/);
+    assert.match(tileName, /drawnRoom\([^;]*, fitted[,)]/);
     // A room narrowed under one search must not outlive it: the plates are keyed by entry.
     const key = /const key = `([^`]*)`;/.exec(tileName)?.[1] ?? "";
     for (const part of ["${name}", "${font}", "${lines}", "${typed}", "${distinct}"]) assert.ok(key.includes(part), `${part} in ${key}`);
@@ -45,5 +45,19 @@ describe("a planned name measures what Cohtml has laid out", () => {
     assert.match(lineName, /\shugs\s/);
     assert.match(tileName, /drawnRoom\(drawn, hugs \? NO_BOX : box,/);
     assert.match(tileName, /const NO_BOX = \{ clientWidth: 0 \};/);
+  });
+
+  it("is told the box hugs its lines in every host that sizes the name to them: the card's column and the icons' band", () => {
+    // Cohtml sizes a name box to its lines in a flex column that aligns its items to the start, and in an
+    // absolute band; read as the room, such a box narrows the name every frame until it draws nothing.
+    const card = readFileSync(new URL("../src/mods/HoverCard/HoverCard.tsx", import.meta.url), "utf8");
+    const icons = readFileSync(new URL("../src/mods/Bodies/IconsBody.tsx", import.meta.url), "utf8");
+
+    assert.match(/<PlannedName\s[^>]*className=\{styles\.name\}[^>]*\/>/.exec(card)?.[0] ?? "", /\shugs[\s/]/);
+    assert.match(/<PlannedName\s[^>]*\/>/.exec(icons)?.[0] ?? "", /\shugs[\s/]/);
+  });
+
+  it("never takes a room narrower than its widest line by the estimate", () => {
+    assert.match(tileName, /drawnRoom\([^;]*, fitted, widest\);/);
   });
 });

@@ -45,12 +45,15 @@ const SAME_WIDTH = 0.01;
 /**
  * The room a drawn name's lines may take now: its box as drawn, `remPerPx` rem a pixel, and its fit,
  * narrowed by the most any line ran past its box, in proportion, and never widened; narrowed only
- * where the plan `fitted` its room by the estimate. The same room, the very object, where nothing
- * moved. Call it a frame AFTER the render: in the same tick an element reports its PREVIOUS text's width.
+ * where the plan `fitted` its room by the estimate. A box drawn narrower than `widest`, the widest line
+ * drawn by the estimate, in rem, is one sized to its lines, which says nothing of the room: the room
+ * stays. The same room, the very object, where nothing moved. Call it a frame AFTER the render: in the
+ * same tick an element reports its PREVIOUS text's width.
  */
-export function drawnRoom(current: DrawnRoom, box: DrawnBox, lines: readonly DrawnLine[], remPerPx: number, fitted = true): DrawnRoom {
+export function drawnRoom(current: DrawnRoom, box: DrawnBox, lines: readonly DrawnLine[], remPerPx: number, fitted = true, widest = 0): DrawnRoom {
   // A rem of no size or of none at all (deviceRem's 0 for an unknown screen) says no width: the estimate stays.
-  const width = box.clientWidth > 0 && remPerPx > 0 && Number.isFinite(remPerPx) ? box.clientWidth * remPerPx : current.box;
+  const drawn = box.clientWidth > 0 && remPerPx > 0 && Number.isFinite(remPerPx) ? box.clientWidth * remPerPx : null;
+  const width = drawn !== null && drawn >= widest ? drawn : current.box;
   let fit = current.fit;
   for (const line of fitted ? lines : []) {
     const own = Math.max(line.clientWidth, line.offsetWidth);
