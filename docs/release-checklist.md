@@ -117,19 +117,19 @@ On a developed save:
    its pick, with a dot, and another menu keeps its own; Default view takes it away. Pick a
    Group: the next open of that menu keeps it, another menu does not. Pick Cards in Roads at
    Width 3: cards as wide as their names, three rows, 11 or more, the tabs' labels among them;
-   pick a building, then open Roads again: it opens on All, at that card. Pick a Width in View,
+   pick a building, then open Roads again: it opens on All, at that card. Pick List and a Width in View,
    and drag the right edge and the left edge: each settles on a width, the tabs' right end naming
    the step and how many buildings it shows while the edge moves; the left strip lights under the
    mouse, stops above the tabs, and widens the menu as far as the pointer travels. At the wider Widths, the tool
    options sit left of the menu with none of their buttons under it. With Options › Top edge on
    Whole lines, drag the top edge up in Roads: the tabs' right end counts the lines and buildings
-   ("7 lines · 28 buildings (game: 18)"), and the release settles on whole lines. Drag it to the
-   bottom: the tabs' right end says "Release to collapse", and the release collapses the menu to
+   ("7 lines · 28 buildings (game: 18)"), and the release settles on whole lines. Drag it below the
+   fewest lines: the tabs' right end says "Release to collapse", and the release collapses the menu to
    its search and tabs; close and reopen the menu: still collapsed; a tab (All too) or typing a
    letter opens it at the height it had, and a drag back up opens it where it lands. Collapse it
    again and double-click the edge: it opens at the game's own size, the first Width. A single
    click on the edge changes nothing. Set Top edge to Free: a drag lands where the pointer lets
-   go, a drag to the bottom holds the least height and never collapses, and a double-click still
+   go, a drag below the fewest lines holds the least height and never collapses, and a double-click still
    restores the game's size.
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu. Arm a
    terraforming brush from Landscaping: the menu stays, and answers a search.

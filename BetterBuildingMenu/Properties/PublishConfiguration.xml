@@ -64,7 +64,7 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
 Changes
 * The build menu opens where the game's own does, at its size. Pick one of five Widths in Options › Better Building Menu, or drag either side edge to one; every menu opens at it. At the wider Widths the tool options move left for room.
 * If you used an earlier version, the menu opens at the width nearest yours and Default view starts at your View.
-* The top edge settles on whole lines; dragged to the bottom it collapses the menu to search and tabs until a tab, typing or a double-click, which also restores the game's size. Options › Top edge: Whole lines, or Free, where you let go with no collapse; earlier versions' players start at Free.
+* The top edge settles on whole lines; dragged below the fewest lines it collapses the menu to search and tabs until a tab, typing or a double-click, which also restores the game's size. Options › Top edge: Whole lines, or Free, where you let go with no collapse; earlier versions' players start at Free.
 * The search, Sort, Filter, Group, View and close sit along the top edge; each opens a list a click elsewhere closes. View also offers Look, Width and More options….
 * The search box names the building Enter places, or says All matches locked. Enter in the search arms the best match, wherever it sits, however sorted.
 * Control pane is now an option, off for new players, else as you had it. The pane's Reset menu is gone; Reset the build menu… in Options asks, then puts options, size and each menu's View and Group back.
