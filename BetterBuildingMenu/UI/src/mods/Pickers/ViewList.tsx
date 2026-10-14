@@ -3,6 +3,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useState } from "react";
 
+import { POPOVER_ROOM } from "domain/assetMenuLayout";
 import { ICONS_NAMED, VIEW_ROWS, type BodyKind } from "domain/bodyChoice";
 import { lookOf, releasedLooks } from "domain/looks";
 import { WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
@@ -77,6 +78,7 @@ const LookList = ({ opensDown }: { opensDown: boolean }) => {
           key={look.id}
           label={translate(look.nameKey, look.name) ?? look.name}
           lit={look.id === current}
+          room={POPOVER_ROOM}
           onSelect={() => send({ method: "SetAssetMenuLook", args: [look.id] })}
         />
       ))}
@@ -109,6 +111,8 @@ const WidthList = ({ opensDown }: { opensDown: boolean }) => {
           lit={candidate === step}
           dim={!fits.has(candidate)}
           note={note(candidate)}
+          room={POPOVER_ROOM}
+          keep={String(candidate)}
           onSelect={() => send({ method: "SetAssetMenuWidthStep", args: [candidate] })}
         />
       ))}
@@ -120,14 +124,16 @@ const WidthList = ({ opensDown }: { opensDown: boolean }) => {
  * VIEW's list, in a popover or the control pane: Default view and the bodies, the menu's own pick lit,
  * a pick closing it; then the doors to what applies to every menu, Look and Width, each with its list
  * beside it, one at a time, and More options…, which opens the mod's page. `opensDown` when its popover
- * hangs from under the top row.
+ * hangs from under the top row; `room`, its rows' width there, a popover's, where a label too long for
+ * it is cut (the control pane is wider).
  */
-export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void; opensDown?: boolean }) => {
+export const ViewList = ({ onPicked, opensDown = false, room }: { onPicked: () => void; opensDown?: boolean; room?: number }) => {
   const { translate } = useLocalization();
   const label = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
   const view = useViewOptions();
   const { step } = useAssetMenuLayout();
   const look = lookOf(useValue(AssetMenuLook$));
+  const lookName = label(look.nameKey, look.name);
   const [beside, setBeside] = useState<"look" | "width" | null>(null);
   const everyMenu = `${label("Tooltip.LABEL[BetterBuildingMenu.EveryMenu]", "every menu")} ›`;
   const toggle = (list: "look" | "width") => setBeside((shown) => (shown === list ? null : list));
@@ -139,6 +145,7 @@ export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void
           key={option.id || "default"}
           label={option.label}
           lit={option.selected}
+          room={room}
           onSelect={() => {
             view.pick(option.id);
             onPicked();
@@ -147,17 +154,22 @@ export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void
       ))}
       {view.offered && <div className={styles.divider} />}
       <PickerRow
-        label={label("Tooltip.LABEL[BetterBuildingMenu.ViewLook]", "Look · {0}").replace("{0}", label(look.nameKey, look.name))}
+        label={label("Tooltip.LABEL[BetterBuildingMenu.ViewLook]", "Look · {0}").replace("{0}", lookName)}
         note={everyMenu}
+        room={room}
+        keep={lookName}
         onSelect={() => toggle("look")}
       />
       <PickerRow
         label={label("Tooltip.LABEL[BetterBuildingMenu.ViewWidth]", "Width · {0}").replace("{0}", String(step))}
         note={everyMenu}
+        room={room}
+        keep={String(step)}
         onSelect={() => toggle("width")}
       />
       <PickerRow
         label={label("Tooltip.LABEL[BetterBuildingMenu.MoreOptions]", "More options…")}
+        room={room}
         onSelect={() => {
           send({ method: "OpenModOptions", args: [] });
           onPicked();

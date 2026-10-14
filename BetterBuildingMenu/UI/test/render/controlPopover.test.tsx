@@ -6,13 +6,14 @@ import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetModules, setModule } from "../harness/stubs/cs2-modding";
 import { Dropdown, DropdownItem } from "../harness/stubs/cs2-ui";
-import { POPOVER_FILTER_HEIGHT } from "../../src/domain/assetMenuLayout";
+import { POPOVER_FILTER_HEIGHT, POPOVER_WIDTH, TOP_ROW_TEXT } from "../../src/domain/assetMenuLayout";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_SORT_OPTIONS } from "../../src/domain/assetMenuSortPresentation";
 import { SORT_FIRST_DESCENDING } from "../../src/domain/sharedContracts.generated";
 import type { OpenPopover, PopoverAnchor } from "../../src/domain/topRow";
 import { ControlPopover } from "../../src/mods/ControlPopover/ControlPopover";
 import { PickerRow } from "../../src/mods/Pickers/PickerRow";
+import { textWidth } from "../../src/domain/textWidth";
 
 type Press = (event: { target: unknown }) => void;
 
@@ -44,6 +45,9 @@ const filters = () => set("AssetMenuFacets", {
   hasSelection: true,
 });
 const classes = (node: { props: { className?: unknown } }) => String(node.props.className ?? "").split(" ");
+type Node = ReturnType<ReactTestRenderer["root"]["find"]>;
+/** The text a node draws, its children's in order. */
+const textOf = (node: Node | string): string => (typeof node === "string" ? node : node.children.map(textOf).join(""));
 
 describe("a control's popover", () => {
   let saved: unknown;
@@ -353,6 +357,35 @@ describe("a control's popover", () => {
     pick("Width · 1");
     assert.equal(lookList().length, 0, "Width's list takes its place");
     assert.equal(widthList().length, 1);
+  });
+
+  it("keeps every row of VIEW and the lists beside it inside its popover at 150% text, a label too long cut by the name planner, the look's name kept", () => {
+    set("AssetMenu", "Roads");
+    setBinding("options", "textScale", 1.5);
+    mount({ kind: "view", left: 0 });
+    const font = TOP_ROW_TEXT * 1.5;
+    const [, padRight, , padLeft] = sides(declarationsOf(PICKER_LIST, ".list .row").padding).map(rem);
+    const noteGap = rem(declarationsOf(PICKER_LIST, ".note")["margin-left"]);
+    const room = POPOVER_WIDTH - 2 * rem(declarationsOf(POPOVER, ".popover").padding);
+    const drawn = (row: Node) => {
+      const part = (name: string) => row.findAll((node) => typeof node.props.className === "string" && classes(node).includes(name))[0];
+      return { name: textOf(part("name")), note: part("note") === undefined ? null : textOf(part("note")) };
+    };
+    const assertInside = () => {
+      for (const row of root!.root.findAllByType(PickerRow)) {
+        const { name, note } = drawn(row);
+        const width = padLeft + textWidth(name, font) + (note === null ? 0 : noteGap + textWidth(note, font)) + padRight;
+        assert.ok(width <= room, `"${name}" ${note ?? ""} is ${width} rem, its popover's room ${room}`);
+      }
+    };
+
+    assertInside();
+    const look = root!.root.findAllByType(PickerRow).find((row) => row.props.label === "Look · Standard")!;
+    assert.match(drawn(look).name, /^[^]*…[^]*Standard$/);
+    pick("Look · Standard");
+    assertInside();
+    pick("Width · 1");
+    assertInside();
   });
 
   it("opens Width, every menu beside the list and keeps both open on a step; More options asks for the mod's page and closes", () => {

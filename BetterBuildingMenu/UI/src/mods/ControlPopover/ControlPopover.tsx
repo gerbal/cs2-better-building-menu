@@ -1,6 +1,7 @@
 import { Scrollable } from "cs2/ui";
 import { useEffect } from "react";
 
+import { POPOVER_ROOM } from "domain/assetMenuLayout";
 import { CONTROLS_MARK, gameMenuOpen, isWithin, POPOVER_MARK, popoverLeft, type OpenPopover, type PopoverAnchor } from "domain/topRow";
 import { vanillaClass } from "mods/BuildingMenu/vanillaLayout";
 import { GAME_DROPDOWN_THEME } from "mods/FilterRail/FilterRail";
@@ -66,7 +67,7 @@ export const ControlPopover = ({ open, limit, anchor, onClose }: ControlPopoverP
         </Scrollable>
       )}
       {open.kind === "group" && <GroupList onPicked={onClose} />}
-      {open.kind === "view" && <ViewList onPicked={onClose} opensDown={hangsDown} />}
+      {open.kind === "view" && <ViewList onPicked={onClose} opensDown={hangsDown} room={POPOVER_ROOM} />}
     </div>
   );
 };

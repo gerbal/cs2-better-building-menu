@@ -8,7 +8,6 @@ import { clearPointed, getAssetMenuView, type Pointed } from "domain/assetMenuVi
 import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { TAB_COUNT_SIZE, TAB_NAME_SIZE } from "domain/assetMenuLayout";
 import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type StatusDrawn, type StatusLine } from "domain/hoverCard";
-import { lookOf } from "domain/looks";
 import { hoverCardLabels } from "domain/hoverCardLines";
 import { coversPoint, placePointerCard, placeSlotCard, remRect, SLOT_ROOM, slotRowsKept, type Rect } from "domain/hoverCardPlace";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
@@ -18,11 +17,11 @@ import { readoutSepWidth } from "domain/tabRow";
 import { LAYOUT_HEIGHT } from "domain/sharedContracts.generated";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
-import { AssetMenuHoverCard$, AssetMenuLook$, AssetMenuTuning$, BuildingCatalog$, SHIPPED_TUNING } from "mods/bindings";
+import { AssetMenuHoverCard$, AssetMenuTuning$, BuildingCatalog$, SHIPPED_TUNING } from "mods/bindings";
 import { HoverCardContent, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { PlannedName } from "mods/Bodies/PlannedName";
 import { UNIT_GLYPHS } from "mods/Bodies/unitGlyphs";
-import { useNumberSeparators, useStateWords } from "mods/Bodies/useBodyWords";
+import { useNumberSeparators, useStateWords, useUnitMarks } from "mods/Bodies/useBodyWords";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import styles from "./hoverCard.module.scss";
 import { drawnCells, type DrawnCells } from "./pointing";
@@ -250,7 +249,7 @@ const PointerCard = memo(function PointerCard({ pointed, boxRef, pointer }: Card
   const keyKind = (page?.facts?.keyKind ?? "capacity") as KeyKind;
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
   // Its key number's glyph as the look marks units: none in Plates, whose words say them.
-  const text = pointerCardText(entry, keyKind, separators, words, achievedMilestone, lookOf(useValue(AssetMenuLook$)).units);
+  const text = pointerCardText(entry, keyKind, separators, words, achievedMilestone, useUnitMarks().mode);
   const locked = isEntryLocked(entry);
 
   return (

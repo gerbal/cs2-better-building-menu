@@ -16,7 +16,7 @@ export interface LookRoot {
 
 /**
  * Each finished look's class, named as the stylesheet declares it; a look joins here as it joins the Look
- * row. `lookOf` returns only a finished look, so every look drawn has its class here.
+ * row. `lookOf` returns only a finished look, so every look drawn has its class here, as a test holds.
  */
 const LOOK_CLASS: Readonly<Partial<Record<LookId, string>>> = { standard: looks.standard, plates: looks.plates };
 

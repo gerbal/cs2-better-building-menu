@@ -163,6 +163,13 @@ export const CONTROL_DIVIDER = sheetRem("controlDivider");
 export const POPOVER_WIDTH = sheetRem("popoverWidth");
 export const POPOVER_GAP = sheetRem("popoverGap");
 
+/** The room a popover's rows take: its width inside its padding. */
+export const POPOVER_ROOM = POPOVER_WIDTH - 2 * sheetRem("popoverPadding");
+
+/** A list row's padding each side, and the gap before its note: pickerList.module.scss draws them. */
+export const PICKER_ROW_PADDING = sheetRem("pickerRowPadding");
+export const PICKER_NOTE_GAP = sheetRem("pickerNoteGap");
+
 /** FILTER's height, which its list scrolls past: the tallest a popover draws, so the room one needs. */
 export const POPOVER_FILTER_HEIGHT = sheetRem("popoverFilterHeight");
 

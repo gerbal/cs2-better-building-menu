@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { LOOKS, STANDARD_SURFACE_ALPHAS, lookOf, panelOpacities, releasedLooks, surfaceAlphas, surfaceAlphaStyle } from "../src/domain/looks.ts";
 import { declarationsOf } from "./harness/compiledCss.ts";
@@ -71,5 +72,16 @@ describe("the looks", () => {
     assert.equal(lookOf("plates").id, "plates");
     assert.equal(lookOf("standard").id, "standard");
     for (const other of ["glass", "cards", "Plates", "", undefined]) assert.equal(lookOf(other).id, "standard", String(other));
+  });
+});
+
+describe("a look's unit marks", () => {
+  it("are read in one place, useUnitMarks, which every body, the readout and the hover card take them from", () => {
+    const src = new URL("../src/", import.meta.url);
+    const readers = readdirSync(src, { recursive: true, encoding: "utf8" })
+      .filter((file) => /\.tsx?$/.test(file) && /\.units\b/.test(readFileSync(new URL(file, src), "utf8")))
+      .map((file) => file.replaceAll("\\", "/"));
+
+    assert.deepEqual(readers, ["mods/Bodies/useBodyWords.ts"]);
   });
 });

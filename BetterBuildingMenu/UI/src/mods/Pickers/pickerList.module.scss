@@ -21,7 +21,7 @@
   // The icon variant pins a square width, and these carry words.
   width: auto !important;
   height: $popover-row;
-  padding: 0 8rem;
+  padding: 0 $picker-row-padding;
   border-radius: 3rem;
   background-color: transparent;
   color: var(--bbm-tState);
@@ -57,7 +57,7 @@
 
 .note {
   flex: 0 0 auto;
-  margin-left: 8rem;
+  margin-left: $picker-note-gap;
   color: var(--bbm-tDim);
 }
 

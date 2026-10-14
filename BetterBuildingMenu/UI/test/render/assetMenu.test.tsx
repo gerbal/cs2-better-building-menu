@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { selectorsOf } from "../harness/compiledCss";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_CHROME_HEIGHT, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
+import { releasedLooks } from "../../src/domain/looks";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 import { openListCloser, setOpenListCloser } from "../../src/mods/BuildingMenu/openListCloser";
 
@@ -320,6 +322,19 @@ describe("the asset menu's look", () => {
     assert.equal(boxOf(plates).look, "plates");
     assert.ok(boxOf(glass).classes.includes("standard"), boxOf(glass).classes.join(" "));
     assert.equal(boxOf(glass).look, "standard");
+  });
+
+  it("gives every finished look the class its stylesheet declares, so none draws with its tokens unset", () => {
+    const sheet = selectorsOf("looks/looks.module.scss");
+
+    for (const look of releasedLooks()) {
+      setBinding("BetterBuildingMenu", "AssetMenuLook", look.id);
+      const box = boxOf(render());
+
+      assert.ok(sheet.includes(`.${look.id}`), `the sheet declares .${look.id}`);
+      assert.ok(box.classes.includes(look.id), `${look.id}: ${box.classes.join(" ")}`);
+      assert.equal(box.look, look.id);
+    }
   });
 
   it("switches the look in place: the box takes the new class and mounts nothing again", () => {
