@@ -263,3 +263,32 @@ is the fallback, and a modded theme, which has no key, keeps its prefab name.
   region sits somewhere different in each language, so cutting it out leaves fragments behind. A tier
   also spans residential, commercial and office zones, which no one zone name does. The tiers are
   to be translated as the mod's own strings instead; see [issue #99](https://github.com/gerbal/cs2-better-building-menu/issues/99).
+
+## Transit tiers
+
+The Transportation menu files every mode's assets under one service, so a mode's tab holds its
+track, its stations, its stops, the depot that runs its vehicles and its freight terminal. Under
+each tab they are split by what each one is for, in the order a mode is built: Tracks, Stations,
+Stops, Depots, Cargo Stations, then the lines and anything else by subcategory
+(`BuildingCatalogGrouping.SecondaryKey`, `TransitTierLabel`).
+
+- **The split reads the game's components, not names.** `TransitRole` files a station by
+  `TransportStationData`, a depot by `TransportDepotData` and a stop by `TransportStopData`, and the
+  role is offered in the Role filter and grouping. A track is a network, filed by its own
+  subcategory, so it takes no role and the Roads menu, which gathers every track, gains no Role
+  grouping.
+- **Passengers before freight, a station before a depot.** A cargo station carries
+  `CargoTransportStationData`; one that also carries `PublicTransportStationData` takes passengers
+  and files with the stations. A building that is both station and depot is found where passengers
+  board.
+- **Only a passenger line's stop is a stop.** The game authors mailboxes, parking spaces and an
+  industry's work stops with `TransportStopData` too, for post, cars and freight; a stop counts only
+  for a passenger mode a line runs on (bus, train, taxi, tram, ship, ferry, helicopter, airplane,
+  subway).
+- **A service role wins.** Transit is resolved only when no service component names the building,
+  and has no figure of its own, so Capacity is unchanged; a depot's vehicles stay a fact.
+- **One heading per key.** The key is the tier, never the entry, so two entries under one key read
+  one heading. A Transportation building with no transit component files with the stations, and a
+  stop with no role with the stops. Stations, Depots and Cargo Stations are our English, as the
+  density tiers are (see "Labels in the game's words"); Tracks and Stops read the subcategory's
+  label.

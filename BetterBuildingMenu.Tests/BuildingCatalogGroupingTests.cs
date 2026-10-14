@@ -476,8 +476,8 @@ namespace BetterBuildingMenu.Tests
 		public void UsesTheSubcategoryAsTransitsTier()
 		{
 			// Transit is the one menu whose development branch divides nothing:
-			// its branches map one to one onto its categories. Tracks, stops,
-			// lines and stations are the real split.
+			// its branches map one to one onto its categories. With no role, the
+			// subcategory still tells a track from a station.
 			var track = Entry(1) with
 			{
 				UiMenu = "Transportation",
@@ -586,6 +586,38 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.PrimaryKey(early, "progression"), BuildingCatalogGrouping.PrimaryKey(late, "progression")) < 0);
 			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.PrimaryKey(early, "development"), BuildingCatalogGrouping.PrimaryKey(late, "development")) < 0);
+		}
+
+		[Fact]
+		public void SplitsATransitModeByWhatEachAssetIsFor()
+		{
+			BuildingCatalogEntry Transit(int id, string subCategory, string? role) =>
+				Entry(id, subCategory: subCategory, buildingType: role ?? "") with
+				{
+					UiMenu = "Transportation",
+					UiCategory = "TransportationTrain",
+					DevTreeBranch = "Train",
+				};
+
+			var ordered = new[]
+			{
+				Transit(1, "Networks_Tracks", null),
+				Transit(2, "ServiceBuildings_Transportation", TransitRole.Station),
+				Transit(3, "Networks_Stops", TransitRole.Stop),
+				Transit(4, "ServiceBuildings_Transportation", TransitRole.Depot),
+				Transit(5, "ServiceBuildings_Transportation", TransitRole.CargoStation),
+				Transit(6, "Networks_Routes", null),
+			};
+
+			var keys = ordered.Select(entry => BuildingCatalogGrouping.SecondaryKey(entry, "menuCategory")).ToArray();
+
+			Assert.Equal(keys, keys.OrderBy(key => key, StringComparer.Ordinal).ToArray());
+			Assert.Equal(keys.Length, keys.Distinct().Count());
+
+			// A transit building with no transit role files under the stations' own key,
+			// so the two never read as two groups with one heading.
+			var untyped = Transit(7, "ServiceBuildings_Transportation", null);
+			Assert.Equal(keys[1], BuildingCatalogGrouping.SecondaryKey(untyped, "menuCategory"));
 		}
 	}
 }

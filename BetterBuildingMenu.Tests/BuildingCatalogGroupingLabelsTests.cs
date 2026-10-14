@@ -176,6 +176,12 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal("Tracks", BuildingCatalogGrouping.CategoryTierLabel(transit with { SubCategory = "Networks_Tracks", SubCategoryLabel = "Tracks" }));
 			Assert.Equal("Stations", BuildingCatalogGrouping.CategoryTierLabel(transit with { SubCategory = "ServiceBuildings_Transportation", SubCategoryLabel = "Transportation" }));
+			var building = transit with { SubCategory = "ServiceBuildings_Transportation", SubCategoryLabel = "Transportation" };
+			Assert.Equal("Stations", BuildingCatalogGrouping.CategoryTierLabel(building with { BuildingType = TransitRole.Station }));
+			Assert.Equal("Depots", BuildingCatalogGrouping.CategoryTierLabel(building with { BuildingType = TransitRole.Depot }));
+			Assert.Equal("Cargo Stations", BuildingCatalogGrouping.CategoryTierLabel(building with { BuildingType = TransitRole.CargoStation }));
+			// A line has no role, and keeps its subcategory's heading.
+			Assert.Equal("Lines", BuildingCatalogGrouping.CategoryTierLabel(transit with { SubCategory = "Networks_Routes", SubCategoryLabel = "Lines" }));
 			// A service menu's subcategory is constant across the menu, so the rule stays in transit.
 			Assert.Equal("Hospital", BuildingCatalogGrouping.CategoryTierLabel(Entry() with { UiMenu = "Health & Deathcare", DevTreeBranch = "Hospital" }));
 		}

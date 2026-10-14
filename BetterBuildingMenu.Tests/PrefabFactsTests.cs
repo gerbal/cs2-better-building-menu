@@ -968,5 +968,79 @@ namespace BetterBuildingMenu.Tests
 			Assert.Null(PrefabFacts.ResourceName(Game.Economy.Resource.NoResource));
 			Assert.Null(PrefabFacts.ResourceName(Game.Economy.Resource.Coal | Game.Economy.Resource.Oil));
 		}
+
+		[Fact]
+		public void ATransitAssetIsFiledByWhatItIsFor()
+		{
+			var station = Apply(new PrefabSnapshot { TransportStationData = new TransportStationData() });
+			var cargo = Apply(new PrefabSnapshot { TransportStationData = new TransportStationData(), IsCargoStation = true });
+			var depot = Apply(new PrefabSnapshot { TransportDepotData = new TransportDepotData { m_TransportType = TransportType.Bus, m_VehicleCapacity = 20 } });
+			var stop = Apply(new PrefabSnapshot
+			{
+				TransportStopData = new TransportStopData { m_TransportType = TransportType.Bus, m_PassengerTransport = true },
+			}, PrefabCategory.Networks);
+			var taxiStand = Apply(new PrefabSnapshot
+			{
+				TransportStopData = new TransportStopData { m_TransportType = TransportType.Taxi, m_PassengerTransport = true },
+			}, PrefabCategory.Networks);
+			// A track is a network, filed by its subcategory rather than a role.
+			var track = Apply(new PrefabSnapshot { TrackData = new TrackData { m_TrackType = TrackTypes.Train } }, PrefabCategory.Networks);
+
+			Assert.Equal(TransitRole.Station, station.BuildingTypeName);
+			Assert.Equal(TransitRole.CargoStation, cargo.BuildingTypeName);
+			Assert.Equal(TransitRole.Depot, depot.BuildingTypeName);
+			Assert.Equal(TransitRole.Stop, stop.BuildingTypeName);
+			Assert.Equal(TransitRole.Stop, taxiStand.BuildingTypeName);
+			Assert.Null(track.BuildingTypeName);
+			// No figure of its own: the depot's vehicles stay a fact, not a Capacity.
+			Assert.Null(depot.Capacity);
+			Assert.Equal(20, FactValue(depot, "depotVehicles"));
+		}
+
+		[Fact]
+		public void ATransitRoleNeverOutranksAServiceOrPassengers()
+		{
+			// A station that also runs vehicles is found where passengers board.
+			var both = Apply(new PrefabSnapshot
+			{
+				TransportStationData = new TransportStationData(),
+				TransportDepotData = new TransportDepotData { m_VehicleCapacity = 5 },
+			});
+			var fireStation = Apply(new PrefabSnapshot
+			{
+				FireStationData = new FireStationData { m_FireEngineCapacity = 4 },
+				TransportDepotData = new TransportDepotData { m_VehicleCapacity = 5 },
+			});
+			var passengersAndFreight = Apply(new PrefabSnapshot
+			{
+				TransportStationData = new TransportStationData(),
+				IsCargoStation = true,
+				IsPublicTransportStation = true,
+			});
+
+			Assert.Equal(TransitRole.Station, both.BuildingTypeName);
+			Assert.Equal("FireStation", fireStation.BuildingTypeName);
+			Assert.Equal(TransitRole.Station, passengersAndFreight.BuildingTypeName);
+		}
+
+		[Fact]
+		public void StopDataThatIsNotPublicTransportIsNoTransitStop()
+		{
+			// The game authors mailboxes, parking spaces and work stops with stop data too.
+			PrefabIndex Stop(TransportType type, bool passengers) =>
+				Apply(new PrefabSnapshot { TransportStopData = new TransportStopData { m_TransportType = type, m_PassengerTransport = passengers } }, PrefabCategory.Props);
+
+			Assert.Null(Stop(TransportType.Post, passengers: false).BuildingTypeName);
+			Assert.Null(Stop(TransportType.Work, passengers: false).BuildingTypeName);
+			Assert.Null(Stop(TransportType.Car, passengers: true).BuildingTypeName);
+			Assert.Null(Stop(TransportType.Bicycle, passengers: true).BuildingTypeName);
+			Assert.Null(Stop(TransportType.None, passengers: true).BuildingTypeName);
+			// A stop a building carries as a network piece is the network's, never a stop.
+			Assert.Null(Apply(new PrefabSnapshot
+			{
+				NetData = new NetData(),
+				TransportStopData = new TransportStopData { m_TransportType = TransportType.Bus, m_PassengerTransport = true },
+			}, PrefabCategory.Networks).BuildingTypeName);
+		}
 	}
 }
