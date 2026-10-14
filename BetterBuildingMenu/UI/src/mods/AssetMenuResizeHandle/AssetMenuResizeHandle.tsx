@@ -233,6 +233,10 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
     };
     asked.current = null;
     setLanding(null);
+    // The drag carries the box as drawn, so the holds go: one left over would outlast a release C# answers in the same
+    // round trip as this drag's, whose answer alone the binding would show.
+    setOpening(false);
+    setClosing(false);
     setIsResizing(true);
   }
 
@@ -285,7 +289,9 @@ export function useAssetMenuHeight(drawnAt: (height: number) => number = asStore
 
   // The body draws the whole lines under the pointer, so between them it has nothing new to draw.
   const held = dragged !== null && rules !== null ? rules.hold(dragged) : landing;
-  const collapsed = (storedCollapsed || closing) && !opening && (dragged === null || collapses(dragged));
+  // While a drag is on, the box as the press found it; then as the settings keep it, or as a release holds it.
+  const drawnCollapsed = isResizing ? resizeState.current.collapsed : (storedCollapsed || closing) && !opening;
+  const collapsed = drawnCollapsed && (dragged === null || collapses(dragged));
   // A collapsed box opened by a drag draws the drag's height at once, not the stored height the binding holds until
   // C# echoes the drag's; past the floor the dragged height is the drawn one.
   const fromCollapsed = dragged !== null && resizeState.current.collapsed && !collapses(dragged);

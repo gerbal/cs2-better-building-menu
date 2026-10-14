@@ -422,6 +422,49 @@ describe("dragging the build menu's top edge under its rules", () => {
     assert.ok(!names().includes("CommitAssetMenuHeight"));
   });
 
+  // A release C# has not answered yet holds the box as it left it. A press after it starts from the box as drawn and
+  // lets the hold go, so a second release inside the same round trip, whose answer is all the binding shows, leaves no
+  // hold behind over a setting that says the other thing.
+  it("lets a collapsing release's hold go at the next press, so an opening release before C# answers leaves the box open", () => {
+    move(540);
+    nextFrame();
+    release();
+    assert.equal(menu.collapsed, true, "held collapsed until C# answers");
+
+    press(300, 400);
+    assert.equal(menu.collapsed, true, "the press finds the box as it is drawn");
+    move(270);
+    nextFrame();
+    release();
+    assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "CommitAssetMenuHeight", args: [true] });
+
+    // C# kept the box open throughout, so the binding never says collapsed.
+    act(() => root!.update(<EdgeProbe />));
+    assert.equal(menu.collapsed, false);
+  });
+
+  it("lets an opening release's hold go at the next press, so a collapsing release before C# answers leaves the box collapsed", () => {
+    release();
+    rules.collapsed = true;
+    act(() => root!.update(<EdgeProbe />));
+    press(300, 400);
+    move(270);
+    nextFrame();
+    release();
+    assert.equal(menu.collapsed, false, "held open until C# answers");
+
+    press(300, 200);
+    assert.equal(menu.collapsed, false, "the press finds the box as it is drawn");
+    move(400);
+    nextFrame();
+    release();
+    assert.deepEqual(collapsedSent(), [true]);
+
+    // C# kept the box collapsed throughout, so the binding never says open.
+    act(() => root!.update(<EdgeProbe />));
+    assert.equal(menu.collapsed, true);
+  });
+
   it("under Top edge's Free holds the floor below it and lands there, never collapsing", () => {
     rules.collapsible = false;
     move(540);
