@@ -110,8 +110,8 @@ export interface StatusDrawn {
   figures: ReadonlyMap<string, number>;
   sep: number | null;
   /**
-   * A device pixel, in rem: the game reports each width in whole pixels, so each drawn width counts a pixel
-   * more, as it can be up to one short. None where nothing is drawn.
+   * A device pixel, in rem: the game reports each width in whole pixels, rounded, so each drawn width counts
+   * half a pixel more, as it can be up to half a pixel short. None where nothing is drawn.
    */
   pixel?: number;
 }
@@ -135,7 +135,7 @@ const BARE_NUMBER = /^[\d\s.,'\u2019\u00A0\u202F]+$/;
  * room the lot goes first, then the upkeep, then the key number, then the cost; a locked building's
  * milestone stays. In one line (above 100% text) the name comes first and keeps its room less the
  * milestone's, and the figures that fit follow it by the same order. Each text is as wide as `drawn`
- * says the game drew it, a pixel more for its rounding, else as the estimate makes it.
+ * says the game drew it, half a pixel more for its rounding, else as the estimate makes it.
  */
 export function statusLine(
   entry: BuildingCatalogEntry,
@@ -163,8 +163,8 @@ export function statusLine(
   ];
   let kept = all.filter((part): part is { text: string; drop: number } => part.text !== null);
   const figures = kept.map((part) => part.text);
-  const pixel = drawn.pixel ?? 0;
-  const asDrawn = (width: number | null | undefined, estimate: () => number) => (width === null || width === undefined ? estimate() : width + pixel);
+  const rounding = (drawn.pixel ?? 0) / 2;
+  const asDrawn = (width: number | null | undefined, estimate: () => number) => (width === null || width === undefined ? estimate() : width + rounding);
   const sep = asDrawn(drawn.sep, () => fonts.sep);
   const texts = (parts: readonly { text: string }[]) => parts.reduce((sum, part) => sum + asDrawn(drawn.figures.get(part.text), () => textWidth(part.text, fonts.line)), 0);
   const width = (parts: readonly { text: string }[]) => texts(parts) + Math.max(0, parts.length - 1) * sep;

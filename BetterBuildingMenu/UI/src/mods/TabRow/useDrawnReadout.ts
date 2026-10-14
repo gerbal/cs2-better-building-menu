@@ -63,7 +63,8 @@ export function useDrawnReadout(status: StatusLine | null, at: string, onRead: D
       const texts = measure.current;
       if (!(rem > 0) || shown === null || !texts) return;
       // The tabs' own width, as the row shrinks them to the readout: Cohtml's scrollWidth holds what runs past.
-      // Whole pixels, each reading up to one off: a pixel less, as each text drawn counts one more.
+      // Whole pixels: the row's and the tabs' readings each up to half off, so a pixel less, as each text
+      // drawn counts half a pixel more.
       const room = rowBox.clientWidth > 0 ? (rowBox.clientWidth - Math.max(tabs.offsetWidth, tabs.scrollWidth) - 1) * rem - 2 * TAB_CELL_GAP : null;
       const [name, sep, ...figures] = Array.from(texts.children) as HTMLElement[];
       // A text of no width has not been laid out: the estimate stands in for it.

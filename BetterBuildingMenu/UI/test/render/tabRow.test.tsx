@@ -567,7 +567,7 @@ describe("the readout under Status line only", () => {
     });
   }
 
-  it("drops the cost where the drawn name, \"·\" and cost fall short of the room by less than a pixel each, as whole pixels round them", () => {
+  it("keeps the cost where the drawn name, \"·\" and cost fall short of the room by more than whole pixels can round them, about 2.5, and drops it short of that", () => {
     const ids = Array.from({ length: 16 }, (_, at) => `Cat${at}`);
     set("AssetMenuCategories", ids.map((id) => category(id)));
     set("AssetMenuCategoryCounts", ids.map((id) => ({ id, count: 30 })));
@@ -594,9 +594,10 @@ describe("the readout under Status line only", () => {
       return readout().findAll((node) => node.type === "span" && node.props.className === "statusFigure").map((node) => text(node).replace(/\s/g, " "));
     };
 
-    assert.deepEqual(sayAt((line) => 696 - 2 * TAB_CELL_GAP - line - 8), ["¢5 500/km"]);
+    // Half a pixel each for the three texts and a pixel for the room: 2.5 pixels, a rem a pixel here.
+    assert.deepEqual(sayAt((line) => 696 - 2 * TAB_CELL_GAP - line - 3), ["¢5 500/km"]);
     act(() => root!.unmount());
-    assert.deepEqual(sayAt((line) => 696 - 2 * TAB_CELL_GAP - line - 0.5), []);
+    assert.deepEqual(sayAt((line) => 696 - 2 * TAB_CELL_GAP - line - 2), []);
   });
 
   it("never says what a reading in another menu's row held: a row of more tabs says what its estimate holds until it is read", () => {

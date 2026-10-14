@@ -1771,9 +1771,9 @@ Any other stored value reads as beside the pointer, on every load.
   has drawn, then as drawn, the row's width less the tabs' own and the gaps before the readout
   (`useDrawnReadout`). Its texts are measured the same way: the name, a "·" and every figure it could say
   are drawn unseen beside the row, out of its flow, in the readout's faces, and each is as wide as drawn
-  once read, two frames on. The game reports each width in whole pixels, so each drawn text counts a
-  pixel more and the room a pixel less: a figure that fits by less than its rounding goes, as one that
-  overran would shrink the tabs. A reading holds for the row it was read in, its tabs and their counts in
+  once read, two frames on. The game reports each width in whole pixels, rounded, so each drawn text
+  counts half a pixel more and the room a pixel less, about 2.5 pixels on a name and a figure: a figure
+  that fits by less than its rounding goes, as one that overran would shrink the tabs. A reading holds for the row it was read in, its tabs and their counts in
   their form, at its text scale and width: another menu's row says what its estimate holds until it is
   read in turn. The estimates err wide, by as much as a figure at large text, where a
   figure the drawn room holds would go. While the readout names a building the rows
