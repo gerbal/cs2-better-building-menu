@@ -180,8 +180,10 @@ const UNCASED_LETTERS: readonly (readonly [number, number])[] = [
   [0x3400, 0x4dbf], [0x4e00, 0x9fff], [0xa960, 0xa97c], [0xac00, 0xd7a3], [0xf900, 0xfaff], [0xff66, 0xff9f], [0x20000, 0x3134f],
 ];
 
-/** Other scripts' digits beyond 0-9, as code point ranges: Arabic-Indic, Persian and fullwidth. */
-const OTHER_DIGITS: readonly (readonly [number, number])[] = [[0x0660, 0x0669], [0x06f0, 0x06f9], [0xff10, 0xff19]];
+/** Other scripts' digits beyond 0-9, as code point ranges: Arabic-Indic, Persian, Thai, Lao, Myanmar, Khmer and fullwidth. */
+const OTHER_DIGITS: readonly (readonly [number, number])[] = [
+  [0x0660, 0x0669], [0x06f0, 0x06f9], [0x0e50, 0x0e59], [0x0ed0, 0x0ed9], [0x1040, 0x1049], [0x17e0, 0x17e9], [0xff10, 0xff19],
+];
 
 /** Every range a word's character may fall in beyond a cased letter and 0-9. */
 const WORD_RANGES = [...UNCASED_LETTERS, ...OTHER_DIGITS];
@@ -570,15 +572,36 @@ export function planName(name: string, room: NameBox, hints: NameHints = {}): Na
   return plan;
 }
 
+/** The sketches made lately, the latest last, apart from the plans: a keystroke draws every far plate again. */
+const sketches = new Map<string, NamePlan>();
+
 /**
  * A name sketched rather than planned, for a plate away from the screen: whole where it fits, else the
  * whole name cut inside, its head and its tail kept, to the longest form found by halves that lays out;
- * else the mark alone, or no line. Never a line wider than the box, nor a plan worked out, kept or
- * counted: the plate is planned once it comes near the screen. See docs/design-notes.md, "Names".
+ * else the mark alone, or no line. Never a line wider than the box, nor a plan worked out or counted: the
+ * plate is planned once it comes near the screen. Kept as a plan is, by name and room, apart from the
+ * plans. See docs/design-notes.md, "Names".
  */
 export function sketchName(name: string, room: NameBox): NamePlan {
-  const whole = name.trim();
   const box = Number.isFinite(room.width) ? room : { ...room, width: 0 };
+  const key = [name, Math.round(box.width * 100) / 100, box.lines, box.font, box.tracking ?? 0].join("\u0001");
+  const known = sketches.get(key);
+  if (known !== undefined && planFits(known.lines, box)) {
+    sketches.delete(key);
+    sketches.set(key, known);
+    return known;
+  }
+
+  const sketch = sketchOnce(name, box);
+  Object.freeze(sketch.lines);
+  sketches.set(key, Object.freeze(sketch));
+  if (sketches.size > MOST_PLANS) sketches.delete(sketches.keys().next().value!);
+  return sketch;
+}
+
+/** A name's sketch, worked out. */
+function sketchOnce(name: string, box: NameBox): NamePlan {
+  const whole = name.trim();
   if (whole === "" || box.lines < 1) return { lines: [], whole: true };
   const fits = layout(pieces(whole, false), box);
   if (fits !== null) return { lines: fits, whole: true };

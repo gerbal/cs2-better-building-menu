@@ -389,6 +389,14 @@ describe("a name sketched for a plate away from the screen", () => {
     assert.match(sketch.lines[0], /^Four.*….*Road$/);
   });
 
+  it("is kept, so a far plate drawn again, as each keystroke draws it, sketches nothing again, and no plan is counted", () => {
+    const planned = plansWorkedOut();
+    const sketch = sketchName("Four-Lane Perpendicular Parking Road Kept", plate(60, 1));
+
+    assert.equal(sketchName("Four-Lane Perpendicular Parking Road Kept", plate(60, 1)), sketch);
+    assert.equal(plansWorkedOut(), planned);
+  });
+
   it("never draws a line wider than its room nor more lines than it has, over the base game's names at every text scale", () => {
     for (const [width, lines, font] of [[160, 2, 11], [120, 2, 14.3], [130, 1, 16.5], [60, 1, 16.5], [20, 1, 16.5]] as const) {
       for (const [name] of baseNames) {
@@ -446,6 +454,13 @@ describe("a word as typed words begin it", () => {
     assert.equal(opening("\u00AB\u06F4\u06F5"), "\u06F4\u06F5");
     assert.equal(opening("(\uFF11\uFF12"), "\uFF11\uFF12");
     assert.equal(opening("-\u0669"), "\u0669");
+  });
+
+  it("counts Thai, Lao, Myanmar and Khmer digits as digits too", () => {
+    assert.equal(opening("(\u0E52\u0E53"), "\u0E52\u0E53");
+    assert.equal(opening("(\u0ED1"), "\u0ED1");
+    assert.equal(opening("(\u1041\u1049"), "\u1041\u1049");
+    assert.equal(opening("(\u17E0"), "\u17E0");
   });
 
   it("leaves off every opening mark that is neither a letter nor a digit", () => {

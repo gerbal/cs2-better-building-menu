@@ -8,7 +8,7 @@ import { entry } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { bodyGrid, nearLines, screenSlots, type BodyGridInput } from "../../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
-import { planName, plansWorkedOut } from "../../src/domain/namePlan";
+import { planFits, planName, plansWorkedOut } from "../../src/domain/namePlan";
 import { bandWork } from "../../src/domain/tileBands";
 import { IconsBody } from "../../src/mods/Bodies/IconsBody";
 import { ListBody } from "../../src/mods/Bodies/ListBody";
@@ -93,7 +93,12 @@ describe("the names planned for a long result: those on or near the screen", () 
     assert.ok(near <= 3 * screenSlots(grid), `${near} plates near the top`);
     assert.ok(planned <= 1.5 * near, `${planned} plans for ${near} plates near the screen`);
     // Every plate still draws a name, none wider than its room.
-    assert.equal(plannedNames(root!).filter((name) => linesOf(name).length > 0).length, rows.length);
+    const drawnNames = plannedNames(root!);
+    assert.equal(drawnNames.filter((name) => linesOf(name).length > 0).length, rows.length);
+    for (const name of drawnNames) {
+      const room = { width: name.props.width as number, lines: name.props.lines as number, font: name.props.font as number };
+      assert.ok(planFits(linesOf(name), room), `${name.props.name} draws ${linesOf(name).join(" | ")}`);
+    }
   });
 
   it("plans the names a scroll brings near the screen, as the planner plans them", () => {
