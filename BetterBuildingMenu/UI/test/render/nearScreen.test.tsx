@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { Profiler } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { linesOf, plannedNames } from "../harness/huggingNames";
 import { entry } from "../harness/render";
@@ -9,7 +10,9 @@ import { bodyGrid, nearLines, screenSlots, type BodyGridInput } from "../../src/
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { planName, plansWorkedOut } from "../../src/domain/namePlan";
 import { bandWork } from "../../src/domain/tileBands";
+import { IconsBody } from "../../src/mods/Bodies/IconsBody";
 import { ListBody } from "../../src/mods/Bodies/ListBody";
+import { namesDrawn } from "../../src/mods/Bodies/PlannedName";
 import { TilesBody } from "../../src/mods/Bodies/TilesBody";
 
 /** The base game's names, each with its distinguishing word in its menu. */
@@ -128,5 +131,65 @@ describe("the names planned for a long result: those on or near the screen", () 
     const near = 3.5 * screenSlots(grid);
     assert.ok(bandWork().indexed - worked.indexed <= near, `${bandWork().indexed - worked.indexed} tiles indexed, ${near} near`);
     assert.ok(plansWorkedOut() - planned <= near, `${plansWorkedOut() - planned} plans, ${near} near`);
+  });
+
+  it("draws again on a move of the near window only the names that come near or go from it", () => {
+    const grid = at150("list");
+    const rows = result(600, "Move");
+    act(() => { root = create(<ListBody entries={rows} grid={grid} enterId={null} onPlace={() => undefined} />, { createNodeMock: mock }); });
+    frame();
+    frame();
+    const nearBefore = plannedNames(root!).map((name) => name.props.near);
+    const before = namesDrawn();
+
+    // Three half screens down: the window moves.
+    scrollTop = grid.y0 + grid.pitchY * 3 * Math.ceil(grid.lines / 2);
+    frame();
+    frame();
+    const moved = plannedNames(root!).filter((name, at) => name.props.near !== nearBefore[at]).length;
+    // A plate that came near and was drawn alike draws again a frame on with the page pass's hints, twice,
+    // as new hints start its room from the estimate again.
+    const hinted = plannedNames(root!).filter((name, at) => name.props.near !== nearBefore[at] && name.props.apart !== undefined).length;
+
+    assert.ok(moved > 0, "the window moved");
+    assert.ok(namesDrawn() - before <= moved + 2 * hinted, `${namesDrawn() - before} names drawn again for ${moved} that came near or went, ${hinted} told apart`);
+  });
+
+  it("draws nothing again as icons without names scroll, and plans icons' names only near the screen", () => {
+    const grid = bodyGrid({ body: "icons", boxWidth: 706, bodyHeight: 144.25, textScale: 1, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0 });
+    const rows = result(1_200, "Icon");
+    let commits = 0;
+    const icons = (named: boolean) => <Profiler id="icons" onRender={() => { commits += 1; }}><IconsBody entries={rows} grid={grid} named={named} onPlace={() => undefined} /></Profiler>;
+    act(() => { root = create(icons(false), { createNodeMock: mock }); });
+    frame();
+    const mounted = commits;
+
+    scrollTop = grid.y0 + grid.pitchY * 20;
+    frame();
+    frame();
+    assert.equal(commits, mounted, "no commit as the icons scroll");
+
+    act(() => root!.unmount());
+    scrollTop = 0;
+    const before = plansWorkedOut();
+    act(() => { root = create(icons(true), { createNodeMock: mock }); });
+    frame();
+    const near = nearLines(grid, 0).to * grid.cols;
+    assert.ok(plansWorkedOut() - before <= near, `${plansWorkedOut() - before} plans for ${near} icons near the screen`);
+  });
+
+  it("plans the names on screen in the first frame a new result draws, the scroll back at its top, not a poll later", () => {
+    const grid = at150("list");
+    const body = (rows: BuildingCatalogEntry[]) => <ListBody entries={rows} grid={grid} enterId={null} onPlace={() => undefined} />;
+    act(() => { root = create(body(result(300, "Before")), { createNodeMock: mock }); });
+    scrollTop = grid.y0 + grid.pitchY * 40;
+    frame();
+    assert.equal(plannedNames(root!)[0].props.near, false, "the first plate is far from the screen");
+
+    // A keystroke's new result, the scroller back at its top: drawn before any frame runs.
+    scrollTop = 0;
+    act(() => root!.update(body(result(300, "After"))));
+
+    assert.equal(plannedNames(root!)[0].props.near, true, "the first plate, on screen, is planned");
   });
 });

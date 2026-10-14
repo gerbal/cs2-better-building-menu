@@ -1597,13 +1597,18 @@ else without them (`planApart`).
 
 **Only the names near the screen are planned.** A body plans the names on the lines on or near its
 screen (`nearLines`): a screen behind the first line on screen and a screen ahead of the screen, moving
-by half screens, read from where the body has scrolled every tenth of a second, as Cohtml sends no scroll
-event (`useNearLines`). Every other name is sketched (`sketchName`): whole where it fits, else the whole
-name cut inside to the longest form that lays out, never a line wider than its room, and never measured;
-once it comes near it is planned with every guarantee the planner gives, so a sketch can show for a frame
-on a line a fast scroll brings into view. A first keystroke over a result of hundreds plans two screens
-and a half of names, not all of them, and a name away from the screen is never watched or read, which
-the game pays for name by name at large text.
+by half screens, read from where the body has scrolled every tenth of a second, as Cohtml sends no
+scroll event (`useNearLines`). Every other name is sketched (`sketchName`): whole where it fits, else
+the whole name cut inside to the longest form that lays out, never a line wider than its room, and never
+measured; once it comes near it is planned with every guarantee the planner gives, so a sketch can show
+for up to a tenth of a second, one reading, on a line a fast scroll or a jump (End, Enter's reveal, a
+drag of the scrollbar) brings into view; a new result reads the scroll before it is drawn, as it can
+bring the scroll back to its top. A first keystroke over a result of hundreds plans two screens and a
+half of names, not all of them, and a name away from the screen is never watched or read, which the game
+pays for name by name at large text. A move of the lines draws again only the names that come near or
+go: the rest keep their props, a pass's hints among them, each the same object for the same words, and a
+plate far from the screen takes none. The icons without names plan nothing, so they never read the
+scroll.
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's

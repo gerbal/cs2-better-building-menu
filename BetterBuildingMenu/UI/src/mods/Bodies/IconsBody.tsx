@@ -146,8 +146,9 @@ export const IconsBody = memo(function IconsBody({ entries, grid, sections = NO_
   const span = labelSlots(grid);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, undefined, span);
   const tones = useMemo(() => familyTones(entries), [entries]);
-  // Only the names on or near the screen are planned; the rest are sketched until they come near.
-  const { body, near } = useNearLines(grid, entries);
+  // Only the names on or near the screen are planned; the rest are sketched until they come near. Without
+  // names nothing is planned, so the scroll is not read.
+  const { body, near } = useNearLines(grid, entries, named);
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
 

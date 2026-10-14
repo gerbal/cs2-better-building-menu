@@ -39,6 +39,14 @@ export interface PlannedNameProps {
   className?: string;
 }
 
+/** How many times a name has been drawn: a test seam, which counts what a move of the near window draws again. */
+let drawnNames = 0;
+
+/** How many times a name has been drawn. */
+export function namesDrawn(): number {
+  return drawnNames;
+}
+
 /** Before a frame has drawn the name: the body's estimate, as it is. */
 const UNDRAWN: DrawnRoom = { box: null, fit: 1 };
 
@@ -54,6 +62,7 @@ const NO_BOX = { clientWidth: 0 };
  * See docs/design-notes.md, "Names".
  */
 export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", apart, typed = "", dim = false, hugs = false, marked = true, near = true, className }: PlannedNameProps) {
+  drawnNames += 1;
   const boxRef = useRef<HTMLSpanElement>(null);
   // A room drawn for one name, type, line count, typed text or kept words says nothing of another: they
   // start from the estimate again in the same render, not a frame late.

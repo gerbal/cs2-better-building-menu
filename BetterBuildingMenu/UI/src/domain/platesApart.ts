@@ -30,6 +30,23 @@ export interface ApartHints {
 /** Nothing beyond each plate's own distinguishing word. */
 const NONE: ReadonlyMap<number, ApartHints> = new Map();
 
+/** Each hint once, by what it says, so a plate handed the same hints by another pass draws nothing again. */
+const SAID_HINTS = new Map<string, ApartHints>();
+
+/** The most hints kept: each a word a page's look-alikes are told apart by, either way. */
+const MOST_HINTS = 4096;
+
+/** The one object for hints that say this. */
+function hintsFor(keep: readonly string[], leads: boolean): ApartHints {
+  const key = `${leads ? 1 : 0}\u0001${keep.join("\u0001")}`;
+  let hints = SAID_HINTS.get(key);
+  if (hints === undefined) {
+    if (SAID_HINTS.size >= MOST_HINTS) SAID_HINTS.clear();
+    SAID_HINTS.set(key, (hints = { keep, leads }));
+  }
+  return hints;
+}
+
 const wordsOf = (name: string): string[] => name.split(/\s+/).filter(Boolean);
 
 /** Whether a word can tell two names apart: not one that only parts two others, nor one like "with", nor a lone letter. */
@@ -161,9 +178,9 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
       const { words, lower } = names.get(nameOf[index])!;
       const own = rarestWord(words, lower, holders, names.size);
       const hinted: ApartHints[] = [
-        ...(own !== null ? [{ keep: [own], leads: false }] : []),
-        { keep: [], leads: true },
-        ...(own !== null ? [{ keep: [own], leads: true }] : []),
+        ...(own !== null ? [hintsFor([own], false)] : []),
+        hintsFor([], true),
+        ...(own !== null ? [hintsFor([own], true)] : []),
       ];
 
       failed += 1;

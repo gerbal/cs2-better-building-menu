@@ -235,6 +235,8 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
           {cells.map((cell) => cell.kind === "label" ? (
             <LabelPlate key={cell.section.id} section={cell.section} place={labelPlace(grid, cell.slot, cell.span)} stacked={false} />
           ) : (
+            // A plate far from the screen is only sketched, so it takes no hints: one going from the screen
+            // draws once, not again when the page pass leaves it out.
             <Plate
               key={cell.entry.id}
               entry={cell.entry}
@@ -252,7 +254,7 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
               separators={separators}
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}
-              apart={apart.get(cell.entry.id)}
+              apart={slotIsNear(near, grid.cols, cell.slot) ? apart.get(cell.entry.id) : undefined}
               near={slotIsNear(near, grid.cols, cell.slot)}
               onPlace={onPlace}
             />
