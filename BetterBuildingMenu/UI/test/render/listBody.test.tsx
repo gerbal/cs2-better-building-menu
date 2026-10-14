@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { declarationsOf } from "../harness/compiledCss";
+import { linesOf, plannedNames } from "../harness/huggingNames";
 import { assertCellsTellThePointer } from "../harness/pointing";
 import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
@@ -46,15 +47,32 @@ describe("the list", () => {
     assert.equal(count(html, /data-tooltip/), 0);
   });
 
-  it("draws two plates the planner cuts alike apart at 150% text, each keeping its distinguishing word", () => {
+  it("draws two plates the planner cuts alike apart at 150% text a frame after the paint, each keeping its distinguishing word", () => {
     setBinding("options", "textScale", 1.5);
     const fences = [entry(1, { name: "NA Low Aluminum Fence", distinctWord: "Aluminum" }), entry(2, { name: "NA Tall Aluminum Fence", distinctWord: "Aluminum" })];
+    // The first paint: each name's own cut, alike.
     const html = render(fences, { over: { textScale: 1.5 } });
-    const names = [...html.matchAll(/data-bbm-name="\d+">(.*?)<\/span><\/span>/g)].map(([, lines]) => lines.replace(/<[^>]+>/g, ""));
+    const painted = [...html.matchAll(/data-bbm-name="\d+">(.*?)<\/span><\/span>/g)].map(([, lines]) => lines.replace(/<[^>]+>/g, ""));
+    assert.equal(painted.length, 2);
+    assert.equal(painted[0], painted[1]);
 
-    assert.equal(names.length, 2);
-    assert.notEqual(names[0], names[1]);
-    assert.ok(names.every((name) => name.includes("Aluminum")), names.join(" | "));
+    // Then the pass over the page, after the paint.
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const saved = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+    let root: ReactTestRenderer | undefined;
+    try {
+      act(() => { root = create(body(fences, { over: { textScale: 1.5 } })); });
+      const names = plannedNames(root!).map((name) => linesOf(name).join(" "));
+
+      assert.equal(names.length, 2);
+      assert.notEqual(names[0], names[1]);
+      assert.ok(names.every((name) => name.includes("Aluminum")), names.join(" | "));
+    } finally {
+      act(() => root?.unmount());
+      Object.assign(globals, saved);
+    }
   });
 
   it("marks the region the live check counts in, and every picture, name and number inside each plate", () => {

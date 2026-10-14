@@ -3,7 +3,7 @@ import { memo, useEffect, useRef, useState } from "react";
 
 import { deviceRem } from "domain/bodyGeometry";
 import { drawnRoom, type DrawnRoom } from "domain/measuredFit";
-import { lineWidth, nameRuns, planFits } from "domain/namePlan";
+import { lineWidth, nameRuns, planFits, sketchName } from "domain/namePlan";
 import { planApart, type ApartHints } from "domain/platesApart";
 import styles from "./plannedName.module.scss";
 
@@ -31,6 +31,11 @@ export interface PlannedNameProps {
   hugs?: boolean;
   /** Whether the box carries `data-bbm-name`, a building's name's length: a label's name does not. */
   marked?: boolean;
+  /**
+   * Whether the name is on or near the screen, where it is planned and measured; away from it, it is
+   * sketched (`sketchName`) and never measured, and planned once it comes near. Near by default.
+   */
+  near?: boolean;
   className?: string;
 }
 
@@ -44,10 +49,11 @@ const NO_BOX = { clientWidth: 0 };
  * A name planned over its lines, each line a box of its own, whole where it fits and cut once where it
  * does not; the hover card and the aria-label carry the whole of it. The room is the body's estimate
  * until a frame has drawn the name, then the box as drawn, never narrower than its widest line, narrowed
- * by any line the estimate said fits that ran past it. It never widens again until the name, its type, its lines, the typed text or the
- * distinguishing word change. See docs/design-notes.md, "Names".
+ * by any line the estimate said fits that ran past it. It never widens again until the name, its type,
+ * its lines, the typed text or the distinguishing word change. Away from the screen it is only sketched.
+ * See docs/design-notes.md, "Names".
  */
-export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", apart, typed = "", dim = false, hugs = false, marked = true, className }: PlannedNameProps) {
+export const PlannedName = memo(function PlannedName({ name, width, lines, font, tracking = 0, distinct = "", apart, typed = "", dim = false, hugs = false, marked = true, near = true, className }: PlannedNameProps) {
   const boxRef = useRef<HTMLSpanElement>(null);
   // A room drawn for one name, type, line count, typed text or kept words says nothing of another: they
   // start from the estimate again in the same render, not a frame late.
@@ -57,14 +63,14 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
   if (state.key !== key) setState({ key, drawn });
   const room = { width: (drawn.box ?? width) * drawn.fit, lines, font, tracking };
   // Each word typed is kept on its own: a search matches its phrase anywhere in the name.
-  const plan = planApart(name, room, distinct, typed.split(/\s+/), apart);
+  const plan = near ? planApart(name, room, distinct, typed.split(/\s+/), apart) : sketchName(name, room);
   const fitted = planFits(plan.lines, room);
   // The widest line by the estimate: a box drawn narrower is sized to its lines, not to the room.
   const widest = Math.max(0, ...plan.lines.map((line) => lineWidth(line, room)));
 
   useEffect(() => {
     const box = boxRef.current;
-    if (!box) return;
+    if (!box || !near) return;
     const measure = () => {
       const next = drawnRoom(drawn, hugs ? NO_BOX : box, Array.from(box.children) as HTMLElement[], deviceRem(window.innerHeight), fitted, widest);
       if (next !== drawn) setState({ key, drawn: next });
@@ -91,7 +97,7 @@ export const PlannedName = memo(function PlannedName({ name, width, lines, font,
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  }, [key, drawn, hugs, fitted, widest]);
+  }, [key, drawn, hugs, fitted, widest, near]);
 
   return (
     <span ref={boxRef} className={classNames(styles.planned, className)} data-bbm-name={marked ? name.length : undefined}>

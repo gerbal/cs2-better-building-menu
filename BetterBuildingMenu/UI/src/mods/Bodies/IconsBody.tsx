@@ -22,6 +22,7 @@ import { PlannedName } from "./PlannedName";
 import { UniqueMark } from "./UniqueMark";
 import { useBodyCells } from "./useBodyCells";
 import { useStateWords, type StateWords } from "./useBodyWords";
+import { slotIsNear, useNearLines } from "./useNearLines";
 
 /** The names' font in the icons with names at 100% text: iconsBody.module.scss's `.nameBand`. */
 const NAME_FONT = 10;
@@ -39,6 +40,8 @@ interface IconProps {
   tone: number;
   /** Whether it draws its name under its picture, the developer's icons with names. */
   named: boolean;
+  /** Whether the icon is on or near the screen, its name planned; away from it, sketched. */
+  near: boolean;
   textScale: number;
   stateWords: StateWords;
   achievedMilestone: number;
@@ -50,7 +53,7 @@ interface IconProps {
  * locked one dark, its lock over why it waits. Its name and numbers are the hover card's. The live check
  * and the render tests count what a body shows through the data-bbm markers.
  */
-const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textScale, stateWords, achievedMilestone, onPlace }: IconProps) {
+const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, near, textScale, stateWords, achievedMilestone, onPlace }: IconProps) {
   const name = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
@@ -110,7 +113,7 @@ const Icon = memo(function Icon({ entry, grid, slot, armed, tone, named, textSca
       {nameLines > 0 && (
         <span className={styles.nameBand}>
           {/* The absolute band sizes the name to its lines, so its box is no room: the room is the estimate. */}
-          <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={nameLines} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} hugs />
+          <PlannedName name={name} width={grid.cellWidth - NAME_INSET} lines={nameLines} font={NAME_FONT * textScale} distinct={entry.distinctWord ?? ""} hugs near={near} />
         </span>
       )}
     </Button>
@@ -143,11 +146,13 @@ export const IconsBody = memo(function IconsBody({ entries, grid, sections = NO_
   const span = labelSlots(grid);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, undefined, span);
   const tones = useMemo(() => familyTones(entries), [entries]);
+  // Only the names on or near the screen are planned; the rest are sketched until they come near.
+  const { body, near } = useNearLines(grid, entries);
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
 
   return (
-    <div className={styles.body} data-bbm-view="icons">
+    <div ref={body} className={styles.body} data-bbm-view="icons">
       <Scrollable className={styles.scroller} vertical trackVisibility="scrollable">
         <div className={styles.slots} style={{ height: `${slotsHeight(grid, slots)}rem` }}>
           {cells.map((cell) => cell.kind === "label" ? (
@@ -162,6 +167,8 @@ export const IconsBody = memo(function IconsBody({ entries, grid, sections = NO_
               armed={armedId !== 0 && cell.entry.id === armedId}
               tone={tones.get(cell.entry.id) ?? 0}
               named={named}
+              // Read only with a name drawn, so an icon without one never draws again as the body scrolls.
+              near={named && slotIsNear(near, grid.cols, cell.slot)}
               textScale={textScale}
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}

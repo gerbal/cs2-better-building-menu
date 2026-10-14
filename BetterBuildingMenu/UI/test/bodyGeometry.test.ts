@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { bodyCells, type BlockLabels } from "../src/domain/bodyCells";
-import { bodyGrid, deviceRem, labelPlace, labelSlots, listForm, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
+import { bodyGrid, deviceRem, labelPlace, labelSlots, listForm, nearLines, screenLine, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "../src/domain/buildingCatalog";
 import { CATALOG_WINDOW_SCROLL_THRESHOLD, CATALOG_WINDOW_STEP, shouldLoadMore } from "../src/domain/catalogWindow";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
@@ -412,5 +412,34 @@ describe("a small menu's list with labels", () => {
 
     assert.deepEqual([garbage.lines, garbage.form], [2, "big"]);
     assert.deepEqual([past.lines, past.cellHeight], [5, 27.25]);
+  });
+});
+
+describe("the lines on or near the screen", () => {
+  // The list at 150% text: one-line plates, six lines a screen.
+  const list = bodyGrid({ body: "list", boxWidth: 706, bodyHeight: 144.25, textScale: 1.5, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0 });
+
+  it("counts the first line on screen from how far the body has scrolled, its first line's room above it", () => {
+    assert.equal(screenLine(list, 0), 0);
+    assert.equal(screenLine(list, list.y0 + list.pitchY * 3), 3);
+    assert.equal(screenLine(list, list.y0 + list.pitchY * 3 - 1), 2);
+    // A scroll the page cannot say is the top.
+    assert.equal(screenLine(list, Number.NaN), 0);
+    assert.equal(screenLine(list, -40), 0);
+  });
+
+  it("are a screen behind the first line on screen and a screen ahead of the screen, moving by half screens", () => {
+    const lines = list.lines;
+    const half = Math.ceil(lines / 2);
+
+    assert.deepEqual(nearLines(list, 0), { from: 0, to: 2 * lines + half });
+    // Anywhere in a half screen, the same lines: the body draws again only when they move.
+    assert.deepEqual(nearLines(list, half + half - 1), nearLines(list, half));
+    for (let first = 0; first < 6 * lines; first += 1) {
+      const { from, to } = nearLines(list, first);
+      // A whole screen behind it, and no more than half a screen beyond that.
+      assert.ok(from <= Math.max(0, first - lines) && from > first - lines - half, `${first}: from ${from}`);
+      assert.ok(to >= first + 2 * lines, `${first}: to ${to}`);
+    }
   });
 });

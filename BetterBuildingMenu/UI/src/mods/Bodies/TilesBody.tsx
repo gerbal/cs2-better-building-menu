@@ -29,6 +29,7 @@ import styles from "./tilesBody.module.scss";
 import { UniqueMark } from "./UniqueMark";
 import { useBodyCells } from "./useBodyCells";
 import { useNumberSeparators, useStateWords, type StateWords } from "./useBodyWords";
+import { slotIsNear, useNearLines } from "./useNearLines";
 
 /** The share of the line under the tiles the name may take; the numbers after it take the rest. */
 const NAME_SHARE = 0.6;
@@ -172,12 +173,20 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
   const lineKnob = useValue(AssetMenuTuning$).tileNameLine ?? SHIPPED_TUNING.tileNameLine;
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
   const said = useAssetMenuView((view) => view.said);
-  const lookAlikes = useLookAlikeTags(entries, grid.cellWidth, textScale);
+  // The look-alikes are told apart among the tiles on or near the screen, so a Load more or a switch over
+  // a long result works out only those. See docs/design-notes.md, "Names".
+  const { body, near } = useNearLines(grid, entries);
+  const { from, to } = near;
+  const nearTiles = useMemo(
+    () => cells.flatMap((cell) => (cell.kind === "label" || !slotIsNear({ from, to }, grid.cols, cell.slot) ? [] : [cell.entry])),
+    [cells, from, to, grid.cols]
+  );
+  const lookAlikes = useLookAlikeTags(nearTiles, grid.cellWidth, textScale);
   // Plates names each look-alike on a band, its tag where no band of its own fits or reads apart.
   const plated = lookOf(useValue(AssetMenuLook$)).tileLabel === "band";
   const bands = useMemo(
-    () => (plated ? tileBands(entries, lookAlikes, grid.cellWidth, textScale) : lookAlikes),
-    [plated, entries, lookAlikes, grid.cellWidth, textScale]
+    () => (plated ? tileBands(nearTiles, lookAlikes, grid.cellWidth, textScale) : lookAlikes),
+    [plated, nearTiles, lookAlikes, grid.cellWidth, textScale]
   );
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
@@ -191,7 +200,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
   const tilesHeight = slotsHeight(grid, screenSlots(grid));
 
   return (
-    <div className={styles.body} data-bbm-view="tiles">
+    <div ref={body} className={styles.body} data-bbm-view="tiles">
       <div className={styles.window} style={nameLine ? { height: `${tilesHeight}rem` } : undefined}>
         <Scrollable className={styles.scroller} vertical trackVisibility="scrollable">
           <div className={styles.slots} style={{ height: `${slotsHeight(grid, slots)}rem` }}>

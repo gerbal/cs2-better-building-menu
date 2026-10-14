@@ -101,6 +101,20 @@ describe("the list's plates told apart over the page", () => {
       });
     }
 
+    it("never starves a later group: a pair after 1,000 plates no try tells apart is still told apart, the hopeless group tried a few times", () => {
+      const hopeless = group(false).slice(0, 1_000);
+      const fences = [["NA Low Aluminum Fence", "Aluminum"], ["NA Tall Aluminum Fence", "Aluminum"]].map(([name, distinct], at) => ({ id: 5_000 + at, name, distinct, room: at150 }));
+      const plates = [...hopeless, ...fences];
+      plates.forEach((plate) => planName(plate.name, at150, { keep: [plate.distinct], typed: [""] }));
+      const planned = plansWorkedOut();
+      const told = drawn(plates);
+
+      assert.notEqual(told[1_000], told[1_001]);
+      assert.equal(new Set(told.slice(0, 1_000)).size, 1);
+      // Each plate planned once alone, kept; a few hinted plans for the hopeless group, a few for the pair.
+      assert.ok(plansWorkedOut() - planned <= 30, `${plansWorkedOut() - planned} plans`);
+    });
+
     it("is not worked out again on a step that changes a plate's room but no plate's text, as Up and Down move Enter's mark", () => {
       const plates = group(true);
       const first = wordsApart(plates, [""]);

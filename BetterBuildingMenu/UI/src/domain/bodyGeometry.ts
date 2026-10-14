@@ -284,6 +284,22 @@ export function screenSlots(grid: BodyGrid): number {
   return grid.cols * grid.lines;
 }
 
+/** The first line on screen with the body scrolled `scrollTop` rem down: the line whose slot is at or across its top. */
+export function screenLine(grid: BodyGrid, scrollTop: number): number {
+  return Number.isFinite(scrollTop) && grid.pitchY > 0 ? Math.max(0, Math.floor((scrollTop - grid.y0) / grid.pitchY)) : 0;
+}
+
+/**
+ * The lines on or near the screen, from `from` up to `to`, with `first` the first on screen: a screen behind
+ * it and a screen ahead of the screen. They move by half screens, so the body draws again only when they
+ * do, and reach half a screen further ahead to make up for it. See docs/design-notes.md, "Names".
+ */
+export function nearLines(grid: BodyGrid, first: number): { from: number; to: number } {
+  const step = Math.max(1, Math.ceil(grid.lines / 2));
+  const at = Math.floor(Math.max(0, first) / step) * step;
+  return { from: Math.max(0, at - grid.lines), to: at + 2 * grid.lines + step };
+}
+
 /** Where slot k sits: left to right, then down. */
 export function slotPosition(grid: BodyGrid, index: number): { left: number; top: number } {
   return {

@@ -50,6 +50,9 @@ function holdsWhole(lines: readonly string[], word: string): boolean {
 /** The most plans a pass asks for with hints: a page of thousands drawn alike tells its first plates apart, never costing a plan each. */
 const MOST_TRIES = 600;
 
+/** The plates in a row a group tries and fails to tell apart before the pass leaves it: no try parts its names. */
+const GROUP_GIVES_UP = 3;
+
 /** How many words the passes have weighed, each counted into its group's holders or read back out. */
 let weighed = 0;
 
@@ -85,8 +88,10 @@ function rarestWord(words: readonly string[], lower: readonly string[], holders:
  * plate apart from those it drew alike: none for every other plate. A plate is planned again only where it
  * draws as another plate of a different name, each with at most three hints and the pass with at most
  * `MOST_TRIES`, so a page plans few names twice, and each plan is the planner's, kept by its hints as every
- * plan is. A pass over plates that draw alone as the last pass's did (an Up or Down step moves Enter's mark,
- * which narrows two rooms) answers as that pass did.
+ * plan is. Each group has its own budget: the smallest groups go first, and a group is left once
+ * `GROUP_GIVES_UP` of its plates in a row are told apart by no try, so a large group no try parts never
+ * spends what a later pair needs. A pass over plates that draw alone as the last pass's did (an Up or Down
+ * step moves Enter's mark, which narrows two rooms) answers as that pass did.
  */
 export function wordsApart(plates: readonly PlateName[], typed: readonly string[]): ReadonlyMap<number, ApartHints> {
   const drawn = plates.map((plate) => planName(plate.name, plate.room, { keep: [plate.distinct], typed }).lines);
@@ -107,8 +112,9 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
   const found = new Map<number, ApartHints>();
   let tries = 0;
 
-  groups: for (const ats of byText.values()) {
-    if (ats.length < 2) continue;
+  // The smallest groups first, each in page order: a pair is told apart before a group of thousands.
+  const groups = [...byText.values()].filter((ats) => ats.length > 1).sort((one, other) => one.length - other.length);
+  groups: for (const ats of groups) {
 
     // Each of the group's names once, its words once, as written and lower-cased; how many of those names
     // hold each word.
@@ -127,7 +133,9 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
       for (const word of own) holders.set(word, (holders.get(word) ?? 0) + 1);
     }
 
+    let failed = 0;
     for (const [index, at] of ats.entries()) {
+      if (failed >= GROUP_GIVES_UP) break;
       const plate = plates[at];
       const { words, lower } = names.get(nameOf[index])!;
       const own = rarestWord(words, lower, holders, names.size);
@@ -138,6 +146,7 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
         ...(own !== null ? [{ keep: [own], leads: true }] : []),
       ];
 
+      failed += 1;
       for (const hints of hinted) {
         if (tries >= MOST_TRIES) break groups;
         tries += 1;
@@ -150,6 +159,7 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
         found.set(plate.id, hints);
         counts.set(before, (counts.get(before) ?? 1) - 1);
         counts.set(text, 1);
+        failed = 0;
         break;
       }
     }

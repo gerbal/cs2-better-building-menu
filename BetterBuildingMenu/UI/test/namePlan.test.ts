@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { bodyGrid } from "../src/domain/bodyGeometry";
 import { NAME_FONT, plateNameRoom } from "../src/domain/listPlate";
-import { AFTER_SPAN, CUT_MARK, nameRuns, opening, planFits, planName, STOP_WORDS } from "../src/domain/namePlan";
+import { AFTER_SPAN, CUT_MARK, nameRuns, opening, planFits, planName, plansWorkedOut, sketchName, STOP_WORDS } from "../src/domain/namePlan";
 import { ASSET_MENU_DEFAULT_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { textWidth } from "../src/domain/textWidth";
 
@@ -367,6 +367,33 @@ describe("the base game's names in a plate's room", () => {
           assert.ok(plan.lines.length <= box.lines && planFits(plan.lines, box), said);
           assert.ok(plan.lines.every((line) => line.split(CUT_MARK).length <= 3), said);
         }
+      }
+    }
+  });
+});
+
+describe("a name sketched for a plate away from the screen", () => {
+  const baseNames: [string, string][] = JSON.parse(readFileSync(new URL("./fixtures/baseGameNames.json", import.meta.url), "utf8"));
+
+  it("draws whole where the name fits, as its plan does", () => {
+    assert.deepEqual(sketchName("Covered Pedestrian Bridge", plate(95)), planName("Covered Pedestrian Bridge", plate(95)));
+  });
+
+  it("is cut inside where it does not, its head and its tail kept, without a plan worked out", () => {
+    const planned = plansWorkedOut();
+    const sketch = sketchName("Four-Lane Perpendicular Parking Road", plate(60, 1));
+
+    assert.equal(plansWorkedOut(), planned);
+    assert.equal(sketch.whole, false);
+    assert.equal(sketch.lines.length, 1);
+    assert.match(sketch.lines[0], /^Four.*….*Road$/);
+  });
+
+  it("never draws a line wider than its room nor more lines than it has, over the base game's names at every text scale", () => {
+    for (const [width, lines, font] of [[160, 2, 11], [120, 2, 14.3], [130, 1, 16.5], [60, 1, 16.5], [20, 1, 16.5]] as const) {
+      for (const [name] of baseNames) {
+        const sketch = sketchName(name, { width, lines, font });
+        assert.ok(planFits(sketch.lines, { width, lines, font }) && sketch.lines.length <= lines, `${name} in ${width}×${lines} at ${font}: ${sketch.lines.join(" / ")}`);
       }
     }
   });

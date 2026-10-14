@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useEffect, useLayoutEffect, useMemo, type ReactNode } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 
 import enterMark from "images/enter.svg";
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
@@ -30,6 +30,7 @@ import { UniqueMark } from "./UniqueMark";
 import { UNIT_GLYPHS } from "./unitGlyphs";
 import { useBodyCells, useNearField } from "./useBodyCells";
 import { useNumberSeparators, useStateWords, useUnitMarks, type StateWords } from "./useBodyWords";
+import { slotIsNear, useNearLines } from "./useNearLines";
 
 interface PlateProps {
   entry: BuildingCatalogEntry;
@@ -55,6 +56,8 @@ interface PlateProps {
   achievedMilestone: number;
   /** What the name is planned with beyond its distinguishing word, where it drew as another plate. */
   apart?: ApartHints;
+  /** Whether the plate is on or near the screen, its name planned; away from it, sketched. */
+  near: boolean;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
 
@@ -63,7 +66,7 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, marks, typed, dim, textScale, separators, stateWords, achievedMilestone, apart, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, marks, typed, dim, textScale, separators, stateWords, achievedMilestone, apart, near, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
   const numbers = drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks);
   const { left, top } = slotPosition(grid, slot);
@@ -89,6 +92,7 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
         apart={apart}
         typed={typed}
         dim={dim}
+        near={near}
       />
       <div className={styles.numbers} data-bbm-fact="true">
         {/* The mark and the number each in their own box: no bare text beside an element in a flex
@@ -150,6 +154,9 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
   );
 });
 
+/** No plate planned beyond its own distinguishing word. */
+const NO_HINTS: ReadonlyMap<number, ApartHints> = new Map();
+
 export interface ListBodyProps {
   entries: BuildingCatalogEntry[];
   grid: BodyGrid;
@@ -196,21 +203,33 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   useLayoutEffect(() => setDrawnForm(drawnForm), [drawnForm]);
   useLayoutEffect(() => () => setDrawnForm(null), []);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, flow);
-  // The plates drawn alike told apart over the page, each planned in its estimate's room as its plate first
-  // plans it, so it plans again only the few drawn alike. See docs/design-notes.md, "Names".
-  const apart = useMemo(() => wordsApart(entries.map((entry) => ({
-    id: entry.id,
-    name: entry.name || entry.prefabName,
-    distinct: entry.distinctWord ?? "",
+  // Only the plates on or near the screen plan their names; the rest are sketched until they come near.
+  const { body, near } = useNearLines(grid, entries);
+  const { from, to } = near;
+  // Those plates as the page pass reads them, each in its estimate's room as its plate first plans it, so
+  // the pass plans again only the few drawn alike.
+  const nearPlates = useMemo(() => cells.flatMap((cell) => (cell.kind === "label" || !slotIsNear({ from, to }, grid.cols, cell.slot) ? [] : [{
+    id: cell.entry.id,
+    name: cell.entry.name || cell.entry.prefabName,
+    distinct: cell.entry.distinctWord ?? "",
     room: {
-      width: plateNameRoom(grid, drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks), entry.id === enterId, textScale),
+      width: plateNameRoom(grid, drawnPlateNumbers(cell.entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks), cell.entry.id === enterId, textScale),
       lines: grid.nameLines,
       font: NAME_FONT * textScale,
     },
-  })), typed.split(/\s+/)), [entries, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks, enterId, textScale, typed]);
+  }])), [cells, from, to, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks, enterId, textScale]);
+  // The plates drawn alike told apart over those near the screen, after the paint: a keystroke draws each
+  // name's own cut at once, and the few drawn alike are planned again a frame later. Hints worked out for
+  // another search are none. See docs/design-notes.md, "Names".
+  const [told, setTold] = useState<{ typed: string; hints: ReadonlyMap<number, ApartHints> }>({ typed, hints: NO_HINTS });
+  useEffect(() => {
+    const hints = wordsApart(nearPlates, typed.split(/\s+/));
+    setTold((last) => (last.typed === typed && last.hints === hints ? last : { typed, hints }));
+  }, [nearPlates, typed]);
+  const apart = told.typed === typed ? told.hints : NO_HINTS;
 
   return (
-    <div className={styles.body} data-bbm-view="list">
+    <div ref={body} className={styles.body} data-bbm-view="list">
       <Scrollable className={styles.scroller} vertical trackVisibility="scrollable">
         <div className={styles.slots} style={{ height: `${slotsHeight(grid, slots)}rem` }}>
           {cells.map((cell) => cell.kind === "label" ? (
@@ -234,6 +253,7 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}
               apart={apart.get(cell.entry.id)}
+              near={slotIsNear(near, grid.cols, cell.slot)}
               onPlace={onPlace}
             />
           ))}

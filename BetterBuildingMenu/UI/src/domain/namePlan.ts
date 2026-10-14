@@ -570,6 +570,33 @@ export function planName(name: string, room: NameBox, hints: NameHints = {}): Na
   return plan;
 }
 
+/**
+ * A name sketched rather than planned, for a plate away from the screen: whole where it fits, else the
+ * whole name cut inside, its head and its tail kept, to the longest form found by halves that lays out;
+ * else the mark alone, or no line. Never a line wider than the box, nor a plan worked out, kept or
+ * counted: the plate is planned once it comes near the screen. See docs/design-notes.md, "Names".
+ */
+export function sketchName(name: string, room: NameBox): NamePlan {
+  const whole = name.trim();
+  const box = Number.isFinite(room.width) ? room : { ...room, width: 0 };
+  if (whole === "" || box.lines < 1) return { lines: [], whole: true };
+  const fits = layout(pieces(whole, false), box);
+  if (fits !== null) return { lines: fits, whole: true };
+
+  let best: string[] | null = null;
+  for (let low = 2, high = whole.length - 1; low <= high;) {
+    const budget = (low + high) >> 1;
+    const lines = layout(pieces(shortenTileLabel(whole, budget), false), box);
+    if (lines !== null) {
+      best = lines;
+      low = budget + 1;
+    } else {
+      high = budget - 1;
+    }
+  }
+  return { lines: best ?? (runWidth(CUT_MARK, box) <= box.width ? [CUT_MARK] : []), whole: false };
+}
+
 /** A name's plan, worked out. */
 function planOnce(name: string, room: NameBox, hints: NameHints): NamePlan {
   const whole = name.trim();

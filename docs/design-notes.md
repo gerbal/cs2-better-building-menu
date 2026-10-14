@@ -1563,8 +1563,10 @@ so the renders and the game draw the same lines. In order:
 
 **Plates told apart over the page.** The planner cuts each name alone, so two names can cut alike ("NA…
 Aluminum…" for NA Low and NA Tall Aluminum Fence at 150%) and read as one building. The list makes one
-pass over its page, beside the tiles' look-alike tags (`wordsApart`): each plate drawn as another plate
-of a different name draws is planned again keeping, beside its distinguishing word, the word of its own
+pass over the plates near the screen, beside the tiles' look-alike tags (`wordsApart`), after the paint:
+a keystroke draws each name's own cut at once, and the few drawn alike are planned again a frame later.
+Each plate drawn as another plate of a different name draws is planned again keeping, beside its
+distinguishing word, the word of its own
 the fewest of the others hold ("…Tall Aluminum…"); else with the mark leading, its first word dropped
 (`leads`: "…Angled…" beside "Two… Angled…"); else both. The first plan that keeps its distinguishing word
 as whole as before and draws apart from every plate stands, so the pass never draws alike two plates that
@@ -1573,12 +1575,24 @@ Perpendicular Parking Roads at 130% and 150%, whose "…Perpendicular…" leaves
 plates still read alike. The pass plans each plate in its estimate's room, as the plate first plans it,
 so it finds each plan kept and plans again only the few drawn alike, each kept by its hints, and a Load
 more or a view switch plans no name twice. Each group's names and their words are read once, so a group
-costs its size, not its square; a pass asks for at most 600 plans with hints, so a page of thousands
-drawn alike tells its first plates apart; and a pass over plates that draw alone as the last pass's did
-(an Up or Down step moves Enter's mark, narrowing two rooms) answers as that pass did. The pass judges
+costs its size, not its square. Each group has its own budget: the smallest go first, and a group is left
+once three of its plates in a row are told apart by no try, so a group of thousands no try parts never
+spends what a later pair needs; and a pass asks for at most 600 plans with hints. A pass over plates
+that draw alone as the last pass's did (an Up or Down step moves Enter's mark, narrowing two rooms)
+answers as that pass did. The pass judges
 its hints in each plate's estimate, and the room as drawn can be narrower, where the words they add could
 crowd out the one that tells the row apart: a plate draws with its hints only where that plan keeps its
 distinguishing word whole wherever the plan without them does, else without them (`planApart`).
+
+**Only the names near the screen are planned.** A body plans the names on the lines on or near its
+screen (`nearLines`): a screen behind the first line on screen and a screen ahead of the screen, moving
+by half screens, read from where the body has scrolled every tenth of a second, as Cohtml sends no scroll
+event (`useNearLines`). Every other name is sketched (`sketchName`): whole where it fits, else the whole
+name cut inside to the longest form that lays out, never a line wider than its room, and never measured;
+once it comes near it is planned with every guarantee the planner gives, so a sketch can show for a frame
+on a line a fast scroll brings into view. A first keystroke over a result of hundreds plans two screens
+and a half of names, not all of them, and a name away from the screen is never watched or read, which
+the game pays for name by name at large text.
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's
@@ -1640,13 +1654,15 @@ a tag another drawn tile would also say is dropped from every tile that shares i
 another drawn tile's name, which would read as that tile. A shared tag tells two look-alikes apart by
 nothing and suggests they are the same; the line under the tiles and the hover card still name them. So
 at the smallest tile and at large text, where a tag holds a word or less, fewer tiles are tagged. The
-tags are counted over every tile the body draws, which holds every tile on the screen, so a tag can
-change, or drop, when Load more draws a look-alike, even one scrolled out of sight. A cut starts from
+tags are counted over the tiles on or near the screen (a screen behind and a screen ahead, see "Names"),
+which hold every tile on the screen, so a tag can change, or drop, as a look-alike comes near or goes,
+and a Load more or a switch over a long result works out only those tiles. Plates' bands read the same
+tiles. A cut starts from
 the tag's room at the text scale and narrows by what it runs over, stopping where the planner cannot fit
 the kept word, and the tags are worked out again only when the tiles' names, distinguishing words,
 families or locks, the tile's width or the text scale change. Each tile's forms are kept by those, so a
 Load more works out only the new tiles' forms; only the pass that keeps every tag unique runs over every
-tile. On a locked tile the tag's room ends at the lock glyph, which it never covers, and its forms are
+tile near the screen. On a locked tile the tag's room ends at the lock glyph, which it never covers, and its forms are
 measured in that room. A tile with no look-alike drawn with it draws no tag at its top: the line under
 the tiles names it. A tag carries `data-bbm-tag`, so the live check and the render tests count the tags
 drawn.
