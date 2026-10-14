@@ -131,3 +131,11 @@ describe("Locale.json against the code", () => {
     }
   });
 });
+
+describe("the Look row's description", () => {
+  it("says where Plates names the pointed tile in every Hover card form: on its card, or at the tabs' end under Status line only", () => {
+    const description = locale["Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.MenuLook]"];
+
+    assert.match(description, /point at named on its card or at the tabs' end/);
+  });
+});

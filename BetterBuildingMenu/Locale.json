@@ -136,7 +136,7 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AssetMenuTileSize]": "Tile size",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AssetMenuTileSize]": "Sizes the Tiles view. 64 shows 2 rows of 10, 68 shows 2 rows of 9; above 68 the menu shows one row unless you drag it taller.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.MenuLook]": "Look",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.MenuLook]": "How the build menu is drawn, in every menu. Standard: each building on a plate with its name, cost and one more number, 20 a screen; picture tiles for zones. Plates: like Standard, with units written out (80 km/h); on tiles, a name band on look-alikes, and the one you point at named on its card, not on a line under them. To compare them on your city, use View › Look on the menu.",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.MenuLook]": "How the build menu is drawn, in every menu. Standard: each building on a plate with its name, cost and one more number, 20 a screen; picture tiles for zones. Plates: like Standard, with units written out (80 km/h); on tiles, a name band on look-alikes, and the one you point at named on its card or at the tabs' end, not on a line under them. To compare them on your city, use View › Look on the menu.",
   "Options.LABEL[BetterBuildingMenu.LookStandard]": "Standard",
   "Options.LABEL[BetterBuildingMenu.LookPlates]": "Plates",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AssetMenuWidthStep]": "Width",
