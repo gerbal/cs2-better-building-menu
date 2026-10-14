@@ -599,6 +599,44 @@ describe("the readout under Status line only", () => {
     assert.deepEqual(sayAt((line) => 696 - 2 * TAB_CELL_GAP - line - 0.5), []);
   });
 
+  it("never says what a reading in another menu's row held: a row of more tabs says what its estimate holds until it is read", () => {
+    setBinding("options", "textScale", 1.3);
+    act(() => root!.unmount());
+    // Three tabs drawn 60 wide leave the readout room for every figure; sixteen leave it little.
+    let tabsWide = 60;
+    const drawn = (element: { type: unknown; props: Record<string, unknown> }) => {
+      const className = String(element.props.className ?? "");
+      if (className === "tabRow") return { clientWidth: 696 };
+      if (className === "cells") return { get offsetWidth() { return tabsWide; }, get scrollWidth() { return tabsWide; } };
+      if (className !== "statusMeasure") return null;
+      // Each text as wide as its estimate.
+      return {
+        get children() {
+          const parts = root!.root.find((node) => node.type === "span" && node.props.className === "statusMeasure").children as ReactTestInstance[];
+          return parts.map((part) => ({ offsetWidth: textWidth(text(part), (part.props.className === "statusName" ? 11 : 10) * 1.3) + (part.props.className === "sep" ? 6 : 0) }));
+        },
+      };
+    };
+    const figures = () => readout().findAll((node) => node.type === "span" && node.props.className === "statusFigure").length;
+    act(() => { root = create(<TabRow width={706} />, { createNodeMock: drawn }); });
+    pointAtRoad();
+    settleFrames(frames);
+    assert.equal(figures(), 3, "the three tabs' row, as read, holds every figure");
+    act(() => clearPointed(9));
+
+    // Another menu's sixteen tabs, the building pointed at before any frame reads the row again.
+    const ids = Array.from({ length: 16 }, (_, at) => `Cat${at}`);
+    act(() => {
+      set("AssetMenuCategories", ids.map((id) => category(id)));
+      set("AssetMenuCategoryCounts", ids.map((id) => ({ id, count: 30 })));
+      set("AssetMenuCategory", "Cat0");
+    });
+    tabsWide = 600;
+    pointAtRoad();
+
+    assert.ok(figures() < 3, `${figures()} figures said in the room the three tabs left`);
+  });
+
   it("keeps the readout's own text under the other forms", () => {
     set("AssetMenuHoverCard", "pointer");
     act(() => setPointed({ entry: entry(9), cell: { x: 0, y: 0, w: 171, h: 27.25 } }));

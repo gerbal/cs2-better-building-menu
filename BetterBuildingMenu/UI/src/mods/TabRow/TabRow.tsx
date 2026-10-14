@@ -13,7 +13,7 @@ import { LEGEND_FORMS, legendParts, NOTHING_SAID, shownKinds, statedValues, type
 import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "domain/textScaleSetting";
 import { NO_TIER_BRACKET } from "domain/menuProgression";
-import { arrivedCount, cssUrl, planTabRow, readoutRange, readoutRoom, tabForm, tabRow, type TabCell, type TabForm } from "domain/tabRow";
+import { arrivedCount, cellsOf, cssUrl, planTabRow, readoutRange, readoutRoom, tabForm, tabRow, type TabCell, type TabForm } from "domain/tabRow";
 import type { VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import {
@@ -176,7 +176,9 @@ export const TabRow = ({ width }: { width: number }) => {
   // Its room and texts as the game drew them, once it has: the estimates err wide, and would drop a figure
   // the room holds.
   const [readoutRead, setReadoutRead] = useState<DrawnReadout | null>(null);
-  const readAt = `${textScale}\u0001${width}`;
+  // Read for this row, its tabs and their counts in the form they draw: a reading of another menu's row
+  // says nothing of this one's room.
+  const readAt = `${textScale}\u0001${width}\u0001${form}\u0001${cellsOf(row.items).map((cell) => `${cell.key}\u0002${cell.count ?? ""}`).join("\u0003")}`;
   const drawnReadout = drawnAt(readoutRead, readAt);
   const status = useStatusLine(() => drawnReadout?.room ?? readoutRoom(row.items, width, textScale, format, form), keyKind, drawnReadout?.drawn);
   const readoutRefs = useDrawnReadout(status, readAt, setReadoutRead);

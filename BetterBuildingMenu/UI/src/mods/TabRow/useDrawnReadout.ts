@@ -38,8 +38,9 @@ export interface DrawnReadoutRefs {
  * Status line only's room and texts as the game drew them, into `onRead`: the room the tabs leave the
  * readout (the row's width less the tabs' own and the two gaps before the readout) and each text `status`
  * could say, drawn unseen. Read two frames after what it could say changes, never in the render's tick,
- * and again when the row or the tabs change size, for the text scale and box width `at`; a reading for
- * another `at` is none (`drawnAt`), where the estimates stand in. See docs/design-notes.md, "The hover card".
+ * and again when the row or the tabs change size, for `at`: the text scale, the box width, and the row's
+ * tabs and their counts in their form. A reading for another `at` is none (`drawnAt`), so another menu's
+ * row never lends this one its room, and the estimates stand in. See docs/design-notes.md, "The hover card".
  */
 export function useDrawnReadout(status: StatusLine | null, at: string, onRead: Dispatch<SetStateAction<DrawnReadout | null>>): DrawnReadoutRefs {
   const row = useRef<HTMLDivElement>(null);

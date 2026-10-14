@@ -1769,7 +1769,9 @@ Any other stored value reads as beside the pointer, on every load.
   are drawn unseen beside the row, out of its flow, in the readout's faces, and each is as wide as drawn
   once read, two frames on. The game reports each width in whole pixels, so each drawn text counts a
   pixel more and the room a pixel less: a figure that fits by less than its rounding goes, as one that
-  overran would shrink the tabs. The estimates err wide, by as much as a figure at large text, where a
+  overran would shrink the tabs. A reading holds for the row it was read in, its tabs and their counts in
+  their form, at its text scale and width: another menu's row says what its estimate holds until it is
+  read in turn. The estimates err wide, by as much as a figure at large text, where a
   figure the drawn room holds would go. While the readout names a building the rows
   keep the blanks the legend said: blanks that followed the pointer would flicker with every crossing, so
   the legend, with the readout's own text, comes back when the pointer leaves. The readout's two lines
