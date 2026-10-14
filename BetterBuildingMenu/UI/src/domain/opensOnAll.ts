@@ -1,0 +1,92 @@
+/**
+ * The small menus, which open on All: those whose rows all fit one screen of the body they draw, at 100%
+ * text, the first Width step and the game's own body height, so neither the text scale, the Width nor a
+ * drag changes which tab a menu opens on. All draws a label over each of its groups, so the rows and
+ * those labels must fit; but a small menu of one tab drawn as a list with Small menus grow on draws no
+ * groups unless the player picks one, so its rows alone must. A menu whose view is Cards opens on All in
+ * C#, whatever its size, and is left out here. Pure. See docs/design-notes.md, "Opening on the
+ * building's tab" and "The bodies".
+ */
+import { drawnBodyHeight } from "./assetMenuLayout";
+import { autoBody, menuView, type AutoKnobs, type MenuShare } from "./bodyChoice";
+import { blockLabelsOf, bodyCells, NO_SECTIONS } from "./bodyCells";
+import { bodyGrid, labelSlots, screenSlots, type BodyGridInput } from "./bodyGeometry";
+import type { BuildingCatalogEntry, CatalogSection } from "./buildingCatalog";
+import { menuPickOf, type MenuPick } from "./menuPicks";
+import { ASSET_MENU_DEFAULT_HEIGHT, WIDTH_STEP_VANILLA } from "./sharedContracts.generated";
+
+export interface OnAllInput {
+  shares: readonly MenuShare[];
+  views: readonly MenuPick[];
+  defaultView: string;
+  /** The knobs the Auto rule and the list read, each resolved to its shipped value where C# has not answered. */
+  tuning: AutoKnobs & { listPlateHeight: number; nameLines: number; smallMenusGrow: boolean; blockLabels?: string; iconSize?: number };
+  tileSize: number;
+  atLargeText: string;
+}
+
+/** The menus C# has counted whose rows all fit one screen of their body there, by name. */
+export function menusOpeningOnAll(input: OnAllInput): string[] {
+  return smallMenus(input)
+    .map((small) => small.menu)
+    .sort();
+}
+
+/**
+ * The small menus of one tab drawn as a list with Small menus grow on, which draw no groups unless
+ * picked: C# groups their All by none.
+ */
+export function menusDrawingNoGroups(input: OnAllInput): string[] {
+  return smallMenus(input)
+    .filter((small) => small.noGroups)
+    .map((small) => small.menu)
+    .sort();
+}
+
+/** Each small menu, and whether it draws no groups unless picked: one tab, drawn as a list, Small menus grow on. */
+function smallMenus({ shares, views, defaultView, tuning, tileSize, atLargeText }: OnAllInput): { menu: string; noGroups: boolean }[] {
+  return shares.flatMap((share) => {
+    const body = menuView({ menuPick: menuPickOf(views, share.menu), defaultView, auto: autoBody({ share, textScale: 1, step: 1, knobs: tuning }) });
+
+    if (body === "cards" || share.rows <= 0) {
+      return [];
+    }
+
+    // The growth is the point of a small menu, and labels take the slots it grows into; a menu with
+    // tabs of its own keeps All's labels naming them.
+    const noGroups = body === "list" && tuning.smallMenusGrow && (share.tabs ?? 0) < 2;
+    const input: BodyGridInput = {
+      body,
+      boxWidth: WIDTH_STEP_VANILLA,
+      bodyHeight: drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT),
+      textScale: 1,
+      atLargeText,
+      tileSize,
+      plateHeight: tuning.listPlateHeight,
+      nameLines: tuning.nameLines,
+      iconSize: tuning.iconSize,
+      menuRows: share.rows,
+      smallMenusGrow: tuning.smallMenusGrow,
+    };
+    // The slots All draws at the body's columns, which no growth changes, as the open body counts them.
+    const grid = bodyGrid(input);
+    const sections = noGroups ? NO_SECTIONS : allSections(share.groupRows ?? []);
+    const drawnSlots = bodyCells(standIns(share.rows), sections, grid.cols, blockLabelsOf(tuning.blockLabels), 0, undefined, labelSlots(grid)).slots;
+
+    return drawnSlots <= screenSlots(bodyGrid({ ...input, drawnSlots })) ? [{ menu: share.menu, noGroups }] : [];
+  });
+}
+
+/** Rows to place: only how many there are counts. */
+const standIns = (rows: number): BuildingCatalogEntry[] => Array.from({ length: rows }, (_, at) => ({ id: at + 1 }) as BuildingCatalogEntry);
+
+/** All's labels, one over each group's rows in order. */
+function allSections(groupRows: readonly number[]): CatalogSection[] {
+  let start = 0;
+
+  return groupRows.map((count, at) => {
+    const section: CatalogSection = { id: `group:${at}`, kind: "group", label: "", labelId: "", start, count, collapsed: false };
+    start += count;
+    return section;
+  });
+}

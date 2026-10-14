@@ -1,0 +1,589 @@
+import assert from "node:assert/strict";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { Profiler } from "react";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { declarationsOf } from "../harness/compiledCss";
+import { linesOf, plannedNames } from "../harness/huggingNames";
+import { assertCellsTellThePointer } from "../harness/pointing";
+import { count, entry, renderHtml } from "../harness/render";
+import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
+import { bodyGrid, PLATE1_HEIGHT, type BodyGridInput } from "../../src/domain/bodyGeometry";
+import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
+import { getAssetMenuView, resetAssetMenuView, setReadoutSaid } from "../../src/domain/assetMenuViewStore";
+import { ListBody } from "../../src/mods/Bodies/ListBody";
+import { textWidth } from "../../src/domain/textWidth";
+
+const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
+  body: "list", boxWidth: 706, bodyHeight: 144.25, textScale: 1, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0, ...over,
+});
+const rows = (n: number, over: (id: number) => Partial<BuildingCatalogEntry> = () => ({})) =>
+  Array.from({ length: n }, (_, at) => entry(at + 1, over(at + 1)));
+type Options = { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[]; typed?: string };
+const body = (entries: BuildingCatalogEntry[], options: Options = {}) =>
+  <ListBody entries={entries} grid={grid(options.over)} sections={options.sections} typed={options.typed ?? ""} enterId={options.enterId ?? null} onPlace={() => undefined} footer={<div className="loadMoreRow" />} />;
+const render = (entries: BuildingCatalogEntry[], options: Options = {}) => renderHtml(body(entries, options));
+const group = (start: number, label: string, count: number, labelId = ""): CatalogSection =>
+  ({ id: `group:${start}`, kind: "group", label, labelId, start, count, collapsed: false });
+const locked = (start: number, count: number, collapsed = false): CatalogSection =>
+  ({ id: "locked", kind: "locked", label: "", labelId: "", start, count, collapsed });
+const LABELS = "mods/Bodies/labelPlate.module.scss";
+
+describe("the list", () => {
+  beforeEach(() => resetBindings());
+
+  it("tells the hover card the plate the pointer enters and leaves, and the plate that goes from under it", () => {
+    assertCellsTellThePointer((entries) => body(entries));
+  });
+
+  it("draws each building on a plate at its slot, four across and five down the game's own box", () => {
+    const html = render(rows(21));
+
+    assert.equal(count(html, /data-bbm-item="true"/), 21);
+    assert.match(html, /data-catalog-entry="1"[^>]*/);
+    // Slot 5 starts the second line, one plate and a gap down.
+    assert.match(html, /left:0rem;top:29\.25rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="5"/);
+    assert.match(html, /left:519rem;top:0rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="4"/);
+    // The menu's one hover card says each building: no plate carries a tooltip of its own.
+    assert.equal(count(html, /data-tooltip/), 0);
+  });
+
+  it("tells plates apart in the same draw as a sort or a look changes them, so no frame shows the last pass's hints", () => {
+    setBinding("options", "textScale", 1.5);
+    const fences = [entry(1, { name: "NA Low Aluminum Fence", distinctWord: "Aluminum" }), entry(2, { name: "NA Tall Aluminum Fence", distinctWord: "Aluminum" })];
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const saved = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+    let root: ReactTestRenderer | undefined;
+    let commits = 0;
+    const draw = () => <Profiler id="list" onRender={() => { commits += 1; }}>{body(fences, { over: { textScale: 1.5 } })}</Profiler>;
+    const names = () => plannedNames(root!).map((name) => linesOf(name).join(" "));
+    try {
+      act(() => { root = create(draw()); });
+      for (const change of [() => setBinding("BetterBuildingMenu", "AssetMenuLook", "plates"), () => setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Workers")]) {
+        const before = commits;
+        act(() => { change(); root!.update(draw()); });
+
+        assert.equal(commits - before, 1, "one commit, its hints its own");
+        assert.notEqual(names()[0], names()[1], names().join(" | "));
+      }
+    } finally {
+      act(() => root?.unmount());
+      Object.assign(globals, saved);
+    }
+  });
+
+  it("draws two plates the planner cuts alike apart at 150% text a frame after the paint, each keeping its distinguishing word", () => {
+    setBinding("options", "textScale", 1.5);
+    const fences = [entry(1, { name: "NA Low Aluminum Fence", distinctWord: "Aluminum" }), entry(2, { name: "NA Tall Aluminum Fence", distinctWord: "Aluminum" })];
+    // The first paint: each name's own cut, alike.
+    const html = render(fences, { over: { textScale: 1.5 } });
+    const painted = [...html.matchAll(/data-bbm-name="\d+">(.*?)<\/span><\/span>/g)].map(([, lines]) => lines.replace(/<[^>]+>/g, ""));
+    assert.equal(painted.length, 2);
+    assert.equal(painted[0], painted[1]);
+
+    // Then the pass over the page, after the paint.
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const saved = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+    let root: ReactTestRenderer | undefined;
+    try {
+      act(() => { root = create(body(fences, { over: { textScale: 1.5 } })); });
+      const names = plannedNames(root!).map((name) => linesOf(name).join(" "));
+
+      assert.equal(names.length, 2);
+      assert.notEqual(names[0], names[1]);
+      assert.ok(names.every((name) => name.includes("Aluminum")), names.join(" | "));
+    } finally {
+      act(() => root?.unmount());
+      Object.assign(globals, saved);
+    }
+  });
+
+  it("marks the region the live check counts in, and every picture, name and number inside each plate", () => {
+    const html = render(rows(3));
+
+    assert.match(html, /data-bbm-view="list"/);
+    assert.equal(count(html, /data-bbm-pic="true"/), 3);
+    assert.equal(count(html, /data-bbm-fact="true"/), 3);
+    assert.match(html, /data-bbm-name="10"><span class="line">Building 1<\/span><\/span>/);
+  });
+
+  it("plans each name over its two lines at 100% text, each line a box of its own, whole where it fits", () => {
+    const html = render(rows(2, (id) => ({ name: id === 1 ? "Two-Lane One-Way Road" : "Four-Lane Perpendicular Parking Road" })));
+
+    assert.match(html, /<span class="planned name" data-bbm-name="21"><span class="line">Two-Lane One-Way<\/span><span class="line">Road<\/span><\/span>/);
+    // Too long for two lines beside its numbers: cut once, its last words kept.
+    assert.match(html, /data-bbm-name="36"><span class="line">Four-Lane… Parking<\/span><span class="line">Road<\/span><\/span>/);
+    assert.doesNotMatch(html, /cohinline/);
+  });
+
+  it("cuts a one-word name too long for its line inside it, its head and its tail kept", () => {
+    const html = render(rows(1, () => ({ name: "StoneCornerGarageWithAVeryLongName01" })));
+
+    assert.match(html, /data-bbm-name="36"><span class="line">[^<]*…[^<]*01<\/span><\/span>/);
+  });
+
+  it("keeps the distinguishing word through a cut, and each typed word, dimmed by the knob", () => {
+    const long = "Tram + Four-Lane Road Double-Decked Suspension Bridge";
+    const plain = render(rows(1, () => ({ name: long, distinctWord: "Double-Decked" })));
+    assert.match(plain, /Double-Decked/);
+
+    // Each word of a typed phrase is kept on its own, as a search matches the phrase anywhere in the name.
+    const phrase = render(rows(1, () => ({ name: "Four-Lane Road With Bus Stop Bays And Wide Sidewalks" })), { typed: "bus stop" });
+    assert.match(phrase, /data-bbm-name="52"><span class="line">[^<]*<\/span><span class="line">[^<]*Bus Stop[^<]*…<\/span>/);
+
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, dimTypedWord: true });
+    const typed = render(rows(1, () => ({ name: "Tram Road 1" })), { typed: "tram" });
+    // Every run a span of its own in a row: Cohtml lays a span beside bare text out as a box of its own,
+    // which a line's own flow would stack. The run after the typed span opens with U+200B, which Cohtml keeps.
+    assert.match(typed, /<span class="line runs"><span class="typed">Tram<\/span><span>\u200b Road 1<\/span><\/span>/);
+    const between = render(rows(1, () => ({ name: "Old Tram Road" })), { typed: "tram" });
+    assert.match(between, /<span class="line runs"><span>Old <\/span><span class="typed">Tram<\/span><span>\u200b Road<\/span><\/span>/);
+  });
+
+  it("says the cost over the capacity, right of the name, its digits beside the glyph for its unit", () => {
+    const html = render(rows(1, () => ({ constructionCost: 1000, capacity: 20, buildingType: "School" })));
+
+    // The glyph a sibling of the number, in a box of its own: a mask inside a run of text draws nothing.
+    assert.match(html, /<span class="first">¢1[^<]*000<\/span><\/span><span class="secondLine"><img class="unitGlyph" style="mask-image:url\(person\.svg\)"[^>]*><span class="second">20<\/span><\/span>/);
+  });
+
+  it("says the view's key number second: a road's speed by the gauge", () => {
+    const road = rows(1, () => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: 100 } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={road} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+
+    assert.match(html, /<img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="second">100<\/span>/);
+  });
+
+  it("says the key number with its unit and draws no glyph in Plates, which writes units in words", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    const road = rows(1, () => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: 80 } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={road} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+
+    assert.match(html, /<span class="secondLine"><span class="second">80 km\/h<\/span>/);
+    assert.doesNotMatch(html, /unitGlyph/);
+  });
+
+  it("says the value sorted by with its unit in Plates under a sort by Workers or Capacity, and Standard's digits", () => {
+    const crematorium = rows(1, () => ({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1500, workers: 20 }));
+    const second = (look: string, sort: string) => {
+      setBinding("BetterBuildingMenu", "AssetMenuLook", look);
+      setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", sort);
+      return /<span class="second">([^<]*)<\/span>/.exec(render(crematorium))?.[1];
+    };
+
+    assert.equal(second("standard", "Workers"), "20");
+    assert.equal(second("plates", "Workers"), "20 jobs");
+    assert.match(second("standard", "Capacity") ?? "", /^1\D?500$/);
+    assert.match(second("plates", "Capacity") ?? "", /^1\D?500 capacity$/);
+  });
+
+  it("leaves blank only the numbers the readout says once, and prints every other", () => {
+    setReadoutSaid([{ kind: "speed", value: 100, depth: 0 }]);
+    const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : 80 } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={roads} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    resetAssetMenuView();
+
+    assert.equal(count(html, /class="second"/), 1);
+    assert.match(html, /<span class="second">80<\/span>/);
+    // Both costs print: the readout said only the speed.
+    assert.equal(count(html, /<span class="first">¢44\/c<\/span>/), 2);
+  });
+
+  it("marks a row with no value of a kind the readout says with a dash, never the said blank", () => {
+    setReadoutSaid([{ kind: "speed", value: 100, depth: 0 }]);
+    const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : null } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={roads} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    resetAssetMenuView();
+
+    assert.equal(count(html, /class="second"/), 1);
+    assert.match(html, /data-catalog-entry="2"[^]*?<span class="secondLine"><span class="second">–<\/span><\/span>/);
+  });
+
+  it("says a one-line plate's key number by its glyph where the readout says the cost once, and nothing where it says both", () => {
+    const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : 80 } as Partial<BuildingCatalogEntry>));
+    const plate1 = grid({ textScale: 1.3 });
+    setReadoutSaid([{ kind: "cost", value: 5500, depth: 0 }]);
+    const html = renderHtml(<ListBody entries={roads} grid={plate1} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    setReadoutSaid([{ kind: "cost", value: 5500, depth: 0 }, { kind: "speed", value: 80, depth: 0 }]);
+    const both = renderHtml(<ListBody entries={roads} grid={plate1} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    resetAssetMenuView();
+
+    // One line, the glyph a sibling of the number in it.
+    assert.equal(count(html, /class="second"/), 0);
+    assert.match(html, /<span class="firstLine"><img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="first keyNumber">100<\/span><\/span><\/div>/);
+    assert.match(both, /data-catalog-entry="1"[^]*?<span class="firstLine"><img class="unitGlyph"[^>]*><span class="first keyNumber">100<\/span>/);
+    assert.match(both, /data-catalog-entry="2"[^]*?<span class="firstLine"><span class="first keyNumber"><\/span><\/span><\/div>/);
+  });
+
+  it("tells the readout the form it draws, a grown small menu's big plate among them, and nothing once it goes", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(body(rows(3), { over: { menuRows: 3, smallMenusGrow: true, textScale: 1.3, bodyHeight: 200 } }));
+    });
+    const drawn = getAssetMenuView().drawnForm;
+    act(() => root!.unmount());
+    const gone = getAssetMenuView().drawnForm;
+    resetAssetMenuView();
+
+    assert.equal(drawn, "big");
+    assert.equal(gone, null);
+  });
+
+  it("fills the armed building, and only it", () => {
+    setBinding("BetterBuildingMenu", "ActivePrefabId", 2);
+    const html = render(rows(3));
+
+    assert.equal(count(html, /class="plate armed"/), 1);
+    assert.match(html, /class="plate armed"[^>]*data-catalog-entry="2"/);
+  });
+
+  it("marks Enter's target with ↵ beside its numbers, and nothing without a target", () => {
+    assert.equal(count(render(rows(3), { enterId: 3 }), /class="enterMark"/), 1);
+    // The mark and the number each their own box: no bare text beside an element in a flex row.
+    assert.match(render(rows(3), { enterId: 3 }), /data-catalog-entry="3"[\s\S]*<img class="enterMark"[^>]*><span class="first">¢/);
+    assert.equal(count(render(rows(3)), /class="enterMark"/), 0);
+  });
+
+  it("says a locked building's milestone in the cost's place", () => {
+    const html = render(rows(1, () => ({ isLocked: true, unlockMilestone: 7 } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /class="plate locked"/);
+    assert.match(html, /<span class="first milestone">MS 7<\/span>/);
+    assert.match(html, /aria-disabled="true"/);
+  });
+
+  it("says the locked word in the cost's place once the city has reached the building's milestone", () => {
+    // Only the development tree holds it back now; "MS 7" would send the player after a milestone they have.
+    setBinding("milestone", "achievedMilestone", 7);
+    const html = render(rows(1, () => ({ isLocked: true, unlockMilestone: 7 } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /<span class="first milestone">Locked<\/span>/);
+  });
+
+  it("keeps the game's unique mark on a unique building, shown on hover as 0.2.x's list did", () => {
+    const html = render(rows(1, () => ({ isUnique: true } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /<img class="mark uniqueMark" src="Media\/Game\/Icons\/Unique\.svg"/);
+    assert.doesNotMatch(html, /class="plate built"/);
+  });
+
+  it("marks a unique the city already holds as built, dimmed and unplaceable", () => {
+    const html = render(rows(1, () => ({ isUnique: true, isAlreadyBuilt: true } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /<img class="mark builtMark" src="Media\/Game\/Icons\/AlreadyBuilt\.svg"/);
+    assert.match(html, /class="plate built"/);
+    assert.match(html, /aria-disabled="true"/);
+  });
+
+  it("draws no mark on a building that is not unique", () => {
+    assert.doesNotMatch(render(rows(2)), /class="mark /);
+  });
+
+  it("draws three one-line plates across above 100% text, and whole two-line ones under Whole names", () => {
+    const more = render(rows(1), { over: { textScale: 1.3 } });
+    const whole = render(rows(1), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
+
+    assert.match(more, /class="plate largeText"[^>]*style="left:0rem;top:1rem;width:228\.6666/);
+    assert.match(more, /class="planned name"/);
+    assert.match(whole, /height:34\.56rem/);
+    assert.match(whole, /class="planned name"/);
+  });
+
+  it("draws a one-line plate's 24 rem picture whole, over its 22 rem plate, which does not clip it", () => {
+    const html = render(rows(7), { over: { textScale: 1.3 } });
+
+    assert.match(html, /class="plate largeText" style="left:0rem;top:1rem;width:228\.6666[^"]*;height:22rem"/);
+    assert.match(html, /class="plate largeText" style="left:0rem;top:25rem;[^"]*"[^>]*data-catalog-entry="4"/);
+    assert.equal(declarationsOf("mods/Bodies/listBody.module.scss", ".largeText").overflow, "visible");
+  });
+
+  it("never draws a third name line at 130% under Whole names: two lines, whole device pixels each, fit the plate", () => {
+    const html = render(rows(1, () => ({ name: "Lakeside High School (based on the Old Harbour Customs Hall)" })), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
+    const lines = count(html, /<span class="line">/);
+    // A line draws in whole device pixels: at 720p, 1.5 rem each.
+    const drawn = Math.ceil(scaled(".name", "line-height", 1.3) / 1.5) * 1.5;
+
+    assert.equal(lines, 2);
+    assert.ok(lines * drawn <= 34.56, `${lines} lines of ${drawn}`);
+  });
+
+  // A length the stylesheet scales with the game's text, as calc(N rem * var(--fontScale)), at this scale.
+  const scaled = (selector: string, prop: string, scale: number): number => {
+    const value = declarationsOf("mods/Bodies/listBody.module.scss", selector)[prop];
+    const factor = /^calc\((\d*\.?\d+)rem \* var\(--fontScale\)\)$/.exec(value ?? "");
+    assert.ok(factor, `${selector} ${prop} is ${value}`);
+    return Number(factor[1]) * scale;
+  };
+
+  for (const scale of [1.1, 1.3, 1.5]) {
+    it(`says one number on a one-line plate at ${Math.round(scale * 100)}% text, which fits the plate`, () => {
+      const html = render(rows(1, () => ({ constructionCost: 85000, capacity: 400 })), { over: { textScale: scale } });
+      const lines = count(html, /<span class="(?:first|second)(?: [^"]*)?">/);
+
+      assert.equal(count(html, /class="second"/), 0);
+      assert.match(html, /<span class="first">¢85[^<]*000<\/span>/);
+      assert.equal(lines, 1);
+      assert.ok(lines * scaled(".numbers", "line-height", scale) <= PLATE1_HEIGHT, `${lines} lines at ${scale}`);
+      assert.ok(scaled(".name", "line-height", scale) <= PLATE1_HEIGHT);
+    });
+  }
+
+  it("says the sorted value as a one-line plate's number under a sort by a number, in the cost's place", () => {
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Capacity");
+    const sorted = render(rows(1, () => ({ constructionCost: 85000, capacity: 400 })), { over: { textScale: 1.5 } });
+
+    assert.match(sorted, /<div class="numbers" data-bbm-fact="true"><span class="firstLine"><span class="first">400[^<]*<\/span><\/span><\/div>/);
+  });
+
+  it("keeps the cost over the capacity on a whole-name plate at large text", () => {
+    const html = render(rows(1, () => ({ constructionCost: 85000, capacity: 400 })), { over: { textScale: 1.5, atLargeText: "wholeNames" } });
+
+    assert.match(html, /<span class="first">¢85[^<]*000<\/span><\/span><span class="secondLine">[^]*?<span class="second">400<\/span>/);
+  });
+
+  it("ends the feed inside the scroll, below the slots", () => {
+    const html = render(rows(2));
+
+    assert.ok(html.indexOf('class="loadMoreRow"') > html.indexOf('data-scrollable="true"'));
+    assert.ok(html.indexOf('class="loadMoreRow"') > html.indexOf('class="slots"'));
+  });
+
+  it("draws no title, which Cohtml never shows", () => {
+    assert.doesNotMatch(render(rows(2)), / title="/);
+  });
+
+  it("draws each group's label plate in a slot of its own, with its true count, and the buildings after it a slot on", () => {
+    const html = render(rows(3), { sections: [group(0, "Small Roads", 66), group(2, "Medium Roads", 34)] });
+
+    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:171rem;height:27\.25rem" data-bbm-label="group"><span class="planned labelText"><span class="line">SMALL ROADS<\/span><\/span><span class="labelCount">66<\/span><\/div>/);
+    assert.match(html, /left:173rem;top:0rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="1"/);
+    assert.match(html, /left:519rem;top:0rem[^>]*data-bbm-label="group"><span class="planned labelText"><span class="line">MEDIUM ROADS/);
+    assert.match(html, /left:0rem;top:29\.25rem[^>]*data-catalog-entry="3"/);
+    // A label is no building: the live check counts buildings only, and their names.
+    assert.equal(count(html, /data-bbm-item="true"/), 3);
+    assert.equal(count(html, /data-bbm-name=/), 3);
+  });
+
+  it("says a group's name in the game's words where the game has them, and the name C# sends where it has none", () => {
+    setTranslation("SubServices.NAME[RoadsSmallRoads]", "Petites routes\n");
+    try {
+      const html = render(rows(2), { sections: [group(0, "Small Roads", 1, "RoadsSmallRoads"), group(1, "Medium Roads", 1, "RoadsMediumRoads")] });
+
+      assert.match(html, /<span class="line">PETITES ROUTES<\/span>/);
+      assert.match(html, /<span class="line">MEDIUM ROADS<\/span>/);
+      assert.doesNotMatch(html, />Small Roads</);
+    } finally {
+      resetTranslations();
+    }
+  });
+
+  it("plans a long name on its one line, cut with \"…\" by the planner, its count kept whole", () => {
+    // Cohtml draws no CSS ellipsis (it computes an inline-block as flex), so the planner cuts the name.
+    const room = declarationsOf(LABELS, ".labelText");
+    const html = render(rows(1), { sections: [group(0, "Advanced Water Pumping Station And Treatment Facilities", 66)] });
+
+    // In its caps, as the plate draws them, cut once between words, its last word kept.
+    assert.match(html, /<span class="planned labelText"><span class="line">ADVANCED… FACILITIES<\/span><\/span><span class="labelCount">66<\/span>/);
+    assert.equal(room.flex, "1 1 auto");
+    assert.equal(room["min-width"], "0");
+    assert.equal(declarationsOf(LABELS, ".labelCount").flex, "0 0 auto");
+    // A tile's square plans the name over two lines in the square's width.
+    assert.equal(declarationsOf(LABELS, ".stacked .labelText")["align-self"], "stretch");
+  });
+
+  it("says Locked and the locked rows' count on a plate that can be pressed, in the milestone's ink", () => {
+    // The window has reached the locked rows: the label sits before the first of them.
+    const html = render(rows(3), { sections: [locked(2, 77)] });
+
+    assert.match(html, /<button class="label lockedLabel" style="left:346rem;top:0rem;width:171rem;height:27\.25rem" data-has-select="true" aria-expanded="true" data-bbm-label="locked"><span class="planned labelText"><span class="line">LOCKED<\/span><\/span><span class="labelCount">77<\/span><\/button>/);
+    assert.match(render(rows(2), { sections: [locked(2, 77, true)] }), /aria-expanded="false"/);
+    // The milestone's ink, as a locked plate's "MS n" says it, on the label plate, which a pointer lights.
+    assert.equal(declarationsOf(LABELS, ".lockedLabel .labelText").color, "var(--bbm-bodyMilestone)");
+    assert.equal(declarationsOf(LABELS, ".lockedLabel:hover")["background-color"], "var(--bbm-plateHover)");
+  });
+
+  it("puts a search's fifth result under the first at the third step, nearest the field, and along the row by the knob", () => {
+    const step3 = { over: { boxWidth: 1091 }, typed: "four" };
+
+    assert.match(render(rows(30), step3), /left:0rem;top:29\.25rem;width:177\.5rem[^>]*data-catalog-entry="5"/);
+    assert.match(render(rows(30), { over: { boxWidth: 1091 } }), /left:718rem;top:0rem[^>]*data-catalog-entry="5"/);
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, searchFlow: "rowOrder" });
+    assert.match(render(rows(30), step3), /left:718rem;top:0rem[^>]*data-catalog-entry="5"/);
+    // A value outside the knob's list reads as shipped.
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, searchFlow: "sideways" });
+    assert.match(render(rows(30), step3), /left:0rem;top:29\.25rem;width:177\.5rem[^>]*data-catalog-entry="5"/);
+  });
+
+  it("draws a small menu's big plates with the picture as tall as the plate allows, the name over the numbers", () => {
+    const html = render(rows(7), { over: { menuRows: 7, smallMenusGrow: true } });
+
+    assert.match(html, /class="plate big" style="left:0rem;top:0rem;width:171rem;height:71\.125rem"/);
+    assert.match(html, /<span class="artwork" style="width:66rem;height:66rem"><img class="picture" src="" style="width:66rem;height:66rem"/);
+    assert.match(html, /<span class="bigWords"><span class="planned name" data-bbm-name="10"><span class="line">Building 1<\/span><\/span><div class="numbers" data-bbm-fact="true">/);
+    assert.match(render(rows(1)), /<span class="artwork"><img class="picture" src="" alt=""/);
+  });
+
+  it("draws the big form above 100% text with none of the one-line plate's sizes, its picture inline", () => {
+    // Three rows at 130% in a body dragged tall: two lines, each past the big form's floor there.
+    const html = render(rows(3), { over: { menuRows: 3, smallMenusGrow: true, textScale: 1.3, bodyHeight: 200 } });
+
+    assert.equal(count(html, /class="plate big"/), 3);
+    assert.equal(count(html, /largeText/), 0);
+    assert.match(html, /<span class="artwork" style="width:66rem;height:66rem"><img class="picture" src="" style="width:66rem;height:66rem"/);
+    assert.equal(count(html, /class="second"/), 3);
+    // Whatever the large-text artwork sets, the big one sets for itself: its size inline, the rest in its rule.
+    const sheet = "mods/Bodies/listBody.module.scss";
+    const [large, big, plain] = [".largeText .artwork", ".big .artwork", ".artwork"].map((selector) => declarationsOf(sheet, selector));
+    for (const prop of Object.keys(large)) {
+      assert.ok(prop === "width" || prop === "height" || prop in big || large[prop] === plain[prop], prop);
+    }
+    assert.equal(big.flex, "0 0 auto");
+  });
+
+  it("gives the big form both numbers and Enter's mark, and a grown one-line plate one number on two name lines", () => {
+    const facts = () => ({ constructionCost: 85000, capacity: 400 });
+    const big = render(rows(7, facts), { enterId: 2, over: { menuRows: 7, smallMenusGrow: true } });
+    const oneLine = render(rows(7, facts), { over: { menuRows: 7, smallMenusGrow: true, textScale: 1.3 } });
+
+    assert.equal(count(big, /class="second"/), 7);
+    assert.match(big, /data-catalog-entry="2"[\s\S]*?<img class="enterMark"[^>]*><span class="first">¢/);
+    assert.equal(count(oneLine, /class="second"/), 0);
+    assert.equal(count(oneLine, /data-bbm-name="10"><span class="line">Building \d<\/span><\/span>/), 7);
+    assert.match(oneLine, /class="plate largeText" style="[^"]*height:46\.75rem"/);
+  });
+
+  it("gives a label the whole line under the Block labels knob's own line, the buildings starting the next", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, blockLabels: "ownLine" });
+    const html = render(rows(2), { sections: [group(0, "Small Roads", 1), group(1, "Medium Roads", 1)] });
+
+    assert.match(html, /class="label" style="left:0rem;top:0rem;width:690rem;height:27\.25rem"/);
+    assert.match(html, /left:0rem;top:29\.25rem[^>]*data-catalog-entry="1"/);
+    assert.match(html, /class="label" style="left:0rem;top:58\.5rem;width:690rem/);
+    assert.match(html, /left:0rem;top:87\.75rem[^>]*data-catalog-entry="2"/);
+  });
+});
+
+describe("the list's Locked label under a press", () => {
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => resetBindings());
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  it("collapses the locked rows, and a press on a collapsed label opens them", () => {
+    act(() => { root = create(body(rows(3), { sections: [locked(2, 77)] })); });
+    act(() => root!.root.find((node) => node.props["data-bbm-label"] === "locked" && typeof node.props.onSelect === "function").props.onSelect());
+
+    assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "SetCatalogSectionCollapsed", args: ["locked", true] });
+
+    act(() => root!.update(body(rows(2), { sections: [locked(2, 77, true)] })));
+    act(() => root!.root.find((node) => node.props["data-bbm-label"] === "locked" && typeof node.props.onSelect === "function").props.onSelect());
+
+    assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "SetCatalogSectionCollapsed", args: ["locked", false] });
+  });
+});
+
+describe("the list's names as the game draws them, a frame after each render", () => {
+  let root: ReactTestRenderer | undefined;
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: Record<string, unknown>;
+  const frames = new Map<number, () => void>();
+  let nextFrame = 0;
+
+  /** The names a body plans, in the order their boxes mount, with the room the body gave each. */
+  const planned = () => root!.root.findAll((node) => typeof node.props.name === "string" && typeof node.props.width === "number" && typeof node.props.font === "number");
+  const linesOf = (name: ReturnType<typeof planned>[number]) => name.findAll((node) => node.props.className === "line").map((node) => node.children.join(""));
+  /** The game drawing: each name's box as wide as the body's room, each line as wide as its text, clipped at the box. */
+  const boxes: number[] = [];
+  const drawnBox = (element: { type: unknown; props: Record<string, unknown> }) => {
+    if (element.type !== "span" || !String(element.props.className ?? "").startsWith("planned")) return null;
+    const at = boxes.push(boxes.length) - 1;
+    const name = () => planned()[at];
+    return {
+      get drawn() { return linesOf(name()).join("\n"); },
+      get clientWidth() { return name().props.width as number; },
+      get children() {
+        const box = name().props.width as number;
+        return linesOf(name()).map((line) => ({ clientWidth: box, offsetWidth: box, scrollWidth: Math.max(box, textWidth(line, name().props.font as number)) }));
+      },
+    };
+  };
+  /** Each box an observer watches, and the lines it drew when the observer last told of it. */
+  const watched = new Map<{ drawn: string }, { told: string | null; tell: () => void }>();
+  /** The game's observer: it tells of a box once it is watched, and again each frame its lines are laid out anew. */
+  class DrawnObserver {
+    constructor(private readonly tell: () => void) {}
+    observe(box: { drawn: string }) { watched.set(box, { told: null, tell: this.tell }); }
+    disconnect() { for (const [box, watch] of watched) if (watch.tell === this.tell) watched.delete(box); }
+  }
+  /** Every frame the names ask for, and every box laid out anew, until none asks for another. */
+  const settle = () => {
+    for (let pass = 0; pass < 40; pass += 1) {
+      for (const [box, watch] of watched) {
+        if (watch.told === box.drawn) continue;
+        watch.told = box.drawn;
+        watch.tell();
+      }
+      if (frames.size === 0) return;
+      const due = [...frames.values()];
+      frames.clear();
+      act(() => due.forEach((frame) => frame()));
+    }
+  };
+
+  beforeEach(() => {
+    resetBindings();
+    boxes.length = 0;
+    frames.clear();
+    watched.clear();
+    saved = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame, window: globals.window, ResizeObserver: globals.ResizeObserver };
+    globals.ResizeObserver = DrawnObserver;
+    globals.requestAnimationFrame = (frame: () => void) => {
+      frames.set((nextFrame += 1), frame);
+      return nextFrame;
+    };
+    globals.cancelAnimationFrame = (id: number) => frames.delete(id);
+    // A rem a pixel, so a drawn width in pixels reads as rem.
+    globals.window = { innerHeight: 1080 };
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    Object.assign(globals, saved);
+  });
+
+  it("keeps every line of a long name inside its box after a one-letter search is cleared at 130%", () => {
+    setBinding("options", "textScale", 1.3);
+    const schools: [string, string][] = [
+      ["Lakeside Small Elementary School (5x3)", "(5x3)"],
+      ["Lakeside Small Elementary School No.2 (4x6)", "(4x6)"],
+      ["Lakeside Small Elementary School No.2 (6x9)", "(6x9)"],
+      ["Red Maple Elementary School", ""],
+      ["Lakeside Small Elementary School (7x6)", "(7x6)"],
+    ];
+    const entries = schools.map(([name, distinctWord], at) => entry(at + 1, { name, distinctWord, constructionCost: 450_000, capacity: 1_000, buildingType: "School" }));
+    const at130 = (typed: string) => body(entries, { over: { textScale: 1.3 }, typed });
+    const overruns = () => planned().flatMap((name) => linesOf(name)
+      .filter((line) => textWidth(line, name.props.font as number) > (name.props.width as number))
+      .map((line) => `${name.props.name}: "${line}" in ${name.props.width}`));
+
+    act(() => { root = create(at130(""), { createNodeMock: drawnBox }); });
+    settle();
+    assert.deepEqual(overruns(), []);
+
+    act(() => root!.update(at130("a")));
+    settle();
+    act(() => root!.update(at130("")));
+    settle();
+
+    assert.equal(planned().length, schools.length);
+    assert.deepEqual(overruns(), []);
+  });
+});

@@ -1,6 +1,8 @@
 ﻿using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Utilities;
 
+using Game.UI.Menu;
+
 using System;
 
 namespace BetterBuildingMenu.Systems
@@ -12,48 +14,114 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(height);
 		}
 
-		private void CommitAssetMenuHeight()
+		private void CommitAssetMenuHeight(bool opens)
 		{
-			// Only on release, like the width: a drag publishes on every mouse move, and
+			// Only on release: a drag publishes on every mouse move, and
 			// writing the settings file at that rate is what the live binding avoids.
-			var height = AssetMenuHeight.Clamp(_AssetMenuHeight);
-			if (Math.Abs(Mod.Settings.AssetMenuHeight - height) < 0.1f)
+			// A release that lands from the build menu's collapsed box opens it in the same save.
+			if (!AssetMenuSize.Commit(Mod.Settings, AssetMenuHeight.Clamp(_AssetMenuHeight), opens))
 			{
 				return;
 			}
 
-			Mod.Settings.AssetMenuHeight = height;
 			Mod.Settings.ApplyAndSave();
 		}
 
-		private void SetAssetMenuCatalogWidth(float width)
+		private void SetAssetMenuWidthStep(int picked)
 		{
-			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(width);
-		}
+			// The binding helper has already published what the UI sent: publish the kept
+			// step over it, then save only a release that changes the file. A drag sends
+			// once, on release, so there is nothing to wait out.
+			var step = WidthSteps.Sanitize(picked);
+			_AssetMenuWidthStep.Value = step;
 
-		private void CommitAssetMenuCatalogWidth()
-		{
-			// On release only, as the height is.
-			var width = AssetMenuCatalogWidth.Sanitize(_AssetMenuCatalogWidth);
-			if (Math.Abs(Mod.Settings.AssetMenuCatalogWidth - width) < 0.1f)
+			if (Mod.Settings.AssetMenuWidthStep == step)
 			{
 				return;
 			}
 
-			Mod.Settings.AssetMenuCatalogWidth = width;
+			Mod.Settings.AssetMenuWidthStep = step;
 			Mod.Settings.ApplyAndSave();
 		}
 
-		private void SetControlPaneShown(bool shown)
+		/// <summary>The box collapsed to its top row and tabs, or opened again: kept, and saved only when it changes.</summary>
+		/// <remarks>See docs/design-notes.md, "The top edge".</remarks>
+		private void SetAssetMenuCollapsed(bool collapsed)
 		{
-			// One click, one write: there is no drag to wait out.
-			_ControlPaneShown.Value = shown;
-			if (Mod.Settings.ControlPaneShown == shown)
+			// As the Width step: the binding takes what the UI sent, and the file only a change.
+			_AssetMenuCollapsed.Value = collapsed;
+
+			if (Mod.Settings.AssetMenuCollapsed == collapsed)
 			{
 				return;
 			}
 
-			Mod.Settings.ControlPaneShown = shown;
+			Mod.Settings.AssetMenuCollapsed = collapsed;
+			Mod.Settings.ApplyAndSave();
+		}
+
+		/// <summary>A double press on the top edge: the game's own size, open, saved once; the apply re-pushes the three bindings.</summary>
+		private void RestoreAssetMenuSize()
+		{
+			if (!AssetMenuSize.Restore(Mod.Settings))
+			{
+				return;
+			}
+
+			Mod.Settings.ApplyAndSave();
+		}
+
+		/// <summary>VIEW's Look: every menu's look, saved once a click changes it; a look not finished reads as Standard.</summary>
+		/// <remarks>See docs/design-notes.md, "The looks".</remarks>
+		private void SetAssetMenuLook(string picked)
+		{
+			// As the Width step: publish the kept look over what the UI sent, then save only a change.
+			var look = Looks.Sanitize(picked);
+			_AssetMenuLook.Value = look;
+
+			if (string.Equals(Mod.Settings.MenuLook, look, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			Mod.Settings.MenuLook = look;
+			Mod.Settings.ApplyAndSave();
+		}
+
+		private void OpenModOptions()
+		{
+			// VIEW's More options: the mod's own page, on its one tab. Closing Options lands on the
+			// pause menu, which is the game's. A failure costs the player a click, never the session.
+			try
+			{
+				var options = World.GetExistingSystemManaged<OptionsUISystem>();
+				if (options is null)
+				{
+					Mod.Log.Warn("Could not open the mod's Options page: the game's Options system is missing");
+					return;
+				}
+
+				var target = OptionRows.OptionsPage(Mod.Settings.id, BetterBuildingMenuSettings.SETTINGS);
+				options.OpenPage(target.Page, target.Section, isAdvanced: false);
+			}
+			catch (Exception ex)
+			{
+				Mod.Log.Warn(ex, "Could not open the mod's Options page");
+			}
+		}
+
+		/// <summary>The open menu's own VIEW, kept across sessions, saved once; "" or a kind no body draws goes back to Default view.</summary>
+		/// <remarks>The save re-pushes the picks, which redraws the body. See docs/design-notes.md, "Each menu's own view and group".</remarks>
+		private void SetAssetMenuView(string kind)
+		{
+			var kept = MenuPicks.With(Mod.Settings.MenuViews, _assetMenu.Menu, BodyViews.SanitizePick(kind, Knobs.DeveloperMode));
+
+			if (_assetMenu.Menu.Length == 0 || string.Equals(kept, Mod.Settings.MenuViews, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			Mod.Settings.MenuViews = kept;
 			Mod.Settings.ApplyAndSave();
 		}
 	}

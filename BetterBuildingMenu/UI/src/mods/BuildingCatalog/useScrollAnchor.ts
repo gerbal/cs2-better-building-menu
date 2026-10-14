@@ -1,71 +1,144 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import {
   CATALOG_ANCHOR_MAX_FRAMES,
   anchorScrollTop,
   isAnchorMeasurable,
   isAnchorOnScreen,
+  isOnLineOne,
   isScrollContainer,
-  revealScrollTop,
+  lineOneScrollTop,
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
-import { getAssetMenuAnchor, setAssetMenuAnchor } from "domain/assetMenuViewStore";
-import { findScrollContainer, lastCatalogRow } from "./catalogDom";
+import { getAssetMenuAnchor, getAssetMenuListStart, setAssetMenuAnchor, setAssetMenuListStart } from "domain/assetMenuViewStore";
+import { planListScroll, type ListScroll, type StartMove } from "domain/listScroll";
+import { findScrollContainer, lastCatalogRow, pxPerRem } from "./catalogDom";
+
+/** What a page says about where its list starts; see BuildingCatalogPage. */
+export interface ListStartPage {
+  /** Which start of the list the page answers, or null before C# sends one. */
+  listStart: number | null;
+  anchorId: number;
+  anchorIndex: number;
+  itemCount: number;
+}
+
+type Move = Exclude<ListScroll, { kind: "none" }>;
 
 /**
- * Breathing room under a revealed detail, in CSS pixels. Small on purpose: it
- * keeps the last line clear of the asset menu's edge, not centred.
+ * How many frames running the list must read in place before a move ends: one frame after a set,
+ * Cohtml can still re-wrap the rows above the anchored one and drop it off line 1.
  */
-const EXPANDED_ROW_REVEAL_MARGIN = 6;
+const IN_PLACE_READINGS = 2;
 
 /**
- * Put the player back where they were, over as many frames as it takes. A
- * retry loop, not one measurement: Cohtml lays out asynchronously and the
- * window is still arriving from C#, so neither has settled by the first effect.
+ * One frame of a move: true when the list reads where the move puts it, or else a set towards it. A
+ * row that has not rendered, or rects still at Cohtml's pre-layout zeroes, are worth another frame.
+ * `edge` is the room line 1 keeps above it, in pixels (see `bodyLines`).
  */
-export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, itemCount: number): void {
+function moveList(root: HTMLElement | null, move: Move, edge: number): boolean {
+  const row = root ? lastCatalogRow(root, move.kind === "top" ? undefined : move.id) : null;
+
+  if (!root || !row) {
+    return false;
+  }
+
+  const scroller = findScrollContainer(row, root, isScrollContainer);
+
+  if (move.kind === "top") {
+    // A list that fits has nothing to scroll.
+    if (!scroller || scroller.scrollTop <= 0) return true;
+
+    scroller.scrollTop = 0;
+    return false;
+  }
+
+  if (!scroller) {
+    return false;
+  }
+
+  const rowRect = row.getBoundingClientRect();
+  const scrollerRect = scroller.getBoundingClientRect();
+  const geometry: AnchorGeometry = {
+    containerTop: scrollerRect.top,
+    containerHeight: scroller.clientHeight,
+    rowTop: rowRect.top,
+    rowHeight: rowRect.height,
+  };
+
+  if (!isAnchorMeasurable(geometry)) {
+    return false;
+  }
+
+  if (move.kind === "restore") {
+    if (isAnchorOnScreen(geometry)) return true;
+
+    scroller.scrollTop = anchorScrollTop(scroller.scrollTop, geometry.rowTop, geometry.containerTop, geometry.containerHeight);
+    return false;
+  }
+
+  if (isOnLineOne(geometry, edge)) {
+    return true;
+  }
+
+  const before = scroller.scrollTop;
+  scroller.scrollTop = lineOneScrollTop(before, geometry.rowTop, geometry.containerTop, edge);
+
+  // In the list's last screen the row cannot reach line 1: in view, where the scroll stops, is in place.
+  return scroller.scrollTop === before && isAnchorOnScreen(geometry);
+}
+
+/**
+ * Puts the list in place when a page lands, over as many frames as it takes: at a new start (an
+ * open, a tab pick, a sort) the anchored row on line 1, `lineEdgeRem` below the list's top, or the
+ * list at its top; on a remount, the kept row back in view, once. A retry loop, not one measurement:
+ * Cohtml lays out asynchronously and the window is still arriving from C#. See docs/design-notes.md,
+ * "Opening on the building's tab".
+ */
+export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, page: ListStartPage, lineEdgeRem: number): void {
+  // Per mount: a remount brings its row back once, and a start in this mount puts that aside.
+  const settled = useRef(false);
+  // Read each frame, so a body that changes its lines mid-move does not restart the move.
+  const edge = useRef(lineEdgeRem);
+  edge.current = lineEdgeRem;
+  // A start's move from its first page until it ends, so a page landing mid-move carries it on.
+  const underWay = useRef<StartMove | null>(null);
+  const { listStart, anchorId, anchorIndex, itemCount } = page;
+
   useEffect(() => {
-    const anchored = getAssetMenuAnchor(anchorKey);
+    const move = planListScroll({
+      listStart,
+      positioned: getAssetMenuListStart(),
+      anchorId,
+      anchorIndex,
+      itemCount,
+      stored: getAssetMenuAnchor(anchorKey),
+      settled: settled.current,
+      underWay: underWay.current,
+    });
 
-    if (anchored === null || itemCount === 0) {
+    // The mount's first page with rows is its one chance to restore: a row armed after it is not a
+    // remount. A restore in flight stays unsettled until it ends, so a page landing mid-move redoes it.
+    if (move.kind === "none") {
+      if (itemCount > 0) settled.current = true;
       return;
     }
 
+    if (move.kind !== "restore") underWay.current = move;
+
     let frame = 0;
+    let inPlace = 0;
     let handle = 0;
     let cancelled = false;
 
-    // Cleared only when the loop finishes: clearing up front would lose the
-    // anchor to the first frame's zero-height rects.
+    // Recorded only when the loop ends: a page that lands mid-move plans the same move again.
     const finish = () => {
-      setAssetMenuAnchor(anchorKey, null);
-    };
+      settled.current = true;
 
-    const measure = (): { scroller: HTMLElement; geometry: AnchorGeometry } | null => {
-      const root = rootRef.current;
-      const row = root ? lastCatalogRow(root, anchored) : null;
-
-      if (!root || !row) {
-        return null;
+      if (move.kind !== "restore") {
+        underWay.current = null;
+        setAssetMenuListStart(move.start);
+        setAssetMenuAnchor(anchorKey, move.kind === "lineOne" ? move.id : null);
       }
-
-      const scroller = findScrollContainer(row, root, isScrollContainer);
-
-      if (!scroller) {
-        return null;
-      }
-
-      const rowRect = row.getBoundingClientRect();
-      const scrollerRect = scroller.getBoundingClientRect();
-
-      return {
-        scroller,
-        geometry: {
-          containerTop: scrollerRect.top,
-          containerHeight: scroller.clientHeight,
-          rowTop: rowRect.top,
-          rowHeight: rowRect.height,
-        },
-      };
     };
 
     const step = () => {
@@ -73,42 +146,19 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
         return;
       }
 
+      // Out of budget, the list stays where it is: a row that never rendered is not worth chasing.
       if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES) {
-        // The row never became reachable — a predicate changed while the asset menu
-        // was down, or it sits beyond a window that stopped growing. Top of
-        // the list is the honest answer, and where we already are.
         finish();
         return;
       }
 
-      const measured = measure();
+      inPlace = moveList(rootRef.current, move, edge.current * pxPerRem()) ? inPlace + 1 : 0;
 
-      if (measured === null) {
-        // Not rendered yet, or not in this match set at all. Both look the
-        // same from here and both are worth another frame, up to the budget.
-        handle = requestAnimationFrame(step);
-        return;
-      }
-
-      if (!isAnchorMeasurable(measured.geometry)) {
-        handle = requestAnimationFrame(step);
-        return;
-      }
-
-      if (isAnchorOnScreen(measured.geometry)) {
+      if (inPlace >= IN_PLACE_READINGS) {
         finish();
         return;
       }
 
-      measured.scroller.scrollTop = anchorScrollTop(
-        measured.scroller.scrollTop,
-        measured.geometry.rowTop,
-        measured.geometry.containerTop,
-        measured.geometry.containerHeight,
-      );
-
-      // Verify next frame rather than trusting the arithmetic: it is computed
-      // against a list still being filled, so the row it aims at moves.
       handle = requestAnimationFrame(step);
     };
 
@@ -118,76 +168,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       cancelled = true;
       cancelAnimationFrame(handle);
     };
-    // itemCount rather than the items array: the effect has to wait for the
-    // rows to be in the document before it can find one, and a new array
-    // identity every publish would re-run it on data that has not moved.
-  }, [rootRef, anchorKey, itemCount]);
-}
-
-/**
- * Bring a freshly expanded row's detail into view, since expanding grows the
- * row downward and the list does not follow. A ResizeObserver, not a rAF:
- * Cohtml lays out a frame late, so a rAF reads the pre-expansion height.
- */
-export function useRevealExpandedRow(
-  rootRef: RefObject<HTMLElement>,
-  expandedId: number | null,
-  detailClassName: string
-): void {
-  useEffect(() => {
-    const root = rootRef.current;
-
-    if (expandedId === null || !root) {
-      return;
-    }
-
-    const row = lastCatalogRow(root, expandedId);
-
-    if (!row) {
-      return;
-    }
-
-    const detail = row.querySelector(`.${detailClassName}`) ?? row;
-    const scroller = findScrollContainer(row, root, isScrollContainer);
-
-    if (!scroller || !(detail instanceof HTMLElement)) {
-      return;
-    }
-
-    let done = false;
-    const observer = new ResizeObserver(() => {
-      if (done) {
-        return;
-      }
-
-      const rowRect = row.getBoundingClientRect();
-      const detailRect = detail.getBoundingClientRect();
-      const scrollerRect = scroller.getBoundingClientRect();
-
-      // Nothing has laid out yet; wait for the next notification rather than
-      // computing a reveal from zeroes.
-      if (detailRect.height === 0) {
-        return;
-      }
-
-      const next = revealScrollTop({
-        currentScrollTop: scroller.scrollTop,
-        rowTop: rowRect.top,
-        detailBottom: detailRect.top + detailRect.height,
-        containerTop: scrollerRect.top,
-        containerHeight: scroller.clientHeight,
-        margin: EXPANDED_ROW_REVEAL_MARGIN,
-      });
-
-      done = true;
-
-      if (next !== scroller.scrollTop) {
-        scroller.scrollTop = next;
-      }
-    });
-
-    observer.observe(detail);
-
-    return () => observer.disconnect();
-  }, [rootRef, expandedId, detailClassName]);
+    // The page's numbers rather than its rows: a new array every publish would restart the move on
+    // data that has not moved.
+  }, [rootRef, anchorKey, listStart, anchorId, anchorIndex, itemCount]);
 }

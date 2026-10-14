@@ -1,0 +1,134 @@
+@use "../../base.scss" as _base;
+@use "../../assetMenuGeometry" as *;
+
+// The rows the popovers and the control pane list: one per choice, 24 tall, the lit one in the
+// selected colour no interface style changes. See docs/design-notes.md, "The top row".
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+// The game's icon Button, with the game's press. Its one class pins a square size and paints a
+// fill: two classes outrank it whichever sheet loads last.
+.list .row {
+  @include _base.transparentButton(false, true);
+
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  // The icon variant pins a square width, and these carry words.
+  width: auto !important;
+  height: $popover-row;
+  padding: 0 $picker-row-padding;
+  border-radius: 3rem;
+  background-color: transparent;
+  color: var(--bbm-tState);
+  font-size: calc(#{$top-row-text} * var(--fontScale));
+  white-space: nowrap;
+}
+
+// Under the pointer, the open control's fill and its inks: the style's accent under the game's light styles,
+// where the row's light inks do not read. The lit row keeps the selected fill and its ink.
+.list .row:hover {
+  background-color: var(--bbm-ctlOpen);
+  color: var(--bbm-ctlOpenValue);
+}
+
+.list .dim:hover,
+.list .row:hover .note {
+  color: var(--bbm-ctlOpenDim);
+}
+
+.list .lit,
+.list .lit:hover {
+  background-color: var(--bbm-popOn);
+  color: var(--bbm-armText);
+}
+
+.list .lit:hover .note {
+  color: var(--bbm-armText);
+}
+
+// Offered, but not what draws here.
+.list .dim {
+  color: var(--bbm-tDim);
+}
+
+// Stored, but not what draws here (a wide step beside the pane): the selected fill's ink, faded, since
+// the dim ink on that fill does not read.
+.list .lit.dim {
+  color: var(--bbm-armText);
+  opacity: 0.7;
+}
+
+.name {
+  flex: 1 1 auto;
+}
+
+.note {
+  flex: 0 0 auto;
+  margin-left: $picker-note-gap;
+  color: var(--bbm-tDim);
+}
+
+.lit .note {
+  color: var(--bbm-armText);
+}
+
+// VIEW's list: a positioned box, so its Width sub-list sits beside it in a popover or the pane.
+.viewList {
+  position: relative;
+}
+
+// Between the views and the doors to what applies to every menu.
+.divider {
+  flex: 0 0 auto;
+  height: 1rem;
+  margin: 3rem 4rem;
+  background-color: var(--bbm-divider);
+}
+
+// A sub-list's name, which no click acts on.
+.header {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: $popover-row;
+  padding: 0 8rem;
+  color: var(--bbm-tDim);
+  font-size: calc(#{$top-row-text} * var(--fontScale));
+  white-space: nowrap;
+}
+
+// "Look, every menu" and "Width, every menu": 4 to the VIEW list's left, from inside its popover's
+// padding, opening the way its VIEW list does. Each way states one offset, so neither has to unset the
+// other's.
+.lookList,
+.widthList {
+  left: -($popover-width + 4rem + $popover-padding);
+}
+
+// Upward: its bottom 4 below the Look row's, which sits two rows (Width, More options) above the list's
+// bottom.
+.lookList.up {
+  bottom: 2 * $popover-row - 4rem;
+}
+
+.lookList.down {
+  top: -$popover-padding;
+}
+
+// Upward: its bottom 4 below the Width row's, which sits one row (More options) above the list's
+// bottom.
+.widthList.up {
+  bottom: $popover-row - 4rem;
+}
+
+// Downward, under a VIEW popover that hangs from under the top row: its top level with the
+// popover's.
+.widthList.down {
+  top: -$popover-padding;
+}

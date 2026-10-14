@@ -3,9 +3,47 @@
 // No rules: assetMenuLayout.ts imports this for the numbers alone, and a
 // sheet with rules would load them ahead of the components' own sheets.
 :export {
-  tableRowFurniture: $table-row-furniture;
   paneTotal: $pane-width + $pane-gap;
+  bodySideMargin: $body-side-margin;
   handleHeight: $handle-height;
   widthHandleWidth: $width-handle-width;
   widthHandleReach: $width-handle-reach;
+  tabRowBand: $tab-row-gap-above + $tab-row-height + $tab-row-pad-below;
+  tabRowHeight: $tab-row-height;
+  tabRowInset: $tab-row-inset;
+  tabRowInsetRight: $tab-row-inset-right;
+  tabCellMinWidth: $tab-cell-min-width;
+  tabCellPadding: $tab-cell-padding;
+  tabCellGap: $tab-cell-gap;
+  tabCountSize: $tab-count-size;
+  tabNameSize: $tab-name-size;
+  tabNameGap: $tab-name-gap;
+  tabSegmentMargin: $tab-segment-margin;
+  boxChrome: $box-chrome;
+  topBand: $top-band;
+  topRowInset: $top-row-inset;
+  fieldPadding: $field-padding;
+  fieldGap: $field-gap;
+  fieldGlyph: $field-glyph;
+  fieldClear: $field-clear;
+  topRowText: $top-row-text;
+  closeSize: $close-size;
+  closeGap: $close-gap;
+  topEdgeHeight: $top-edge-above + $top-edge-inside;
+  fieldMinWidth: $field-min-width;
+  controlsGap: $controls-gap;
+  controlPadding: $control-padding;
+  controlPaddingFolded: $control-padding-folded;
+  controlWordGap: $control-word-gap;
+  controlGlyph: $control-glyph;
+  controlCaret: $control-caret;
+  controlCaretGap: $control-caret-gap;
+  controlDivider: $control-divider;
+  popoverWidth: $popover-width;
+  popoverGap: $popover-gap;
+  popoverPadding: $popover-padding;
+  pickerRowPadding: $picker-row-padding;
+  pickerNoteGap: $picker-note-gap;
+  popoverFilterHeight: $popover-filter-height;
+  notchTop: $notch-foot + 2 * $notch-side;
 }

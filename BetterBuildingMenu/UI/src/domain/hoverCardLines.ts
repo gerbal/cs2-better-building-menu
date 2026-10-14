@@ -81,13 +81,17 @@ const PROMOTED_BY_CATEGORY: Readonly<Record<string, ReadonlySet<string>>> = {
   Zones: new Set(["zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace"]),
 };
 
+/** The word after a count of workers ("20 jobs"): the hover card's, the readout's and Plates' rows'. */
+export function workersUnitWord(translate: Translate): string {
+  return translate("Tooltip.LABEL[BetterBuildingMenu.WorkersUnit]", "jobs") ?? "jobs";
+}
+
 export function hoverCardLabels(translate: Translate): HoverCardLabels {
   return {
     // Vanilla's own lines under its own keys, so they read as its tooltip does
     // in every language. A network's cost too: PlaceableNetCostBinder passes
     // Common.ASSET_CONSTRUCTION_COST, which no locale carries (checked in
     // game), so the card takes ConstructionCostBinder's key, the same word.
-    // The table's narrower columns keep ours.
     cost: translate("Properties.CONSTRUCTION_COST", "Cost") ?? "Cost",
     upkeep: translate("Properties.UPKEEP", "Upkeep") ?? "Upkeep",
     capacity: translate("Tooltip.LABEL[BetterBuildingMenu.Capacity]", "Capacity") ?? "Capacity",
@@ -111,7 +115,7 @@ export function hoverCardLabels(translate: Translate): HoverCardLabels {
     households: translate("Tooltip.LABEL[BetterBuildingMenu.Households]", "Households") ?? "Households",
     householdsUnit: translate("Tooltip.LABEL[BetterBuildingMenu.HouseholdsUnit]", "households") ?? "households",
     workers: translate("Tooltip.LABEL[BetterBuildingMenu.Workers]", "Workers") ?? "Workers",
-    workersUnit: translate("Tooltip.LABEL[BetterBuildingMenu.WorkersUnit]", "jobs") ?? "jobs",
+    workersUnit: workersUnitWord(translate),
     upgrades: translate("Tooltip.LABEL[BetterBuildingMenu.Upgrades]", "Upgrades") ?? "Upgrades",
     // "bays" rather than a bare number: the count is approximate for marked
     // lanes, and naming the unit keeps it from reading as an exact capacity.

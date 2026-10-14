@@ -51,5 +51,40 @@ namespace BetterBuildingMenu.Tests
 		{
 			Assert.Equal(string.Empty, CategoryIcon.Resolve(null, null));
 		}
+
+		[Theory]
+		// The address the game's own tab bar draws for a mod's category, which the page loads.
+		[InlineData("assetdb://Global/119d34108770f515c464a0227a3c854a", true)]
+		[InlineData("Media/Game/Icons/Roads.svg", true)]
+		// The exact prefix ResolveUri still resolves: not yet an address the page can load.
+		[InlineData("assetdb://global/119d34108770f515c464a0227a3c854a", false)]
+		[InlineData("", false)]
+		[InlineData("   ", false)]
+		[InlineData(null, false)]
+		public void APictureCanBeDrawnWhenTheGameWouldPublishItAsItIs(string? icon, bool drawn)
+		{
+			Assert.Equal(drawn, CategoryIcon.IsResolvable(icon));
+		}
+
+		[Fact]
+		public void KeepsTheIconTheGamesOwnTabDraws()
+		{
+			// A mod's category whose icon is an asset-database address the game passes through as it
+			// is: the game's tab bar draws that picture, so BBM's tab draws it too.
+			const string published = "assetdb://Global/119d34108770f515c464a0227a3c854a";
+
+			Assert.Equal(published, CategoryIcon.Resolve(published, published));
+			Assert.Equal(published, CategoryIcon.Chain(published, "Media/Game/Icons/Roads.svg"));
+		}
+
+		[Theory]
+		[InlineData("Media/Game/Icons/Ship.svg", "Media/Game/Icons/Transportation.svg", "Media/Game/Icons/Ship.svg")]
+		[InlineData("assetdb://global/2de3e193e05bcb956df54c75445d9c5c", "Media/Game/Icons/Transportation.svg", "Media/Game/Icons/Transportation.svg")]
+		[InlineData("", "Media/Game/Icons/Transportation.svg", "Media/Game/Icons/Transportation.svg")]
+		[InlineData(null, "assetdb://global/abc", CategoryIcon.Placeholder)]
+		public void ATabDrawsItsOwnIconThenItsMenusThenTheGamesPlaceholder(string? own, string? menu, string drawn)
+		{
+			Assert.Equal(drawn, CategoryIcon.Chain(own, menu));
+		}
 	}
 }

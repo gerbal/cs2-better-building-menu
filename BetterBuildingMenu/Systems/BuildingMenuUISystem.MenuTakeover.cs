@@ -2,12 +2,70 @@
 using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
 
+using Game.Input;
+
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Systems
 {
     internal partial class BuildingMenuUISystem : ExtendedUISystemBase
 	{
+		// The toolbar menu BBM has given the game's own while a gamepad is in use, to take back
+		// when the mouse returns.
+		private readonly GamepadMenuRecord _gamepadMenu = new();
+
+		// Set once the handler has warned, so a failing handler logs once per session.
+		private bool _controlSchemeWarned;
+
+		/// <summary>
+		/// Gives the menu BBM stands in for to the game's own when the player picks up a gamepad,
+		/// and takes it back, on the same menu, when the mouse returns.
+		/// </summary>
+		/// <remarks>
+		/// The toolbar's selection is left alone both ways. Runs inside the game's input code, so
+		/// it does nothing once the settings are gone and never throws. See docs/design-notes.md,
+		/// "The game's own menu under a gamepad".
+		/// </remarks>
+		private void OnControlSchemeChanged(InputManager.ControlScheme scheme)
+		{
+			if (Mod.Settings is null)
+			{
+				return;
+			}
+
+			try
+			{
+				// The toolbar itself is asked whether a menu is open: a load clears it with no deselect
+				// reaching BBM.
+				var action = _gamepadMenu.SchemeChanged(
+					scheme == InputManager.ControlScheme.Gamepad,
+					Mod.Settings.ReplaceVanillaBuildMenu,
+					_OwnsCurrentMenu.Value ? _appliedMenuIndex : 0,
+					_toolbarUISystem.hasActiveSelection,
+					out var reopen);
+
+				switch (action)
+				{
+					case HandOffAction.Yield:
+						YieldMenuToVanilla();
+						break;
+					case HandOffAction.Reopen:
+						// A fresh open, which the echo guard must not take for the game's echo.
+						_appliedMenuFrame = null;
+						VanillaMenuSelected(reopen);
+						break;
+				}
+			}
+			catch (System.Exception ex)
+			{
+				if (!_controlSchemeWarned)
+				{
+					_controlSchemeWarned = true;
+					Mod.Log.Warn(ex, "Could not hand the build menu over for a control scheme change");
+				}
+			}
+		}
+
 		/// <summary>
 		/// Closes the asset menu and, when it was standing in for a vanilla menu,
 		/// releases that menu's selection on the toolbar.
@@ -69,6 +127,13 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
+		/// <summary>The prefab the game has armed, as the index's id, or 0 for none.</summary>
+		/// <remarks>
+		/// Read from the tool when asked: a bar press re-arms the menu's last building before the open
+		/// reaches BBM, so the open sees it. See docs/design-notes.md, "Opening on the building's tab".
+		/// </remarks>
+		private int ArmedEntryId() => EntryIdOf(_toolSystem.activePrefab);
+
 		/// <summary>
 		/// A vanilla toolbar menu was opened: show the asset menu filtered to it.
 		/// </summary>
@@ -80,6 +145,13 @@ namespace BetterBuildingMenu.Systems
 		private void VanillaMenuSelected(int menuEntityIndex)
 		{
 			if (!Mod.Settings.ReplaceVanillaBuildMenu)
+			{
+				YieldMenuToVanilla();
+				return;
+			}
+
+			// Under a gamepad the game's own menu serves, and this one is taken back for the mouse.
+			if (_gamepadMenu.MenuSelected(InputManager.instance?.isGamepadControlSchemeActive == true, menuEntityIndex) == HandOffAction.Yield)
 			{
 				YieldMenuToVanilla();
 				return;
@@ -109,9 +181,14 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			_assetMenu = _assetMenu.SelectMenu(menuName);
-			// The player is now looking at everything this menu holds, which is
-			// what vanilla treats as having seen it.
+			// The tab and the row the open rule picks, over the menu as it opens, with the menu's own GROUP
+			// and its SORT this session; All for a menu in Cards or one the UI names small. See CatalogView.Opening.
+			var armed = ArmedEntryId();
+			var memory = _sessionSorts.For(menuName, MenuPicks.Get(Mod.Settings.MenuGroups, menuName));
+			var onAll = OpensOnAll.For(menuName, _menusOpeningOnAll, Mod.Settings.MenuViews, Mod.Settings.DefaultView, Knobs.DeveloperMode);
+			_assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed, onAll), memory);
+			// Vanilla drops a category's highlight as its selection moves off it; the asset menu never
+			// moves that selection, so an open clears the menu's highlights, whichever tab it opens on.
 			ClearVanillaMenuHighlights(menuName);
 			PublishScope();
 
@@ -145,6 +222,10 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void VanillaMenuDeselected()
 		{
+			// Before the check below: a menu closing under a gamepad is the game's, and leaves
+			// nothing to take back.
+			_gamepadMenu.Forget();
+
 			if (!Mod.Settings.ReplaceVanillaBuildMenu || !_OwnsCurrentMenu)
 			{
 				return;
@@ -176,13 +257,15 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			_assetMenuOpen = visible;
+			// The pick logger writes it at each placement.
+			_placementWatch.BoxOpen = visible;
 
 			if (!visible)
 			{
+				// A close is a moment the player is not placing: keep what they placed.
+				_placementWatch.FlushIfDirty();
 				return;
 			}
-
-			_AssetMenuWidth.Value = GridUtil.GetCurrentAssetMenuWidth();
 
 			RefreshAssetMenu();
 

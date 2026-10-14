@@ -13,6 +13,40 @@ namespace BetterBuildingMenu.Domain
 	{
 		public const string OptionsPrefix = "Options.";
 
+		/// <summary>The language our own strings are written in, and the one the game fills every other language's gaps from.</summary>
+		public const string EnglishLocaleId = "en-US";
+
+		/// <summary>The keys of ours the active language has no translation of, in ordinal order: none in English.</summary>
+		/// <remarks>
+		/// The game fills a language's gaps from English, so our English key answers in every
+		/// language and the UI cannot tell from the string alone. Where it can use the game's own
+		/// words instead, this list says to. A blank translation counts as none, as in Merge.
+		/// </remarks>
+		public static string[] UntranslatedKeys(
+			string? localeId,
+			IReadOnlyDictionary<string, string> english,
+			IReadOnlyDictionary<string, string>? translation)
+		{
+			if (string.Equals(localeId, EnglishLocaleId, StringComparison.Ordinal))
+			{
+				return Array.Empty<string>();
+			}
+
+			var untranslated = new List<string>();
+
+			foreach (var key in english.Keys)
+			{
+				if (translation is null || !translation.TryGetValue(key, out var text) || string.IsNullOrWhiteSpace(text))
+				{
+					untranslated.Add(key);
+				}
+			}
+
+			untranslated.Sort(StringComparer.Ordinal);
+
+			return untranslated.ToArray();
+		}
+
 		public static Dictionary<string, string> Merge(
 			IReadOnlyDictionary<string, string> english,
 			IReadOnlyDictionary<string, string>? translation)

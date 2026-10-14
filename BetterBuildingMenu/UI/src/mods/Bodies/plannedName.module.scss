@@ -1,0 +1,45 @@
+// A planned name, each line one box: namePlan.ts lays the lines out, where it is testable, and draws
+// whole where the name fits; a line is never wrapped again by the engine. See docs/design-notes.md, "Names".
+
+// Room above and below a box that clips, for the font's ascent and descent, which run past a line-height
+// under 1.3 em; a negative margin gives it back, so the lines keep their pitch. The game's sheets show no
+// overflow-y: visible beside overflow-x: hidden, and a browser makes that pair scroll, so the box is tall
+// enough instead: it clips across, never an accent above or a descender below.
+$ascent-room: 0.125em;
+
+@mixin clips-across {
+  overflow: hidden;
+  padding-top: $ascent-room;
+  padding-bottom: $ascent-room;
+  margin-top: -$ascent-room;
+  margin-bottom: -$ascent-room;
+}
+
+.planned {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  @include clips-across;
+}
+
+// One line: a nowrap box, the planner's own line. A line drawn wider than its box is clipped, and the
+// name is planned again a frame later in the room it drew in.
+.line {
+  display: block;
+  white-space: nowrap;
+  @include clips-across;
+}
+
+// A line with the typed word dimmed: its runs side by side, each in a span of its own, each keeping its
+// spaces. Cohtml lays out a block's runs as a column, which would put the typed word on a row of its own.
+.runs {
+  display: flex;
+  flex-direction: row;
+  white-space: pre;
+}
+
+// The word a search typed, dimmed by the Dim the typed word knob, so the rest of the name stands out: in
+// an ink that follows the interface style, dark on Bright blue's light plates.
+.typed {
+  color: var(--bbm-tTyped);
+}

@@ -1,0 +1,69 @@
+@use "../../assetMenuGeometry" as *;
+
+// What every body that places its buildings in slots draws around them: the visible region, the
+// game's Scrollable filling it, and the slots' box inside the side margins. See docs/design-notes.md,
+// "The bodies".
+@mixin body-shell {
+  // The body's visible region, which the scroller fills.
+  .body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  // The game's Scrollable, its track over the box's right margin rather than beside the slots: no
+  // room is kept for it, and its thumb sits on the slots' right edge, clear of the width strip.
+  .scroller.scroller {
+    --scrollbarPadding: 0rem;
+    --scrollbarSize: #{2 * $body-side-margin};
+    --scrollbarThumbSize: 3rem;
+    --contentPadding: 0rem;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  // The slots' box, as wide as the box less its side margins; each building sits in it by its slot.
+  .slots {
+    position: relative;
+    margin: 0 $body-side-margin;
+  }
+}
+
+// A cell a body places by its slot: its corners and its fill the look's, its place and size set inline.
+// Longhands: Cohtml drops a shorthand fed by var().
+@mixin cell-face($radius, $fill) {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-top-left-radius: $radius;
+  border-top-right-radius: $radius;
+  border-bottom-left-radius: $radius;
+  border-bottom-right-radius: $radius;
+  background-color: $fill;
+  pointer-events: auto;
+}
+
+// A cell that can be pressed, on the item class a body gives: lit under the pointer.
+@mixin cell-lit($item) {
+  #{$item}:hover {
+    background-color: var(--bbm-plateHover);
+  }
+}
+
+// 0.2.x's unique-mark states, on the item class a body gives: a unique shows its mark faintly under the
+// pointer, a unique the city holds always.
+@mixin unique-mark-states($item) {
+  .uniqueMark {
+    opacity: 0;
+  }
+
+  #{$item}:hover .uniqueMark {
+    opacity: 0.5;
+  }
+
+  .builtMark {
+    opacity: 1;
+  }
+}

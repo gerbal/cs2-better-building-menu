@@ -1,0 +1,160 @@
+@use "../../base.scss" as _base;
+@use "../../assetMenuGeometry" as *;
+@use "bodyShell" as *;
+
+// The tiles: picture tiles placed from their slot index, in the look's tokens, and the name line
+// under them. See docs/design-notes.md, "The bodies".
+
+@include body-shell;
+
+// The tiles' window above the name line.
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+// The body less its name line, or all of it, so the tiles scroll above the line.
+.window {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// Vanilla's glass, the picture inset 2 on every side.
+.tile {
+  @include cell-face(var(--bbm-radiusTile), var(--bbm-tile));
+  padding: 2rem;
+}
+
+@include cell-lit(".tile");
+
+// A building that cannot be placed, locked or a unique the city holds.
+.unplaceable,
+.unplaceable:hover {
+  background-color: var(--bbm-tileLocked);
+}
+
+// The one armed building: solid.
+.armed,
+.armed:hover {
+  background-color: var(--bbm-arm);
+}
+
+// The picture and its mark, sized inline from Tile size: the mark is a share of the box, by
+// base.scss's one ratio, so it sizes from the picture whatever the tile.
+.artwork {
+  position: absolute;
+  left: 2rem;
+  top: 2rem;
+
+  .picture {
+    display: block;
+  }
+
+  .mark {
+    @include _base.unique-mark(100%);
+  }
+}
+
+@include unique-mark-states(".tile");
+
+// The silhouette, rasters only: Cohtml re-rasterises a vector for every composite drawn over it and
+// does not survive doing so. Keyed off "false", since Cohtml's selector engine rejects :not().
+.unplaceable[data-vector-thumb="false"] .picture {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
+}
+
+.lockGlyph {
+  position: absolute;
+  right: 3rem;
+  top: 3rem;
+  width: 14rem;
+  height: 14rem;
+}
+
+// A tag's face: its font and padding are tileTag.ts's, which decides when a figure is said short and
+// cuts words that still run over with "…"; the width is bounded inline.
+@mixin tag-face {
+  position: absolute;
+  left: 2rem;
+  box-sizing: border-box;
+  height: 13rem;
+  padding: 0 3rem;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: 13rem;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top-left-radius: var(--bbm-tagRadius);
+  border-top-right-radius: var(--bbm-tagRadius);
+  border-bottom-left-radius: var(--bbm-tagRadius);
+  border-bottom-right-radius: var(--bbm-tagRadius);
+  background-color: var(--bbm-tagBg);
+  color: var(--bbm-tagText);
+}
+
+// The cost or the sorted value, on a tag at the tile's foot.
+.tag {
+  @include tag-face;
+  bottom: 2rem;
+}
+
+// What tells a look-alike apart from the others drawn, on a tag at the tile's top, clear of a lock
+// glyph. See docs/design-notes.md, "Names".
+.lookAlike {
+  @include tag-face;
+  top: 2rem;
+}
+
+// Plates' cost tag: the tag's place and room, its ends round.
+.tag.pill {
+  border-top-left-radius: 6.5rem;
+  border-top-right-radius: 6.5rem;
+  border-bottom-left-radius: 6.5rem;
+  border-bottom-right-radius: 6.5rem;
+}
+
+// Plates' name band on a look-alike: across the tile's top from the picture's inset, its width inline,
+// the tag's room, in the tag's type; its name cut to fit by tileBands.ts, never by CSS, or where no
+// cut fits, its tag. See docs/design-notes.md, "The looks".
+.band {
+  @include tag-face;
+  top: 2rem;
+  border-top-left-radius: 4rem;
+  border-top-right-radius: 4rem;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background-color: var(--bbm-bandBg);
+  color: var(--bbm-pillText);
+}
+
+// The tag stays dark under every interface style, so the look's own amber reads on it.
+.milestone {
+  color: var(--bbm-amber);
+}
+
+// Under the tiles: the pointed or armed tile's name, then the numbers a tile does not show.
+.nameLine {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6rem;
+  margin: 0 $body-side-margin;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+// Its font is TilesBody's, which plans the name in it.
+.lineName {
+  flex: 0 1 auto;
+  font-size: calc(11rem * var(--fontScale));
+  color: var(--bbm-tName);
+}
+
+.lineFacts {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: calc(10rem * var(--fontScale));
+  color: var(--bbm-tNum2);
+}

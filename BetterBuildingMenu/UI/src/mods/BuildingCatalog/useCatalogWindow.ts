@@ -1,10 +1,13 @@
 import { useValue } from "cs2/api";
-import { useCallback, useEffect, useRef, type RefObject } from "react";
-import type { BuildingCatalogEntry } from "domain/buildingCatalog";
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
+import type { BuildingCatalogEntry, CatalogSection, ViewFacts } from "domain/buildingCatalog";
+import { NO_SECTIONS } from "domain/bodyCells";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
-import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { getAssetMenuListStart } from "domain/assetMenuViewStore";
+import { CATALOG_WINDOW_STEP, keptRows, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { pendingStart } from "domain/listScroll";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
-import { findScrollContainer, lastCatalogRow } from "./catalogDom";
+import { listScroller } from "./catalogDom";
 
 export type { BuildingCatalogPageStatus };
 
@@ -19,16 +22,34 @@ const LOAD_MORE_POLL_MS = 100;
 export interface CatalogWindow {
   items: BuildingCatalogEntry[];
   totalCount: number;
+  /** The rows the window can reach, which Load more counts against; see BuildingCatalogPage. */
+  visibleCount: number;
   offset: number;
   limit: number;
   status: BuildingCatalogPageStatus;
   hasMore: boolean;
+  /** The window is at its ceiling with rows past it; see BuildingCatalogPage. */
+  capped: boolean;
   /** The row Enter arms while a search is active; see BuildingCatalogPage. */
   bestMatchId: number | null;
   /** The search this page answers, which trails the box by a debounce. */
   searchText: string;
+  /** Where Enter's target sits past the best match, as the page serves it; see BuildingCatalogPage. */
+  enterStep: number;
+  /** The row the list starts at, and its place in the result; see BuildingCatalogPage. */
+  anchorId: number;
+  anchorIndex: number;
+  /** Which start of the list this page answers, or null before C# sends one. */
+  listStart: number | null;
+  /** The labels over the whole result; see BuildingCatalogPage. */
+  sections: readonly CatalogSection[];
+  /** The view's facts over the whole result; see BuildingCatalogPage. */
+  facts: ViewFacts;
   loadMore(): void;
 }
+
+/** A page with no facts says nothing once and shows the capacity second. */
+const NO_FACTS: ViewFacts = { sharedValues: [], keyKind: "capacity" };
 
 /**
  * The catalog's window over the result set, and the frame loop that grows it
@@ -40,15 +61,25 @@ export function useCatalogWindow(
   scope: { viewMode: string; groupBy: string }
 ): CatalogWindow {
   const page = useValue(BuildingCatalog$);
-  const items = page?.items ?? [];
+  // A row the last page carried as it is keeps that page's object, so a body redraws only what moved.
+  const pageItems = page?.items;
+  const items = useMemo(() => keptRows(pageItems ?? []), [pageItems]);
   const totalCount = page?.totalCount ?? 0;
+  const visibleCount = page?.visibleCount ?? totalCount;
   const offset = page?.offset ?? 0;
   const limit = page?.limit ?? 100;
   const status: BuildingCatalogPageStatus = page?.status
     ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
   const hasMore = page?.hasMore ?? false;
+  const capped = page?.capped ?? false;
   const bestMatchId = page?.bestMatchId ?? null;
   const searchText = page?.searchText ?? "";
+  const enterStep = page?.enterStep ?? 0;
+  const anchorId = page?.anchorId ?? 0;
+  const anchorIndex = page?.anchorIndex ?? -1;
+  const listStart = page?.listStart ?? null;
+  const sections = page?.sections ?? NO_SECTIONS;
+  const facts = page?.facts ?? NO_FACTS;
 
   /**
    * Asks the backend for the next chunk, by the limit wanted rather than "one
@@ -59,13 +90,15 @@ export function useCatalogWindow(
       return;
     }
 
-    send(loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, totalCount)));
-  }, [hasMore, limit, totalCount]);
+    send(loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, visibleCount)));
+  }, [hasMore, limit, visibleCount]);
 
   // The poll below outlives the render it started in; through the ref it always
   // asks from the page on screen, not the one it started under.
   const latestLoadMore = useRef(loadMore);
   latestLoadMore.current = loadMore;
+  const latestListStart = useRef(listStart);
+  latestListStart.current = listStart;
 
   /**
    * The passive half of the trigger: watch where the scroll actually is. It
@@ -91,16 +124,15 @@ export function useCatalogWindow(
 
       const now = Date.now();
 
-      if (now - lastCheck >= LOAD_MORE_POLL_MS) {
+      // A new start's page lands under the last start's scroll, deep in a shorter list, until
+      // useScrollAnchor's move lands: that reading is not the player at the bottom.
+      if (now - lastCheck >= LOAD_MORE_POLL_MS && pendingStart(latestListStart.current, getAssetMenuListStart()) === null) {
         lastCheck = now;
 
-        // The last row, for the same reason the anchor takes it — see
-        // lastCatalogRow.
         const root = rootRef.current;
 
         if (!scroller && root) {
-          const row = lastCatalogRow(root);
-          scroller = row ? findScrollContainer(row, root, isScrollContainer) : null;
+          scroller = listScroller(root);
         }
 
         if (scroller && shouldLoadMore({
@@ -124,5 +156,5 @@ export function useCatalogWindow(
     };
   }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
+  return { items, totalCount, visibleCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, enterStep, anchorId, anchorIndex, listStart, sections, facts, loadMore };
 }

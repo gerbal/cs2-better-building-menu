@@ -6,8 +6,10 @@ import type { SortColumn, SortState } from "domain/buildingCatalogContracts";
 import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
 import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
 import type { Command } from "domain/command";
-import type { MenuBranchCount, MenuCategoryTabs } from "domain/menuProgression";
-import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";
+import { NO_TIER_BRACKET, type MenuBranchCount, type MenuCategoryTabs, type TierBracket } from "domain/menuProgression";
+import type { MenuShare } from "domain/bodyChoice";
+import type { MenuPick } from "domain/menuPicks";
+import { ASSET_MENU_DEFAULT_HEIGHT, WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
 import type { MenuCategoryCount, VanillaMenuCategory } from "domain/vanillaMenuCategories";
@@ -26,6 +28,8 @@ export type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: Buildi
 export const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage | null>(mod.id, "BuildingCatalog", null);
 export const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch", "");
 export const IsSearchLoading$ = bindValue<boolean>(mod.id, "IsSearchLoading", false);
+/** The keys of ours the player's language has no translation of: the game answers them in English. */
+export const UntranslatedKeys$ = bindValue<string[]>(mod.id, "UntranslatedKeys", []);
 export const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 // The order and the grouping live in the backend query, which outlives every
 // component, so reading them back keeps each remount honest.
@@ -33,6 +37,8 @@ export const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "Buildin
 export const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending", false);
 export const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
 export const AssetMenuGroupDimensions$ = bindValue<string[]>(mod.id, "AssetMenuGroupDimensions", []);
+/** Each menu's own GROUP, as the settings keep it: a menu not in it groups by its default. */
+export const AssetMenuGroups$ = bindValue<MenuPick[]>(mod.id, "AssetMenuGroups", []);
 export const AssetMenuFacets$ = bindValue<AssetMenuFacetState | null>(mod.id, "AssetMenuFacets", null);
 export const BuildingCatalogMetricRanges$ = bindValue<AssetMenuMetricRangeState | null>(mod.id, "BuildingCatalogMetricRanges", null);
 /** The spread each metric has in the current view, in the selection's shape. */
@@ -41,29 +47,113 @@ export const BuildingCatalogMetricBounds$ = bindValue<AssetMenuMetricRangeState 
 export const ActivePrefabId$ = bindValue<number>(mod.id, "ActivePrefabId", 0);
 export const AssetMenuMilestones$ = bindValue<string[]>(mod.id, "AssetMenuMilestones", []);
 
-// --- The menu and its strip -------------------------------------------------
+// --- The menu and its tabs --------------------------------------------------
 
 export const AssetMenu$ = bindValue<string>(mod.id, "AssetMenu", "");
 export const AssetMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "AssetMenus", []);
 export const AssetMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "AssetMenuCategories", []);
 export const AssetMenuCategory$ = bindValue<string>(mod.id, "AssetMenuCategory", "");
 export const AssetMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(mod.id, "AssetMenuCategoryCounts", []);
+/** The All cell's count: every row the filters and the search leave in the menu. */
+export const AssetMenuAllCount$ = bindValue<number>(mod.id, "AssetMenuAllCount", -1);
 export const AssetMenuSchoolTier$ = bindValue<number>(mod.id, "AssetMenuSchoolTier", -1);
-export const AssetMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuSchoolTierCounts", []);
+export const AssetMenuTierBracket$ = bindValue<TierBracket>(mod.id, "AssetMenuTierBracket", NO_TIER_BRACKET);
 export const AssetMenuStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuStripTabs", []);
 export const AssetMenuStripTab$ = bindValue<string[]>(mod.id, "AssetMenuStripTab", []);
 export const AssetMenuExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod.id, "AssetMenuExpandedCategories", []);
 
 // --- The asset menu ---------------------------------------------------------
 
-export const AssetMenuWidth$ = bindValue<number>(mod.id, "AssetMenuWidth", 0);
 /** The asset menu height the player last dragged to; see BuildingMenuUISystem.AssetMenuSize. */
 export const AssetMenuHeight$ = bindValue<number>(mod.id, "AssetMenuHeight", ASSET_MENU_DEFAULT_HEIGHT);
-/** The build menu's width the player chose, or fill; see BuildingMenuUISystem.AssetMenuSize. */
-export const AssetMenuCatalogWidth$ = bindValue<number>(mod.id, "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_DEFAULT);
-/** Whether the control pane is shown beside the build menu. */
-export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", true);
-export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
+/** The build menu's Width step, 1 to 5, a new player's 1 until C# answers; see BuildingMenuUISystem.AssetMenuSize. */
+export const AssetMenuWidthStep$ = bindValue<number>(mod.id, "AssetMenuWidthStep", WIDTH_STEP_DEFAULT);
+/** Whether the box is collapsed to its top row and tabs: open until C# answers. See BuildingMenuUISystem.AssetMenuSize. */
+export const AssetMenuCollapsed$ = bindValue<boolean>(mod.id, "AssetMenuCollapsed", false);
+/** Whether the control pane is shown beside the build menu: a new player's off until C# answers. */
+export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", false);
+/** Each menu's own VIEW, as the settings keep it: a menu not in it draws Default view's body. */
+export const AssetMenuViews$ = bindValue<MenuPick[]>(mod.id, "AssetMenuViews", []);
+/** Default view: "auto", the look's rule per menu, or one body for every menu without a pick. */
+export const AssetMenuDefaultView$ = bindValue<string>(mod.id, "AssetMenuDefaultView", "auto");
+/** Above 100% text: "moreBuildings", the list keeps more with names shortened, or "wholeNames". */
+export const AssetMenuAtLargeText$ = bindValue<string>(mod.id, "AssetMenuAtLargeText", "moreBuildings");
+/** How every menu is drawn: "standard" until C# answers, else a finished look's id. VIEW's Look writes it. */
+export const AssetMenuLook$ = bindValue<string>(mod.id, "AssetMenuLook", "standard");
+/** The hover card's form: "pointer", beside the pointer, until C# answers; "slot", the game's detail slot; or "status", the readout. */
+export const AssetMenuHoverCard$ = bindValue<string>(mod.id, "AssetMenuHoverCard", "pointer");
+/** How the top edge's drag settles: "whole", on whole lines of the open body, until C# answers; or "free", where it is let go. */
+export const AssetMenuTopEdge$ = bindValue<string>(mod.id, "AssetMenuTopEdge", "whole");
+/** What the look's Auto rule reads of every menu, counted over the whole menu once per index generation. */
+export const MenuShares$ = bindValue<MenuShare[]>(mod.id, "MenuShares", []);
+
+/** What the UI reads of the developer knobs, resolved in C#: a knob counts only in developer mode. See TuningValues.cs. */
+export interface AssetMenuTuning {
+  developerMode: boolean;
+  /** Whether the build menu follows the game's interface style. */
+  interfaceStyles: boolean;
+  /** Whether a box above the first Width step names its tabs where they all fit; off, never. */
+  tabNames: boolean;
+  /** The share of a menu's rows, in percent, that must carry what counts for Auto to draw a list. */
+  listShare?: number;
+  /** What Auto counts: "costOrCapacity" or "capacityOnly". */
+  whatCounts?: string;
+  /** Above 100% text, Roads and Parks: "lookOwn", "list" or "tiles". */
+  autoLargeText?: string;
+  /** The Width step from which Auto draws Cards; 0 never. */
+  cardsFrom?: number;
+  /** The list's plate height at 100% text, in rem. */
+  listPlateHeight?: number;
+  /** How many lines a list name takes; 0 the look's own. */
+  nameLines?: number;
+  /** Whether the Tiles view names the armed or pointed tile under its rows. */
+  tileNameLine?: boolean;
+  /** A label in a body: "inline", one slot in line, or "ownLine", a line of its own. */
+  blockLabels?: string;
+  /** A card's height at 100% text, in rem: 46, or 50. */
+  cardHeight?: number;
+  /** Whether a list in a menu with few rows grows its plates. */
+  smallMenusGrow?: boolean;
+  /** Search results at a wider step: "nearField", the first step's columns first, or "rowOrder". */
+  searchFlow?: string;
+  /** Whether a search result's name dims the typed word. */
+  dimTypedWord?: boolean;
+  /** Auto draws icons for a menu of more rows than this where too few carry a cost or a capacity. */
+  iconsAbove?: number;
+  /** An icon's side in the Icons view at 100% text, in rem. */
+  iconSize?: number;
+  /** How long the pointer rests on a building before its hover card shows, in milliseconds. */
+  hoverDelay?: number;
+}
+
+/**
+ * The knobs as they ship, until C# answers: the fallback of every field a page reads. The fields
+ * after tabNames are optional, so a reading without them is the shipped value.
+ */
+export const SHIPPED_TUNING: Required<AssetMenuTuning> = {
+  developerMode: false,
+  interfaceStyles: true,
+  tabNames: true,
+  listShare: 50,
+  whatCounts: "costOrCapacity",
+  autoLargeText: "lookOwn",
+  cardsFrom: 0,
+  listPlateHeight: 27.25,
+  nameLines: 0,
+  tileNameLine: true,
+  blockLabels: "inline",
+  cardHeight: 46,
+  smallMenusGrow: true,
+  searchFlow: "nearField",
+  dimTypedWord: false,
+  iconsAbove: 200,
+  iconSize: 44,
+  hoverDelay: 150,
+};
+
+export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", SHIPPED_TUNING);
+/** Tile size, the Tiles view's tile side: 64, as it ships, until C# answers. */
+export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 64);
 /** True while the toolbar's open menu is one the asset menu takes over. */
 export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);
 /** The mod's replace-vanilla-menus setting: one switch for both pickers. */

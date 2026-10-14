@@ -15,6 +15,13 @@ namespace BetterBuildingMenu.Utilities
 	/// </remarks>
 	public sealed class SilhouetteIconCache
 	{
+		/// <summary>The cache's folder, under ModsData.</summary>
+		public const string FolderName = "silhouettes";
+
+		/// <summary>The file that names the transform the cache was written with.</summary>
+		/// <remarks>Written at every load, so the release marker reads whether it exists first.</remarks>
+		public const string StampFileName = ".stamp";
+
 		private readonly IReadOnlyList<string> _contentRoots;
 		private readonly string _cacheDirectory;
 
@@ -49,7 +56,7 @@ namespace BetterBuildingMenu.Utilities
 		/// </remarks>
 		private void DiscardStaleCache()
 		{
-			var stampFile = Path.Combine(_cacheDirectory, ".stamp");
+			var stampFile = Path.Combine(_cacheDirectory, StampFileName);
 
 			try
 			{

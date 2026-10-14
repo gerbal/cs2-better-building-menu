@@ -148,6 +148,25 @@ public sealed class AssetMenuStateTransitionTests
     }
 
     [Fact]
+    public void ALevelPickedWithItsTabLightsTheTabToo()
+    {
+        var tiered = S().SelectMenu("Education").SelectSchoolTier(2, "Education");
+
+        Assert.Equal(2, tiered.SchoolTier);
+        Assert.Equal("Education", tiered.Category);
+    }
+
+    [Fact]
+    public void ALevelPickedWithItsTabClearsTheStripTabAsTheTabsOwnPickDoes()
+    {
+        var tabbed = S().SelectMenu("Education").SelectStripTab("Primary");
+
+        Assert.Null(tabbed.SelectSchoolTier(2, "Education").Query.StripTabs);
+        // Without a tab to set, the level narrows the strip tab's list rather than replacing it.
+        Assert.Equal(new[] { "Primary" }, tabbed.SelectSchoolTier(2).Query.StripTabs);
+    }
+
+    [Fact]
     public void BlankTabsAndCategoriesClearRatherThanSelect()
     {
         var state = S().SelectMenu("Roads").SelectStripTab("Bridges").SelectStripTab("");
@@ -219,37 +238,6 @@ public sealed class AssetMenuStateTransitionTests
     }
 
     [Fact]
-    public void ResetKeepsTheMenuAndDropsEverythingThePlayerNarrowed()
-    {
-        var state = Grown(S()
-            .SelectMenu("Roads")
-            .SelectCategory("Highways")
-            .SelectSchoolTier(2)
-            .Search("bridge")
-            .SetSortColumn("ConstructionCost")
-            .SetDescending(true)
-            .SetGroupBy("cost")
-            .ToggleFacet("theme", "European")
-            .SetMetricRange("cost", "1000", "5000"));
-
-        var reset = state.ResetMenu();
-
-        Assert.Equal("Roads", reset.Menu);
-        Assert.Equal("", reset.Category);
-        Assert.Equal(-1, reset.SchoolTier);
-        Assert.Null(reset.Query.StripTabs);
-        Assert.Equal("", reset.SearchText);
-        Assert.Equal("", reset.Query.SortColumn);
-        Assert.False(reset.Query.Descending);
-        Assert.Equal("", reset.Query.GroupBy);
-        Assert.Null(reset.Query.Themes);
-        Assert.Equal(BuildingCatalogMetricRangeState.Empty, reset.MetricRanges);
-        Assert.Null(reset.Query.MinConstructionCost);
-        Assert.Equal(0, reset.Query.Offset);
-        Assert.Equal(BuildingCatalogQuery.DefaultLimit, reset.Query.Limit);
-    }
-
-    [Fact]
     public void SearchEverythingDropsTheScopeAndKeepsTheSearch()
     {
         var everywhere = S().SelectMenu("Roads").SelectCategory("Highways").Search("bridge").ClearMenuScope();
@@ -303,8 +291,8 @@ public sealed class AssetMenuStateTransitionTests
     {
         var state = S()
             .SelectMenu("Education & Research")
-            .SelectSchoolTier(2)
             .Search("school")
+            .SelectSchoolTier(2)
             .SetMetricRange("cost", "1000", "5000")
             .SetMetricRange("lotWidth", "2", "6");
 
@@ -373,7 +361,6 @@ public sealed class AssetMenuStateTransitionTests
             ("clear metrics", s => s.ClearMetricRanges()),
             ("clear facets", s => s.ClearFacets()),
             ("clear filters", s => s.ClearFilters()),
-            ("reset", s => s.ResetMenu()),
             ("search", s => s.Search("depot")),
             ("everywhere", s => s.ClearMenuScope()),
         };
@@ -396,5 +383,691 @@ public sealed class AssetMenuStateTransitionTests
 
             state = next;
         }
+    }
+}
+
+/// <summary>Where the list starts: an open and a tab pick at the armed building, a sort and a second click on the lit tab at the top.</summary>
+public sealed class AssetMenuAnchorTests
+{
+    private const string Roads = "Roads";
+    private const string Education = "Education & Research";
+    private static readonly MenuOpening OnHighways = new("RoadsHighways", -1, 4206);
+
+    private static AssetMenuState Opened(MenuOpening opening, string menu = Roads) =>
+        AssetMenuState.Initial.OpenMenu(menu, _ => opening);
+
+    [Fact]
+    public void AnOpenStartsTheListOnTheTabAndRowTheRulePicks()
+    {
+        var opened = Opened(OnHighways);
+
+        Assert.Equal(Roads, opened.Menu);
+        Assert.Equal("RoadsHighways", opened.Category);
+        Assert.Equal(-1, opened.SchoolTier);
+        Assert.Equal(4206, opened.Anchor);
+        Assert.Equal(AssetMenuState.Initial.ListStart + 1, opened.ListStart);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, opened.Query.Limit);
+    }
+
+    [Fact]
+    public void AnOpenClearsTheSearchAndAsksTheRuleAboutTheMenuAsItOpens()
+    {
+        BuildingCatalogQuery? asked = null;
+        var typed = Opened(MenuOpening.All, "Parks & Recreation").SelectCategory("ParksParks").Search("tree ");
+
+        var opened = typed.OpenMenu(Roads, query =>
+        {
+            asked = query;
+            return OnHighways;
+        });
+
+        Assert.Equal(string.Empty, opened.SearchText);
+        Assert.Equal(string.Empty, opened.Query.SearchText);
+        Assert.NotNull(asked);
+        Assert.Equal(Roads, asked.UiMenu);
+        Assert.Equal(string.Empty, asked.UiCategory);
+        Assert.Equal(-1, asked.SchoolTier);
+        Assert.Null(asked.StripTabs);
+        Assert.Equal(string.Empty, asked.SearchText);
+    }
+
+    [Fact]
+    public void AnOpenOnALevelSetsTheTabAndTheLevel()
+    {
+        var opened = Opened(new MenuOpening("Education", 2, 0), Education);
+
+        Assert.Equal("Education", opened.Category);
+        Assert.Equal(2, opened.SchoolTier);
+        Assert.Equal(0, opened.Anchor);
+    }
+
+    [Fact]
+    public void ReopeningTheSameMenuStartsItsListAgain()
+    {
+        // The list goes back to the armed building every time the menu opens, the same menu too.
+        var opened = Opened(OnHighways);
+        var again = opened.OpenMenu(Roads, _ => OnHighways);
+
+        Assert.Equal(opened.ListStart + 1, again.ListStart);
+        Assert.Equal(4206, again.Anchor);
+    }
+
+    [Fact]
+    public void ABlankMenuClearsTheScopeAndTheAnchorWithoutAskingTheRule()
+    {
+        var asked = false;
+        var cleared = Opened(OnHighways).OpenMenu("  ", _ =>
+        {
+            asked = true;
+            return OnHighways;
+        });
+
+        Assert.False(asked);
+        Assert.Equal(string.Empty, cleared.Menu);
+        Assert.Equal(0, cleared.Anchor);
+    }
+
+    [Fact]
+    public void ATabPickStartsTheListAtTheArmedBuilding()
+    {
+        var opened = Opened(OnHighways);
+        var tab = opened.SelectCategory("RoadsSmallRoads", armed: 77);
+        var strip = Opened(MenuOpening.All, "Electricity").SelectStripTab("Wind", armed: 77);
+        var level = Opened(MenuOpening.All, Education).SelectSchoolTier(2, "Education", armed: 77);
+
+        Assert.Equal(77, tab.Anchor);
+        Assert.Equal(opened.ListStart + 1, tab.ListStart);
+        Assert.Equal(77, strip.Anchor);
+        Assert.Equal(77, level.Anchor);
+    }
+
+    [Fact]
+    public void ReturningToATabAfterASortStartsItAtTheArmedBuildingAgain()
+    {
+        var sorted = Opened(OnHighways).SetSortColumn("ConstructionCost");
+
+        var back = sorted.SelectCategory("RoadsSmallRoads", armed: 4206).SelectCategory("RoadsHighways", armed: 4206);
+
+        Assert.Equal(0, sorted.Anchor);
+        Assert.Equal(4206, back.Anchor);
+    }
+
+    [Fact]
+    public void ASecondClickOnTheLitTabStartsItsListAtTheTop()
+    {
+        var opened = Opened(OnHighways);
+        var tab = opened.SelectCategory("RoadsHighways", armed: 4206);
+        var all = Opened(MenuOpening.All).SelectCategory(string.Empty, armed: 4206);
+        var strip = Opened(MenuOpening.All, "Electricity").SelectStripTab("Wind", armed: 7).SelectStripTab("Wind", armed: 7);
+        var level = Opened(new MenuOpening("Education", 2, 0), Education).SelectSchoolTier(2, "Education", armed: 7);
+
+        Assert.Equal(0, tab.Anchor);
+        Assert.Equal(opened.ListStart + 1, tab.ListStart);
+        Assert.Equal(0, all.Anchor);
+        Assert.Equal(0, strip.Anchor);
+        Assert.Equal(0, level.Anchor);
+    }
+
+    [Fact]
+    public void ANewLevelOnTheSameTabIsAnotherListAndStartsAtTheArmedBuilding()
+    {
+        // The tab is the same, the level is not: only the same tab and level is the second click.
+        var atTwo = Opened(new MenuOpening("Education", 2, 0), Education);
+        var grown = atTwo.CoverAnchor(409);
+
+        var atThree = grown.SelectSchoolTier(3, "Education", armed: 77);
+
+        Assert.Equal(77, atThree.Anchor);
+        Assert.Equal(3, atThree.SchoolTier);
+        Assert.Equal(grown.ListStart + 1, atThree.ListStart);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, atThree.Query.Limit);
+    }
+
+    [Fact]
+    public void ATabPickedWhileASearchIsTypedStartsAtTheTop()
+    {
+        // The search orders that list, and the armed row on line 1 would hide better matches.
+        var picked = Opened(OnHighways).Search("road").SelectCategory("RoadsSmallRoads", armed: 4206);
+
+        Assert.Equal(0, picked.Anchor);
+    }
+
+    [Fact]
+    public void ASortStartsTheListAtTheTopAndAnUnchangedDirectionStartsNothing()
+    {
+        var opened = Opened(OnHighways);
+        var byCost = opened.SetSortColumn("ConstructionCost");
+        var flipped = byCost.SetDescending(true);
+
+        Assert.Equal(0, byCost.Anchor);
+        Assert.Equal(opened.ListStart + 1, byCost.ListStart);
+        Assert.Equal(byCost.ListStart + 1, flipped.ListStart);
+        Assert.Same(flipped, flipped.SetDescending(true));
+    }
+
+    [Fact]
+    public void FilteringRangingAndGroupingClearTheAnchorAndStartNothing()
+    {
+        // The open's start is served: these leave the list where the player has it, and the window
+        // grows only for a page that answers a start.
+        var opened = Opened(OnHighways).CoverAnchor(899);
+        var moves = new[]
+        {
+            opened.ToggleFacet(FacetIds.Availability, BuildingCatalogFacetSelection.Availability.Locked),
+            opened.SetMetricRange("cost", "1000", "5000"),
+            opened.SetGroupBy(BuildingCatalogGrouping.Theme),
+        };
+
+        Assert.All(moves, next =>
+        {
+            Assert.Equal(0, next.Anchor);
+            Assert.Equal(opened.ListStart, next.ListStart);
+            Assert.Equal(BuildingCatalogQuery.DefaultLimit, next.Query.Limit);
+        });
+    }
+
+    [Fact]
+    public void LoadingMoreAndANarrowingThatChangesNothingKeepTheAnchorAndStartNothing()
+    {
+        var opened = Opened(OnHighways).CoverAnchor(409);
+        var moves = new[]
+        {
+            opened.LoadMoreTo(opened.Query.Limit + BuildingCatalogQuery.WindowStep),
+            // No filter is set, and a trailing space trims to the same search: the result set is the same.
+            opened.ClearFilters(),
+            opened.Search(" "),
+        };
+
+        Assert.All(moves, next =>
+        {
+            Assert.Equal(4206, next.Anchor);
+            Assert.Equal(opened.ListStart, next.ListStart);
+            Assert.True(next.Query.Limit >= opened.Query.Limit);
+        });
+    }
+
+    [Fact]
+    public void TheWindowTheAnchorGrewIsTheOneLoadMoreGrowsFrom()
+    {
+        // Past row 200, a Load more counted from the first chunk would ask for less than the page holds.
+        var covered = Opened(OnHighways).CoverAnchor(409);
+        var asked = covered.Query.Limit + BuildingCatalogQuery.WindowStep;
+
+        Assert.Equal(409 + 1 + BuildingCatalogQuery.WindowStep, covered.Query.Limit);
+        Assert.Equal(asked, covered.LoadMoreTo(asked).Query.Limit);
+    }
+
+    [Fact]
+    public void CoveringAnAnchorGrowsTheWindowToItUpToTheCeiling()
+    {
+        var opened = Opened(OnHighways);
+        var covered = opened.CoverAnchor(409);
+
+        Assert.Equal(40 + 1 + BuildingCatalogQuery.WindowStep, opened.CoverAnchor(40).Query.Limit);
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, opened.CoverAnchor(BuildingCatalogQuery.MaxLimit - 1).Query.Limit);
+        // A row at or past the ceiling cannot be held, so it grows nothing.
+        Assert.Same(opened, opened.CoverAnchor(BuildingCatalogQuery.MaxLimit));
+        Assert.Same(opened, opened.CoverAnchor(5000));
+        Assert.Same(opened, opened.CoverAnchor(-1));
+        Assert.Same(covered, covered.CoverAnchor(409));
+    }
+
+    [Fact]
+    public void LeavingAMenuForgetsItsAnchor()
+    {
+        var opened = Opened(OnHighways);
+
+        Assert.Equal(0, opened.ClearMenuScope().Anchor);
+        Assert.Equal(0, opened.SelectMenu("Parks & Recreation").Anchor);
+    }
+
+    [Fact]
+    public void PickingTheLitSortColumnAgainReturnsTheSameStateAndStartsNothing()
+    {
+        var byCost = Opened(OnHighways).SetSortColumn("ConstructionCost");
+
+        Assert.Same(byCost, byCost.SetSortColumn("ConstructionCost"));
+    }
+
+    [Fact]
+    public void ChangingTheAnchorStartsTheWindowOver()
+    {
+        // A window grown to hold one anchored row is not the window of another.
+        var covered = Opened(OnHighways).CoverAnchor(409);
+        var moved = covered.Query with { AnchorId = 4300 };
+
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, moved.ResetWindowIfPredicatesChanged(covered.Query).Limit);
+        Assert.Equal(covered.Query.Limit, covered.Query.ResetWindowIfPredicatesChanged(covered.Query).Limit);
+    }
+}
+
+/// <summary>Enter's target moved by the keys: a row a press while a search is typed, back on the best match with any new result, never a start.</summary>
+public sealed class AssetMenuEnterStepTests
+{
+    private static AssetMenuState Searched() => AssetMenuState.Initial.SelectMenu("Roads").Search("lane");
+
+    [Fact]
+    public void AKeyMovesTheTargetOneRowWhileASearchIsTyped()
+    {
+        var searched = Searched();
+
+        Assert.Equal(1, searched.MoveEnterTarget(1).Query.EnterStep);
+        Assert.Equal(-1, searched.MoveEnterTarget(-1).Query.EnterStep);
+        // A row a press, whatever number a caller sends.
+        Assert.Equal(2, searched.MoveEnterTarget(1).MoveEnterTarget(7).Query.EnterStep);
+        Assert.Same(searched, searched.MoveEnterTarget(0));
+
+        var unsearched = AssetMenuState.Initial.SelectMenu("Roads");
+        Assert.Same(unsearched, unsearched.MoveEnterTarget(1));
+    }
+
+    [Fact]
+    public void TheStateKeepsTheStepThePageServedSoAKeyPastAnEndMovesBackAtOnce()
+    {
+        // Three presses down where only two rows lie below: the page serves 2.
+        var pressed = Searched().MoveEnterTarget(1).MoveEnterTarget(1).MoveEnterTarget(1);
+        var kept = pressed.KeepEnterStep(2);
+
+        Assert.Equal(2, kept.Query.EnterStep);
+        Assert.Same(kept, kept.KeepEnterStep(2));
+        Assert.Equal(1, kept.MoveEnterTarget(-1).Query.EnterStep);
+    }
+
+    [Fact]
+    public void AMoveStartsNothingAndKeepsTheWindow()
+    {
+        var opened = AssetMenuState.Initial.OpenMenu("Roads", _ => new MenuOpening("RoadsHighways", -1, 4206)).Search("lane").LoadMore();
+        var moved = opened.MoveEnterTarget(1);
+
+        Assert.Equal(opened.ListStart, moved.ListStart);
+        // A typed search has already cleared the anchor.
+        Assert.Equal(0, moved.Anchor);
+        Assert.Equal(opened.Query.Limit, moved.Query.Limit);
+        Assert.Equal(opened.Query.Offset, moved.Query.Offset);
+    }
+
+    [Fact]
+    public void ANewResultPutsTheTargetBackOnTheBestMatch()
+    {
+        var moved = Searched().MoveEnterTarget(1).MoveEnterTarget(1);
+        var changes = new (string Name, Func<AssetMenuState, AssetMenuState> Change)[]
+        {
+            ("typing on", s => s.Search("lanes")),
+            ("a filter", s => s.ToggleFacet("theme", "European")),
+            ("a range", s => s.SetMetricRange("upkeep", "10", "")),
+            ("a sort", s => s.SetSortColumn("Upkeep")),
+            ("a grouping", s => s.SetGroupBy("cost")),
+            ("a tab", s => s.SelectCategory("RoadsHighways")),
+            ("another menu", s => s.SelectMenu("Parks & Recreation")),
+            ("an open", s => s.OpenMenu("Roads", _ => new MenuOpening("RoadsHighways", -1, 0))),
+        };
+
+        Assert.All(changes, change => Assert.True(change.Change(moved).Query.EnterStep == 0, change.Name + " kept the moved target"));
+        // Match has no direction, so the reversal is of a sort picked during the search.
+        Assert.Equal(0, Searched().SetSortColumn("Upkeep").MoveEnterTarget(1).SetDescending(true).Query.EnterStep);
+    }
+
+    [Fact]
+    public void LoadingMoreOrTheSameSearchKeepsTheTargetWhereTheKeysPutIt()
+    {
+        var moved = Searched().MoveEnterTarget(1);
+
+        Assert.Equal(1, moved.LoadMore().Query.EnterStep);
+        Assert.Equal(1, moved.CoverAnchor(150).Query.EnterStep);
+        // A trailing space is the same search.
+        Assert.Equal(1, moved.Search("lane ").Query.EnterStep);
+    }
+}
+
+/// <summary>A search over the whole menu under Match, and each menu's own GROUP and SORT brought back by an open.</summary>
+public sealed class AssetMenuSearchTests
+{
+    private const string Roads = "Roads";
+    private static readonly MenuOpening OnHighways = new("RoadsHighways", -1, 4206);
+
+    private static AssetMenuState Opened(MenuOpening opening, MenuMemory? memory = null) =>
+        AssetMenuState.Initial.OpenMenu(Roads, _ => opening, memory);
+
+    // Binding: the best match is the list's first row, so a typed search must show the top, wherever
+    // the open put the armed building.
+    [Fact]
+    public void ATypedSearchStartsTheListAtItsTopUnderMatch()
+    {
+        var opened = Opened(OnHighways).CoverAnchor(899);
+
+        var typed = opened.Search("four");
+
+        Assert.Equal(opened.ListStart + 1, typed.ListStart);
+        Assert.Equal(0, typed.Anchor);
+        Assert.Equal(BuildingCatalogQuery.MatchSort, typed.Query.SortColumn);
+        Assert.False(typed.Query.Descending);
+        Assert.Equal(0, typed.Query.Offset);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, typed.Query.Limit);
+    }
+
+    [Fact]
+    public void UnderMatchEveryNewQueryStartsTheListAtItsTopAgain()
+    {
+        var typed = Opened(OnHighways).Search("four");
+
+        var on = typed.Search("four l");
+
+        Assert.Equal(typed.ListStart + 1, on.ListStart);
+        Assert.Equal("four l", on.Query.SearchText);
+    }
+
+    // Relevance has no reverse: picking the lit Match row again must neither flip an arrow over an
+    // unchanged list nor send it back to its top.
+    [Fact]
+    public void MatchHasNoDirection()
+    {
+        var typed = Opened(OnHighways).Search("four");
+
+        Assert.Same(typed, typed.SetDescending(true));
+    }
+
+    // The UI sends the column and then the direction, and the direction is swallowed under Match, so
+    // the column itself must clear a direction a sort picked during the search left set.
+    [Fact]
+    public void PickingMatchClearsTheDirection()
+    {
+        var matched = Opened(OnHighways).Search("four").SetSortColumn("Name").SetDescending(true).SetSortColumn(BuildingCatalogQuery.MatchSort);
+
+        Assert.False(matched.Query.Descending);
+    }
+
+    [Fact]
+    public void ASearchRunsOverTheWholeMenuAndKeepsTheTabAndSortItBeganOn()
+    {
+        var sorted = Opened(OnHighways).SetSortColumn("Capacity").SetDescending(true);
+
+        var typed = sorted.Search("four");
+
+        Assert.Equal(string.Empty, typed.Category);
+        Assert.Equal(-1, typed.SchoolTier);
+        Assert.Null(typed.Query.StripTabs);
+        Assert.Equal(new SearchStart("RoadsHighways", -1, null, "Capacity", true), typed.PreSearch);
+    }
+
+    [Fact]
+    public void ASortPickedDuringASearchNarrowsTheNextQueryWithoutAStart()
+    {
+        var picked = Opened(OnHighways).Search("four").SetSortColumn("ConstructionCost");
+
+        var on = picked.Search("four l");
+
+        Assert.Equal(picked.ListStart, on.ListStart);
+        Assert.Equal(0, on.Anchor);
+        Assert.Equal("ConstructionCost", on.Query.SortColumn);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, on.Query.Limit);
+    }
+
+    [Fact]
+    public void ClearingTheSearchBringsBackTheTabAndTheSortAtTheArmedBuilding()
+    {
+        var typed = Opened(OnHighways).SetSortColumn("Capacity").Search("four").SelectCategory("RoadsSmallRoads", armed: 4206);
+
+        var cleared = typed.Search("", armed: 77);
+
+        Assert.Equal("RoadsHighways", cleared.Category);
+        Assert.Equal("Capacity", cleared.Query.SortColumn);
+        Assert.Equal(77, cleared.Anchor);
+        Assert.Equal(typed.ListStart + 1, cleared.ListStart);
+        Assert.Null(cleared.PreSearch);
+        Assert.Equal(string.Empty, cleared.Query.SearchText);
+    }
+
+    [Fact]
+    public void ClearingBringsBackTheDirectionAndTheStripTabAndDropsASortPickedDuringTheSearch()
+    {
+        var stripped = Opened(OnHighways).SelectStripTab("Highways").SetSortColumn("Capacity").SetDescending(true);
+        var typed = stripped.Search("four").SetSortColumn("Name");
+
+        var cleared = typed.Search("");
+
+        Assert.Equal(stripped.Query.StripTabs, cleared.Query.StripTabs);
+        Assert.Equal("Capacity", cleared.Query.SortColumn);
+        Assert.True(cleared.Query.Descending);
+    }
+
+    [Fact]
+    public void ClearingASearchTypedOnALevelBringsTheLevelBack()
+    {
+        var level = AssetMenuState.Initial.OpenMenu("Education & Research", _ => new MenuOpening("Education", 2, 0));
+
+        var cleared = level.Search("school").Search("");
+
+        Assert.Equal("Education", cleared.Category);
+        Assert.Equal(2, cleared.SchoolTier);
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, cleared.Query.SortColumn);
+    }
+
+    [Fact]
+    public void ASearchWhoseStartWasForgottenClearsToTheGamesOwnOrder()
+    {
+        // Search everything drops the menu, and its start with it; the search goes on unscoped.
+        var everywhere = Opened(OnHighways).Search("four").ClearMenuScope();
+
+        var cleared = everywhere.Search("");
+
+        Assert.Null(everywhere.PreSearch);
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, cleared.Query.SortColumn);
+        Assert.Equal(string.Empty, cleared.Category);
+    }
+
+    [Fact]
+    public void AForgottenStartClearsToTheGamesOwnOrderWhateverWasPickedDuringTheSearch()
+    {
+        var everywhere = Opened(OnHighways).Search("four").SetSortColumn("Capacity").SetDescending(true).ClearMenuScope();
+
+        var cleared = everywhere.Search("");
+
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, cleared.Query.SortColumn);
+        Assert.False(cleared.Query.Descending);
+    }
+
+    [Fact]
+    public void AnOpenForgetsTheSearchAndItsStart()
+    {
+        var typed = Opened(OnHighways).Search("four");
+
+        var reopened = typed.OpenMenu(Roads, _ => OnHighways);
+
+        Assert.Null(reopened.PreSearch);
+        Assert.Equal(string.Empty, reopened.Query.SearchText);
+    }
+
+    [Fact]
+    public void AnOpenBringsBackTheMenusOwnGroupAndSort()
+    {
+        var other = AssetMenuState.Initial.SetSortColumn("Name").SetGroupBy(BuildingCatalogGrouping.Theme);
+
+        var opened = other.OpenMenu(Roads, _ => OnHighways, new MenuMemory(BuildingCatalogGrouping.Cost, "Capacity", true));
+
+        Assert.Equal(BuildingCatalogGrouping.Cost, opened.Query.GroupBy);
+        Assert.Equal("Capacity", opened.Query.SortColumn);
+        Assert.True(opened.Query.Descending);
+    }
+
+    [Fact]
+    public void AMenuWithNoPicksOpensOnItsDefaultGroupAndTheGamesOrder()
+    {
+        var other = AssetMenuState.Initial.SetSortColumn("Name").SetGroupBy(BuildingCatalogGrouping.Theme);
+
+        var opened = other.OpenMenu(Roads, _ => OnHighways, MenuMemory.Defaults);
+
+        Assert.Equal(string.Empty, opened.Query.GroupBy);
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, opened.Query.SortColumn);
+        Assert.False(opened.Query.Descending);
+    }
+}
+
+/// <summary>Each menu's sort this session.</summary>
+public sealed class SessionSortsTests
+{
+    private static AssetMenuState In(string menu) => AssetMenuState.Initial.OpenMenu(menu, _ => MenuOpening.All, MenuMemory.Defaults);
+
+    [Fact]
+    public void AMenuOpensOnTheSortItLastHadThisSession()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In("Roads").SetSortColumn("ConstructionCost").SetDescending(true));
+
+        Assert.Equal(new MenuMemory("cost", "ConstructionCost", true), sorts.For("Roads", "cost"));
+        Assert.Equal(MenuMemory.Defaults, sorts.For("Parks & Recreation", string.Empty));
+    }
+
+    [Fact]
+    public void ASortPickedDuringASearchIsNotKept()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In("Roads").Search("four").SetSortColumn("Capacity"));
+
+        Assert.Equal(MenuMemory.Defaults, sorts.For("Roads", string.Empty));
+    }
+
+    [Fact]
+    public void MatchIsNeverKeptForAMenu()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In("Roads").SetSortColumn(BuildingCatalogQuery.MatchSort));
+
+        Assert.Equal(MenuMemory.Defaults, sorts.For("Roads", string.Empty));
+    }
+
+    [Fact]
+    public void AMenuIsKeptAndReadByTheSameTrimmedName()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In(" Roads ").SetSortColumn("Capacity"));
+
+        Assert.Equal("Capacity", sorts.For(" Roads ", string.Empty).SortColumn);
+    }
+
+    [Fact]
+    public void NoMenuKeepsNothing()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(AssetMenuState.Initial.SetSortColumn("Capacity"));
+
+        Assert.Equal(MenuMemory.Defaults, sorts.For(string.Empty, string.Empty));
+        Assert.Equal(MenuMemory.Defaults, sorts.For(null, string.Empty));
+    }
+}
+
+/// <summary>The window holds more than a screen of the drawn body, so a tall body of small tiles always has rows to scroll to.</summary>
+public sealed class AssetMenuScreenTests
+{
+    private static readonly MenuOpening OnHighways = new("RoadsHighways", -1, 4206);
+
+    [Fact]
+    public void AScreenOfUnderHalfAStepKeepsTheStepAsTheWindow()
+    {
+        var screened = AssetMenuState.Initial.SetScreenSlots(20);
+
+        Assert.Equal(20, screened.Query.ScreenSlots);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, screened.Query.Limit);
+    }
+
+    // Binding: 22 columns of 64-rem tiles over a body dragged to 960 rem hold 308 a screen.
+    [Fact]
+    public void ATallScreenOfSmallTilesGrowsTheWindowToTwoScreens()
+    {
+        var screened = AssetMenuState.Initial.SetScreenSlots(308);
+
+        Assert.Equal(616, screened.Query.Limit);
+        Assert.Equal(AssetMenuState.Initial.ListStart, screened.ListStart);
+    }
+
+    [Fact]
+    public void AnAnchoredStartReachesTwoScreensPastItsRow()
+    {
+        var opened = AssetMenuState.Initial.SetScreenSlots(308).OpenMenu("Roads", _ => OnHighways);
+
+        Assert.Equal(150 + 1 + 616, opened.Query.CoveringAnchor(150).Limit);
+        Assert.Equal(616, opened.Query.Limit);
+    }
+
+    [Fact]
+    public void ANarrowingRestartsAtTheScreensFirstWindow()
+    {
+        var grown = AssetMenuState.Initial.SetScreenSlots(308).LoadMore().LoadMore();
+
+        var narrowed = grown.SetMetricRange("cost", "1000", "5000");
+
+        Assert.Equal(616, narrowed.Query.Limit);
+        Assert.Equal(308, narrowed.Query.ScreenSlots);
+    }
+
+    [Fact]
+    public void TheScreenIsNoPredicate()
+    {
+        var query = new BuildingCatalogQuery(SearchText: "lane", Limit: 300);
+
+        var screened = query with { ScreenSlots = 120 };
+
+        Assert.Same(screened, screened.ResetWindowIfPredicatesChanged(query));
+    }
+
+    [Fact]
+    public void AScreenNeverShrinksAGrownWindowAndAnUnchangedOneChangesNothing()
+    {
+        var grown = AssetMenuState.Initial.SetScreenSlots(20).LoadMoreTo(200).LoadMoreTo(300);
+
+        Assert.Equal(300, grown.SetScreenSlots(60).Query.Limit);
+        Assert.Same(grown, grown.SetScreenSlots(20));
+    }
+
+    [Theory]
+    [InlineData(-5, 0, 100)]
+    [InlineData(5000, 2000, 2000)]
+    public void AScreenOutsideTheWindowsRangeReadsAsTheNearerEnd(int slots, int kept, int limit)
+    {
+        var screened = AssetMenuState.Initial.SetScreenSlots(slots);
+
+        Assert.Equal(kept, screened.Query.ScreenSlots);
+        Assert.Equal(limit, screened.Query.Limit);
+    }
+
+    [Fact]
+    public void AScreenThatLeavesTheWindowAloneServesNoOtherWindow()
+    {
+        var grown = AssetMenuState.Initial.SetScreenSlots(20).LoadMoreTo(200).LoadMoreTo(300);
+
+        Assert.False(AssetMenuState.Initial.SetScreenSlots(20).ServesAnotherWindow(AssetMenuState.Initial, -1));
+        Assert.False(grown.SetScreenSlots(60).ServesAnotherWindow(grown, -1));
+        Assert.False(grown.SetScreenSlots(0).ServesAnotherWindow(grown, -1));
+        Assert.True(AssetMenuState.Initial.SetScreenSlots(308).ServesAnotherWindow(AssetMenuState.Initial, -1));
+    }
+
+    // The page covers the anchor again at the reach of the day, so a start served before the screen
+    // arrived grows past its row once it does, though the stored window does not move.
+    [Fact]
+    public void AnAnchoredStartServedBeforeTheScreenGrowsOnceTheScreenArrives()
+    {
+        var served = AssetMenuState.Initial.OpenMenu("Roads", _ => OnHighways).CoverAnchor(600);
+
+        var screened = served.SetScreenSlots(308);
+
+        Assert.Equal(served.Query.Limit, screened.Query.Limit);
+        Assert.True(screened.ServesAnotherWindow(served, 600));
+        Assert.Equal(600 + 1 + 616, screened.Query.CoveringAnchor(600).EffectiveLimit);
+    }
+
+    [Fact]
+    public void TheScreenReachesTheStateThroughItsTriggerAndBuildsAPageOnlyForAnotherWindow()
+    {
+        var trigger = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SetCatalogScreen(int slots)");
+
+        Assert.Contains("var next = _assetMenu.SetScreenSlots(slots);", trigger);
+        Assert.Contains("if (next.ServesAnotherWindow(_assetMenu, _BuildingCatalogBinding.Value?.AnchorIndex ?? -1))", trigger);
+        Assert.Contains("Apply(next);", trigger);
+        Assert.Contains("_assetMenu = next;", trigger);
+        Assert.Contains("CreateTrigger<int>(\"SetCatalogScreen\", SetCatalogScreen);", ModSource.Text("Systems/BuildingMenuUISystem.cs"));
     }
 }

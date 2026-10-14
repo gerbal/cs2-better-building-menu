@@ -39,8 +39,39 @@ namespace BetterBuildingMenu.Domain
 		/// The box echoes a keystroke at once and the page follows a debounce later, so Enter
 		/// holds until the two agree rather than arming the previous search's match.
 		/// </remarks>
-		string? SearchText = null) : IJsonWritable
+		string? SearchText = null,
+		/// <summary>Enter's target with its name, menu and place in the order; null without a search or an armable match.</summary>
+		/// <remarks><see cref="BestMatchId"/> is its id, for the readers that take only that.</remarks>
+		BuildingCatalogBestMatch? BestMatch = null,
+		/// <summary>Whether a search matched rows and none of them can be placed, so Enter does nothing.</summary>
+		bool AllMatchesLocked = false,
+		/// <summary>Whether the window is at its ceiling with rows past it, so the list stops and must say so.</summary>
+		bool Capped = false,
+		/// <summary>The row the list starts at, as the query holds it, or 0 for none.</summary>
+		int AnchorId = 0,
+		/// <summary>That row's place in the result's order, or -1 when the result does not hold it.</summary>
+		/// <remarks>The UI puts the row on line 1 when the window holds it, and the list at its top when not.</remarks>
+		int AnchorIndex = -1,
+		/// <summary>Which start of the list this page answers; see AssetMenuState.ListStart.</summary>
+		int ListStart = 0,
+		/// <summary>How many rows that can be placed Enter's target sits past the best match, as the engine walks it.</summary>
+		/// <remarks>It stops at the list's ends, so the state keeps this, not the presses. See BuildingCatalogQuery.EnterStep.</remarks>
+		int EnterStep = 0,
+		/// <summary>The labels over the whole result, each with its true count; empty when the result draws none.</summary>
+		/// <remarks>Over the whole result, not the window, so a label counts rows the window has not reached. See CatalogSection.</remarks>
+		IReadOnlyList<CatalogSection>? Sections = null) : IJsonWritable
 	{
+		/// <summary>The labels, none when the page was built without any.</summary>
+		public IReadOnlyList<CatalogSection> Sections { get; init; } = Sections ?? System.Array.Empty<CatalogSection>();
+
+		/// <summary>How many rows the window can reach: the total, less the locked rows while their label is collapsed.</summary>
+		/// <remarks>What Load more counts against, so it never offers folded rows; the total still counts them. See docs/design-notes.md, "Label plates".</remarks>
+		public int VisibleCount { get; init; } = TotalCount;
+
+		/// <summary>The values said once over the whole view, and the kind each row's second number shows.</summary>
+		/// <remarks>Over the whole result, as the sections are. See ViewFacts.</remarks>
+		public ViewFacts Facts { get; init; } = ViewFacts.None;
+
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
@@ -64,6 +95,8 @@ namespace BetterBuildingMenu.Domain
 
 			writer.PropertyName("totalCount");
 			writer.Write(TotalCount);
+			writer.PropertyName("visibleCount");
+			writer.Write(VisibleCount);
 			writer.PropertyName("offset");
 			writer.Write(Offset);
 			writer.PropertyName("limit");
@@ -74,6 +107,29 @@ namespace BetterBuildingMenu.Domain
 			if (BestMatchId.HasValue) writer.Write(BestMatchId.Value); else writer.WriteNull();
 			writer.PropertyName("searchText");
 			writer.Write(SearchText ?? string.Empty);
+			writer.PropertyName("bestMatch");
+			if (BestMatch is null) writer.WriteNull(); else BestMatch.Write(writer);
+			writer.PropertyName("allMatchesLocked");
+			writer.Write(AllMatchesLocked);
+			writer.PropertyName("capped");
+			writer.Write(Capped);
+			writer.PropertyName("anchorId");
+			writer.Write(AnchorId);
+			writer.PropertyName("anchorIndex");
+			writer.Write(AnchorIndex);
+			writer.PropertyName("listStart");
+			writer.Write(ListStart);
+			writer.PropertyName("enterStep");
+			writer.Write(EnterStep);
+			writer.PropertyName("sections");
+			writer.ArrayBegin((uint)Sections.Count);
+			foreach (var section in Sections)
+			{
+				section.Write(writer);
+			}
+			writer.ArrayEnd();
+			writer.PropertyName("facts");
+			Facts.Write(writer);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

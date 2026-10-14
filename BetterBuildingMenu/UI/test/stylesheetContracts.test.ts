@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
-import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT } from "../src/domain/assetMenuLayout.ts";
-import { declarationsOf, everyDeclaration, moduleSheets, rem, selectorsOf, sides } from "./harness/compiledCss.ts";
+import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
+import { LARGE_PICTURE } from "../src/domain/bodyGeometry.ts";
+import { cardGeometry } from "../src/domain/cardsLayout.ts";
+import { SLOT_MAX_HEIGHT, SLOT_PADDING, SLOT_ROOM, SLOT_WIDTH } from "../src/domain/hoverCardPlace.ts";
+import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
+import { bandWidth } from "../src/domain/tileBands.ts";
+import { TAG_FONT, TAG_PADDING, tagRoom } from "../src/domain/tileTag.ts";
+import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
 /**
  * Stylesheet contracts: layout rules Cohtml gets wrong or the design pins,
@@ -12,63 +19,65 @@ import { declarationsOf, everyDeclaration, moduleSheets, rem, selectorsOf, sides
 const CATALOG = "mods/BuildingCatalog/buildingCatalog.module.scss";
 const PANE = "mods/ControlPane/controlPane.module.scss";
 const ASSET_MENU = "mods/BuildingMenu/assetMenu.module.scss";
-const HEADER = "mods/BuildingMenu/buildingMenuHeader.module.scss";
-const GROUPS = "mods/GroupedResults/groupedResults.module.scss";
+const TOP_ROW = "mods/TopRow/topRow.module.scss";
+const TOP_EDGE = "mods/TopEdge/topEdge.module.scss";
+const LABELS = "mods/Bodies/labelPlate.module.scss";
+const CARDS = "mods/Bodies/cardsBody.module.scss";
 const CARD = "mods/BuildingHoverCard/buildingHoverCard.module.scss";
 const PICKER = "mods/ExtensionMenu/extensionMenu.module.scss";
 const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
-const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
+const TILES = "mods/Bodies/tilesBody.module.scss";
+const TAB_ROW = "mods/TabRow/tabRow.module.scss";
+const LIST_BODY = "mods/Bodies/listBody.module.scss";
+const FILTER_PANEL = "mods/Pickers/filterPanel.module.scss";
+const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
+const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
+const PLANNED = "mods/Bodies/plannedName.module.scss";
+const ICONS = "mods/Bodies/iconsBody.module.scss";
+const HOVER = "mods/HoverCard/hoverCard.module.scss";
 
 const catalog = (selector: string) => declarationsOf(CATALOG, selector);
 const pane = (selector: string) => declarationsOf(PANE, selector);
-const groups = (selector: string) => declarationsOf(GROUPS, selector);
+const labels = (selector: string) => declarationsOf(LABELS, selector);
+const cards = (selector: string) => declarationsOf(CARDS, selector);
 const card = (selector: string) => declarationsOf(CARD, selector);
 const picker = (selector: string) => declarationsOf(PICKER, selector);
 const resize = (selector: string) => declarationsOf(RESIZE, selector);
 
 describe("Asset menu stylesheet contracts", () => {
-  it("sizes a group to its tiles and lets the heading wrap inside it", () => {
-    // The heading wraps to the width the tiles occupy, rather than the tiles
-    // being spread to the width the heading wants: reserving label room buys
-    // readable headings at the price of mostly-empty groups.
-    assert.equal(groups(".group")["min-width"], undefined);
-    assert.equal(groups(".groupLabel")["white-space"], "normal");
-    // A band sizes to its content rather than claiming the whole line: one
-    // that is wider than the row still fills it, via max-width and its own
-    // children wrapping, while a narrow one lets a sibling share the line.
-    assert.equal(groups(".groupBand").flex, "0 1 auto");
-    // No heading, no row reserved for one.
-    assert.equal(groups(".groupUnlabeled")["padding-top"], "0");
+  it("keeps a label plate's name to its slot, on one line, and never cuts its count", () => {
+    // The slot is the plate's size, so a long name is planned inside it rather than widening it;
+    // the count says how many the label holds, so it gives way last.
+    assert.equal(declarationsOf(PLANNED, ".line")["white-space"], "nowrap");
+    assert.equal(labels(".labelText").overflow, "hidden");
+    assert.equal(labels(".labelCount").flex, "0 0 auto");
+    assert.equal(labels(".label").overflow, "hidden");
   });
 
-  it("keeps the heading out of flow so it cannot widen the group", () => {
-    // The whole reason the reserve is measured in JS rather than being the
-    // heading's own height: an in-flow heading sets the group's intrinsic
-    // width. GroupRow reserves the row's tallest heading instead.
-    assert.equal(groups(".groupHeading").position, "absolute");
-    // Against a wrapping label the count sits on the first line, not the
-    // middle of the stack.
-    assert.equal(groups(".groupHeading")["align-items"], "flex-start");
+  it("keeps each card's name and facts on one line each, inside the card", () => {
+    // The packer sizes each card from these two lines, so a second line would draw past it.
+    assert.equal(cards(".name")["white-space"], "nowrap");
+    assert.equal(cards(".facts")["white-space"], "nowrap");
+    assert.equal(cards(".card").overflow, "hidden");
+    assert.equal(cards(".card")["box-sizing"], "border-box");
   });
 
-  it("stops the expanded row's chevron resolving its height against the whole row", () => {
-    // .rowDetailsButton sets `height: 100%` so it fills the collapsed row,
-    // which has a definite height to resolve against. Expanded, the row is
-    // `height: auto` and that percentage resolves against the WRAPPED row.
-    assert.equal(catalog(".row[data-expanded=true] .rowDetailsButton").height, "auto");
-    // And the collapsed rule it is overriding must still be the percentage,
-    // so this contract keeps pointing at something real.
-    assert.equal(catalog(".rowDetailsButton").height, "100%");
+  it("gives a held card's planned name the width of the card's words, whatever its lines hold", () => {
+    // The name is planned again in the box as drawn: a box that hugged its lines would narrow it each frame.
+    assert.equal(cards(".nameHeld")["align-self"], "stretch");
+    assert.equal(cards(".nameHeld").overflow, "hidden");
   });
 
-  it("keeps a details label-value pair on one line and wraps it as a unit", () => {
-    // A .rowDetail is a flex item in a wrapping row; left free to shrink it
-    // narrows to its longest word and the label wraps, and the engine does not
-    // grow the line, so the text overflows into what is drawn beneath it.
-    assert.equal(catalog(".rowDetail").flex, "0 0 auto");
-    assert.equal(catalog(".rowDetail")["white-space"], "nowrap");
-    assert.equal(catalog(".rowDetailLabel")["white-space"], "nowrap");
+  it("lets every body's scroller fill the body and no more, and the body shrink below its content", () => {
+    // A scroller with no cap outgrows the box, and a body that cannot shrink lays its rows out
+    // below the screen, present in the DOM and never drawn.
+    for (const sheet of ["mods/Bodies/listBody.module.scss", "mods/Bodies/tilesBody.module.scss", CARDS]) {
+      assert.equal(declarationsOf(sheet, ".body")["min-height"], "0", sheet);
+      // A zero basis resolves against nothing in the catalog, whose height is a cap: no height at all.
+      assert.doesNotMatch(declarationsOf(sheet, ".body").flex, /(^|\s)0(px|rem)?\s*$/, sheet);
+      assert.equal(declarationsOf(sheet, ".scroller.scroller")["max-height"], "100%", sheet);
+    }
   });
 
   it("pairs the hover card's figures two across, and lets a list take the row", () => {
@@ -95,43 +104,6 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(rem(card(".cardLines")["margin-top"]), -rem(card(".cardLine")["margin-top"]));
   });
 
-  it("reserves in the header exactly what a row spends right of its last cell", () => {
-    // The header and the rows are two flex containers describing one table,
-    // so a column lines up only if both reserve the same space: the row's
-    // own right padding, the chevron, the outer padding, and ONE gap — the
-    // one between the select and the chevron. A control added to the row and
-    // not to the reserve steps every header off the cells it heads.
-    const spent = rem(sides(catalog(".rowSelect").padding)[1])
-      + rem(catalog(".rowDetailsButton").width)
-      + rem(sides(catalog(".row").padding)[1])
-      + rem(catalog(".row > * + *")["margin-left"]);
-
-    assert.equal(rem(sides(catalog(".columnHeader").padding)[1]), spent);
-    // And on the left, the header starts where the row's select does.
-    assert.equal(sides(catalog(".columnHeader").padding)[3], sides(catalog(".rowSelect").padding)[3]);
-  });
-
-  it("spaces the header's columns as the rows space their cells", () => {
-    // .columnHeader > * + * gives each header the rows' gap, and .metricHeader's
-    // button-chrome reset (`margin: 0`, same specificity, later) takes it
-    // straight back, stepping every header left of the cells it heads.
-    const gap = catalog(".rowSelect > * + *")["margin-left"];
-
-    assert.equal(catalog(".columnHeader > * + *")["margin-left"], gap);
-    assert.equal(sides(catalog(".metricHeader").margin)[3], gap, "a margin reset discards the column gap");
-  });
-
-  it("makes the row Place hint visible for hover and keyboard focus", () => {
-    const hidden = catalog(".placeHint");
-    for (const state of [".rowSelect:hover .placeHint", ".rowSelect:focus .placeHint"]) {
-      assert.notDeepEqual(catalog(state), {}, `${state} draws nothing`);
-      assert.ok(
-        Object.entries(catalog(state)).some(([property, value]) => hidden[property] !== value),
-        `${state} leaves the hint as it was`
-      );
-    }
-  });
-
   it("gives the height drag a target worth aiming at", () => {
     // The only way to change the height now that the Expand toggle is gone, so
     // it has to be both findable and hittable. The strip is the target and the
@@ -140,9 +112,7 @@ describe("Asset menu stylesheet contracts", () => {
     // own module rather than in either panel's.
     const strip = resize(".resizeHandle");
 
-    // NOT absolute. As an overlay on the panel edge it is invisible AND
-    // unclickable — the tab strip paints over it whatever z-index it carries.
-    // In the flow above the strip it cannot be occluded by it.
+    // Not absolute: the upgrades panel's top edge is its first row, in the flow above its header.
     assert.notEqual(strip.position, "absolute");
     // Taller than the mark it draws, so the edge is grabbable without aiming.
     // The strip is drawn at the height a drag measures against.
@@ -171,17 +141,216 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(grip.width, "75rem");
   });
 
-  it("lets the catalog strip grow rather than slicing a wrapped row of tabs", () => {
-    // The strip wraps when its tabs outrun the width left beside the search
-    // field. Pinned to a height with overflow: hidden, the second line is cut
-    // through the middle; stopping the wrap costs the player five categories.
-    const row = declarationsOf(HEADER, ".catalogStripRow");
-    const tabs = declarationsOf(HEADER, ".catalogStripTabs");
+  it("keeps the top row one row high and the tab row one line", () => {
+    // The box keeps its height whatever a menu holds, so nothing in its chrome may wrap or grow.
+    const band = declarationsOf(TOP_ROW, ".topBand");
+    const row = declarationsOf(TOP_ROW, ".topRow");
+    const tabs = declarationsOf(TAB_ROW, ".tabRow");
 
-    assert.ok(row["min-height"], "the row has a floor");
-    assert.equal(row.height, undefined);
-    assert.notEqual(row.overflow, "hidden");
-    assert.notEqual(tabs.overflow, "hidden");
+    assert.equal(band["padding-top"], "2rem");
+    assert.equal(band["padding-bottom"], "4rem");
+    assert.equal(row.height, "28rem");
+    assert.equal(row["min-height"], undefined);
+    assert.equal(row["flex-wrap"], undefined);
+    assert.equal(tabs["flex-wrap"], "nowrap");
+    assert.equal(tabs.height, "26rem");
+    assert.equal(tabs.overflow, "hidden");
+  });
+
+  it("lays the top edge over the box's top edge, above the top row", () => {
+    // The box's last child, 6 rem above the box and 2 inside it, over the top row's band.
+    const edge = declarationsOf(TOP_EDGE, ".topEdge");
+
+    assert.equal(edge.position, "absolute");
+    assert.equal(edge.top, "-6rem");
+    assert.equal(edge.height, "8rem");
+    assert.ok(Number(edge["z-index"]) > Number(declarationsOf(TOP_ROW, ".topBand")["z-index"]), "over the top row's band");
+    assert.equal(edge.cursor, "url(cursor://vertical-can-resize)");
+  });
+
+  it("keeps the controls on one line: the strip and its cells never wrap or shrink, a value never widens its cell", () => {
+    const strip = declarationsOf(TOP_ROW, ".strip");
+
+    assert.equal(strip.flex, "0 0 auto");
+    assert.equal(strip["flex-wrap"], "nowrap");
+    assert.equal(declarationsOf(TOP_ROW, ".cellBox").flex, "0 0 auto");
+    assert.equal(declarationsOf(TOP_ROW, ".value").overflow, "hidden");
+    assert.equal(declarationsOf(TOP_ROW, ".dot").position, "absolute");
+  });
+
+  it("rings the search field in the focus ring while it has the keys, and in its plain ring otherwise", () => {
+    // A compound class from the TextInput's own focus: Cohtml has no :focus to lean on here, and no outline.
+    assert.equal(declarationsOf(TOP_ROW, ".field")["box-shadow"], "var(--bbm-fieldRing)");
+    assert.equal(declarationsOf(TOP_ROW, ".field.focused")["box-shadow"], "var(--bbm-focusRing)");
+  });
+
+  it("hangs the notch under the box's bottom edge, a trapezoid of border longhands that takes no presses", () => {
+    const notch = declarationsOf("mods/Notch/notch.module.scss", ".notch");
+
+    assert.equal(notch.position, "absolute");
+    assert.equal(notch.top, "100%");
+    assert.equal(notch["pointer-events"], "none");
+    // Cohtml sizes every box border-box, so the width is the drawn top, the side borders inside it:
+    // the foot is what is left between them, 4 tall, in the look's notch.
+    assert.equal(notch["box-sizing"], "border-box");
+    assert.ok(Math.abs(rem(notch.width) - NOTCH_TOP_WIDTH) < 1e-9, "the width is the top notch.ts places");
+    assert.ok(Math.abs(rem(notch.width) - 2 * rem(notch["border-left-width"]) - 26.4) < 1e-9, "the foot is what the borders leave");
+    assert.equal(notch["border-right-width"], notch["border-left-width"]);
+    assert.equal(notch["border-top-width"], "4rem");
+    assert.equal(notch["border-top-color"], "var(--bbm-notch)");
+    assert.equal(notch["border-left-color"], "transparent");
+    assert.equal(notch["border-right-color"], "transparent");
+  });
+
+  it("draws the popovers over the top edge's strip, from a bottom offset", () => {
+    const popover = declarationsOf("mods/ControlPopover/controlPopover.module.scss", ".popover");
+
+    assert.equal(popover.position, "absolute");
+    assert.ok(Number(popover["z-index"]) > Number(declarationsOf(TOP_EDGE, ".topEdge")["z-index"]), "over the top edge");
+    // Anchored by a fixed bottom offset, inline, as the pane's own menus are on this engine.
+    assert.equal(popover.top, undefined);
+    assert.equal(popover.bottom, undefined);
+  });
+
+  it("paints the pane's lists over the box's top row and top edge, and under the popovers", () => {
+    // The pane's blur makes it a stacking context, so its lists, which open left over the box, paint
+    // at the pane's own order: above the top row's band and the top edge, below a popover.
+    const shown = pane(".pane");
+    const order = (sheet: string, selector: string) => Number(declarationsOf(sheet, selector)["z-index"]);
+
+    assert.equal(shown["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(shown.position, "relative");
+    assert.ok(Number(shown["z-index"]) > order(TOP_ROW, ".topBand"), "over the top row's band");
+    assert.ok(Number(shown["z-index"]) > order(TOP_EDGE, ".topEdge"), "over the top edge");
+    assert.ok(Number(shown["z-index"]) < order(POPOVER, ".popover"), "under the popovers");
+    assert.ok(order(POPOVER, ".popover") > order(TOP_EDGE, ".topEdge"), "the popovers still over the top edge");
+    assert.ok(order(TOP_EDGE, ".topEdge") > order(TOP_ROW, ".topBand"), "the top edge still over the top row");
+    // The lists keep their own anchor: each picker is positioned, so the pane's position moves none.
+    assert.equal(pane(".picker").position, "relative");
+    assert.equal(pane(".pickerOptions").position, "absolute");
+  });
+
+  it("draws the box's surfaces in the look's material: the bands its head, the body its list under its blur", () => {
+    // One material for the whole box: the game's translucent list between the look's bands shows a seam.
+    assert.equal(declarationsOf(TOP_ROW, ".topBand")["background-color"], "var(--bbm-head)");
+    assert.equal(declarationsOf(TAB_ROW, ".band")["background-color"], "var(--bbm-head)");
+    const body = declarationsOf(ASSET_MENU, ".content");
+    assert.equal(body["background-color"], "var(--bbm-body)");
+    assert.equal(body["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(body["background-image"], undefined);
+  });
+
+  it("sizes the clear button itself, over the game's Button and its background", () => {
+    // The clear button is the game's icon Button, whose one class pins its size and paints a
+    // background: two classes outrank it whichever sheet loads last.
+    const clear = [["field"], ["clear"]];
+
+    for (const [prop, value] of [["width", "22rem"], ["height", "22rem"], ["background-color", "transparent"]]) {
+      const winner = winnerOn(TOP_ROW, clear, prop);
+      assert.equal(winner?.value, value, prop);
+      assert.ok((winner?.classes ?? 0) >= 2 || winner?.important, `${prop}: ${JSON.stringify(winner)}`);
+    }
+  });
+
+  it("sizes a tab cell itself, over the game's Button and its square", () => {
+    // A cell is the game's Button, whose one class pins 24 x 24. The cell's own size outranks it
+    // with two classes whichever sheet loads last, so a cell is as wide as its picture or its name.
+    const cell = [["tabRow"], ["cells"], ["cell"]];
+    const width = winnerOn(TAB_ROW, cell, "width");
+    const height = winnerOn(TAB_ROW, cell, "height");
+
+    assert.equal(width?.value, "auto");
+    assert.equal(height?.value, "26rem");
+    for (const size of [width, height]) assert.ok((size?.classes ?? 0) >= 2 || size?.important, JSON.stringify(size));
+  });
+
+  it("puts a picture cell's least width in its slot, where the row's width sees it", () => {
+    // Cohtml sizes the row of cells from each cell's own width and skips its min-width, so a cell
+    // narrower than its floor would be cut. The slot's stated width makes the floor the content's.
+    const slot = rem(declarationsOf(TAB_ROW, ".iconSlot").width);
+
+    assert.equal(slot + 2 * TAB_CELL_PADDING, TAB_CELL_MIN_WIDTH);
+  });
+
+  it("draws the lit tab's count in the lit text while a search is typed", () => {
+    // During a search every count is a match count in the search's mark, but the lit cell keeps
+    // its own text colour: the mark's light cyan drops out against the lit gradient.
+    const count = (...cell: string[]) => resolvedOn(TAB_ROW, [["tabRow"], ["cell", ...cell], ["count"]], "color");
+
+    assert.equal(count("lit", "matches"), "var(--bbm-armText)");
+    assert.equal(count("lit"), "var(--bbm-armText)");
+    assert.equal(count("matches"), "var(--bbm-entMark)");
+    assert.equal(count(), "var(--bbm-tabCount)");
+  });
+
+  it("draws a one-line plate's key number in the cost's place in the key number's ink", () => {
+    // Where the readout said the cost, the key number moves to the first line; it keeps its own ink, as
+    // on the armed and the built plate.
+    const ink = (...plate: string[]) => resolvedOn(LIST_BODY, [["plate", ...plate], ["numbers"], ["firstLine"], ["first", "keyNumber"]], "color");
+
+    assert.equal(ink(), resolvedOn(LIST_BODY, [["plate"], ["numbers"], ["secondLine"], ["second"]], "color"));
+    assert.equal(ink(), "var(--bbm-tNum2)");
+    assert.equal(ink("armed"), "var(--bbm-armNum)");
+    assert.equal(ink("built"), "var(--bbm-tLocked)");
+  });
+
+  it("sizes the readout's legend as the tab row's plan counts it", () => {
+    // planTabRow budgets the legend from these: a glyph that scales with the text, a fixed gap to its
+    // words, a fixed room each side of the dot, and the words and the dot in the range's font.
+    const glyph = declarationsOf(TAB_ROW, ".saidGlyph");
+    const [, right, , left] = sides(declarationsOf(TAB_ROW, ".sep").padding);
+    const range = declarationsOf(TAB_ROW, ".range")["font-size"];
+
+    assert.equal(glyph.width, `calc(${READOUT_GLYPH}rem * var(--fontScale))`);
+    assert.equal(glyph.height, glyph.width);
+    assert.equal(rem(declarationsOf(TAB_ROW, ".said").gap), READOUT_GLYPH_GAP);
+    assert.deepEqual([rem(right), rem(left)], [READOUT_SEP_PADDING, READOUT_SEP_PADDING]);
+    assert.equal(declarationsOf(TAB_ROW, ".saidText")["font-size"], range);
+    assert.equal(declarationsOf(TAB_ROW, ".sep")["font-size"], range);
+  });
+
+  it("draws the status line's name and figures in the place line's and the range's looks", () => {
+    // statusLine budgets the name in the name's font and the figures in the count's, as planTabRow does.
+    for (const [status, own] of [[".statusName", ".place"], [".statusFigure", ".range"]]) {
+      for (const property of ["color", "font-size", "line-height", "white-space"]) {
+        assert.equal(declarationsOf(TAB_ROW, status)[property], declarationsOf(TAB_ROW, own)[property], `${status} ${property}`);
+      }
+    }
+  });
+
+  it("draws a tab's picture whole at its own aspect, without measuring it", () => {
+    // Cohtml has no object-fit and reports no natural size for a picture, and a mod's picture
+    // need not be square: drawn as a background, contained and centred, it keeps its shape.
+    const shown = declarationsOf(TAB_ROW, ".picture");
+
+    assert.equal(shown["background-size"], "contain");
+    assert.equal(shown["background-position"], "center");
+    assert.equal(shown["background-repeat"], "no-repeat");
+    assert.equal(shown.width, shown.height);
+  });
+
+  it("lets a one-line plate's picture overhang it, with nothing between the plate and the body clipping it", () => {
+    // The plate's own face clips; a one-line plate's does not. The slots' room holds the overhang, so
+    // only the body clips, past it.
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"], ["slots"], ["plate", "largeText"]], "overflow"), "visible");
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"], ["slots"], ["plate"]], "overflow"), "hidden");
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"]], "overflow"), undefined);
+    assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"], ["slots"]], "overflow"), undefined);
+    assert.equal(resolvedOn(LIST_BODY, [["plate", "largeText"], ["artwork"]], "overflow"), undefined);
+    // The overhang the body keeps room for is the sheet's own picture's.
+    assert.equal(rem(declarationsOf(LIST_BODY, ".largeText .artwork").width), LARGE_PICTURE);
+  });
+
+  it("squares the list's bottom corners, which the tab row's band rounds", () => {
+    // The band under the list is the box's bottom edge, so it carries the rounding. A rounded
+    // list above the band's square top would notch the seam between them.
+    const list = declarationsOf(ASSET_MENU, ".content");
+    const band = declarationsOf(TAB_ROW, ".band");
+
+    assert.equal(list["border-bottom-left-radius"], "0");
+    assert.equal(list["border-bottom-right-radius"], "0");
+    assert.equal(band["border-bottom-left-radius"], "var(--bbm-boxRadius)");
+    assert.equal(band["border-bottom-right-radius"], "var(--bbm-boxRadius)");
   });
 
   it("matches the vanilla options bank it sits opposite", () => {
@@ -194,13 +363,92 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(pane(".rowLabel")["font-size"], "16rem");
   });
 
-  it("lets the pane's text buttons size to their text", () => {
+  it("lets the lists' text buttons size to their text", () => {
     // The icon variant pins a square width, so any control here carrying text
     // has to override it, or the button sizes to the square and elides the
     // word inside it.
-    for (const selector of [".pickerSummary", ".clearAll"]) {
-      assert.equal(pane(selector).width, "auto !important", selector);
+    for (const [sheet, selector] of [[PANE, ".pickerSummary"], [FILTER_PANEL, ".chips .clearAll"], [PICKER_LIST, ".list .row"]] as const) {
+      assert.equal(declarationsOf(sheet, selector).width, "auto !important", selector);
     }
+  });
+
+  it("keeps a pane row's label whole, its value cut inside the summary, at any text size", () => {
+    // A summary gives way at a larger text size, never the row's label beside it.
+    assert.equal(pane(".rowLabel").flex, "0 0 auto");
+    assert.equal(pane(".rowLabel")["white-space"], "nowrap");
+    for (const selector of [".rowValue", ".picker", ".pickerSummary", ".pickerLabel"]) {
+      assert.equal(pane(selector)["min-width"], "0", selector);
+    }
+    assert.equal(pane(".pickerLabel").overflow, "hidden");
+    // A flex item: Cohtml ignores text-overflow there, so the summary states none.
+    assert.equal(pane(".pickerLabel")["text-overflow"], undefined);
+  });
+
+  it("draws a list on the same surface over the pane as in the top row's popover", () => {
+    const popover = declarationsOf(POPOVER, ".popover");
+
+    for (const prop of ["width", "padding", "border-radius", "background-color", "box-shadow"]) {
+      assert.equal(pane(".pickerOptions")[prop], popover[prop], prop);
+    }
+  });
+
+  it("draws the pane's chips and summaries in the body's inks, which follow the game's style, and the popover's chips in its own", () => {
+    // The pane's surface is the look's body, which Bright blue turns light; the popover stays dark.
+    const chip = (onBody: boolean, rest: string[][], prop: string) =>
+      winnerOn(FILTER_PANEL, [onBody ? ["chips", "onBody"] : ["chips"], ...rest], prop)?.value;
+    const cases: [string[][], string, string, string][] = [
+      [[["chip"]], "background-color", "bodyChipBg", "chipBg"],
+      [[["chip"], ["chipText"]], "color", "bodyChipText", "tState"],
+      [[["chip"], ["chipRemove"]], "color", "bodyChipDim", "tDim"],
+      [[["clearAll"]], "color", "bodyWord", "tWord"],
+      [[["clearAll"]], "background-color", "bodyChipBg", "chipBg"],
+    ];
+
+    for (const [rest, prop, body, popover] of cases) {
+      const where = `${rest.map((classes) => classes.join(".")).join(" ")} ${prop}`;
+      assert.equal(chip(true, rest, prop), `var(--bbm-${body})`, where);
+      assert.equal(chip(false, rest, prop), `var(--bbm-${popover})`, where);
+    }
+
+    // Three classes on the body outrank the hovers on a tie, so the body restates them: the open control's fill and
+    // its ink on it.
+    assert.equal(declarationsOf(FILTER_PANEL, ".chips.onBody .chipRemove:hover").color, "var(--bbm-ctlOpenSet)");
+    assert.equal(declarationsOf(FILTER_PANEL, ".chips.onBody .clearAll:hover")["background-color"], "var(--bbm-ctlOpen)");
+    assert.equal(declarationsOf(FILTER_PANEL, ".chips.onBody .clearAll:hover").color, "var(--bbm-ctlOpenWord)");
+
+    assert.equal(pane(".rowLabel").color, "var(--bbm-bodyLabel)");
+    assert.equal(pane(".pickerSummary")["background-color"], "var(--bbm-bodyCtl)");
+    assert.equal(pane(".pickerSummary").color, "var(--bbm-bodyCtlText)");
+    assert.equal(pane(".pickerSummary:hover")["background-color"], "var(--bbm-bodyCtlHover)");
+    assert.equal(pane(".caret").color, "var(--bbm-bodyCtlDim)");
+  });
+
+  it("draws a list row that is lit and dimmed at once in the selected fill's ink, faded, never the dim ink on that fill", () => {
+    const row = (...states: string[]) => [["list"], ["row", ...states]];
+
+    assert.equal(resolvedOn(PICKER_LIST, row("lit", "dim"), "color"), "var(--bbm-armText)");
+    assert.equal(resolvedOn(PICKER_LIST, row("lit", "dim"), "opacity"), "0.7");
+    assert.equal(resolvedOn(PICKER_LIST, row("lit", "dim"), "background-color"), "var(--bbm-popOn)");
+    assert.equal(resolvedOn(PICKER_LIST, row("dim"), "color"), "var(--bbm-tDim)");
+    assert.equal(resolvedOn(PICKER_LIST, row("lit"), "opacity"), undefined);
+  });
+
+  it("opens Width, every menu each way by one fixed offset, so neither way unsets the other's", () => {
+    const up = declarationsOf(PICKER_LIST, ".widthList.up");
+    const down = declarationsOf(PICKER_LIST, ".widthList.down");
+
+    assert.ok(up.bottom && up.top === undefined, "upward from its bottom");
+    assert.ok(down.top && down.bottom === undefined, "downward from its top");
+    assert.equal(declarationsOf(PICKER_LIST, ".widthList").bottom, undefined);
+  });
+
+  it("opens Look, every menu each way by one fixed offset, its bottom 4 below the Look row's, two rows above the list's bottom", () => {
+    const up = declarationsOf(PICKER_LIST, ".lookList.up");
+    const down = declarationsOf(PICKER_LIST, ".lookList.down");
+
+    assert.equal(rem(up.bottom), 2 * rem(declarationsOf(PICKER_LIST, ".list .row").height) - 4);
+    assert.ok(up.top === undefined && down.top && down.bottom === undefined);
+    assert.equal(declarationsOf(PICKER_LIST, ".lookList").left, declarationsOf(PICKER_LIST, ".widthList").left);
   });
 
   it("opens the pane's menus upward, away from the bottom bar", () => {
@@ -219,6 +467,11 @@ describe("Asset menu stylesheet contracts", () => {
  * `text-overflow: ellipsis` is deliberately NOT here: it is a no-op on a FLEX
  * ITEM and works normally elsewhere. tileLabel.ts elides in JS where it matters.
  */
+/** Shorthands Cohtml drops whole when a var() feeds any part of them. */
+const VAR_FED_SHORTHANDS = new Set([
+  "border", "border-top", "border-right", "border-bottom", "border-left",
+  "border-color", "border-width", "border-style", "border-radius", "background",
+]);
 const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declaration: string; why: string }[] = [
   {
     matches: (prop, value) => (prop === "align-items" || prop === "align-self") && value === "baseline",
@@ -237,26 +490,45 @@ const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declarat
     declaration: "object-fit",
     why: "Never implemented in Cohtml (no changelog row through 3.1; the parser rejects it). Size the picture's box instead.",
   },
+  {
+    matches: (prop, value) => prop === "box-sizing" && value === "content-box",
+    declaration: "box-sizing: content-box",
+    why:
+      "Cohtml 2.2 has no content-box: it sizes every box border-box, so a width meant as the content's "
+      + "draws that much narrower by the padding and borders. Size the box as border-box.",
+  },
+  {
+    matches: (prop, value) => (prop === "max-width" || prop === "max-height") && value === "none",
+    declaration: "max-width / max-height: none",
+    why: "Cohtml's max-width and max-height take a length or a percentage, never `none`: it drops the declaration and keeps any cap a rule above sets. Give a length.",
+  },
+  {
+    matches: (_, value) => /var\(\s*--[\w-]+\s*,/.test(value),
+    declaration: "var(--name, fallback)",
+    why:
+      "Cohtml has no two-argument var(): it logs an unresolved-variable warning for every element "
+      + "carrying one and drops the declaration. Name a token the game always defines.",
+  },
+  {
+    matches: (prop, value) => VAR_FED_SHORTHANDS.has(prop) && /var\(/.test(value),
+    declaration: "a border or background shorthand fed by var()",
+    why:
+      "Cohtml logs `Custom CSS expressions are not supported in shorthand declaration` and drops it: "
+      + "the colour or radius never draws. Write each longhand (border-top-color, "
+      + "border-bottom-left-radius, background-color) with the var() instead.",
+  },
 ];
 
 describe("the catalog's floor is one row of cards", () => {
   // The player drags the height; the floor is where the drag stops. C# owns
   // it, the TS clamp reads the generated copy, and the stylesheet states it
   // again as a min-height; this keeps the stylesheet honest.
-  it("is one card row under two headings: the deepest grouping a menu draws", () => {
-    // Zones groups two levels deep (Residential Zones > Low Density), so its
-    // first row of cards sits under two heading reserves; a floor for one
-    // would clip that row by a heading's height in the menu the floor is
-    // most used in.
-    const vertical = (shorthand: string | undefined) => rem(sides(shorthand)[0]) + rem(sides(shorthand)[2]);
-    const catalogPadding = vertical(catalog(".catalog").padding);
-    const groupReserve = rem(groups(".group")["padding-top"]);
-    const listPadding = vertical(declarationsOf(LIST, ".list").padding);
-    // Every card is also an .item, which carries the border.
-    const border = rem(declarationsOf(LIST, ".item").border.split(/\s+/)[0]);
-    const cardHeight = rem(declarationsOf(LIST, ".itemCard")["min-height"]) + 2 * border;
-
-    assert.equal(ASSET_MENU_MIN_HEIGHT, catalogPadding + 2 * groupReserve + listPadding + cardHeight);
+  it("is a floor guard: it holds a row of the tallest card and a line of the shipped tiles, every body placing its own cells", () => {
+    // The catalog adds nothing around a body; the floor holds one row of the Card height knob's
+    // taller 50 rem cards, and one line of 64 rem tiles. The next case holds the sheet to the floor.
+    assert.equal(catalog(".catalog").padding, "0");
+    assert.ok(cardGeometry(50, ASSET_MENU_MIN_HEIGHT, 1).height <= ASSET_MENU_MIN_HEIGHT, `${ASSET_MENU_MIN_HEIGHT}`);
+    assert.ok(64 <= ASSET_MENU_MIN_HEIGHT, `${ASSET_MENU_MIN_HEIGHT}`);
   });
 
   it("states the same floor in the stylesheet", () => {
@@ -292,19 +564,203 @@ describe("a wrapping row of cards keeps each card its own height", () => {
     assert.ok(!selectorsOf(LIST).includes(".list::after"));
   });
 
-  it("spaces the grid's tiles with gap, for the same reason", () => {
-    // Two tiles in a group sized for two stacked into a column, three went
-    // two and one, while five fit their row: the same zero-slack rounding,
-    // flipping per group.
-    const tiles = declarationsOf(GRID, ".tiles");
+});
 
-    assert.equal(tiles.gap, "4rem");
-    assert.equal(tiles["margin-left"], undefined);
-    assert.equal(tiles["margin-top"], undefined);
+describe("a tile's tag and name line are the sizes the UI budgets them at", () => {
+  it("draws the tag in the font and padding tileTag.ts measures it by, clipped where it still runs over", () => {
+    const tag = declarationsOf(TILES, ".tag");
+
+    assert.equal(tag["font-size"], `calc(${TAG_FONT}rem * var(--fontScale))`);
+    assert.equal(tag.padding, `0 ${TAG_PADDING / 2}rem`);
+    assert.equal(tag.left, "2rem");
+    assert.equal(tag["box-sizing"], "border-box");
+    assert.equal(tag.overflow, "hidden");
+    assert.equal(tag["white-space"], "nowrap");
+  });
+
+  it("draws a look-alike's tag in the cost tag's face at the tile's top, its room on a locked tile ending at the lock glyph", () => {
+    const tag = declarationsOf(TILES, ".tag");
+    const lookAlike = declarationsOf(TILES, ".lookAlike");
+    const lock = declarationsOf(TILES, ".lockGlyph");
+
+    for (const property of ["font-size", "padding", "left", "box-sizing", "height", "line-height", "overflow", "white-space", "background-color", "color"]) {
+      assert.equal(lookAlike[property], tag[property], property);
+    }
+    assert.equal(lookAlike.top, "2rem");
+    assert.equal(lookAlike.bottom, undefined);
+    // The tag's right edge, its left plus its room, meets the glyph's left edge and never passes it.
+    assert.equal(rem(tag.left) + tagRoom(64, true), 64 - rem(lock.right) - rem(lock.width));
+  });
+
+  it("draws Plates' band in the tag's font and padding from the picture's inset across the tag's room, and its cost tag where the tag sits", () => {
+    const tag = declarationsOf(TILES, ".tag");
+    const band = declarationsOf(TILES, ".band");
+    const pill = declarationsOf(TILES, ".tag.pill");
+
+    for (const property of ["font-size", "padding", "left", "box-sizing", "height", "line-height", "overflow", "white-space"]) {
+      assert.equal(band[property], tag[property], property);
+    }
+    assert.equal(band.top, "2rem");
+    assert.equal(band["background-color"], "var(--bbm-bandBg)");
+    assert.equal(band.color, "var(--bbm-pillText)");
+    // Its room is the tag's, which its text is measured in: it runs to the tile's edge as a tag may.
+    assert.equal(rem(band.left) + bandWidth(64, false), 64);
+    // The pill keeps the tag's place and room: only its ends round.
+    assert.deepEqual(Object.keys(pill).filter((property) => !property.endsWith("-radius")), []);
+  });
+
+  it("draws the name line's name in the font TilesBody budgets its characters by", () => {
+    assert.equal(declarationsOf(TILES, ".lineName")["font-size"], "calc(11rem * var(--fontScale))");
+  });
+});
+
+describe("an icon's pill and name band are the sizes the UI budgets them at", () => {
+  it("draws the pill in the font and padding pillText measures it by: 10, and 10 across both sides", () => {
+    const pill = declarationsOf(ICONS, ".pillWord");
+
+    assert.equal(pill["font-size"], "calc(10rem * var(--fontScale))");
+    assert.equal(pill.padding, "0 5rem");
+  });
+
+  it("draws the icons' names in the font and room IconsBody plans them by: 10, and 4 across both sides", () => {
+    const band = declarationsOf(ICONS, ".nameBand");
+    const [, right, , left] = sides(band.padding);
+
+    assert.equal(band["font-size"], "calc(10rem * var(--fontScale))");
+    assert.equal(rem(band.left) + rem(band.right) + rem(left) + rem(right), 4);
+  });
+
+  it("stacks a locked icon's plate as iconPlate.ts and pillText measure it: the lock, its word, the pill, the band", () => {
+    const icons = (selector: string) => declarationsOf(ICONS, selector);
+
+    assert.deepEqual([icons(".locked").top, icons(".lockedRow").top], ["4rem", "2rem"]);
+    assert.deepEqual([icons(".lockGlyph").width, icons(".lockGlyph").height], ["13rem", "13rem"]);
+    assert.equal(icons(".milestone")["font-size"], "calc(10rem * var(--fontScale))");
+    assert.equal(icons(".milestone")["line-height"], "calc(11rem * var(--fontScale))");
+    assert.equal(icons(".pill").bottom, "2rem");
+    assert.equal(icons(".pillWord").height, "calc(12rem * var(--fontScale))");
+    assert.equal(icons(".nameBand").bottom, "1rem");
+    assert.equal(icons(".nameBand")["line-height"], "calc(12rem * var(--fontScale))");
+  });
+});
+
+describe("the hover card's name is the size the UI plans it at", () => {
+  it("draws the name in the font HoverCard plans it by", () => {
+    const source = readFileSync(new URL("../src/mods/HoverCard/HoverCard.tsx", import.meta.url), "utf8");
+    const font = Number(/^const NAME_FONT = (\d+);$/m.exec(source)?.[1]);
+
+    assert.ok(font > 0, "HoverCard.tsx's NAME_FONT");
+    assert.equal(declarationsOf(HOVER, ".name")["font-size"], `calc(${font}rem * var(--fontScale))`);
+  });
+
+  it("draws the card on the popovers' own surface, shared, not copied", () => {
+    const card = declarationsOf(HOVER, ".card");
+    const popover = declarationsOf(POPOVER, ".popover");
+
+    for (const property of ["border-radius", "background-color", "box-shadow"]) assert.equal(card[property], popover[property], property);
+  });
+
+  it("draws its words in the look's inks the look tokens pin on that surface", () => {
+    // The pairs in lookTokens.test.ts hold these inks to the popovers' panel; this holds the card to them.
+    const ink = (selector: string, property = "color") => declarationsOf(HOVER, selector)[property];
+
+    assert.deepEqual(
+      [ink(".name"), ink(".value"), ink(".label"), ink(".glyph", "background-color"), ink(".unlock")],
+      ["var(--bbm-tStateSet)", "var(--bbm-tStateSet)", "var(--bbm-tWord)", "var(--bbm-tWord)", "var(--bbm-amber)"],
+    );
+  });
+});
+
+describe("the game's detail slot is the size placeSlotCard places it at", () => {
+  it("draws the slot as wide as SLOT_WIDTH and at most SLOT_MAX_HEIGHT tall, cutting what runs past", () => {
+    const slot = declarationsOf(HOVER, ".slot");
+
+    assert.deepEqual([rem(slot.width), rem(slot["max-height"]), slot.overflow], [SLOT_WIDTH, SLOT_MAX_HEIGHT, "hidden"]);
+  });
+
+  it("holds the slot's content in a box of SLOT_ROOM inside its padding, which SlotCard drops whole rows to fit", () => {
+    const column = declarationsOf(HOVER, ".slotColumn");
+
+    assert.deepEqual(sides(declarationsOf(HOVER, ".slot").padding).map(rem), [SLOT_PADDING, SLOT_PADDING, SLOT_PADDING, SLOT_PADDING]);
+    assert.deepEqual([rem(column["max-height"]), column.overflow], [SLOT_ROOM, "hidden"]);
+    assert.equal(SLOT_ROOM, SLOT_MAX_HEIGHT - 2 * SLOT_PADDING);
+  });
+
+  it("caps the game's card on the panel at the slot's width, so its column sets the width", () => {
+    assert.equal(rem(card(".onPanel")["max-width"]), SLOT_WIDTH);
+  });
+
+  it("draws the game's card in the look's inks, on the panel and on the game's tooltip, its warn and good figures in their own tones, and their lines' labels too", () => {
+    const on = (...path: string[][]) => resolvedOn(CARD, [["card", "lookInks"], ...path], "color");
+    const off = (...path: string[][]) => resolvedOn(CARD, [["card"], ...path], "color");
+
+    assert.deepEqual(
+      [on(["cardName"]), on(["cardLine"], ["cardValue"]), on(["cardDescription"]), on(["cardLine"]), on(["cardLines", "cardLinesExtra"])],
+      ["var(--bbm-tStateSet)", "var(--bbm-tStateSet)", "var(--bbm-tStateSet)", "var(--bbm-tWord)", "var(--bbm-tWord)"],
+    );
+    for (const tone of ["cardWarn", "cardGood"]) {
+      const value = off(["cardLine", tone], ["cardValue"]);
+
+      assert.match(String(value), /^rgb\(/, tone);
+      assert.equal(on(["cardLine", tone], ["cardValue"]), value, tone);
+      assert.equal(on(["cardLines", "cardLinesExtra"], ["cardLine", tone], ["cardValue"]), value, `${tone} in the extra tier`);
+      // On the panel the line's own ink too, which its label draws in: a label in the panel's word ink beside
+      // a red figure reads as a figure alone in trouble.
+      assert.equal(on(["cardLine", tone]), value, `${tone}'s line`);
+      assert.equal(on(["cardLines", "cardLinesExtra"], ["cardLine", tone]), value, `${tone}'s line in the extra tier`);
+    }
+  });
+});
+
+describe("a planned name's boxes", () => {
+  /** The game's Overpass draws its ascent and descent within this many em, as Chromium reports its content area. */
+  const ASCENT_AND_DESCENT = 1.3;
+  const em = (value: string | undefined) => Number(/^(-?[\d.]+)em$/.exec(value ?? "")?.[1]);
+  /** The N of a calc(N rem * var(--fontScale)). */
+  const scaled = (value: string | undefined) => rem(/^calc\(([\d.]+rem) \* var\(--fontScale\)\)$/.exec(value ?? "")?.[1]);
+
+  it("lay a dimmed line's runs side by side, each keeping its spaces, the typed word in an ink that follows the style", () => {
+    // Cohtml lays out a block's runs as a column: a row keeps the typed word on its line.
+    const runs = declarationsOf(PLANNED, ".runs");
+
+    assert.equal(runs.display, "flex");
+    assert.equal(runs["flex-direction"], "row");
+    assert.equal(runs["white-space"], "pre");
+    assert.equal(declarationsOf(PLANNED, ".typed").color, "var(--bbm-tTyped)");
+  });
+
+  it("clip across but never an accent or a descender: each is tall enough for the font, its pitch unchanged", () => {
+    for (const selector of [".planned", ".line"]) {
+      const box = declarationsOf(PLANNED, selector);
+      const room = em(box["padding-top"]);
+
+      assert.equal(box.overflow, "hidden", selector);
+      assert.equal(em(box["padding-bottom"]), room, selector);
+      assert.deepEqual([em(box["margin-top"]), em(box["margin-bottom"])], [-room, -room], selector);
+
+      // Every line-height a planned name draws at, against its font: the list's names and the labels' caps.
+      for (const [sheet, rule] of [[LIST_BODY, ".name"], [LABELS, ".label"]]) {
+        const drawn = declarationsOf(sheet, rule);
+        const pitch = scaled(drawn["line-height"]) / scaled(drawn["font-size"]);
+        assert.ok(pitch + 2 * room >= ASCENT_AND_DESCENT, `${selector} in ${sheet} ${rule}: ${pitch} + 2 × ${room}`);
+      }
+    }
   });
 });
 
 describe("Cohtml stylesheet support", () => {
+  it("cuts no text in the bodies with a CSS ellipsis, which Cohtml never draws", () => {
+    // A guard: Cohtml computes an inline-block as flex and ignores text-overflow on a flex item, so a
+    // CSS ellipsis only clips. Every name in the bodies is cut by the planner, with "…" in its text.
+    const found = moduleSheets()
+      .filter((sheet) => sheet.startsWith("mods/Bodies/"))
+      .flatMap((sheet) => everyDeclaration(sheet)
+        .filter(({ prop }) => prop === "text-overflow")
+        .map(({ selectors, value }) => `${sheet} ${selectors.join(", ")}  text-overflow: ${value}`));
+
+    assert.deepEqual(found, []);
+  });
+
   it("states no declaration the engine silently drops", () => {
     // Catching it here turns a silent log warning into a build failure.
     // Compiled, so a declaration a mixin brings in counts, and the comments
@@ -364,21 +820,22 @@ describe("hover card figures line up", () => {
   });
 });
 
-describe("the extension picker wears the same panel frame as the build menu", () => {
+describe("the extension picker wears the look's panel frame", () => {
   // The picker's rows sit in the slot where vanilla draws a framed Panel. The
-  // frame is three surfaces, the build menu's own: the resize strip with the
-  // top corners rounded, a dark header square beneath it, and a normal body
-  // with the gradient.
-  it("gives the header the top bar's surface, square under the resize strip", () => {
+  // frame is the look's, as the build menu's: the resize strip with the top
+  // corners rounded and a header square beneath it on the look's head, over
+  // the look's list.
+  it("gives the header the look's head, square under the resize strip", () => {
     const header = picker(".header");
-    assert.equal(header["background-color"], "var(--panelColorDark)");
-    assert.equal(header["backdrop-filter"], "var(--panelBlur)");
+    assert.equal(header["background-color"], "var(--bbm-head)");
+    assert.equal(header["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(resize(".resizeHandle")["background-color"], "var(--bbm-head)");
     // The strip owns the rounding; a rounded header beneath it would stack
     // two curved edges.
     assert.equal(header["border-top-left-radius"], "0");
     assert.equal(header["border-top-right-radius"], "0");
-    assert.equal(resize(".resizeHandle")["border-top-left-radius"], "var(--panelRadius)");
-    assert.equal(resize(".resizeHandle")["border-top-right-radius"], "var(--panelRadius)");
+    assert.equal(resize(".resizeHandle")["border-top-left-radius"], "var(--bbm-boxRadius)");
+    assert.equal(resize(".resizeHandle")["border-top-right-radius"], "var(--bbm-boxRadius)");
   });
 
   it("scrolls its body inside the dragged height rather than growing past it", () => {
@@ -389,14 +846,15 @@ describe("the extension picker wears the same panel frame as the build menu", ()
     assert.equal(picker(".content")["overflow-y"], "auto");
   });
 
-  it("gives the body the content surface", () => {
-    // The build menu's own body, surface for surface.
+  it("takes the look's list as its body, rounding the frame's bottom corners itself", () => {
+    // It has no tab row under its body, so the body rounds the frame's bottom corners itself.
     const body = picker(".content");
-    const buildMenuBody = declarationsOf(ASSET_MENU, ".content");
-    for (const property of ["background-color", "backdrop-filter", "background-image", "border-bottom-left-radius", "border-bottom-right-radius"]) {
-      assert.ok(body[property], `the picker's body has no ${property}`);
-      assert.equal(body[property], buildMenuBody[property], property);
-    }
+
+    assert.equal(body["background-color"], "var(--bbm-body)");
+    assert.equal(body["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(body["background-image"], undefined);
+    assert.equal(body["border-bottom-left-radius"], "var(--bbm-boxRadius)");
+    assert.equal(body["border-bottom-right-radius"], "var(--bbm-boxRadius)");
   });
 
   it("takes the pointer only where it draws", () => {

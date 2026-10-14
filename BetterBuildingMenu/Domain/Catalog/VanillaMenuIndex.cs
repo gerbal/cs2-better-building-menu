@@ -107,7 +107,18 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// <remarks>Filtered to menus with at least one category tab, the same test vanilla applies
 		/// before drawing one: a menu whose categories are all empty is a button the game hides.</remarks>
 		public IReadOnlyList<VanillaMenuCategory> AssetMenus() =>
-			_menus.Where(menu => _categories.ContainsKey(menu.Id)).ToArray();
+			_menus
+				.Where(menu => _categories.ContainsKey(menu.Id))
+				.Select(menu => menu with { Icon = CategoryIcon.Chain(menu.Icon, null) })
+				.ToArray();
+
+		/// <summary>A menu's own icon, as its All cell draws it; empty for a menu the game does not have.</summary>
+		public string MenuIcon(string? menu)
+		{
+			var record = _menus.FirstOrDefault(candidate => string.Equals(candidate.Id, menu?.Trim(), StringComparison.Ordinal));
+
+			return record is null ? string.Empty : CategoryIcon.Chain(record.Icon, null);
+		}
 
 		/// <summary>A menu's own category tabs, empty when it has none.</summary>
 		public IReadOnlyList<VanillaMenuCategory> CategoriesOf(string? menu) =>

@@ -1,4 +1,5 @@
-﻿using BetterBuildingMenu.Utilities;
+﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Utilities;
 using Game.Prefabs;
 using Game.Tools;
 
@@ -25,6 +26,8 @@ namespace BetterBuildingMenu.Systems
 		{
 			settingPrefab = true;
 			_toolSystem.ActivatePrefabTool(prefabBase);
+			// So the pick logger can tell this arm from the game's.
+			_placementWatch.NoteBbmArm(id);
 			_ActivePrefabId.Value = id;
 			settingPrefab = false;
 		}
@@ -34,14 +37,7 @@ namespace BetterBuildingMenu.Systems
 			// A prefab we did not arm ourselves normally means the player picked something in
 			// vanilla's own UI, and the polite answer is to get out of its way. The binding is
 			// mirrored first: it is a fact about what the GAME has armed, not a record of who set it.
-			if (prefab is null)
-			{
-				_ActivePrefabId.Value = 0;
-			}
-			else if (_prefabSystem.TryGetEntity(prefab, out var entity))
-			{
-				_ActivePrefabId.Value = entity.Index;
-			}
+			_ActivePrefabId.Value = EntryIdOf(prefab);
 
 			if (!settingPrefab)
 			{
@@ -49,9 +45,13 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
+		/// <summary>A prefab as the index's id, or 0 for none or one the prefab system does not hold.</summary>
+		private int EntryIdOf(PrefabBase? prefab) =>
+			prefab is not null && _prefabSystem.TryGetEntity(prefab, out var entity) ? entity.Index : 0;
+
 		private void OnToolChanged(ToolBaseSystem tool)
 		{
-			if (tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool")
+			if (MenuTools.TakesTheScreen(tool.toolID))
 			{
 				// Another tool brings its own UI and wants the screen. Ours goes.
 				SetAssetMenuOpen(false);

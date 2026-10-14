@@ -6,6 +6,10 @@ import {
   getNumberSeparators,
   formatBuildingMetric,
   formatCapacity,
+  compactCostPerCellForms,
+  compactMoneyForms,
+  compactUnitForms,
+  formatCostPerCell,
   applyMoneyTemplate,
   FALLBACK_MONEY,
   FALLBACK_SEPARATORS,
@@ -14,7 +18,6 @@ import {
   formatVolume,
   formatWeight,
   formatWeightPerMonth,
-  getBuildingDetailMetrics,
   formatPerMonth,
   formatPower,
   formatEnergy,
@@ -118,166 +121,6 @@ describe("Asset menu metric formatting", () => {
     assert.equal(formatCapacity(1200, "ServiceBuildings", "Education"), "1\u00a0200 students");
     assert.equal(formatCapacity(null, "ServiceBuildings", "Education"), METRIC_NO_DATA);
     assert.equal(formatCapacity(40, "Buildings", "Industrial"), "40");
-  });
-});
-
-describe("Building level", () => {
-  it("shows a zone building's real level", async () => {
-    const { formatBuildingLevel } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    assert.equal(formatBuildingLevel(1), "1");
-    assert.equal(formatBuildingLevel(5), "5");
-  });
-
-  it("marks a building with no level as not applicable, not as zero", async () => {
-    // Service buildings have no level, so a bare "0" would sit beside the "—"
-    // in Workers that means "not known": two absences rendering as two lies.
-    const { formatBuildingLevel, METRIC_NOT_APPLICABLE } = await import(
-      "../src/domain/assetMenuMetricFormat.ts"
-    );
-
-    assert.equal(formatBuildingLevel(0), METRIC_NOT_APPLICABLE);
-  });
-
-  it("keeps not-applicable distinguishable from not-known", async () => {
-    // Not just "render a dash": the table uses a different mark for each, and
-    // Parking makes the same distinction.
-    const { METRIC_NOT_APPLICABLE, METRIC_NO_DATA } = await import(
-      "../src/domain/assetMenuMetricFormat.ts"
-    );
-
-    // Both asserted non-empty first: comparing an undefined export against a
-    // real one passes without either existing, which is a test that reports
-    // success for a reason it does not name.
-    assert.equal(typeof METRIC_NOT_APPLICABLE, "string");
-    assert.ok(METRIC_NOT_APPLICABLE.length > 0);
-    assert.equal(typeof METRIC_NO_DATA, "string");
-    assert.ok(METRIC_NO_DATA.length > 0);
-    assert.notEqual(METRIC_NOT_APPLICABLE, METRIC_NO_DATA);
-  });
-
-  it("falls back to not-known when the level never arrived", async () => {
-    // Defensive: the wire always sends a number, but a null here means the
-    // projection failed, which is a gap rather than a fact about the building.
-    const { formatBuildingLevel, METRIC_NO_DATA } = await import(
-      "../src/domain/assetMenuMetricFormat.ts"
-    );
-
-    assert.equal(formatBuildingLevel(null), METRIC_NO_DATA);
-    assert.equal(formatBuildingLevel(undefined), METRIC_NO_DATA);
-    assert.equal(formatBuildingLevel(Number.NaN), METRIC_NO_DATA);
-  });
-});
-
-describe("Asset menu detail metrics", () => {
-  it("surfaces the projected metrics the table never rendered", async () => {
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const details = getBuildingDetailMetrics({
-      electricityConsumption: 1200,
-      waterConsumption: 30,
-      groundPollution: 15,
-      airPollution: 0,
-    });
-
-    assert.deepEqual(details.map((detail) => detail.key), [
-      "electricity",
-      "water",
-      "groundPollution",
-      "airPollution",
-    ]);
-    // 1200 in the game's hundreds-of-watts figure is 120 kW — vanilla's Power
-    // rule, not the raw number wearing "MW".
-    assert.equal(details[0].value, "120 kW");
-    // A real zero is a fact worth showing; only absent metrics are dropped.
-    assert.equal(details[3].value, "0");
-  });
-
-  it("shows the whole projected entry, not just the utility subset", async () => {
-    // The detail view is where an asset is compared properly, so it cannot
-    // know less than the row above it: offered only utilities and pollution,
-    // a building with neither expands to an empty box.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const keys = getBuildingDetailMetrics({
-      constructionCost: 45000,
-      upkeep: 1500,
-      capacity: 1000,
-      workers: 12,
-      households: 180,
-      parkingSlots: 12,
-      lotWidth: 3,
-      lotDepth: 4,
-      buildingLevel: 2,
-      electricityConsumption: 30,
-      groundPollution: 5,
-    }).map((detail) => detail.key);
-
-    // Money first, then what it buys, then what it occupies, then what it
-    // draws and emits — the order the hover card already reads in.
-    assert.deepEqual(keys, [
-      "cost",
-      "upkeep",
-      "capacity",
-      "workers",
-      "households",
-      "parking",
-      "lot",
-      "level",
-      "electricity",
-      "groundPollution",
-    ]);
-  });
-
-  it("keeps a real zero and drops a not-applicable one", async () => {
-    // A pollution of zero is a measurement. A building LEVEL of zero is not a
-    // level — service buildings have none — and printing "0" beside dashes
-    // that mean "unknown" is a lie. No parking bays is not a bay count.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const details = getBuildingDetailMetrics({
-      airPollution: 0,
-      buildingLevel: 0,
-      parkingSlots: 0,
-      constructionCost: 0,
-    });
-
-    const keys = details.map((detail) => detail.key);
-    assert.ok(keys.includes("airPollution"), "a measured zero stays");
-    assert.ok(keys.includes("cost"), "free is a real price");
-    assert.ok(!keys.includes("level"), "level 0 means no level");
-    assert.ok(!keys.includes("parking"), "0 bays is not a bay count");
-  });
-
-  it("names a network's cost as the rate it is", async () => {
-    // A road prices by length. 12,500 for a road and 12,500 for a hospital are
-    // not the same kind of number, and the existing formatter already says so —
-    // the detail view has to use it rather than printing the bare figure.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const [cost] = getBuildingDetailMetrics({ constructionCost: 12500, costIsPerDistance: true });
-
-    assert.ok(/km/.test(cost.value), `expected a per-kilometre rate, got ${cost.value}`);
-  });
-
-  it("draws no lot for something without a footprint", async () => {
-    // Networks and zones measure 0 x 0. "0 × 0" is a confident measurement of
-    // something that does not exist.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const keys = getBuildingDetailMetrics({ lotWidth: 0, lotDepth: 0, workers: 4 }).map((d) => d.key);
-
-    assert.deepEqual(keys, ["workers"]);
-  });
-
-  it("omits metrics that were never projected rather than showing empty rows", async () => {
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    assert.deepEqual(getBuildingDetailMetrics({}), []);
-    assert.deepEqual(
-      getBuildingDetailMetrics({ electricityConsumption: null, noisePollution: 5 }).map((d) => d.key),
-      ["noisePollution"],
-    );
   });
 });
 
@@ -577,16 +420,6 @@ describe("rates follow the game's own per-month rules", () => {
   });
 });
 
-describe("the details table shows the game's units", () => {
-  // ConsumptionData.m_GarbageAccumulation is kilograms per month, and vanilla
-  // shows it as WeightPerMonth.
-  it("garbage produced is a weight per month", () => {
-    const details = getBuildingDetailMetrics({ garbageAccumulation: 100000 } as never);
-    const garbage = details.find((d) => d.key === "garbage");
-    assert.equal(garbage && garbage.value, "100 t/mo.");
-  });
-});
-
 describe("electricity follows the game's own units", () => {
   // Vanilla's Power: the raw figure is in hundreds of watts — below 10,000 it
   // shows raw/10 as kW (one decimal), above as raw/10,000 MW (two). Energy is
@@ -641,5 +474,78 @@ describe("a telecom facility's capacity is a data rate", () => {
 
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility"), /^2[.,]5 Gbit\/s$/);
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility", imperial), /^2[.,]5 Gbit\/s$/);
+  });
+});
+
+describe("a network's cost per cell", () => {
+  it("is its per-kilometre figure over the 125 cells of a kilometre, whole, in the game's money template", () => {
+    assert.equal(formatCostPerCell(5_500), "¢44/c");
+    assert.equal(formatCostPerCell(26_500), "¢212/c");
+    assert.equal(formatCostPerCell(125_000), `¢${groupDigits(1_000)}/c`);
+  });
+
+  it("shortens like a total and keeps its cell, which tells a network's figure from a building's", () => {
+    assert.deepEqual(compactCostPerCellForms(12_500_000), ["¢100k/c", "¢0.1M/c"]);
+    assert.deepEqual(compactCostPerCellForms(1_250_000), ["¢10k/c", "¢0.01M/c"]);
+    // A road's monthly upkeep, a cell's share of it to one decimal.
+    assert.deepEqual(compactCostPerCellForms(38), ["¢0.3/c", "¢0/c"]);
+    assert.deepEqual(compactCostPerCellForms(4_612), ["¢36.9/c", "¢37/c", "¢0.04k/c"]);
+  });
+});
+
+describe("a figure with a unit, shortened", () => {
+  it("drops its decimals a step at a time and keeps its unit, closing up the space before it says thousands", () => {
+    assert.deepEqual(compactUnitForms("1,234.57 MW", { ...FALLBACK_SEPARATORS, group: "," }), [
+      "1,234.57 MW", "1,234.6 MW", "1,235 MW", "1,234.57MW", "1,234.6MW", "1,235MW", "1.2k MW", "1k MW", "1.2kMW", "1kMW",
+    ]);
+    // A battery's 1,139.3 MWh says "1,139MWh" before "1.1k MWh", which is three per cent out.
+    assert.deepEqual(compactUnitForms("1,139.3 MWh", { ...FALLBACK_SEPARATORS, group: "," }).slice(0, 6), [
+      "1,139.3 MWh", "1,139 MWh", "1,139.3MWh", "1,139MWh", "1.1k MWh", "1k MWh",
+    ]);
+    assert.deepEqual(compactUnitForms("2.45 t"), ["2.45 t", "2.5 t", "2 t", "2.45t", "2.5t", "2t"]);
+  });
+
+  it("reads the player's own marks, and closes up the space before the unit after each spaced step", () => {
+    assert.deepEqual(compactUnitForms("1.234,5 MW", { ...FALLBACK_SEPARATORS, group: ".", decimal: "," }), ["1.234,5 MW", "1.235 MW", "1.234,5MW", "1.235MW", "1,2k MW", "1k MW", "1,2kMW", "1kMW"]);
+    assert.deepEqual(compactUnitForms("450 kW"), ["450 kW", "450kW"]);
+    assert.deepEqual(compactUnitForms("500 MWh"), ["500 MWh", "500MWh"]);
+  });
+
+  it("says a figure of a thousand or more in thousands, to one decimal and to none, its unit kept", () => {
+    assert.deepEqual(compactUnitForms("20,000 MW", { ...FALLBACK_SEPARATORS, group: "," }), ["20,000 MW", "20,000MW", "20k MW", "20kMW"]);
+    // A group mark that is a space stays inside the number; only the space before the unit closes up.
+    assert.deepEqual(compactUnitForms("20 000 MW", { ...FALLBACK_SEPARATORS, group: " " }), ["20 000 MW", "20 000MW", "20k MW", "20kMW"]);
+    // A unit that is already a thousand of another says no thousands of it: never "2.2k ktn".
+    assert.deepEqual(compactUnitForms("2,200 ktn", { ...FALLBACK_SEPARATORS, group: "," }), ["2,200 ktn", "2,200ktn"]);
+    assert.deepEqual(compactUnitForms("1,500 kt", { ...FALLBACK_SEPARATORS, group: "," }), ["1,500 kt", "1,500kt"]);
+    assert.deepEqual(compactUnitForms("Free"), ["Free"]);
+  });
+});
+
+describe("compact money", () => {
+  const first = (...args: Parameters<typeof compactMoneyForms>) => compactMoneyForms(...args)[0];
+
+  it("says thousands and millions with one decimal at most, in the game's template for a total", () => {
+    assert.equal(first(850_000), "¢850k");
+    assert.equal(first(1_200_000), "¢1.2M");
+    assert.equal(first(12_500_000), "¢12.5M");
+    assert.equal(first(1_250, { ...FALLBACK_SEPARATORS, money: { ...FALLBACK_MONEY, plain: "{SIGN}{VALUE} ¢" } }), "1.3k ¢");
+  });
+
+  it("says millions where thousands would round to a thousand of them", () => {
+    assert.equal(first(999_950), "¢1M");
+    assert.equal(first(999_000), "¢999k");
+  });
+
+  it("shortens a figure step by step: one decimal, none, the next unit up, and adds no unit of its own", () => {
+    assert.deepEqual(compactMoneyForms(16_500), ["¢16.5k", "¢17k", "¢0.02M"]);
+    // Not "¢0M": the next unit up is left out where two decimals still say nothing.
+    assert.deepEqual(compactMoneyForms(1_250), ["¢1.3k", "¢1k"]);
+  });
+
+  it("never says a thousand thousands, and says a whole figure in the next unit up", () => {
+    // 999.6k to no decimal is 1000k: the next unit says it.
+    assert.deepEqual(compactMoneyForms(999_600), ["¢999.6k", "¢1M"]);
+    assert.deepEqual(compactMoneyForms(950), ["¢950", "¢1k"]);
   });
 });

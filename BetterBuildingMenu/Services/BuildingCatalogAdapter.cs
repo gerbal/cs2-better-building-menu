@@ -154,9 +154,8 @@ namespace BetterBuildingMenu.Services
 								category.Key,
 								BuildingCatalogLabels.DensityTier(tier.Key)),
 							tier.Count(),
-						// Vanilla's own zoning icon for this family AND tier, falling
-						// back to the category's icon in the strip when the game ships
-						// none rather than deriving a mark it never authored.
+						// Vanilla's own zoning icon for this family AND tier; a tab with none
+						// says its name where a picture would be, rather than a derived mark.
 							ZoneDensityIcons.For(category.Key, tier.Key),
 							BuildingCatalogLabels.DensityTier(tier.Key)))
 						.ToArray()))
@@ -164,12 +163,12 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The glyph every school-level tab is built on.
+		/// The icon every school level carries in the tier bracket.
 		/// </summary>
 		/// <remarks>
-		/// A school's level is the attainment it grants, so one mortarboard carries every
-		/// level with the rank drawn over it as a roman numeral: the row says what kind of
-		/// thing a tab is before it says how much, and four glyphs read as four subjects.
+		/// A school's level is the attainment it grants, so one mortarboard stands for every
+		/// level. The tab row draws the levels as words beside their tab, not as this icon:
+		/// one picture for four levels would tell none of them apart.
 		/// </remarks>
 		internal const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
 
@@ -232,8 +231,11 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>A rendered asset picture, as opposed to an authored glyph.</summary>
+		/// <remarks>Asset Icon Library hands the development tree a building render for a node, a PNG under its own host; its SVGs are glyphs.</remarks>
 		internal static bool IsPhotograph(string icon) =>
-			icon.StartsWith("thumbnail://", StringComparison.OrdinalIgnoreCase);
+			icon.StartsWith("thumbnail://", StringComparison.OrdinalIgnoreCase)
+			|| (icon.StartsWith("coui://ail/", StringComparison.OrdinalIgnoreCase)
+				&& icon.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
 
 		/// <summary>
 		/// The same arithmetic over a set of entries, without a World.
@@ -402,7 +404,10 @@ namespace BetterBuildingMenu.Services
 				selection.VanillaSelected,
 				// From the whole index, not the snapshot: a filter that hides the base-game
 				// school must not turn its tier's name back into English. Only where the tiers are.
-				educationMenu ? source.Index.SchoolTierNames() : null);
+				educationMenu ? source.Index.SchoolTierNames() : null,
+				// The counts follow the menu's own tab order, Roads' extra tabs included.
+				menuCategories: source.Index.GetMenuCategories(query.UiMenu).Select(category => category.Id).ToArray(),
+				menuIcon: source.Index.Menus.MenuIcon(query.UiMenu));
 		}
 
 		/// <summary>
@@ -567,10 +572,10 @@ namespace BetterBuildingMenu.Services
 
 			if (string.IsNullOrEmpty(root))
 			{
-				return entries;
+				return RoadsLoneBranches.Fold(entries, menu);
 			}
 
-			return entries.Select(entry =>
+			return RoadsLoneBranches.Fold(entries.Select(entry =>
 			{
 				if (!string.Equals(entry.DevTreeBranch, root, StringComparison.Ordinal))
 				{
@@ -584,7 +589,7 @@ namespace BetterBuildingMenu.Services
 				var label = VanillaServiceLabel(category.Length > 0 ? category : menu ?? string.Empty);
 
 				return label.Length == 0 ? entry : entry with { DevTreeBranch = label };
-			});
+			}).ToArray(), menu);
 		}
 
 		/// <summary>
@@ -891,7 +896,7 @@ namespace BetterBuildingMenu.Services
 		/// <remarks>
 		/// A selection has to stay visible even when nothing in view carries it, or it becomes
 		/// a filter with no control attached: the group would publish zero options — dropped by
-		/// the rail and the chip row alike — while the query went on filtering on it.
+		/// the rail and the filter chips alike — while the query went on filtering on it.
 		/// </remarks>
 		private static string[] WithSelected(string[] present, IReadOnlyList<string>? selected)
 		{

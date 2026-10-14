@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   schoolTierTabs,
-  romanNumeral,
   expandedTabsFor,
   branchTabTooltip,
 } from "../src/domain/menuProgression.ts";
@@ -67,22 +66,6 @@ describe("education tier tabs", () => {
   });
 });
 
-describe("school level rank", () => {
-  it("numbers the four levels in roman", () => {
-    // Roman, because the arabic numeral would be read as a count — every other
-    // number on that row is one, including the badge in the opposite corner of
-    // the same tab.
-    assert.deepEqual([1, 2, 3, 4].map(romanNumeral), ["I", "II", "III", "IV"]);
-  });
-
-  it("falls back to the plain number outside the game's range", () => {
-    // Four levels is the whole range SchoolLevel has, so this is not a general
-    // converter and does not pretend to be one.
-    assert.equal(romanNumeral(0), "0");
-    assert.equal(romanNumeral(5), "5");
-  });
-});
-
 describe("expandedTabsFor", () => {
   const categories = [
     { categoryId: "ZonesResidential", tabs: [{ id: "ZonesResidential\u001fLow Density", count: 22, icon: "a.svg", label: "Low Density" }] },
@@ -119,6 +102,12 @@ describe("branchTabTooltip", () => {
   it("leaves a development branch alone", () => {
     // "Roundabouts Small Roads" would repeat what the branch already says.
     assert.equal(branchTabTooltip(branch, "Small Roads"), "Roundabouts");
+  });
+
+  it("leaves a branch alone as C# sends it, its id standing in for a label", () => {
+    // MenuBranchCount writes DisplayLabel, so a branch with no label arrives
+    // labelled with its own id; "Prison Police" names no density tier.
+    assert.equal(branchTabTooltip({ ...branch, id: "Prison", label: "Prison" }, "Police"), "Prison");
   });
 
   it("falls back to the tier when the category has no label", () => {

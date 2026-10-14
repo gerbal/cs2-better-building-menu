@@ -113,9 +113,17 @@ namespace BetterBuildingMenu.Utilities
             foreach (var item in _locale)
             {
                 yield return item.Key is ""
-                    ? new DictionarySource("en-US", english)
+                    ? new DictionarySource(LocaleFallback.EnglishLocaleId, english)
                     : new DictionarySource(item.Key, LocaleFallback.Merge(english, item.Value));
             }
+        }
+
+        /// <summary>The keys of ours a language has no translation of: see <see cref="LocaleFallback.UntranslatedKeys"/>.</summary>
+        public string[] UntranslatedKeys(string? localeId)
+        {
+            var translation = !string.IsNullOrEmpty(localeId) && _locale.TryGetValue(localeId!, out var found) ? found : null;
+
+            return LocaleFallback.UntranslatedKeys(localeId, _locale[string.Empty], translation);
         }
 
         public class DictionarySource : IDictionarySource

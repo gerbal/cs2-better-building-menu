@@ -1,0 +1,23 @@
+@use "../../assetMenuGeometry" as *;
+
+// The notch: hung from the box's bottom edge under the lit bar button, a trapezoid of borders. Sized
+// border-box, the only model Cohtml has: the width is its top, the sides inside it, so the foot is
+// what they leave. Every border a longhand: Cohtml drops a border shorthand fed by var(). It takes
+// no presses. See docs/design-notes.md, "The notch".
+.notch {
+  position: absolute;
+  top: 100%;
+  box-sizing: border-box;
+  width: $notch-foot + 2 * $notch-side;
+  height: 0;
+  border-top-width: $notch-height;
+  border-top-style: solid;
+  border-top-color: var(--bbm-notch);
+  border-left-width: $notch-side;
+  border-left-style: solid;
+  border-left-color: transparent;
+  border-right-width: $notch-side;
+  border-right-style: solid;
+  border-right-color: transparent;
+  pointer-events: none;
+}

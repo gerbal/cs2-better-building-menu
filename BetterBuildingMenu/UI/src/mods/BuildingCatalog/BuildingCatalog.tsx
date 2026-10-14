@@ -3,104 +3,74 @@ import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import classNames from "classnames";
-import { tableLabelCharBudget } from "domain/tileLabel";
-import { useTextScale } from "domain/textScaleSetting";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import {
-  ASSET_MENU_CHROME_WIDTH,
-  catalogLayoutWidth,
-  getAssetMenuCatalogMaxHeight,
-  ASSET_MENU_IDENTITY_MIN,
-  CONTROL_PANE_TOTAL,
-  ASSET_MENU_TABLE_ROW_FURNITURE,
-  getAssetMenuColumnWidths,
-  getAssetMenuDensity,
-  getAssetMenuRowGeometry,
-  getAssetMenuMetricTextScale,
-  visibleTableMetrics,
-} from "domain/assetMenuLayout";
-import type { AssetMenuColumnWidths, AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
 import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
-import type { SortColumn } from "domain/buildingCatalogContracts";
-import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
-import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
-import { isSearchField } from "mods/BuildingMenu/searchField";
+import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter, pageAnswers } from "domain/buildingSearchRank";
+import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
+import { bodyLines, screenSlots } from "domain/bodyGeometry";
+import { setCatalogScreenCommand } from "domain/buildingCatalogContracts";
 import { canPlace } from "domain/buildingLockState";
-import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
-// The view mode is shared with the control plane, which is a sibling of this
-// asset menu rather than a descendant, so it goes through the subscribing hook.
-import { useAssetMenuView } from "mods/useAssetMenuView";
-import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
-import {
-  type GroupDimensionId,
-} from "domain/buildingGroups";
-import { TableView } from "./TableView";
+import { getAssetMenuAnchorKey, setAssetMenuAnchor } from "domain/assetMenuViewStore";
+import { useMenuBody } from "mods/useMenuBody";
+import { type GroupDimensionId } from "domain/buildingGroups";
 import { useCatalogWindow } from "./useCatalogWindow";
-import { useRevealExpandedRow, useScrollAnchor } from "./useScrollAnchor";
+import { CardsBody } from "mods/Bodies/CardsBody";
+import { IconsBody } from "mods/Bodies/IconsBody";
+import { ListBody } from "mods/Bodies/ListBody";
+import { TilesBody } from "mods/Bodies/TilesBody";
+import { useBodyGrid } from "./useBodyGrid";
+import { useCardsLayout } from "./useCardsLayout";
+import { useAwaitsNoGroups, useHeld } from "./useHeldBody";
+import { useRevealEnterTarget } from "./useRevealEnterTarget";
+import { useScrollAnchor } from "./useScrollAnchor";
+import { useSearchFieldKeys } from "./useSearchFieldKeys";
 import {
   BuildingCatalogGroupBy$,
   BuildingCatalogMatchesElsewhere$,
   BuildingCatalogMetricRanges$,
-  BuildingCatalogSortColumn$,
-  BuildingCatalogSortDescending$,
   AssetMenuFacets$,
   CurrentSearch$,
   send,
-  sendSort,
 } from "mods/bindings";
 import styles from "./buildingCatalog.module.scss";
 
-/** Grid recognises, List scans, Table compares. */
-type ViewMode = CatalogViewMode;
-
-const densityClassNames: Record<AssetMenuDensityTier, string> = {
-  compact: styles.densityCompact,
-  default: styles.densityDefault,
-  expanded: styles.densityExpanded,
-};
+export interface BuildingCatalogProps {
+  /** While the top edge is dragged, the height the body draws at: where the release lands. See docs/design-notes.md, "The top edge". */
+  heldHeight?: number | null;
+}
 
 /**
- * Memoised, and takes no props: it re-renders on its own bindings only, not on
- * every height-drag echo or keystroke that re-renders the asset menu around it.
- * A width drag does re-render it, since the table's columns follow the width.
+ * Memoised, and takes one prop, the height a drag of the top edge holds the body at: under Whole lines it changes
+ * only as the drag's lines do, under Free each frame. It re-renders on its own bindings, not on every keystroke
+ * that re-renders the asset menu around it. A width step and a height-drag echo do
+ * re-render it, since the Auto rule reads the step and the slots read both; the memoised body below them is
+ * spared.
  */
-export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
+export const BuildingCatalogComponent = memo(function BuildingCatalogComponent({ heldHeight = null }: BuildingCatalogProps) {
   const { translate } = useLocalization();
-  // The build menu as drawn, plus the pane: the row the table arithmetic was tuned
-  // against, which subtracts the pane itself.
-  const layoutWidth = catalogLayoutWidth(useAssetMenuLayout().menuWidth);
   const currentSearch = useValue(CurrentSearch$);
-  const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
-  const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  // In the shared store, not useState: the control plane is a sibling of this
-  // asset menu rather than a descendant, and the choice has to survive the remount
-  // that placing a building causes.
-  const viewModeChoice = useAssetMenuView((view) => view.viewMode) || DEFAULT_VIEW_MODE;
-  // Obeyed at every asset menu height. A control that lights up and changes nothing
-  // is the same defect as a control that is missing, and the height is the
-  // player's to set.
-  const viewMode = viewModeChoice as ViewMode;
-  const tableMode = viewMode === "table";
+  // The menu's body: a typed search's, its own VIEW pick, Default view, or the look's Auto. See
+  // docs/design-notes.md, "The bodies".
+  const { drawn: body, named } = useMenuBody();
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
-  // In the store rather than useState so the open row survives the remount
-  // that placing a building causes, the way the anchor does.
-  const expandedId = useAssetMenuView((view) => view.expandedId);
-
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
-  useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
+  const { items, totalCount, visibleCount, offset, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, sections, facts, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
+  // Where the body draws each building, and so how many one screen holds, which C#'s window reaches past:
+  // the slots of the list and the tiles, or the cards the packer places in a screen's rows.
+  const grid = useBodyGrid(body, items, sections, offset, heldHeight);
+  const cards = useCardsLayout(body, items, sections, offset, heldHeight);
+  const slots = grid !== null ? screenSlots(grid) : cards?.screen ?? 0;
+  useEffect(() => send(setCatalogScreenCommand(slots)), [slots]);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
 
-  // Names the constraints that actually emptied the table, rather than always
+  // Names the constraints that actually emptied the list, rather than always
   // blaming search and category.
   const emptyStateMessage = getAssetMenuEmptyStateMessage({
     searchText: currentSearch,
@@ -108,49 +78,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     metricRanges,
   });
 
-  const density = getAssetMenuDensity(layoutWidth);
-  // One set of numbers for the header and every row: a table with no CSS grid
-  // lines up only because both read the same widths. Figures do not scale with
-  // the build menu but do with the game's text scale.
-  const textScale = useTextScale();
-  // The columns the table draws at this width: a narrow menu drops the least
-  // asked-for rather than clip their figures, and never the one sorted by.
-  const sortedMetric = sortedMetricFor(sortColumn);
-  // Kept by value, not by width: a width drag changes the width every frame, and
-  // new column props would redraw every memoised row even where nothing moved.
-  const metricsKey = visibleTableMetrics(layoutWidth, textScale, sortedMetric).join(",");
-  const tableMetrics = useMemo(() => metricsKey.split(",") as AssetMenuMetric[], [metricsKey]);
-  const widthsKey = JSON.stringify(getAssetMenuColumnWidths(layoutWidth, textScale, tableMetrics));
-  const columnWidths = useMemo(() => JSON.parse(widthsKey) as AssetMenuColumnWidths, [widthsKey]);
-  // The widths are estimates and stay estimates: the row is a flex layout whose
-  // column bases already exceed the room beside the name, so cells shrink to
-  // what the row allows and an inline width is not what gets drawn.
-  const columnStyle = useCallback((metric: AssetMenuMetric) => ({
-    width: `${columnWidths[metric]}rem`,
-    flexBasis: `${columnWidths[metric]}rem`,
-  }), [columnWidths]);
-  // The width the NAME actually gets: the layout width less the pane and the
-  // chrome is the build menu, then the columns and the row's furniture come off.
-  // Erring small shortens sooner, never later.
-  const nameWidth = Math.max(
-    ASSET_MENU_IDENTITY_MIN - ASSET_MENU_TABLE_ROW_FURNITURE,
-    layoutWidth
-      - ASSET_MENU_CHROME_WIDTH
-      - CONTROL_PANE_TOTAL
-      - Object.values(columnWidths).reduce<number>((total, width) => total + (width ?? 0), 0)
-      - ASSET_MENU_TABLE_ROW_FURNITURE
-  );
-  const nameBudget = tableLabelCharBudget(nameWidth, textScale);
-  const rowGeometry = getAssetMenuRowGeometry(density);
-  const catalogMaxHeight = getAssetMenuCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
-  // Row and filter name the same asset the same way: the entry carries raw ids
-  // while the facet groups hold the display names, so resolving through those
-  // beats a second lookup table that would drift.
-  const resolveFacetLabel = useCallback((groupId: string, value: string): string | null => {
-    const group = facets?.groups?.find((candidate) => candidate.id === groupId);
-
-    return group?.options?.find((option) => option.id === value)?.label ?? null;
-  }, [facets]);
   const scopeNotice = getSearchScopeNotice({
     searchText: currentSearch ?? "",
     shown: items.length,
@@ -167,8 +94,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     ?? "Search everything";
   /**
    * "Nothing here, {n} elsewhere" and the button that goes there. Built once
-   * and rendered by every view mode: widening is the whole answer to a scoped
-   * miss, and which mode the player is in has nothing to do with it.
+   * and rendered by every body: widening is the whole answer to a scoped
+   * miss, and which body the menu draws has nothing to do with it.
    */
   const scopeNoticeBlock = scopeNotice ? (
     <div className={styles.scopeNotice}>
@@ -184,22 +111,26 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       </Button>
     </div>
   ) : null;
-  // What the table draws with no rows: the indexing notice, or the scope
-  // notice, or the message naming the constraints that emptied it.
-  const emptyState = status === "indexing"
-    ? <div className={styles.empty}>
-        {translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}
-      </div>
-    : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>;
 
-  const toggleExpanded = useCallback((id: number): void => {
-    setAssetMenuView({ expandedId: getAssetMenuView().expandedId === id ? null : id });
-  }, []);
-
-  // Scoped to the list and the layout, because which element owns the scroll
+  // Scoped to the list and the body, because which element owns the scroll
   // and how tall its children are both depend on them: an offset remembered in
-  // the table means nothing in the grid.
-  const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode, groupBy });
+  // the tiles means nothing in the list.
+  const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode: body, groupBy });
+
+  // Arms a prefab by id, loaded or not: Enter's target can sit past the window.
+  const armById = useCallback((id: number): void => {
+    // The keys go back to the camera with the building in hand. See docs/design-notes.md, "The
+    // search field's keys".
+    blurSearchField();
+
+    // Placing unmounts the whole asset menu, so this is the last moment the scroll
+    // position exists — and the building just chosen is what to come back to.
+    setAssetMenuAnchor(anchorKey, id);
+
+    // The backend resolves this id through its prefab index and activates the
+    // normal prefab tool.
+    assetMenuPort.activatePrefab({ prefabId: id });
+  }, [anchorKey]);
 
   // Stable across renders, like every callback a row receives, so a memoised
   // row skips the re-render its parent does on each keystroke.
@@ -209,34 +140,42 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     // arrow-key navigation also calls and must step past a locked tile.
     if (!canPlace(entry)) return;
 
-    // Placing unmounts the whole asset menu, so this is the last moment the scroll
-    // position exists — and the building just chosen is what to come back to.
-    setAssetMenuAnchor(anchorKey, entry.id);
+    armById(entry.id);
+  }, [armById]);
 
-    // The backend resolves this id through its prefab index and activates the
-    // normal prefab tool.
-    assetMenuPort.activatePrefab({ prefabId: entry.id });
-  }, [anchorKey]);
+  // A page steps by the body's whole lines: the slots', or the cards' rows; line 1 sits their edge down.
+  const lines = bodyLines(grid, cards?.geometry ?? null);
+  useScrollAnchor(rootRef, anchorKey, { listStart, anchorId, anchorIndex, itemCount: items.length }, lines.edge);
 
-  const setSort = useCallback(
-    (column: SortColumn): void => sendSort({ column: sortColumn, descending }, column),
-    [sortColumn, descending]
-  );
+  // Up, Down, PageUp and PageDown while the search field has the keys; Up and Down only once the
+  // field names a target, the page answering the query in it. A move is answered by a new step or
+  // by a page for a new query.
+  const answering = pageAnswers({ searchText: pageSearch }, currentSearch ?? "");
+  useSearchFieldKeys(rootRef, bestMatchId !== null && answering, `${pageSearch}\n${enterStep}`, lines);
+  // Enter's target, marked on its row while the page answers the query, and brought on screen when the keys move it.
+  const enterId = answering && (currentSearch ?? "").trim() !== "" ? bestMatchId : null;
+  useRevealEnterTarget(rootRef, enterId, enterStep, lines.edge);
 
-  useScrollAnchor(rootRef, anchorKey, items.length);
-
-  // Enter arms the backend's best match, so a search can be finished without
-  // leaving the keyboard. One listener for every view, on the document because
-  // the search field is the header's; the ref keeps it reading this render.
-  // An Enter pressed before the page catches up with the box is held for it.
+  // Enter arms the backend's best match by id, wherever its row is, so a search
+  // can be finished without leaving the keyboard. One listener for every view, on
+  // the document because the search field is the top row's; the ref keeps it
+  // reading this render. An Enter pressed before the page catches up with the box
+  // is held for it.
   const pendingEnter = useRef<string | null>(null);
   const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
   onEnter.current = (event) => {
-    if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
+    const fromField = isSearchField(event.target);
+    if (!isEnterForSearch(event.target, fromField)) return;
 
-    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
+    const decision = enterDecision({ bestMatchId, searchText: pageSearch }, currentSearch ?? "");
     pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
-    if (decision && "arm" in decision) activate(decision.arm);
+    if (decision && "arm" in decision) {
+      armById(decision.arm);
+    } else if (fromField) {
+      // Enter from the field ends the typing, whatever it arms: the camera keys come back. An arm
+      // has already given them back.
+      blurSearchField();
+    }
   };
   useEffect(() => {
     const waiting = pendingEnter.current;
@@ -248,12 +187,12 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       return;
     }
 
-    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, waiting);
+    const decision = enterDecision({ bestMatchId, searchText: pageSearch }, waiting);
     if (decision && "wait" in decision) return;
 
     pendingEnter.current = null;
-    if (decision) activate(decision.arm);
-  }, [items, bestMatchId, pageSearch, currentSearch, activate]);
+    if (decision) armById(decision.arm);
+  }, [bestMatchId, pageSearch, currentSearch, armById]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isPlainEnter(event)) onEnter.current(event);
@@ -269,87 +208,69 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
-   * owns the scroll — which differs by view mode, so it is passed down. It
-   * names both ends, so a truncated list reads as one rather than as the whole.
+   * owns the scroll — which differs by view mode, so it is passed down. The tab
+   * row's readout states the window and its true total, so this says only what
+   * the readout cannot: Load more while the window can grow, and at the
+   * ceiling, how to narrow the list instead.
    */
-  const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
+  // Against the rows the window can reach: a fold's rows are the label's, never Load more's.
+  const remaining = catalogWindowRemaining({ shown: items.length, total: visibleCount });
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
   // Memoised with what it shows, so the views it is handed to can skip a render.
-  const catalogFooter = useMemo(() => hasMore ? (
-    <div className={styles.loadMoreRow}>
-      <span className={styles.windowState}>
-        {(translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
-          ?? "Showing {0} of {1}")
-          .replace("{0}", groupDigits(items.length, separators))
-          .replace("{1}", groupDigits(totalCount, separators))}
-      </span>
-      <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
-        {remaining === null
-          ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
-          : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
-      </Button>
-    </div>
-  ) : null, [hasMore, items.length, totalCount, remaining, translate, separators, loadMore]);
+  const catalogFooter = useMemo(() => {
+    if (!hasMore && !capped) return null;
+
+    const capLine = (translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotalCapped]", "Showing {0} of {1} · narrow with a tab, the search or a filter")
+      ?? "Showing {0} of {1} · narrow with a tab, the search or a filter")
+      .replace("{0}", groupDigits(items.length, separators))
+      .replace("{1}", groupDigits(totalCount, separators));
+
+    return (
+      <div className={styles.loadMoreRow}>
+        {capped && <span className={classNames(styles.windowState, styles.windowStateCapped)}>{capLine}</span>}
+        {hasMore && (
+          <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
+            {remaining === null
+              ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
+              : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
+                ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
+          </Button>
+        )}
+      </div>
+    );
+  }, [hasMore, capped, items.length, totalCount, remaining, translate, separators, loadMore]);
+
+  // A small menu's grouped first page draws nothing new: the body drawn before holds until the page
+  // without groups arrives, so the menu's first frame is its grown form. See useAwaitsNoGroups.
+  const held = useAwaitsNoGroups(items, sections, pageSearch.trim() !== "");
+  // Filters compose, so an empty intersection is easy to reach by accident, and silence there reads as a
+  // broken asset menu.
+  const results = useHeld(
+    status === "indexing" && items.length === 0
+      ? <div className={styles.empty}>{translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}</div>
+      // A tab whose rows are all locked and folded away draws its Locked label, never "nothing here".
+      : items.length === 0 && sections.length === 0
+        ? (scopeNotice
+            // The notice above already says the set is empty AND what to do
+            // about it; a second line would say it twice and contradict it.
+            ? null
+            : <div className={styles.empty}>{emptyStateMessage}</div>)
+        : cards !== null
+          ? <CardsBody layout={cards} enterId={enterId} onPlace={activate} footer={catalogFooter} />
+          : grid !== null && grid.form === "tile"
+            ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
+            : grid !== null && grid.form === "icon"
+              ? <IconsBody entries={items} grid={grid} sections={sections} offset={offset} named={named} onPlace={activate} footer={catalogFooter} />
+              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} typed={pageSearch} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />,
+    held,
+  );
 
   return (
-    <div
-      ref={rootRef}
-      className={classNames(styles.catalog, densityClassNames[density])}
-      data-density={density}
-      data-row-height={rowGeometry.rowHeight}
-      data-selector-height={rowGeometry.selectorHeight}
-      data-metric-text-scale={getAssetMenuMetricTextScale(density)}
-      // Published as data, not applied as a max-height: the asset menu states its
-      // own height and .catalog is flex: 1 1 auto inside it, so a second
-      // ceiling here could only cut the asset menu short.
-      data-catalog-max-height={catalogMaxHeight}
-    >
-      {/* No toolbar band here. Identity, grouping, sort and view live in
-          ControlPane, beside the menu at every height while the player shows it. */}
-
-      {/* No filter chrome either: the rail and the active-filter chips are the
-          control plane's, so this component draws results and nothing else. */}
-
-      {tableMode ? (
-        <TableView
-          items={items}
-          emptyState={emptyState}
-          density={density}
-          metrics={tableMetrics}
-          columnStyle={columnStyle}
-          nameBudget={nameBudget}
-          resolveFacetLabel={resolveFacetLabel}
-          sortColumn={sortColumn}
-          descending={descending}
-          onSort={setSort}
-          expandedId={expandedId}
-          onToggleExpanded={toggleExpanded}
-          onPlace={activate}
-          footer={catalogFooter}
-        />
-      ) : (
-        <>
-          {scopeNoticeBlock}
-          {/* Filters compose, so an empty intersection is easy to reach by
-              accident, and silence there reads as a broken asset menu. */}
-          {items.length === 0
-            ? (scopeNotice
-                // The notice above already says the set is empty AND what to do
-                // about it; a second line would say it twice and contradict it.
-                ? null
-                : <div className={styles.empty}>{emptyStateMessage}</div>)
-            : (
-              <GroupedResults
-                entries={items}
-                viewMode={viewMode}
-                onPlace={activate}
-                footer={catalogFooter}
-              />
-            )}
-        </>
-      )}
-
+    <div ref={rootRef} className={styles.catalog}>
+      {/* No controls here: Sort, Filter, Group and View are the top row's, and the
+          control pane's while it shows, so this component draws results and nothing else. */}
+      {scopeNoticeBlock}
+      {results}
     </div>
   );
 });

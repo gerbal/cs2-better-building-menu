@@ -1,98 +1,26 @@
 @use "../../base.scss" as _base;
-@use "../../assetMenuGeometry" as *;
 
 // No var(--name, fallback) in this file. Cohtml does not support the
 // two-argument form and logs an unresolved-variable warning for every element
 // carrying one, on every style pass. The game's theme always defines these.
-
-// Table column geometry is in assetMenuGeometry.scss, shared with the column
-// arithmetic in assetMenuLayout.ts. A trailing control's width changes it
-// THERE.
 
 .catalog {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   height: auto;
-  // The asset menu supplies a render-target-aware max-height. Keep this
-  // fallback for the first frame before bindings/window metrics settle.
+  // The asset menu states its own height and this fills it; never past it.
   max-height: 100%;
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  padding: 8rem;
+  // Every body places its own cells, inside side margins of its own, and takes the whole height.
+  padding: 0;
   color: var(--menuTitleNormal);
 }
 
-.densityDefault,
-.densityExpanded {
-  padding: 8rem;
-}
-
-.densityCompact {
-  padding: 6rem;
-  // The width strip lies in this margin, so it stays as wide as the strip.
-  padding-right: $width-handle-width;
-
-  .row {
-    height: 84rem;
-    min-height: 84rem;
-    > * + * {
-      margin-left: 2rem;
-    }
-  }
-
-  .rowSelect {
-    height: 80rem;
-    min-height: 80rem;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-    > * + * {
-      margin-left: 2rem;
-    }
-  }
-
-  .thumbnail {
-    // Tighter at compact density; the spacing is the picture's, not the cell's.
-    margin-right: 6rem;
-  }
-
-  .metricHeader,
-  .metric,
-  .parking {
-    font-size: var(--fontSizeS);
-  }
-}
-// The badge is measured against the 60rem PICTURE, not the 68rem tinted frame
-// this mode draws around it — the one place where the two differ. Nested,
-// because a bare class loses to baseButton's img rule; see base.scss.
-.thumbnail .uniqueAsset {
-  @include _base.unique-mark(60rem, 68rem);
-}
-
-.uniqueMark {
-  opacity: 0;
-}
-
-.alreadyBuilt {
-  opacity: 1;
-}
-
-.row:hover .uniqueMark {
-  opacity: 0.5;
-}
-
-.columnHeader,
-.row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
 // The end of the feed, inside the scroll. As wide as the count beside it allows,
-// so it is unmissable, and its own rule because styling it through a selector the
-// rows share gives .columnHeader and every .row the button's centring, padding
-// and background.
+// so it is unmissable, and its own rule so the rows beside it keep their own look.
 .loadMore {
   display: flex;
   align-items: center;
@@ -111,12 +39,6 @@
   &:hover {
     background-color: var(--menuControlHovered);
   }
-}
-
-.category,
-.columnHeader {
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
 }
 
 // Vanilla's icon variant sizes a Button as a 24rem square, so a control
@@ -168,7 +90,7 @@
 .metricRangeToggleActive {
   color: var(--accentColorNormal);
   background-color: rgba(255, 255, 255, 0.1);
-  border-color: var(--accentColorNormal);
+  @include _base.border-colors(var(--accentColorNormal));
 }
 
 .metricRangeSelectionCount {
@@ -264,71 +186,9 @@
   font-size: var(--fontSizeS);
 }
 
-.columnHeader {
-  > * + * {
-    margin-left: $row-gap;
-  }
-  // Right padding reserves exactly what the row spends after its last metric
-  // cell — see the table geometry in assetMenuGeometry.scss. The rows' scrollbar
-  // is added on top of it when the rows actually scroll.
-  padding: 5rem $table-trailing-reserve 3rem $row-padding-left;
-
-  &[data-rows-scrollable="true"] {
-    padding-right: $table-trailing-reserve + $rows-scrollbar-width;
-  }
-  text-transform: uppercase;
-  font-size: var(--fontSizeS);
-  box-sizing: border-box;
-
-  .identityHeader {
-    flex: 1 1 auto;
-    min-width: 0;
-    text-align: left;
-    font-size: var(--fontSizeS);
-  }
-}
-
-.metricHeader {
-  flex: 0 0 auto;
-  min-width: 0;
-  @include _base.truncate;
-  text-align: center;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-  box-sizing: border-box;
-  border-left: 1rem solid rgba(255, 255, 255, 0.06);
-  // The header is a Button so the column can be sorted by clicking it. Strip
-  // the button chrome so the header row still reads as a table header rather
-  // than a strip of seven buttons.
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  padding: 0;
-  // Not `margin: 0`: that reset has the same specificity as .columnHeader's
-  // `> * + *` spacing and comes later in the file, so it takes the column
-  // spacing back and every header sits left of its cells.
-  margin: 0 0 0 $row-gap;
-}
-
-.metricHeader:hover {
-  color: var(--menuText1Normal);
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.metricHeaderSorted {
-  color: var(--menuText1Normal);
-}
-
-.metricHeaderIndicator {
-  margin-left: 2rem;
-  font-size: var(--fontSizeS);
-}
-
 // An invalid range must not read as an applied one.
 .metricRangeInput[data-invalid="true"] {
-  border-color: var(--negativeColor, rgba(220, 90, 90, 0.9));
+  @include _base.border-colors(var(--negativeColor));
 }
 
 .metricRangeNotice {
@@ -351,7 +211,9 @@
   padding: 6rem 8rem;
   border-radius: 3rem;
   background-color: rgba(255, 255, 255, 0.08);
-  border: 1rem solid var(--accentColorNormal);
+  border-width: 1rem;
+  border-style: solid;
+  @include _base.border-colors(var(--accentColorNormal));
 }
 
 .scopeNoticeText {
@@ -375,242 +237,6 @@
   white-space: nowrap;
 }
 
-// The table's scroll area. A zero flex basis resolves against nothing here —
-// .catalog is height: auto capped by a max-height — so the rows would
-// contribute no height and lay out below the viewport.
-.rows {
-  display: flex;
-  flex-direction: column;
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: 100%;
-}
-
-.row {
-  @include _base.lightButton(false, true);
-  width: 100%;
-  // Keep enough vertical room for the thumbnail and the two identity lines;
-  // every metric remains on the same baseline rather than being folded into
-  // a wrapped analytics string in the left column.
-  height: 92rem;
-  min-height: 92rem;
-  margin: 1rem 0;
-  padding: 0 $row-outer-padding-right 0 0;
-  > * + * {
-    margin-left: $row-gap;
-  }
-  justify-content: flex-start;
-  text-align: left;
-  color: var(--menuTitleNormal);
-  overflow: hidden;
-}
-
-.row:hover {
-  background-color: rgba(255, 255, 255, 0.09);
-}
-
-.rowSelect {
-  @include _base.transparentButton(false, true);
-  flex: 1;
-  min-width: 0;
-  height: 88rem;
-  min-height: 88rem;
-  padding: 2rem $row-padding-right 2rem $row-padding-left;
-  > * + * {
-    margin-left: $row-gap;
-  }
-  justify-content: flex-start;
-  align-items: center;
-  text-align: left;
-  color: var(--menuTitleNormal);
-  overflow: hidden;
-}
-
-.rowSelect:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.identityCell {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex: 1 1 auto;
-  // Zero, and it has to be: in Cohtml a min-width on a flex item disables its
-  // flex-grow, so a floor written here freezes the column rather than
-  // protecting it. getAssetMenuColumnWidths narrows the metric cells.
-  min-width: 0;
-}
-
-.thumbnail {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  // Through the shared box, like every other mode, so the badge is measured
-  // against the same number the picture is.
-  @include _base.artwork-box($row-thumbnail-size);
-  // The separation from the name.
-  margin-right: $row-thumbnail-gap;
-  border-radius: 4rem;
-  background-color: rgba(0, 0, 0, 0.25);
-
-  // `.picture`, not `img`: the badge is an img in this box too, so a rule
-  // written against the element reaches both — including the silhouette
-  // below, which would blacken the badge.
-  .picture {
-    @include _base.artwork-picture(60rem);
-  }
-}
-
-.identity {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1;
-  min-width: 0;
-  height: 72rem;
-  min-height: 72rem;
-  max-height: 72rem;
-  overflow: hidden;
-}
-
-.nameLine {
-  // The positioning context for .placeHint, which overlays the end of this line
-  // rather than taking a share of it.
-  position: relative;
-  display: flex;
-  flex: 0 0 auto;
-  min-width: 0;
-  flex-direction: row;
-  align-items: center;
-  > * + * {
-    margin-left: 4rem;
-  }
-  height: 18rem;
-  min-height: 18rem;
-  max-height: 18rem;
-}
-
-// Block, NOT flex. text-overflow applies to a block container's inline
-// content, and a flex container's text is an anonymous flex item, so the name
-// clips with no ellipsis. Vertical centring is line-height matching height.
-.name {
-  display: block;
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 18rem;
-  min-height: 18rem;
-  max-height: 18rem;
-  @include _base.truncate;
-  color: var(--menuTitleNormal);
-  font-size: var(--fontSizeM);
-  font-weight: bold;
-  line-height: 18rem;
-}
-
-// Absolutely positioned, so an invisible hint costs the title nothing. In
-// flow it reserves its box even at opacity 0, taking half the name line for
-// something the player cannot see.
-.placeHint {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 1rem 4rem;
-  color: var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.08);
-  border-radius: 3rem;
-  font-size: var(--fontSizeXS);
-  line-height: 14rem;
-  opacity: 0;
-  white-space: nowrap;
-}
-
-.rowSelect:hover .placeHint,
-.rowSelect:focus .placeHint,
-.rowSelect:active .placeHint {
-  opacity: 1;
-}
-
-.category {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  flex: 0 0 auto;
-  height: 16rem;
-  min-height: 16rem;
-  max-height: 16rem;
-  @include _base.truncate;
-  margin-top: 1rem;
-  font-size: var(--fontSizeS);
-  line-height: 16rem;
-}
-
-.metric,
-.parking {
-  flex: 0 0 auto;
-  min-width: 0;
-  @include _base.truncate;
-  text-align: center;
-  font-size: var(--fontSizeS);
-  line-height: 18rem;
-  color: var(--menuText2Normal);
-  box-sizing: border-box;
-  border-left: 1rem solid rgba(255, 255, 255, 0.06);
-}
-
-// Keep the compact tier dense, but do not reduce normal/expanded metrics to
-// the tiny utility label size. The identity block remains the primary
-// anchor while these values stay single-line and column-aligned.
-.catalog[data-metric-text-scale="readable"] {
-  .metric,
-  .parking {
-    font-size: var(--fontSizeM);
-    line-height: 20rem;
-  }
-
-  .metricHeader {
-    font-size: var(--fontSizeS);
-    line-height: 18rem;
-  }
-}
-
-// "Compact" is the readable body tier one step down, not the utility tier.
-.catalog[data-metric-text-scale="compact"] {
-  .metric,
-  .parking,
-  .metricHeader {
-    font-size: var(--fontSizeS);
-    line-height: 18rem;
-  }
-}
-
-// Numbers compare by magnitude, so they align on their right edge. Lot, level
-// and parking are labels rather than quantities and stay centred. Column
-// widths come inline from getAssetMenuColumnWidths, around the gutter below.
-.metricCost,
-.metricUpkeep,
-.metricWorkers,
-.metricCapacity {
-  text-align: right;
-  padding-right: 8rem;
-}
-
-.metricHeader.metricCost,
-.metricHeader.metricUpkeep,
-.metricHeader.metricWorkers,
-.metricHeader.metricCapacity {
-  justify-content: flex-end;
-}
-
-.parking {
-  text-align: center;
-}
-
-.parkingActive {
-  color: var(--accentColorNormal);
-}
-
 .empty {
   padding: 28rem 12rem;
   text-align: center;
@@ -618,247 +244,8 @@
   font-size: 12rem;
 }
 
-// A COLUMN of stacked blocks. In a wrapping row each child becomes its own
-// flex line and is stretched to that line's cross size, inflating the box
-// past the height `.row` clips at, so the last blocks are never seen.
-.rowDetails {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 100%;
-  padding: 4rem 8rem 6rem 8rem;
-  box-sizing: border-box;
-  background-color: rgba(255, 255, 255, 0.04);
-
-  // In a column the main axis is vertical, so a child left to shrink gives up
-  // its own height to fit the box — which would hide the same rows by a
-  // different route.
-  > * {
-    flex-shrink: 0;
-  }
-}
-
-// The game's own description for the prefab, above the numbers.
-.rowDescription {
-  width: 100%;
-  margin-bottom: 4rem;
-  color: var(--menuText1Normal);
-  font-size: var(--fontSizeS);
-  line-height: 18rem;
-  white-space: normal;
-}
-
-.rowDetailMetrics {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-// Placement / access / connections / lot flags and provenance. Chips rather
-// than a sentence, so a building with twelve flags stays scannable.
-.rowFlagGroup {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  width: 100%;
-  margin-top: 3rem;
-}
-
-.rowFlag {
-  padding: 1rem 5rem;
-  // The separation between chips, bottom as well as right because the group
-  // wraps. Wider than the chip's own padding: when the space between two
-  // boxes is smaller than the space inside them, they read as one band.
-  margin-right: 8rem;
-  margin-bottom: 3rem;
-  border-radius: 3rem;
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
-  line-height: 15rem;
-  white-space: nowrap;
-}
-
-.rowFlagGroup[data-flag-group="placement"] .rowFlag {
-  color: var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-// Lot internals are the least decision-relevant, so they recede.
-.rowFlagGroup[data-flag-group="lot"] .rowFlag {
-  opacity: 0.65;
-}
-
-.rowProvenance {
-  display: flex;
-  flex-direction: row;
-  // Same rule as .rowDetail: the pair moves as a unit rather than wrapping.
-  flex: 0 0 auto;
-  white-space: nowrap;
-  align-items: flex-start;
-  > * + * {
-    margin-left: 3rem;
-  }
-  margin-right: 10rem;
-  font-size: var(--fontSizeXS);
-}
-
-.rowDetail {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  // A pair is a unit: it never shrinks and its text never wraps, so a full
-  // line moves the whole pair down. Left shrinkable it narrows to its longest
-  // word, and the wrapped second line overflows into the chips below.
-  flex: 0 0 auto;
-  white-space: nowrap;
-  margin-right: 16rem;
-  margin-bottom: 2rem;
-  font-size: var(--fontSizeS);
-}
-
-.rowDetailLabel {
-  color: var(--menuText2Normal);
-  margin-right: 4rem;
-  white-space: nowrap;
-}
-
-.rowDetailValue {
-  color: var(--menuText1Normal);
-}
-
-.rowDetailEmpty {
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-}
-
-.rowDetailsButton {
-  // Fixed, and the same constant the header reserves. The row itself is the
-  // Place control, so this chevron is the only trailing furniture.
-  flex: 0 0 $row-details-width;
-  width: $row-details-width;
-  // Full row height, stated rather than inherited. align-self: stretch alone
-  // does NOT do it: vanilla's icon Button variant gives itself a height and
-  // the row's mixin centres its children, so the chevron sits short.
-  align-self: stretch;
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  font-size: var(--fontSizeS);
-  color: var(--menuText2Normal);
-  background-color: transparent;
-}
-
-.rowDetailsButton:hover {
-  color: var(--menuText1Normal);
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-// Turned when the row is open, so the control says which way it will go
-// rather than only what it is.
-.rowDetailsButtonOpen {
-  color: var(--menuText1Normal);
-}
-
-// The chevron itself: a masked copy of the game's StrokeArrowDown/Up glyph,
-// painted in the button's text colour. An <img> under a mask is the same
-// construction the header's close button uses.
-.rowDetailsGlyph {
-  width: 14rem;
-  height: 14rem;
-  background-color: var(--menuText2Normal);
-  mask-size: contain;
-  mask-position: 50% 50%;
-  mask-repeat: no-repeat;
-}
-
-.rowDetailsButtonOpen .rowDetailsGlyph {
-  background-color: var(--menuText1Normal);
-}
-
-// An expanded row grows to fit its details instead of clipping them. rowSelect
-// has to shrink from a zero basis: as flex: 1 1 auto it claims the whole first
-// line under flex-wrap and bumps the chevron onto a line of its own.
-.row[data-expanded="true"] {
-  flex-wrap: wrap;
-  height: auto;
-  min-height: 0;
-
-  .rowSelect {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  // The chevron sizes to its LINE, not to the row. Its `height: 100%`
-  // resolves against the whole wrapped row once the row is `height: auto`,
-  // and `.row` is overflow: hidden, so the details are clipped away entirely.
-  .rowDetailsButton {
-    height: auto;
-  }
-}
-
-// Rasters only (see hasVectorThumbnail), and the PICTURE rather than every
-// img in the box: `.thumbnail img` also catches the already-built badge — an
-// SVG whatever the entry is — and paints it solid black over the artwork.
-.row[data-locked="true"][data-vector-thumb="false"] .thumbnail .picture,
-.row[data-already-built="true"][data-vector-thumb="false"] .thumbnail .picture {
-  filter: grayscale(100%) contrast(80%) brightness(0%);
-}
-
-// Both unplaceable states share the ground. Which one it is gets said in the
-// label and the aria suffix, not in a second colour; the row stays clickable
-// so the hover card that explains the lock is still reachable.
-.row[data-locked="true"],
-.row[data-already-built="true"] {
-  .name {
-    opacity: 0.6;
-  }
-}
-
-// A group heading inside the table: a full-width band rather than a row of
-// cells, because it names the group and has nothing to say in the metric
-// columns. Lining it up with them only invites a search for absent values.
-.tableGroupHeading {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 6rem;
-  padding: 3rem 8rem;
-  background-color: rgba(255, 255, 255, 0.06);
-  border-radius: 2rem;
-}
-
-.tableGroupHeading[data-group-depth="1"] {
-  margin-left: 12rem;
-  width: auto;
-  background-color: rgba(255, 255, 255, 0.03);
-}
-
-.tableGroupLabel {
-  color: var(--menuText1Normal);
-  font-size: var(--fontSizeS);
-  text-transform: uppercase;
-  @include _base.truncate;
-}
-
-.tableGroupCount {
-  flex: 0 0 auto;
-  margin-left: 8rem;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
-}
-
-// The footer states the window at both ends: what is on screen on the left,
-// what the button adds on the right. One row, because they are one fact said
-// twice for the two questions a player has.
+// The list's end: Load more while the window can grow, and at the ceiling how
+// to narrow the list. The tab row's readout states the window itself.
 .loadMoreRow {
   display: flex;
   flex-direction: row;
@@ -870,5 +257,12 @@
 .windowState {
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
-  white-space: nowrap;
+}
+
+// The cap line is a sentence, wider than the row at the game's own width and large text,
+// so it wraps where the count alone stays on one line.
+.windowStateCapped {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
 }

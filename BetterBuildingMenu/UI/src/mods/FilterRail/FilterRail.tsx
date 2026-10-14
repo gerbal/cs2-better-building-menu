@@ -21,7 +21,8 @@ import { GameTextInput, gameClasses } from "mods/gameModules";
  * settings-screen look, which draws a white panel over the map; taking the
  * game's own theme also keeps its hover, focus and open states.
  */
-const GameDropdownTheme = gameClasses("game-ui/game/themes/game-dropdown.module.scss");
+export const GAME_DROPDOWN_THEME = "game-ui/game/themes/game-dropdown.module.scss";
+const GameDropdownTheme = gameClasses(GAME_DROPDOWN_THEME);
 
 /**
  * The menu half of that theme, and only that half: whole, it also replaces the
@@ -106,7 +107,9 @@ export const FilterRail = ({
               // Opening a dropdown resets the search: `query` is one piece of
               // state shared by every dimension's menu, so a stale value would
               // otherwise leak from one dimension into the next.
-              onToggle={(visible) => visible && setQuery("")}
+              onToggle={(visible) => {
+                if (visible) setQuery("");
+              }}
               content={
                 <div className={styles.menu}>
                   {searchable && (
@@ -154,8 +157,7 @@ export const FilterRail = ({
           );
         })}
 
-        {/* No Clear here: the chip row owns clearing and sits immediately to
-            the right, so a second one would say it twice in one band. */}
+        {/* No Clear here: the filter panel's chips own clearing, under the rail. */}
       </div>
     </div>
   );

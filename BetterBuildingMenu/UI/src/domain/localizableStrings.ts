@@ -33,21 +33,26 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("SortByOption"), english: "Sort by {0}", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionAscending"), english: "ascending", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionDescending"), english: "descending", source: "BuildingCatalog", plumbed: true },
-  { key: key("ViewGrid"), english: "Grid", source: "BuildingCatalog", plumbed: true },
+  { key: key("ViewIcons"), english: "Icons", source: "ViewList", plumbed: true },
+  { key: key("ViewIconsNamed"), english: "Icons with names", source: "ViewList", plumbed: true },
+  { key: key("ViewTiles"), english: "Tiles", source: "ViewList", plumbed: true },
+  // VIEW's first row: the body Default view gives this menu, ticked while the menu has no pick of its own.
+  { key: key("DefaultViewRow"), english: "Default view · {0}", source: "ViewList", plumbed: true },
   // Households is its own line because Capacity is derived from SERVICE
   // components, which a residential building does not carry.
   { key: key("Households"), english: "Households", source: "BuildingHoverCard", plumbed: true },
   { key: key("HouseholdsUnit"), english: "households", source: "BuildingHoverCard", plumbed: true },
   { key: key("WorkersUnit"), english: "jobs", source: "BuildingHoverCard", plumbed: true },
+  { key: key("CapacityUnit"), english: "capacity", source: "useBodyWords", plumbed: true },
+  { key: key("UnlocksAtMilestone"), english: "Unlocks at milestone {0}", source: "HoverCard", plumbed: true },
   // Vanilla's menus close from an X in the top-right corner; the asset menu stands
   // in for one, so it offers the same way out.
-  { key: key("CloseMenu"), english: "Close", source: "BuildingMenuHeader", plumbed: true },
-  { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
-  { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
-  { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },
-  { key: key("GroupBy_none"), english: "None", source: "buildingGroups", plumbed: true },
-  // The game's own categories — the dimension the tab strip shows.
-  { key: key("GroupBy_menuCategory"), english: "Category", source: "buildingGroups", plumbed: true },
+  { key: key("CloseMenu"), english: "Close", source: "TopRow", plumbed: true },
+  { key: key("ViewList"), english: "List", source: "ViewList", plumbed: true },
+  { key: key("ViewCards"), english: "Cards", source: "ViewList", plumbed: true },
+  { key: key("GroupBy_none"), english: "No groups", source: "buildingGroups", plumbed: true },
+  // The game's own categories — the dimension the tab row shows.
+  { key: key("GroupBy_menuCategory"), english: "By tab", source: "buildingGroups", plumbed: true },
   // Ours: Buildings, Networks, Service Buildings. Not "Category", which is the
   // game's word for a different idea.
   { key: key("GroupBy_category"), english: "Asset type", source: "buildingGroups", plumbed: true },
@@ -63,14 +68,12 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("GroupBy_footprint"), english: "Footprint", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_cost"), english: "Cost", source: "buildingGroups", plumbed: true },
 
-  // --- Chip row. Already behind translate(). -------------------------------
-  { key: key("AllMenus"), english: "All menus", source: "ChipRow", plumbed: true },
+  // --- Menu names and filter chips. Already behind translate(). -------------
   // The one menu the asset menu renames, because it is the one whose contents it
   // changes: Roads gathers every network, which the game's own word does not
   // describe. Offered ahead of that string rather than instead of it.
   { key: key("MenuRoadsAndNetworks"), english: "Roads & Networks", source: "vanillaServiceLabels", plumbed: true },
-  { key: key("AllTypes"), english: "All types", source: "ChipRow", plumbed: true },
-  { key: key("Remove"), english: "Remove", source: "ChipRow", plumbed: true },
+  { key: key("Remove"), english: "Remove", source: "FilterPanel", plumbed: true },
   // The end of the feed.
   { key: key("LoadMore"), english: "Load more", source: "BuildingCatalog", plumbed: true },
 

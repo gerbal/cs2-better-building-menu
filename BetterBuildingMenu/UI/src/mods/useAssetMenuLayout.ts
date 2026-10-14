@@ -1,30 +1,41 @@
 import { useValue } from "cs2/api";
 
-import { assetMenuBandWidth, assetMenuRowWidth, resolveCatalogWidth } from "domain/assetMenuLayout";
 import { useTextScale } from "domain/textScaleSetting";
-import { AssetMenuCatalogWidth$, AssetMenuWidth$, ControlPaneShown$ } from "mods/bindings";
+import { REFERENCE_ASPECT, drawnStep, drawnStepWidth, sanitizeWidthStep, snapTargets, type WidthSnap, type WidthStepScreen } from "domain/widthSteps";
+import { AssetMenuWidthStep$, ControlPaneShown$ } from "mods/bindings";
 
 /** The asset menu's widths as drawn now, in rem. */
 export interface AssetMenuLayout {
-  /** The band the row may fill: C#'s AssetMenuWidth and the UI's chrome, less what the text scale takes. */
-  bandWidth: number;
-  /** The build menu: the player's width, or the room beside the pane by default. */
+  /** The stored Width step. */
+  step: number;
+  /** The step the box draws: the stored one, or beside the pane the widest that fits. */
+  drawnStep: number;
+  /** The build menu: the stored step's width on this screen, narrowed or swapped where it does not fit. */
   menuWidth: number;
-  /** The row: the build menu and, while shown, the control pane beside it. */
-  rowWidth: number;
   paneShown: boolean;
+  /** The steps a side edge snaps to. */
+  snaps: WidthSnap[];
+  /** What decides where the box sits: the screen's aspect, the text scale and the pane. */
+  screen: WidthStepScreen;
+}
+
+/** The screen's aspect, read at each render: a screen is 1,080 rem tall at any aspect. */
+function screenAspect(): number {
+  if (typeof window === "undefined") return REFERENCE_ASPECT;
+  const { innerWidth, innerHeight } = window;
+  return innerWidth > 0 && innerHeight > 0 ? innerWidth / innerHeight : REFERENCE_ASPECT;
 }
 
 /**
- * One reading of the bindings that decide the asset menu's widths. The asset
- * menu draws with it and the catalog budgets its table with it, so the two
- * cannot disagree mid-drag.
+ * One reading of what decides the asset menu's widths, from the stored step. The bodies place
+ * their slots by it; the asset menu draws it too, except while a width drag has the box
+ * following the pointer, when the bodies keep the stored step until the release.
  */
 export function useAssetMenuLayout(): AssetMenuLayout {
-  const bandWidth = assetMenuBandWidth(useValue(AssetMenuWidth$), useTextScale());
-  const chosenWidth = useValue(AssetMenuCatalogWidth$);
+  const step = sanitizeWidthStep(useValue(AssetMenuWidthStep$));
   const paneShown = useValue(ControlPaneShown$);
-  const menuWidth = resolveCatalogWidth(chosenWidth, bandWidth, paneShown);
+  const screen = { aspect: screenAspect(), textScale: useTextScale(), paneShown };
+  const menuWidth = drawnStepWidth(step, screen);
 
-  return { bandWidth, menuWidth, rowWidth: assetMenuRowWidth(menuWidth, paneShown), paneShown };
+  return { step, drawnStep: drawnStep(step, screen), menuWidth, paneShown, snaps: snapTargets(screen), screen };
 }

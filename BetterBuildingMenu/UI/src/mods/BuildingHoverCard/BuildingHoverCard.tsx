@@ -13,6 +13,7 @@ import { useUnitSystem } from "domain/unitSettings";
 import { overflowsBox } from "domain/measuredFit";
 import styles from "./buildingHoverCard.module.scss";
 import { AssetMenuMilestones$ } from "mods/bindings";
+import type { LookRoot } from "mods/useLookRoot";
 
 export interface HoverCardContext extends HoverCardLineContext {
   /**
@@ -32,7 +33,7 @@ const NO_MILESTONE_NAMES: string[] = [];
 
 export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
-  // One subscription per grid, like the milestones below — the whole reason
+  // One subscription per body, like the milestones below — the whole reason
   // this context exists rather than each card reading its own.
   const unitSystem = useUnitSystem();
   const milestoneNames = useValue(AssetMenuMilestones$) ?? NO_MILESTONE_NAMES;
@@ -41,9 +42,8 @@ export const useHoverCardContext = (): HoverCardContext => {
   // a render; translate holds still until the language changes.
   return useMemo(() => ({
     milestoneNames,
-    // Clamped here, not in the resolver: the expanded table row shows the same
-    // description where there is room for all of it, and shortening it there
-    // would be the card dictating to the table.
+    // Clamped here, not in the resolver: the card has room for a few lines,
+    // and a caller with more room may want the whole description.
     describe: (prefabName) => clampAssetDescription(resolveAssetDescription(prefabName, translate)),
     // Resolved up here for the same reason describe is: translate belongs to
     // the component that holds the localization hook, not to the card.
@@ -103,6 +103,7 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
     <div
       ref={lineRef}
       data-line={line.key}
+      data-card-row={line.key}
       className={classNames(
         styles.cardLine,
         (stacked || overflowed) && styles.cardLineWide,
@@ -125,31 +126,50 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
 };
 
 /**
- * One card body, shared by every view mode, rendered only when the tooltip is
- * shown. Its own component ON PURPOSE: React does not invoke the function until
- * then, so the lines are worked out on hover, not once per tile.
+ * One card body, shared by the upgrades panel's tooltip and the build menu's detail slot, rendered only
+ * when it is shown. Its own component ON PURPOSE: React does not invoke the function until then, so the
+ * lines are worked out on hover, not once per tile. `lookInks` draws it in the look's light inks, on the
+ * game's tooltip or the build menu's panel, both dark under every interface style; `onPanel`, the detail
+ * slot, also takes the slot's width. `rows` draws only its first rows, in their order (each marked
+ * `data-card-row`): the name, the description, the game's lines, BBM's, the footprints.
  */
-const HoverCardContent = ({
+export const HoverCardContent = ({
   entry,
   context,
+  lookInks = false,
+  onPanel = false,
+  rows = Number.POSITIVE_INFINITY,
 }: {
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
+  lookInks?: boolean;
+  onPanel?: boolean;
+  rows?: number;
 }) => {
   const label = entry.name || entry.prefabName;
+  let left = rows;
+  /** The leading items of the next rows, while rows are left to draw. */
+  const take = <T,>(items: readonly T[]): T[] => {
+    const kept = items.slice(0, Math.max(0, left));
+    left -= kept.length;
+    return kept;
+  };
+  const [name] = take([label]);
   // What the thing IS, before every line that is a number about it — the same
   // sentence vanilla shows on selection.
-  const description = context.describe(entry.prefabName);
-  const { vanilla: vanillaTier, extra: extraTier } = hoverCardTiers(entry, context);
-  const footprints = entry.footprints ?? [];
+  const [description] = take([context.describe(entry.prefabName)].filter((said): said is string => !!said));
+  const tiers = hoverCardTiers(entry, context);
+  const vanillaTier = take(tiers.vanilla);
+  const extraTier = take(tiers.extra);
+  const [footprints = []] = take([entry.footprints ?? []].filter((shapes) => shapes.length > 0));
   const footprintOverflow = entry.footprintOverflow ?? 0;
 
   const renderLine = (line: TileTooltipLine) => <CardLine key={line.key} line={line} />;
 
   return (
-    <div className={styles.card}>
-      <div className={styles.cardName}>{label}</div>
-      {description && <div className={styles.cardDescription}>{description}</div>}
+    <div className={classNames(styles.card, (lookInks || onPanel) && styles.lookInks, onPanel && styles.onPanel)}>
+      {name !== undefined && <div className={styles.cardName} data-card-row="name">{name}</div>}
+      {description && <div className={styles.cardDescription} data-card-row="description">{description}</div>}
       {/* Two across where they fit, so short figures do not each take a whole
           row. A line too long for its half gets a row to itself: see CardLine. */}
       {/* With the game's tier empty, ours IS the card: normal weight, no
@@ -180,7 +200,7 @@ const HoverCardContent = ({
           against a block on the map, and a picture of the lot is closer to
           that than "2–4 wide" is. */}
       {footprints.length > 0 && (
-        <div className={styles.glyphs}>
+        <div className={styles.glyphs} data-card-row="footprints">
           {footprints.map((footprint) => (
             <FootprintGlyph key={`${footprint.width}x${footprint.depth}`} footprint={footprint} />
           ))}
@@ -193,18 +213,21 @@ const HoverCardContent = ({
 
 /**
  * Wraps a tile so hovering it explains the asset. Deliberately does no work of
- * its own: see HoverCardContent.
+ * its own: see HoverCardContent. The game draws the tooltip outside the panel,
+ * so its content carries the panel's look itself.
  */
 export const BuildingHoverCard = ({
   entry,
   context,
+  look,
   children,
 }: {
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
+  look: LookRoot;
   children: JSX.Element;
 }) => (
-  <Tooltip tooltip={<HoverCardContent entry={entry} context={context} />}>
+  <Tooltip tooltip={<div className={look.className} style={look.style} data-bbm-look={look.id}><HoverCardContent entry={entry} context={context} lookInks /></div>}>
     {children}
   </Tooltip>
 );

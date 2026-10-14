@@ -31,6 +31,257 @@ namespace BetterBuildingMenu.Tests
 			Entry(6, "High School", "ServiceBuildings", "Education & Research", "Education") with { EducationLevel = 2 },
 		};
 
+		private const string Locked = BuildingCatalogFacetSelection.Availability.Locked;
+
+		/// <summary>The Roads menu's tabs in the game's order; nothing in the menu answers to RoadsParking.</summary>
+		private static readonly string[] RoadTabs = { "RoadsSmallRoads", "RoadsMediumRoads", "RoadsHighways", "RoadsParking" };
+
+		private static BuildingCatalogEntry Road(int id, string tab, bool locked = false) =>
+			Entry(id, "Road " + id, "Networks", "Roads", tab) with { IsLocked = locked };
+
+		private static readonly BuildingCatalogEntry[] Roads =
+		{
+			Road(21, "RoadsSmallRoads"),
+			Road(22, "RoadsSmallRoads", locked: true),
+			Road(23, "RoadsMediumRoads", locked: true),
+			Road(24, "RoadsHighways"),
+			Road(25, "RoadsHighways"),
+		};
+
+		/// <summary>One category, so the strip draws the development tree: Wind, then Gas. Gas's branch icon is a content hash.</summary>
+		private static readonly BuildingCatalogEntry[] Power =
+		{
+			Entry(31, "Wind Turbine", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind", IsLocked = true },
+			Entry(32, "Small Wind Farm", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind" },
+			Entry(33, "Gas Plant", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Gas", DevTreeBranchDepth = 1, DevTreeBranchIcon = "assetdb://global/9f2c" },
+		};
+
+		/// <summary>Two categories, the first split into two branches the row draws in its place.</summary>
+		private static readonly BuildingCatalogEntry[] Health =
+		{
+			Entry(41, "Clinic", "ServiceBuildings", "Health", "HealthcareHealthcare") with { DevTreeBranch = "Basic", IsLocked = true },
+			Entry(42, "Hospital", "ServiceBuildings", "Health", "HealthcareHealthcare") with { DevTreeBranch = "Hospitals", DevTreeBranchDepth = 1 },
+			Entry(43, "Cemetery", "ServiceBuildings", "Health", "HealthcareDeathcare") with { DevTreeBranch = "Deathcare" },
+		};
+
+		private static readonly string[] HealthTabs = { "HealthcareHealthcare", "HealthcareDeathcare" };
+
+		/// <summary>
+		/// Three tabs, the second holding two development branches, one of which is also the third
+		/// tab's: the game files a station on the subway's node under Train.
+		/// </summary>
+		private static readonly BuildingCatalogEntry[] Transport =
+		{
+			Entry(71, "Bus Depot", "ServiceBuildings", "Transportation", "TransportationBus") with { DevTreeBranch = "Bus" },
+			Entry(72, "Bus Station", "ServiceBuildings", "Transportation", "TransportationBus") with { DevTreeBranch = "Bus" },
+			Entry(73, "Train Depot", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Train" },
+			Entry(74, "Train Station", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Train" },
+			Entry(75, "Cargo Station", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Train", IsLocked = true },
+			Entry(76, "Train-Subway Hub", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Subway", DevTreeBranchDepth = 1 },
+			Entry(77, "Subway Depot", "ServiceBuildings", "Transportation", "TransportationSubway") with { DevTreeBranch = "Subway", DevTreeBranchDepth = 1 },
+			Entry(78, "Subway Station", "ServiceBuildings", "Transportation", "TransportationSubway") with { DevTreeBranch = "Subway", DevTreeBranchDepth = 1, IsLocked = true },
+		};
+
+		private static readonly string[] TransportTabs = { "TransportationBus", "TransportationTrain", "TransportationSubway" };
+
+		/// <summary>Several menus, unscoped: zones in two densities, a service in two branches, and a road.</summary>
+		private static readonly BuildingCatalogEntry[] Everything =
+		{
+			Entry(51, "Starter Home", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.Low },
+			Entry(52, "Tower Block", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.High },
+			Entry(53, "Wind Turbine", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind" },
+			Entry(54, "Wind Farm", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind" },
+			Entry(55, "Gas Plant", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Gas", DevTreeBranchDepth = 1 },
+			Entry(56, "Small Road", "Networks", "Roads", "RoadsSmallRoads"),
+		};
+
+		/// <summary>The whole catalog as the adapter builds it: no menu, so no tabs, and the system's default grouping.</summary>
+		private static CatalogView Unscoped(BuildingCatalogQuery query, System.Func<IReadOnlyList<BuildingCatalogEntry>>? packScope = null) =>
+			new(
+				Everything,
+				query,
+				packScope,
+				built => BuildingCatalogGrouping.Effective(query.GroupBy, false, built.StripAxis, false, built.GroupDimensions),
+				menuCategories: System.Array.Empty<string>());
+
+		private static BuildingCatalogQuery LockedIn(string menu) => new(UiMenu: menu, Availability: new[] { Locked });
+
+		[Fact]
+		public void ATabCountsWhatItListsWithTheFiltersOn()
+		{
+			var view = new CatalogView(Roads, LockedIn("Roads"), menuCategories: RoadTabs);
+
+			// The menu's own order, and Highways at 0 rather than gone: the filter emptied it, the
+			// menu did not. Parking has no count, because the menu holds nothing for it.
+			Assert.Equal(
+				new[] { ("RoadsSmallRoads", 1), ("RoadsMediumRoads", 1), ("RoadsHighways", 0) },
+				view.MenuCategoryCounts.Select(count => (count.Id, count.Count)));
+
+			foreach (var count in view.MenuCategoryCounts)
+			{
+				Assert.Equal(count.Count, new CatalogView(Roads, LockedIn("Roads") with { UiCategory = count.Id }).Page.TotalCount);
+			}
+		}
+
+		[Fact]
+		public void AllCountsEveryRowTheFiltersLeaveInTheMenu()
+		{
+			Assert.Equal(2, new CatalogView(Roads, LockedIn("Roads"), menuCategories: RoadTabs).AllCount);
+			Assert.Equal(5, new CatalogView(Roads, new BuildingCatalogQuery(UiMenu: "Roads"), menuCategories: RoadTabs).AllCount);
+		}
+
+		[Fact]
+		public void ATypedSearchCountsMatchesAndKeepsATabWithNoneInPlace()
+		{
+			var view = new CatalogView(Roads, new BuildingCatalogQuery(UiMenu: "Roads", SearchText: "Road 24"), menuCategories: RoadTabs);
+
+			Assert.Equal(
+				new[] { ("RoadsSmallRoads", 0), ("RoadsMediumRoads", 0), ("RoadsHighways", 1) },
+				view.MenuCategoryCounts.Select(count => (count.Id, count.Count)));
+		}
+
+		[Fact]
+		public void AStripTabKeepsItsPlaceAndCountsZeroWhenTheFiltersEmptyIt()
+		{
+			var locked = new CatalogView(Power, LockedIn("Electricity"));
+			var typed = new CatalogView(Power, new BuildingCatalogQuery(UiMenu: "Electricity", SearchText: "Gas"));
+
+			Assert.Equal(new[] { ("Wind", 1), ("Gas", 0) }, locked.StripTabs.Select(tab => (tab.Id, tab.Count)));
+			// The search must not take the strip away under the player: the axis comes from the
+			// menu, and only the counts follow what is typed.
+			Assert.Equal(new[] { ("Wind", 0), ("Gas", 1) }, typed.StripTabs.Select(tab => (tab.Id, tab.Count)));
+		}
+
+		[Fact]
+		public void ABranchInItsCategorysPlaceCountsWhatItListsWithTheFiltersOn()
+		{
+			var expanded = Assert.Single(new CatalogView(Health, LockedIn("Health")).ExpandedCategories);
+
+			Assert.Equal("HealthcareHealthcare", expanded.CategoryId);
+			Assert.Equal(new[] { ("Basic", 1), ("Hospitals", 0) }, expanded.Tabs.Select(tab => (tab.Id, tab.Count)));
+		}
+
+		[Fact]
+		public void AStripTabWithNoPictureOfItsOwnDrawsTheMenusIconNeverAHashOrNothing()
+		{
+			// Wind has no art at all, and Gas's branch icon is a content hash: neither can be drawn.
+			var view = new CatalogView(Power, new BuildingCatalogQuery(UiMenu: "Electricity"), menuIcon: "Media/Game/Icons/Electricity.svg");
+
+			Assert.Equal(
+				new[] { ("Wind", "Media/Game/Icons/Electricity.svg"), ("Gas", "Media/Game/Icons/Electricity.svg") },
+				view.StripTabs.Select(tab => (tab.Id, tab.Icon)));
+		}
+
+		[Fact]
+		public void ABranchInItsCategorysPlaceDrawsTheMenusIconWhenItHasNone()
+		{
+			var view = new CatalogView(Health, new BuildingCatalogQuery(UiMenu: "Health"), menuIcon: "Media/Game/Icons/Healthcare.svg");
+
+			Assert.All(Assert.Single(view.ExpandedCategories).Tabs, tab => Assert.Equal("Media/Game/Icons/Healthcare.svg", tab.Icon));
+		}
+
+		[Fact]
+		public void EveryTierInTheBracketCarriesAnIconTheRowCanDraw()
+		{
+			var education = new CatalogView(Fixture, new BuildingCatalogQuery(UiMenu: "Education & Research"), educationMenu: true);
+
+			Assert.NotEmpty(education.TierBracket.Tiers);
+			Assert.All(education.TierBracket.Tiers, tier => Assert.True(CategoryIcon.IsResolvable(tier.Icon)));
+		}
+
+		[Fact]
+		public void TheTabCountsAddUpToAllWhenEveryRowSitsInOneTab()
+		{
+			// Every Roads row answers to exactly one of the menu's tabs, so the tabs partition the menu.
+			foreach (var query in new[] { new BuildingCatalogQuery(UiMenu: "Roads"), LockedIn("Roads"), new BuildingCatalogQuery(UiMenu: "Roads", SearchText: "Road 2") })
+			{
+				var view = new CatalogView(Roads, query, menuCategories: RoadTabs);
+
+				Assert.Equal(view.AllCount, view.MenuCategoryCounts.Sum(count => count.Count));
+			}
+		}
+
+		public static IEnumerable<object[]> MenusWithABranchedTab()
+		{
+			foreach (var locked in new[] { false, true })
+			{
+				yield return new object[] { "Health", locked };
+				yield return new object[] { "Transportation", locked };
+			}
+		}
+
+		[Theory]
+		[MemberData(nameof(MenusWithABranchedTab))]
+		public void EveryRowIsInOneCellOfTheRowAndEachCellCountsWhatItsClickLists(string menu, bool locked)
+		{
+			var (entries, tabs) = menu == "Health" ? (Health, HealthTabs) : (Transport, TransportTabs);
+			var shown = AssetMenuState.Initial.SelectMenu(menu);
+			var query = locked ? shown.Query with { Availability = new[] { Locked } } : shown.Query;
+			var view = new CatalogView(entries, query, menuCategories: tabs);
+			var listed = new List<int>();
+
+			// The row as the UI draws it: a split tab's branches in its place, every other tab itself.
+			foreach (var count in view.MenuCategoryCounts)
+			{
+				var branches = view.ExpandedCategories.SingleOrDefault(category => category.CategoryId == count.Id)?.Tabs;
+				var cells = branches is { Length: > 1 }
+					? branches.Select(branch => (branch.Count, Click: (shown with { Query = query }).SelectStripTab(branch.Id)))
+					: new[] { (count.Count, Click: (shown with { Query = query }).SelectCategory(count.Id)) };
+
+				foreach (var (drawn, click) in cells)
+				{
+					var rows = new CatalogView(entries, click.Query, menuCategories: tabs).Page.Items.Select(entry => entry.Id).ToArray();
+					Assert.Equal(drawn, rows.Length);
+					listed.AddRange(rows);
+				}
+			}
+
+			// No row in two cells, and none in no cell: no two cells count one set, and they add up to All.
+			Assert.Equal(view.AllCount, listed.Count);
+			Assert.Equal(listed.Count, listed.Distinct().Count());
+		}
+
+		[Theory]
+		[InlineData(false)]
+		[InlineData(true)]
+		public void ATabWithARowOnNoBranchDrawsWholeAndItsCellsAddUpToAll(bool locked)
+		{
+			// Splitting Healthcare would draw Basic and Hospitals and leave the clinic annex, which sits
+			// on no branch, in no cell: the tab stays one cell and lists every row it holds.
+			var annex = Entry(44, "Clinic Annex", "ServiceBuildings", "Health", "HealthcareHealthcare");
+			var entries = Health.Append(annex).ToArray();
+			var shown = AssetMenuState.Initial.SelectMenu("Health");
+			var query = locked ? shown.Query with { Availability = new[] { Locked } } : shown.Query;
+			var view = new CatalogView(entries, query, menuCategories: HealthTabs);
+
+			Assert.Equal(string.Empty, view.ExpandedCategoryId);
+			Assert.Empty(view.ExpandedCategoryTabs);
+			Assert.Empty(view.ExpandedCategories);
+
+			var listed = new List<int>();
+
+			foreach (var count in view.MenuCategoryCounts)
+			{
+				var rows = new CatalogView(entries, (shown with { Query = query }).SelectCategory(count.Id).Query, menuCategories: HealthTabs)
+					.Page.Items.Select(entry => entry.Id).ToArray();
+
+				Assert.Equal(count.Count, rows.Length);
+				listed.AddRange(rows);
+			}
+
+			Assert.Equal(view.AllCount, listed.Count);
+			Assert.Equal(listed.Count, listed.Distinct().Count());
+		}
+
+		[Fact]
+		public void ATabSplitsOnlyIntoBranchesNoOtherTabShares()
+		{
+			// Train's subway station would draw a second Subway tab, counting one row of the Subway
+			// tab's three: Train stays one tab, as the game draws it. Health's branches are its own.
+			Assert.Equal(string.Empty, new CatalogView(Transport, new BuildingCatalogQuery(UiMenu: "Transportation"), menuCategories: TransportTabs).ExpandedCategoryId);
+			Assert.Equal("HealthcareHealthcare", new CatalogView(Health, new BuildingCatalogQuery(UiMenu: "Health"), menuCategories: HealthTabs).ExpandedCategoryId);
+		}
+
 		[Theory]
 		[InlineData(false)]
 		[InlineData(true)]
@@ -176,10 +427,143 @@ namespace BetterBuildingMenu.Tests
 			// One category, two branches: the development axis, tabs by depth then name.
 			Assert.Equal(StripAxes.Development, electricity.StripAxis);
 			Assert.Equal(new[] { ("Electricity", 2), ("Gas Power Plant", 1) }, electricity.StripTabs.Select(t => (t.Id, t.Count)));
-			Assert.Empty(electricity.SchoolTierCounts);
+			Assert.Empty(electricity.TierBracket.Tiers);
 
-			var education = new CatalogView(Fixture, new BuildingCatalogQuery(UiMenu: "Education & Research"));
-			Assert.Equal(new[] { ("2", 1) }, education.SchoolTierCounts.Select(t => (t.Id, t.Count)));
+			var education = new CatalogView(Fixture, new BuildingCatalogQuery(UiMenu: "Education & Research"), educationMenu: true);
+			Assert.Equal(new[] { ("2", 1) }, education.TierBracket.Tiers.Select(t => (t.Id, t.Count)));
+		}
+
+		/// <summary>One tab, and entries that answer to none: the tab alone cuts one way, the whole menu another.</summary>
+		private static readonly BuildingCatalogEntry[] OneTabAndTheRest =
+		{
+			Entry(61, "Tab A1", "ServiceBuildings", "Mixed", "MixedTab") with { DevTreeBranch = "A" },
+			Entry(62, "Tab A2", "ServiceBuildings", "Mixed", "MixedTab") with { DevTreeBranch = "A" },
+			Entry(63, "Tab B", "ServiceBuildings", "Mixed", "MixedTab") with { DevTreeBranch = "B" },
+			Entry(64, "Loose 1", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+			Entry(65, "Loose 2", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+			Entry(66, "Loose 3", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+			Entry(67, "Loose 4", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+		};
+
+		[Fact]
+		public void AMenusDefaultGroupingIsTheSameWhateverTabIsOpen()
+		{
+			// The default is what a pick is compared with, so it is the menu's, not the open tab's:
+			// otherwise one pick is dropped or kept depending on where it was made.
+			var all = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed"));
+			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.Empty(all.MenuCategoryCounts.Skip(1));
+			Assert.NotEqual(all.StripAxis, tab.StripAxis);
+			Assert.Equal(all.DefaultGroupBy, tab.DefaultGroupBy);
+		}
+
+		[Fact]
+		public void AMenuWithNoPickDrawsItsDefaultGroupingOnEveryTab()
+		{
+			var all = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed"));
+			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.NotEqual(all.StripAxis, tab.StripAxis);
+			Assert.Equal(all.GroupFor(string.Empty, null), tab.GroupFor(string.Empty, null));
+			Assert.Equal(all.DefaultGroupBy, tab.GroupFor(string.Empty, null));
+		}
+
+		[Fact]
+		public void APickIsKeptAndATypedQueryPutsTheGroupsAside()
+		{
+			var view = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.Equal(BuildingCatalogGrouping.Development, view.GroupFor(BuildingCatalogGrouping.Development, "  "));
+			Assert.Equal(BuildingCatalogGrouping.None, view.GroupFor(BuildingCatalogGrouping.Development, "wind"));
+		}
+
+		[Fact]
+		public void ASmallMenusListGroupsByNoneUnlessPickedAndItsOwnGroupingStaysForItsShare()
+		{
+			var all = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed"));
+
+			Assert.Equal(BuildingCatalogGrouping.None, all.GroupFor(string.Empty, null, drawsNoGroups: true));
+			Assert.Equal(BuildingCatalogGrouping.Development, all.GroupFor(BuildingCatalogGrouping.Development, null, drawsNoGroups: true));
+			// The share counts All's labels in the menu's own grouping, for a body that draws them.
+			Assert.Equal(all.GroupFor(string.Empty, null), all.DefaultGroupBy);
+			Assert.NotEqual(BuildingCatalogGrouping.None, all.DefaultGroupBy);
+		}
+
+		[Fact]
+		public void AMenusDefaultGroupingFollowsTheAxisItsWholeCutsBest()
+		{
+			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.Equal(BuildingCatalogGrouping.Effective(string.Empty, false, StripAxes.AssetType, false, tab.GroupDimensions), tab.DefaultGroupBy);
+		}
+
+		[Fact]
+		public void TheWholeCatalogPublishesNoTabsAndKeepsItsDefaultGrouping()
+		{
+			// The row draws All alone with no menu, so a tab there is work nothing shows. The strip's
+			// axis still answers, because the default grouping reads it.
+			foreach (var query in new[] { new BuildingCatalogQuery(), new BuildingCatalogQuery(SearchText: "a") })
+			{
+				var view = Unscoped(query);
+
+				Assert.Empty(view.StripTabs);
+				Assert.Empty(view.ExpandedCategories);
+				Assert.Equal(StripAxes.Development, view.StripAxis);
+				Assert.Equal(BuildingCatalogGrouping.Development, view.EffectiveGroupBy);
+			}
+		}
+
+		[Fact]
+		public void TheStripsAxisIsChosenWithoutLookingUpATabsPicture()
+		{
+			// Only a tab's picture reads the whole menu, which the pack scope supplies when a pack is
+			// picked: a count of its calls counts the picture lookups.
+			var lookups = 0;
+			IReadOnlyList<BuildingCatalogEntry> Whole() { lookups++; return Everything; }
+
+			var unscoped = Unscoped(new BuildingCatalogQuery(SearchText: "Wind"), Whole);
+			_ = unscoped.StripAxis; _ = unscoped.EffectiveGroupBy; _ = unscoped.StripTabs; _ = unscoped.ExpandedCategories;
+			var power = new CatalogView(Power, new BuildingCatalogQuery(UiMenu: "Electricity"), packScope: Whole);
+			_ = power.StripAxis;
+
+			Assert.Equal(0, lookups);
+			Assert.Equal(StripAxes.Development, power.StripAxis);
+
+			// The tabs themselves look their pictures up, from the one whole menu.
+			_ = power.StripTabs;
+			Assert.Equal(1, lookups);
+		}
+
+		[Fact]
+		public void EveryDrawnTabIsCountedInOneWalkAsAClickMatchesIt()
+		{
+			// Branches, asset types and densities in one row, some rows spelt in another case than
+			// their tab, and one tab nothing matches.
+			var rows = new[]
+			{
+				Entry(61, "Low A", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.Low, DevTreeBranch = "Housing" },
+				Entry(62, "Low B", "Buildings", "Zones", "zonesresidential") with { ZoneType = ZoneTypeFilter.Low },
+				Entry(63, "High", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.High },
+				Entry(64, "Pipe", "Networks", "Water", "Water") with { DevTreeBranch = "housing" },
+				Entry(65, "Pump", "ServiceBuildings", "Water", "Water"),
+			};
+			var tabs = new[]
+			{
+				"Housing",
+				StripAxes.NetworkValue,
+				StripAxes.BuildingValue,
+				StripAxes.DensityTab.Format("ZonesResidential", BuildingCatalogLabels.DensityTier(ZoneTypeFilter.Low)),
+				StripAxes.DensityTab.Format("ZonesResidential", BuildingCatalogLabels.DensityTier(ZoneTypeFilter.Medium)),
+				"Nothing",
+			};
+			var counting = new CountingList(rows);
+
+			var counts = BuildingCatalogQueryEngine.StripCounts(counting, tabs);
+
+			Assert.Equal(tabs.Select(tab => rows.Count(row => BuildingCatalogQueryEngine.StripMatches(row, tab))), counts);
+			Assert.Equal(new[] { 2, 1, 4, 2, 0, 0 }, counts);
+			Assert.Equal(1, counting.Walks);
 		}
 
 		[Fact]
@@ -191,7 +575,7 @@ namespace BetterBuildingMenu.Tests
 			var view = new CatalogView(counting, new BuildingCatalogQuery(UiMenu: "Electricity"));
 
 			_ = view.Page; _ = view.MetricBounds; _ = view.FacetState; _ = view.MenuCategoryCounts;
-			_ = view.StripAxis; _ = view.StripTabs; _ = view.ExpandedCategories; _ = view.SchoolTierCounts;
+			_ = view.StripAxis; _ = view.StripTabs; _ = view.ExpandedCategories; _ = view.TierBracket;
 			_ = view.StripAxis; _ = view.MenuCategoryCounts; _ = view.Page;
 
 			Assert.Equal(1, counting.Walks);

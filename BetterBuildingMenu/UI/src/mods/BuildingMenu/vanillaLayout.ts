@@ -4,6 +4,7 @@ import { firstClassToken, setInlineStyle } from "./vanillaLayoutPure";
 
 const GAME_MAIN_SCREEN = "game-ui/game/components/game-main-screen.module.scss";
 const TOOLBAR = "game-ui/game/components/toolbar/toolbar.module.scss";
+const TOOLBAR_BUTTONS = "game-ui/game/components/toolbar/top/toolbar-button-strip/toolbar-button-strip.module.scss";
 
 /** A class the game's stylesheet module exports, or null — never a guess. */
 export function vanillaClass(modulePath: string, key: string): string | null {
@@ -16,13 +17,6 @@ export function vanillaClass(modulePath: string, key: string): string | null {
   }
 
   return firstClassToken((classes as Record<string, unknown> | undefined)?.[key]);
-}
-
-/** Vanilla's `.toolLayout`: the side + main + side trio the menu sits in. */
-export function findVanillaToolLayout(doc: Document): HTMLElement | null {
-  const cls = vanillaClass(GAME_MAIN_SCREEN, "toolLayout");
-
-  return cls ? doc.querySelector<HTMLElement>(`.${cls}`) : null;
 }
 
 /**
@@ -54,28 +48,54 @@ export function findVanillaToolbar(doc: Document): HTMLElement | null {
 }
 
 /**
- * The two patches vanilla's layout needs while the asset menu is open, applied on
- * mount and undone on unmount: `toolLayout` left-aligned, and the toolbar sunk
- * below us. See docs/design-notes.md, "Patching vanilla's layout for the asset menu".
+ * The bar's lit button: in the bar's button strip, matched on the strip module's own class, the
+ * button the game marks `selected`, the one whose menu is open. Null without the bar, the strip or a
+ * lit button. See docs/design-notes.md, "The notch".
  */
-export function useVanillaLayoutForAssetMenu(): void {
+export function findLitToolbarButton(doc: Document): HTMLElement | null {
+  const toolbar = findVanillaToolbar(doc);
+  const stripClass = vanillaClass(TOOLBAR_BUTTONS, "toolbarButtonStrip");
+
+  if (!toolbar || !stripClass) {
+    return null;
+  }
+
+  return toolbar.querySelector<HTMLElement>(`.${stripClass} button.selected`);
+}
+
+/**
+ * Vanilla's tool options column: the first child of `toolLayout`, left of the slot, matched on the
+ * module's own classes. The column right of the slot carries the same class and holds nothing.
+ */
+export function findVanillaToolOptionsColumn(doc: Pick<Document, "querySelector">): HTMLElement | null {
+  const layoutClass = vanillaClass(GAME_MAIN_SCREEN, "toolLayout");
+  const columnClass = vanillaClass(GAME_MAIN_SCREEN, "toolSideColumn");
+
+  if (!layoutClass || !columnClass) {
+    return null;
+  }
+
+  const first = doc.querySelector<HTMLElement>(`.${layoutClass}`)?.children[0] as HTMLElement | undefined;
+
+  return first?.classList?.contains(columnClass) ? first : null;
+}
+
+/**
+ * The patches vanilla's layout needs while the asset menu is open, each undone when no longer
+ * needed and on unmount: the toolbar sunk below the box and the pane, and the tool options column
+ * moved left by `toolOptionsShift` rem while the box reaches left of the game's slot. The game's
+ * own centring is left alone. See docs/design-notes.md, "Patching vanilla's layout for the asset menu".
+ */
+export function useVanillaLayoutForAssetMenu(toolOptionsShift: number | null): void {
   useEffect(() => {
-    const restores: Array<() => void> = [];
-    const layout = findVanillaToolLayout(document);
     const toolbar = findVanillaToolbar(document);
 
-    if (layout) {
-      restores.push(setInlineStyle(layout, "justifyContent", "flex-start"));
-    }
-
-    if (toolbar) {
-      restores.push(setInlineStyle(toolbar, "zIndex", "-1"));
-    }
-
-    return () => {
-      for (const restore of restores) {
-        restore();
-      }
-    };
+    return toolbar ? setInlineStyle(toolbar, "zIndex", "-1") : undefined;
   }, []);
+
+  useEffect(() => {
+    const column = toolOptionsShift === null ? null : findVanillaToolOptionsColumn(document);
+
+    return column ? setInlineStyle(column, "left", `${toolOptionsShift}rem`) : undefined;
+  }, [toolOptionsShift]);
 }

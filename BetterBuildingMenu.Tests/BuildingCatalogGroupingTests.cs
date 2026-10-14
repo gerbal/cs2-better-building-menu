@@ -566,6 +566,35 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ASmallMenusListGroupsByNoneWhereItWouldGroupByItsAxisOrItsTabs()
+		{
+			// The UI names a small menu drawn as a list with Small menus grow on: its labels would take the slots it grows into.
+			var garbage = new[] { "category", "subCategory", "role", "development", "source", "footprint", "cost", "none" };
+
+			Assert.Equal("none", BuildingCatalogGrouping.DefaultDimension(false, "development", false, drawsNoGroups: true));
+			Assert.Equal("none", BuildingCatalogGrouping.DefaultDimension(true, "development", false, drawsNoGroups: true));
+			Assert.Equal("none", BuildingCatalogGrouping.Effective("", false, "development", false, garbage, drawsNoGroups: true));
+			// A stored pick this menu does not offer falls back to the menu's default, which is none here.
+			Assert.Equal("none", BuildingCatalogGrouping.Effective("schoolTier", false, "development", false, garbage, drawsNoGroups: true));
+		}
+
+		[Fact]
+		public void AMenuTheUiDoesNotNameKeepsItsAxis()
+		{
+			var electricity = new[] { "category", "subCategory", "role", "development", "source", "footprint", "cost", "none" };
+
+			Assert.Equal("development", BuildingCatalogGrouping.Effective("", false, "development", false, electricity, drawsNoGroups: false));
+		}
+
+		[Fact]
+		public void APlayersGroupPickHoldsInASmallMenusList()
+		{
+			var garbage = new[] { "category", "subCategory", "role", "development", "source", "footprint", "cost", "none" };
+
+			Assert.Equal("development", BuildingCatalogGrouping.Effective("development", false, "development", false, garbage, drawsNoGroups: true));
+		}
+
+		[Fact]
 		public void AChoiceWinsAndAutoFallsThroughToTheDefault()
 		{
 			Assert.Equal("cost", BuildingCatalogGrouping.Effective("cost", true, "development", false));

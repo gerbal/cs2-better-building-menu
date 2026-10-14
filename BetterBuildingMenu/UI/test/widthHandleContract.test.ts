@@ -1,27 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { declarationsOf, everyDeclaration, rem, sides } from "./harness/compiledCss.ts";
+import { BODY_SIDE_MARGIN } from "../src/domain/assetMenuLayout.ts";
+import { declarationsOf, everyDeclaration, rem } from "./harness/compiledCss.ts";
 
 const HEIGHT = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const WIDTH = "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
-const CATALOG = "mods/BuildingCatalog/buildingCatalog.module.scss";
 const fill = (sheet: string, selector: string) => declarationsOf(sheet, selector)["background-color"];
 const topFill = (selector: string) => declarationsOf(HEIGHT, selector)["background-image"] ?? "";
 
 // The game draws no grips. Its one panel resizer fills white under the mouse and
 // while dragging, and its drag thumbs brighten in white, never in the accent.
 describe("the grab strips", () => {
-  const topStrip = declarationsOf(HEIGHT, ".resizeHandle");
   const topGrip = declarationsOf(HEIGHT, ".resizeGrip");
   const strip = declarationsOf(WIDTH, ".widthHandle");
   const grip = declarationsOf(WIDTH, ".widthGrip");
   const reach = declarationsOf(WIDTH, ".widthReach");
   const content = declarationsOf("mods/BuildingMenu/assetMenu.module.scss", ".content");
   const pane = declarationsOf("mods/ControlPane/controlPane.module.scss", ".pane");
-  const rightPadding = (selector: string) => {
-    const rule = declarationsOf(CATALOG, selector);
-    return rem(rule["padding-right"] ?? sides(rule.padding)[1]);
-  };
 
   it("paint nothing down the catalog's side until the mouse is on them", () => {
     for (const property of ["background", "background-color", "background-image", "backdrop-filter"]) {
@@ -64,30 +59,62 @@ describe("the grab strips", () => {
     }
   });
 
-  it("fit the catalog's right margin in every density, so the catalog keeps its width", () => {
-    for (const selector of [".catalog", ".densityDefault", ".densityExpanded", ".densityCompact"]) {
-      assert.ok(rem(strip.width) <= rightPadding(selector), `${selector}: ${strip.width} over ${rightPadding(selector)}rem`);
-    }
+  it("fit the bodies' side margin, so the catalog keeps its width", () => {
+    assert.ok(rem(strip.width) <= BODY_SIDE_MARGIN, `${strip.width} over the bodies' ${BODY_SIDE_MARGIN}rem`);
     assert.equal(content["padding-right"], undefined, "the catalog is not pushed in");
   });
 
-  it("run the catalog's full height at its right edge, above it", () => {
-    assert.equal(strip.top, "0");
+  it("run the box's right edge from under the top row to its bottom, past the tab row, above the body", () => {
+    // Clear of close, which ends on the top row's inner edge, and down past the tab row's band.
+    const topBand = declarationsOf("mods/TopRow/topRow.module.scss", ".topBand");
+    const topRow = declarationsOf("mods/TopRow/topRow.module.scss", ".topRow");
+
+    assert.equal(rem(strip.top), rem(topBand["padding-top"]) + rem(topRow.height));
     assert.equal(strip.bottom, "0");
     assert.equal(strip.right, "0");
     assert.equal(strip["z-index"], "1");
   });
 
-  it("carry a side pill as long as the top one, half as thick", () => {
+  it("is 6 rem wide, so a body's 3 rem scroll track at the box's edge stays clear", () => {
+    assert.equal(strip.width, "6rem");
+  });
+
+  it("mirror on the box's left edge, as wide, down the body alone, lit under the mouse by itself", () => {
+    const left = declarationsOf(WIDTH, ".widthHandleLeft");
+    const band = declarationsOf("mods/TabRow/tabRow.module.scss", ".band");
+    const tabBand = rem(band["padding-top"]) + rem(declarationsOf("mods/TabRow/tabRow.module.scss", ".tabRow").height) + rem(band["padding-bottom"]);
+
+    assert.equal(left.width, strip.width);
+    assert.equal(left.left, "0");
+    assert.equal(left.top, strip.top);
+    assert.equal(rem(left.bottom), tabBand, "clear of the tab row, whose All cell starts inside it");
+    assert.equal(left["z-index"], strip["z-index"]);
+    assert.ok(rem(left.width) <= BODY_SIDE_MARGIN);
+    assert.equal(fill(WIDTH, ".widthHandleLeft:hover"), "rgba(255, 255, 255, 0.1)");
+    assert.equal(fill(WIDTH, ".widthHandleLeft:hover .widthGrip"), "rgba(var(--scrollbarColor), 0.8)");
+    for (const property of ["background", "background-color", "background-image"]) {
+      assert.equal(left[property], undefined, property);
+    }
+  });
+
+  it("lie clear of the tab row's readout: the band's right padding is the strip's width", () => {
+    const band = declarationsOf("mods/TabRow/tabRow.module.scss", ".band");
+
+    assert.equal(band["padding-right"], strip.width);
+  });
+
+  it("carry a side pill as long as the top one, half as thick, never past its strip", () => {
     assert.equal(grip.height, topGrip.width);
+    // A collapsed box's strip runs down its tab row alone, shorter than the pill.
+    assert.equal(grip["max-height"], "100%");
     assert.equal(rem(grip.width), rem(topGrip.height) / 2);
     assert.equal(rem(grip["border-radius"]), rem(grip.width) / 2);
   });
 
-  it("reach across the gap beside the pane, below the top strip, taking presses", () => {
+  it("reach across the gap beside the pane, as far down as the strip, taking presses", () => {
     assert.equal(reach.width, pane["margin-left"]);
     assert.equal(reach.right, `-${pane["margin-left"]}`);
-    assert.equal(reach.top, topStrip.height);
+    assert.equal(reach.top, strip.top);
     assert.equal(reach.bottom, "0");
     assert.equal(reach["pointer-events"], "auto");
     assert.equal(reach["z-index"], "30");

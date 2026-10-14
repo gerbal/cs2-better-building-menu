@@ -5,7 +5,7 @@
 		<AssemblyName>BetterBuildingMenu</AssemblyName>
 		<RootNamespace>BetterBuildingMenu</RootNamespace>
 		<Configurations>Debug;Release</Configurations>
-		<Version>0.2.4</Version>
+		<Version>0.3.0</Version>
 		<FileVersion>$(Version)</FileVersion>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<Company>gerbal</Company>
@@ -43,6 +43,7 @@
 		<Reference Include="Colossal.Collections" HintPath="$(CS2ManagedPath)/Colossal.Collections.dll" Private="false" />
 		<Reference Include="Colossal.Logging" HintPath="$(CS2ManagedPath)/Colossal.Logging.dll" Private="false" />
 		<Reference Include="Colossal.IO.AssetDatabase" HintPath="$(CS2ManagedPath)/Colossal.IO.AssetDatabase.dll" Private="false" />
+		<Reference Include="Colossal.AssetPipeline" HintPath="$(CS2ManagedPath)/Colossal.AssetPipeline.dll" Private="false" />
 		<Reference Include="Colossal.UI" HintPath="$(CS2ManagedPath)/Colossal.UI.dll" Private="false" />
 		<Reference Include="Colossal.UI.Binding" HintPath="$(CS2ManagedPath)/Colossal.UI.Binding.dll" Private="false" />
 		<Reference Include="Colossal.Localization" HintPath="$(CS2ManagedPath)/Colossal.Localization.dll" Private="false" />

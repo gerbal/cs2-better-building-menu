@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { catalogPage, entry } from "../harness/render";
+import { catalogPage, entry, showBody } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 
@@ -34,8 +34,7 @@ describe("what a keystroke re-renders", () => {
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
     globals.requestAnimationFrame = () => 0;
     globals.cancelAnimationFrame = () => undefined;
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
-    setAssetMenuView({ viewMode: "table" });
+    showBody("list");
   });
 
   afterEach(() => {
@@ -47,11 +46,16 @@ describe("what a keystroke re-renders", () => {
     root = create(<BuildingCatalogComponent />);
   });
 
-  for (const mode of ["table", "grid", "list", "cards"]) {
-    it(`leaves the rows alone in ${mode} mode when only the search box moves`, () => {
+  // A query draws the list in a menu whose view is the tiles, so that case says so.
+  for (const body of ["tiles", "list", "cards"]) {
+    const drawn = body === "tiles" ? "the list a tiles menu draws under a query" : `the ${body} body`;
+
+    it(`leaves the rows alone in ${drawn} when only the search box moves`, () => {
       // The box echoes every keystroke, and the catalog reads it; the rows'
-      // props do not change until the page does.
-      setAssetMenuView({ viewMode: mode });
+      // props do not change until the page does. The first letter turns tiles
+      // to the list, so the query is under way before the count starts.
+      showBody(body);
+      setBinding("BetterBuildingMenu", "CurrentSearch", "c");
       setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([counted(1), counted(2), counted(3)]));
       mount();
       const afterMount = reads;
@@ -59,8 +63,8 @@ describe("what a keystroke re-renders", () => {
       act(() => setBinding("BetterBuildingMenu", "CurrentSearch", "cli"));
       act(() => setBinding("BetterBuildingMenu", "CurrentSearch", "clin"));
 
-      assert.ok(afterMount > 0, `${mode}: the rows drew once`);
-      assert.equal(reads, afterMount, mode);
+      assert.ok(afterMount > 0, `${body}: the rows drew once`);
+      assert.equal(reads, afterMount, body);
     });
   }
 

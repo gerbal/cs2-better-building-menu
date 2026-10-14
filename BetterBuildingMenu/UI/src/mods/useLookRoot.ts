@@ -1,0 +1,40 @@
+import { useValue } from "cs2/api";
+import classNames from "classnames";
+import type { CSSProperties } from "react";
+
+import { useInterfaceTransparency } from "domain/interfaceTransparencySetting";
+import { lookOf, surfaceAlphaStyle, type LookId } from "domain/looks";
+import looks from "looks/looks.module.scss";
+import { AssetMenuLook$, AssetMenuTuning$ } from "mods/bindings";
+
+/** What a root of BBM's own carries to take the look: its id, its classes and its panels' alphas. */
+export interface LookRoot {
+  id: LookId;
+  className: string;
+  style: CSSProperties;
+}
+
+/**
+ * Each finished look's class, named as the stylesheet declares it; a look joins here as it joins the Look
+ * row. `lookOf` returns only a finished look, so every look drawn has its class here, as a test holds.
+ */
+const LOOK_CLASS: Readonly<Partial<Record<LookId, string>>> = { standard: looks.standard, plates: looks.plates };
+
+/**
+ * What a root of BBM's own carries to take the look: the look's id, its class, the game's interface
+ * style followed unless the developer knob says not, and the panels' alphas under the game's
+ * transparency. The box, the control pane and the upgrades panel each carry it, since custom properties
+ * reach only a root's own children. A look switch changes the class and nothing remounts. See
+ * docs/design-notes.md, "The looks' tokens".
+ */
+export function useLookRoot(): LookRoot {
+  const transparency = useInterfaceTransparency();
+  const tuning = useValue(AssetMenuTuning$);
+  const look = lookOf(useValue(AssetMenuLook$));
+
+  return {
+    id: look.id,
+    className: classNames(LOOK_CLASS[look.id], tuning.interfaceStyles && looks.followStyle),
+    style: surfaceAlphaStyle(transparency, look.alphas),
+  };
+}

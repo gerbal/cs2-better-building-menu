@@ -16,6 +16,9 @@ import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { useUnitSystem } from "domain/unitSettings";
+import { useStateWords, useUnitMarks } from "mods/Bodies/useBodyWords";
+import { keyFigure, sortedText } from "domain/rowNumbers";
+import type { LookRoot } from "mods/useLookRoot";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
 
@@ -30,6 +33,8 @@ interface BuildingListProps {
   entries: BuildingCatalogEntry[];
   onPlace: (entry: BuildingCatalogEntry) => void;
   variant?: BuildingListVariant;
+  /** The look of the panel the list draws in, which its tooltip's card carries outside the panel. */
+  look: LookRoot;
   /**
    * The entry whose tool is active, where the caller knows it — the extension
    * menu does, from vanilla's own selectedUpgrade. The build menu passes none.
@@ -42,24 +47,21 @@ interface BuildingListProps {
  * what a building is called among hundreds. Cards adds one line of constraints
  * (does it fit, can I afford it), never comparisons.
  */
-export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
+export const BuildingList = ({ entries, onPlace, variant = "compact", look, selectedId }: BuildingListProps) => {
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate, useUnitSystem());
-  // The same card the grid and the table show, so which facts a building
-  // states does not depend on which view mode the player is in.
+  // The same card every body shows, so which facts a building states does not
+  // depend on the body the menu draws.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
-  const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
-  // The game's own words first, so the row reads as vanilla's does; see the
-  // hover card, which asks for the same key.
-  const builtLabel =
-    translate("Toolbar.ASSET_ALREADY_BUILT", "")
-    || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
-    || "Already built";
+  // The words every body says why a building cannot be placed with.
+  const { locked: lockedLabel, built: builtLabel } = useStateWords();
+  // In a look that writes units in words, a capacity says its unit as the build menu's rows do.
+  const marks = useUnitMarks();
   const cards = variant === "cards";
 
   const place = (entry: BuildingCatalogEntry) => {
-    // See BuildingGrid: locked assets are shown and refused, not hidden.
+    // Locked assets are shown and refused, not hidden, as vanilla refuses them.
     if (!canPlace(entry)) return;
 
     onPlace(entry);
@@ -71,8 +73,10 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
       return null;
     }
 
-    const text = sortedMetric === "lot"
-      ? (hasFootprint(entry.lotWidth, entry.lotDepth)
+    // In a look that writes units in words, a count says its unit as the build menu's rows do.
+    const text = marks.mode === "word" && (sortedMetric === "workers" || sortedMetric === "capacity")
+      ? sortedText(entry, sortedMetric, separators, marks)
+      : sortedMetric === "lot" ? (hasFootprint(entry.lotWidth, entry.lotDepth)
         ? formatLotDimensions(entry.lotWidth, entry.lotDepth)
         : null)
       : (() => {
@@ -98,13 +102,14 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
         // Category-aware, returning nothing where capacity means nothing, so
         // this needs no rule per category of its own.
-        const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
+        const capacity = (marks.mode === "word" ? keyFigure(entry, "capacity", separators, marks)?.text : undefined)
+          ?? formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
         // Zero is not a capacity fact: an upgrade that adds no students is
         // common, and "0 students" reads as a figure while carrying nothing.
         const hasCapacity = capacity !== "" && capacity !== "—" && (entry.capacity ?? 0) !== 0;
 
         return (
-          <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard}>
+          <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard} look={look}>
             <Button
               className={classNames(styles.item, cards && styles.itemCard, selectedId === entry.id && styles.itemSelected)}
               variant="icon"
@@ -125,9 +130,9 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
               data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
               data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
             >
-              {/* The picture and its badge share a box, as the tile's do, so
+              {/* The picture and its badge share a box, as the tiles' do, so
                   the mark sits ON the building. Sized from base.scss's ratio,
-                  so it reads the same against a row icon and a grid tile. */}
+                  so it reads the same against a row icon, a card and a tile. */}
               {entry.thumbnail
                 ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
                     <img

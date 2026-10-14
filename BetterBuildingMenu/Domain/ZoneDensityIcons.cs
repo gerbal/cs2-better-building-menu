@@ -10,7 +10,7 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Vanilla ships one icon per pair, in the colours the zoning map paints, so the
-	/// strip uses the marks a player already knows. Keyed on the pair, not the tier
+	/// tab row uses the marks a player already knows. Keyed on the pair, not the tier
 	/// alone: "Low" sits under three families, each with its own icon.
 	/// </remarks>
 	public static class ZoneDensityIcons
@@ -39,7 +39,7 @@ namespace BetterBuildingMenu.Domain
 		/// The icon for one tier tab, or empty when the game ships none.
 		/// </summary>
 		/// <remarks>
-		/// Empty rather than a guess: the strip falls back to the category's own icon,
+		/// Empty rather than a guess: a tab with no icon draws the menu's and says its name,
 		/// where a derived path like ZoneIndustrialLow would render as a silent hole.
 		/// </remarks>
 		public static string For(string? uiCategory, ZoneTypeFilter density)

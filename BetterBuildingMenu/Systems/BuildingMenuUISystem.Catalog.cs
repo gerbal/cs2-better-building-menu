@@ -1,4 +1,6 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
+using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
 using System;
 using System.Linq;
@@ -44,14 +46,16 @@ namespace BetterBuildingMenu.Systems
 
 			// One view, built once; every publish below reads it. See CatalogView.
 			var menu = _assetMenu.Menu;
-			var menuHasCategories = source.Index.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
+			var noGroups = _menusDrawingNoGroups.Contains(menu);
+			// The said-once share is C#'s alone: the shared values are counted over the whole view.
 			var view = _buildingCatalogAdapter.Build(
 				source,
-				_assetMenu.Query,
+				_assetMenu.Query with { SaidOnceAt = CurrentSaidOnceAt() },
 				_toolbarSelection,
-				built => BuildingCatalogGrouping.Effective(
-					_assetMenu.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
+				built => built.GroupFor(_assetMenu.Query.GroupBy, _assetMenu.Query.SearchText, noGroups));
 			BuildingCatalogPage page = view.Page;
+			// What a GROUP pick is compared with: the menu's default, which takes a menu's own pick away.
+			_menuDefaultGroup = view.GroupFor(string.Empty, null, noGroups);
 
 			// A search that matches nothing in the current section reads as "this building does
 			// not exist" when it usually means "not here". With auto-widen on a scoped miss drops
@@ -69,15 +73,21 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// Counted over the query "Search everywhere" runs, so the notice promises what
-			// the button delivers.
+			// the button delivers. Only counted: no row's word nor the view's facts.
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText)
-					? _buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery(), _toolbarSelection).Page.TotalCount
+					? _buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery() with { WithFacts = false }, _toolbarSelection).Page.TotalCount
 					: 0;
 			var pageMs = Lap();
+			// The window the page served is the one the state keeps, so Load more grows from the anchored row.
+			_assetMenu = _assetMenu.CoverAnchor(page.AnchorIndex);
+			// And the step Enter's target takes, which stops at the list's ends.
+			_assetMenu = _assetMenu.KeepEnterStep(page.EnterStep);
 			_BuildingCatalogBinding.Value = page with
 			{
 				Status = AssetMenuState.GetPageStatus(source.Index.IsReady, page.TotalCount),
+				// The UI puts the list in place once per start. See docs/design-notes.md, "Opening on the building's tab".
+				ListStart = _assetMenu.ListStart,
 			};
 			// Publish the order the query actually ran with, so the header can
 			// never disagree with the rows beneath it.
@@ -97,6 +107,7 @@ namespace BetterBuildingMenu.Systems
 			// too, and a tab that cannot say how much is behind it is the same
 			// dead end as a facet option that cannot.
 			_AssetMenuCategoryCounts.Value = view.MenuCategoryCounts.ToArray();
+			_AssetMenuAllCount.Value = view.AllCount;
 			var countsMs = Lap();
 			// Resolved ahead of the tabs counted on it, so the log times the two apart.
 			_ = view.StripAxis;
@@ -111,8 +122,14 @@ namespace BetterBuildingMenu.Systems
 			// single (category, tabs) pair could not describe.
 			_AssetMenuExpandedCategories.Value = view.ExpandedCategories.ToArray();
 			var expandedMs = Lap();
-			_AssetMenuSchoolTierCounts.Value = view.SchoolTierCounts.ToArray();
+			_AssetMenuTierBracket.Value = view.TierBracket;
+			_tierParent = view.TierBracket.ParentCategory;
 			var tiersMs = Lap();
+			// Read before the shares' own builds add theirs: the line below times this refresh's projection.
+			var projectionMs = _buildingCatalogAdapter.LastProjectionMs;
+			var projectionWasHit = _buildingCatalogAdapter.LastProjectionWasHit;
+			var sharesCounted = PublishMenuShares(source);
+			var sharesMs = Lap();
 			refreshTimer.Stop();
 			// Every refresh, and named by its caller: one line per user action is the only way
 			// a redundant refresh is visible at all. At Debug, which a development build turns
@@ -121,11 +138,58 @@ namespace BetterBuildingMenu.Systems
 			if (Mod.Log.isLevelEnabled(Colossal.Logging.Level.Debug))
 			{
 				Mod.Log.Debug($"[ASSET-MENU-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
-					+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
-					+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
+					+ $"proj={projectionMs}ms({(projectionWasHit ? "hit" : "miss")}) "
+					+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} shares={sharesMs} "
 					+ $"menu='{_assetMenu.Menu}' total={page.TotalCount} from={caller}");
+
+				// On a line of its own, as it runs once per index generation: its cost shows apart from the refresh's.
+				if (sharesCounted)
+				{
+					Mod.Log.Debug($"[ASSET-MENU-SHARES] {sharesMs}ms menu='{_assetMenu.Menu}' generation={source.Generation}");
+				}
 			}
 		}
+
+		/// <summary>What the look's Auto rule and the small menus read of the open menu, counted once per index generation; true when it counted.</summary>
+		/// <remarks>
+		/// Over the whole menu, with nothing of the toolbar's row, a filter or a search, so a filter never
+		/// changes a body; with the toolbar's row untouched that is this refresh's own snapshot, cached.
+		/// Only the open menu: a unique placed or an unlock moves the generation, and Auto reads no other.
+		/// A count that throws is tried again next refresh. See docs/design-notes.md, "The bodies".
+		/// </remarks>
+		private bool PublishMenuShares(CatalogSource source)
+		{
+			// The menu's All in its own grouping, built once and only when the ledger counts. Without its facts and
+			// words, as nothing reads this page's rows.
+			CatalogView? all = null;
+			CatalogView All() => all ??= _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu, WithFacts: false), VanillaToolbarSelection.None, built => built.DefaultGroupBy);
+
+			try
+			{
+				if (!_menuShares.Count(_assetMenu.Menu, source.Generation, () => All().MenuSet, () => All().Page.Sections, () => All().MenuCategoryCounts.Count))
+				{
+					return false;
+				}
+			}
+			catch (Exception e)
+			{
+				if (!_menuSharesWarned)
+				{
+					_menuSharesWarned = true;
+					Mod.Log.Warn(e, $"Could not count the share of '{_assetMenu.Menu}'; its body is the list until a count succeeds");
+				}
+
+				return false;
+			}
+
+			_MenuShares.Value = _menuShares.Shares;
+
+			return true;
+		}
+
+		/// <summary>The Said once at knob, through the one rule every knob is read by: a share in percent, 0 for none.</summary>
+		private static int CurrentSaidOnceAt() =>
+			Tuning.OneOf(Tuning.SaidOnceAtValues, Knobs.Value(settings => settings.DevSaidOnceAt, Tuning.SaidOnceAt), Tuning.SaidOnceAt);
 
 		/// <summary>Publishes the milestone names the UI labels locked assets with.</summary>
 		private void RefreshAssetMenuNavigation()

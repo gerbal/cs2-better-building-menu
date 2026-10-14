@@ -131,10 +131,13 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>
 		/// The strip and the headings answer the same question, so they must not open on different
 		/// answers: the education menu draws school levels in its category's place and is asked
-		/// first, then a menu with categories of its own, then the strip's axis.
+		/// first, then a menu with categories of its own, then the strip's axis. A small menu of one tab
+		/// drawn as a list with Small menus grow on, which the UI names, draws no groups: its labels would
+		/// take the slots it grows into. See docs/design-notes.md, "The bodies".
 		/// </remarks>
-		public static string DefaultDimension(bool menuHasCategories, string? stripAxis, bool educationMenu)
+		public static string DefaultDimension(bool menuHasCategories, string? stripAxis, bool educationMenu, bool drawsNoGroups = false)
 		{
+			if (drawsNoGroups) return None;
 			if (educationMenu) return SchoolTier;
 			if (menuHasCategories) return MenuCategory;
 
@@ -146,11 +149,11 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>The choice when there is one, otherwise the default. Empty means auto.</summary>
-		public static string Effective(string? choice, bool menuHasCategories, string? stripAxis, bool educationMenu) =>
-			IsDimension(choice) ? choice.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu);
+		public static string Effective(string? choice, bool menuHasCategories, string? stripAxis, bool educationMenu, bool drawsNoGroups = false) =>
+			IsDimension(choice) ? choice.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu, drawsNoGroups);
 
 		/// <summary>
-		/// <see cref="Effective(string?, bool, string?, bool)"/>, held to the
+		/// <see cref="Effective(string?, bool, string?, bool, bool)"/>, held to the
 		/// dimensions the menu actually offers.
 		/// </summary>
 		/// <remarks>
@@ -163,9 +166,10 @@ namespace BetterBuildingMenu.Domain
 			bool menuHasCategories,
 			string? stripAxis,
 			bool educationMenu,
-			IReadOnlyCollection<string> offered)
+			IReadOnlyCollection<string> offered,
+			bool drawsNoGroups = false)
 		{
-			var plain = Effective(choice, menuHasCategories, stripAxis, educationMenu);
+			var plain = Effective(choice, menuHasCategories, stripAxis, educationMenu, drawsNoGroups);
 
 			if (offered.Count == 0 || !IsGrouped(plain) || offered.Contains(plain))
 			{
@@ -174,12 +178,17 @@ namespace BetterBuildingMenu.Domain
 
 			var candidates = new[]
 			{
-				DefaultDimension(menuHasCategories, stripAxis, educationMenu),
+				DefaultDimension(menuHasCategories, stripAxis, educationMenu, drawsNoGroups),
 				DefaultDimension(false, stripAxis, educationMenu),
 			}.Concat(Dimensions.Where(IsGrouped));
 
 			return candidates.FirstOrDefault(offered.Contains) ?? None;
 		}
+
+		/// <summary>The grouping a page is ordered by: none while a query is typed, so the whole menu ranks as one list.</summary>
+		/// <remarks>The player's choice is kept in the query, and applies again when the search clears.</remarks>
+		public static string WhileSearching(string effective, string? searchText) =>
+			string.IsNullOrWhiteSpace(searchText) ? effective : None;
 
 		/// <summary>
 		/// Outermost group key. Empty when the dimension is unknown or "none",

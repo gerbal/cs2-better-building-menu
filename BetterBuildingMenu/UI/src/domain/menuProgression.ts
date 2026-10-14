@@ -12,11 +12,22 @@ export interface MenuBranchCount {
   label?: string;
 }
 
-/** One category's sub-tabs, drawn in its place in the strip. */
+/** One category's sub-tabs, drawn in its place in the tab row. */
 export interface MenuCategoryTabs {
   categoryId: string;
   tabs: MenuBranchCount[];
 }
+
+/** Education's levels, drawn beside the tab that holds its schools. See TierBracket.cs. */
+export interface TierBracket {
+  /** The tab the levels sit in; empty outside Education. */
+  parentCategory: string;
+  parentCount: number;
+  tiers: MenuBranchCount[];
+}
+
+/** No levels: every menu but Education, and the first frame before C# answers. */
+export const NO_TIER_BRACKET: TierBracket = { parentCategory: "", parentCount: 0, tiers: [] };
 
 /**
  * The sub-tabs that stand in for one category, or none. A lookup rather than a
@@ -32,7 +43,8 @@ export function expandedTabsFor(
 /**
  * What a tab's tooltip says, which is more than the tab carries: a density tab
  * is drawn IN ITS FAMILY'S PLACE, so nothing else on the row names the family.
- * `label` marks those; a self-naming development branch has none.
+ * `label` marks those; a self-naming development branch has none, and arrives
+ * with its id as the label (MenuBranchCount.DisplayLabel).
  */
 export function branchTabTooltip(
   tab: MenuBranchCount | null | undefined,
@@ -40,7 +52,7 @@ export function branchTabTooltip(
 ): string {
   const tier = (tab?.label ?? "").trim();
 
-  if (tier === "") {
+  if (tier === "" || tier === tab?.id) {
     return tab?.id ?? "";
   }
 
@@ -105,26 +117,5 @@ export function schoolTierLabel(level: number): string {
       return "University";
     default:
       return `Level ${level}`;
-  }
-}
-
-
-/**
- * The rank a school-level tab draws over its glyph. Roman, because an arabic
- * numeral would read as a COUNT — every other number on this row is one. Stops
- * at IV, the game's whole range, rather than pretend to be a converter.
- */
-export function romanNumeral(level: number): string {
-  switch (level) {
-    case 1:
-      return "I";
-    case 2:
-      return "II";
-    case 3:
-      return "III";
-    case 4:
-      return "IV";
-    default:
-      return String(level);
   }
 }

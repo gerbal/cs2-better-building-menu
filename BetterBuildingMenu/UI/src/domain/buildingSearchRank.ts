@@ -26,29 +26,34 @@ export function getSearchScopeNotice(state: {
   return { elsewhere: state.elsewhere, canWiden: true };
 }
 
-/** Arm this entry, wait for the page that answers this search, or do nothing. */
-export type EnterDecision<T> = { arm: T } | { wait: string } | null;
+/** Whether the page answers the query in the box: it trails the box by a debounce. */
+export function pageAnswers(page: { searchText?: string | null } | null | undefined, query: string): boolean {
+  return (page?.searchText ?? "").trim() === query.trim();
+}
+
+/** Arm this prefab, wait for the page that answers this search, or do nothing. */
+export type EnterDecision = { arm: number } | { wait: string } | null;
 
 /**
- * What Enter does: arm the backend's best match for an active search, since a
- * grouped page's first row need not be it. The page trails the box by a
- * debounce, so until it answers the search in the box, Enter waits for it.
+ * What Enter does: arm the backend's best match for an active search, by id,
+ * whether or not its row is loaded: C# chooses it from the whole result, whatever
+ * the sort. The page trails the box by a debounce, so until it answers the search
+ * in the box, Enter waits for it.
  */
-export function enterDecision<T extends { id: number }>(
-  page: { items: readonly T[]; bestMatchId?: number | null; searchText?: string | null },
+export function enterDecision(
+  page: { bestMatchId?: number | null; searchText?: string | null },
   rawQuery: string
-): EnterDecision<T> {
+): EnterDecision {
   const query = rawQuery.trim();
   if (!query) {
     return null;
   }
 
-  if ((page.searchText ?? "").trim() !== query) {
+  if (!pageAnswers(page, query)) {
     return { wait: query };
   }
 
-  const target = page.bestMatchId == null ? undefined : page.items.find((item) => item.id === page.bestMatchId);
-  return target ? { arm: target } : null;
+  return page.bestMatchId == null ? null : { arm: page.bestMatchId };
 }
 
 /** Enter, by code: Cohtml leaves `key` empty for some keys. */
@@ -83,4 +88,43 @@ export function isEnterForSearch(target: unknown, fromSearchField: boolean): boo
   const tag = typeof element?.tagName === "string" ? element.tagName.toUpperCase() : "";
 
   return tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT" && element?.isContentEditable !== true;
+}
+
+/** A key the search field passes to the list while it has the keys. */
+export type SearchFieldKey = "up" | "down" | "pageUp" | "pageDown";
+
+const FIELD_KEYS_BY_NAME = new Map<string, SearchFieldKey>([
+  ["ArrowUp", "up"],
+  ["ArrowDown", "down"],
+  ["PageUp", "pageUp"],
+  ["PageDown", "pageDown"],
+]);
+
+const FIELD_KEYS_BY_CODE = new Map<number, SearchFieldKey>([
+  [38, "up"],
+  [40, "down"],
+  [33, "pageUp"],
+  [34, "pageDown"],
+]);
+
+/**
+ * Which of the list's keys a keydown is, by `key` or by `keyCode` (Cohtml can leave `key` empty), or
+ * null. Held with a modifier they select or edit the field's text, so they stay the field's.
+ */
+export function searchFieldKey(event: {
+  key?: unknown;
+  keyCode?: unknown;
+  shiftKey?: unknown;
+  ctrlKey?: unknown;
+  altKey?: unknown;
+  metaKey?: unknown;
+}): SearchFieldKey | null {
+  if (event.shiftKey === true || event.ctrlKey === true || event.altKey === true || event.metaKey === true) {
+    return null;
+  }
+
+  const byName = typeof event.key === "string" ? FIELD_KEYS_BY_NAME.get(event.key) : undefined;
+  const byCode = typeof event.keyCode === "number" ? FIELD_KEYS_BY_CODE.get(event.keyCode) : undefined;
+
+  return byName ?? byCode ?? null;
 }

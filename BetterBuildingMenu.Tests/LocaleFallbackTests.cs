@@ -59,4 +59,27 @@ public sealed class LocaleFallbackTests
         Assert.Equal("Replace the build menu", English[OptionKey]);
         Assert.False(English.ContainsKey("Extra"));
     }
+
+    [Fact]
+    public void UntranslatedKeys_IsNoneInEnglish()
+    {
+        Assert.Empty(LocaleFallback.UntranslatedKeys(LocaleFallback.EnglishLocaleId, English, null));
+    }
+
+    [Fact]
+    public void UntranslatedKeys_NamesEachKeyOfOursTheTranslationLacksOrLeavesBlank()
+    {
+        // The game fills a gap in the active language from English, so a key the translation
+        // lacks still resolves: only this list says the English is not the player's language.
+        var german = new Dictionary<string, string> { [OptionKey] = "Baumenü ersetzen", [LabelKey] = " " };
+
+        Assert.Equal(new[] { LabelKey }, LocaleFallback.UntranslatedKeys("de-DE", English, german));
+        Assert.Equal(new[] { OptionKey }, LocaleFallback.UntranslatedKeys("de-DE", English, new Dictionary<string, string> { [LabelKey] = "Suche" }));
+    }
+
+    [Fact]
+    public void UntranslatedKeys_IsEveryKeyOfOursInALanguageWithNoTranslation()
+    {
+        Assert.Equal(new[] { OptionKey, LabelKey }, LocaleFallback.UntranslatedKeys("nl-NL", English, null));
+    }
 }

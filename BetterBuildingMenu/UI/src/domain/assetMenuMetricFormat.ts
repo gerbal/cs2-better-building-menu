@@ -10,26 +10,6 @@ import type { AssetMenuMetric } from "./assetMenuLayout";
 export const METRIC_NO_DATA = "—";
 
 /**
- * Rendered when a metric does not apply to this KIND of thing. Deliberately not
- * the dash: both states show in one row, and printing them alike says the
- * building might have a level we failed to read.
- */
-export const METRIC_NOT_APPLICABLE = "·";
-
-/**
- * A building's level, or a mark saying it has none. Zone buildings run 1 to 5,
- * so a 0 is the game saying this kind of thing has no levels; a null is the
- * wire failing to send one at all, which is a real gap and gets the dash.
- */
-export function formatBuildingLevel(level: number | null | undefined): string {
-  if (typeof level !== "number" || !Number.isFinite(level)) {
-    return METRIC_NO_DATA;
-  }
-
-  return level >= 1 ? String(level) : METRIC_NOT_APPLICABLE;
-}
-
-/**
  * A construction cost of exactly zero — real, and different from unknown.
  * English rather than a locale key because this module is pure and cannot call
  * `translate`; `localizableStrings` registers it as debt.
@@ -310,6 +290,90 @@ export function groupDigits(value: number, separators: NumberSeparators = FALLBA
 export const PER_DISTANCE_SUFFIX = "/km";
 export const PER_MILE_SUFFIX = "/mi";
 
+/**
+ * The cells a kilometre of network holds. A network is priced by the cell and the index carries a
+ * kilometre's worth, as PrefabFacts multiplies it; a body's row says the cell's, which leaves a road's
+ * name its room and needs no unit system: a cell is a cell in miles too.
+ */
+export const NET_CELLS_PER_KILOMETRE = 125;
+const PER_CELL_SUFFIX = "/c";
+
+/** A network's construction cost per cell, from its per-kilometre figure, to the whole coin, half up. */
+export function costPerCell(perKilometre: number): number {
+  return Math.round(perKilometre / NET_CELLS_PER_KILOMETRE);
+}
+
+/** A network's construction cost per cell, from its per-kilometre figure, in the game's money template. */
+export function formatCostPerCell(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+
+  return applyMoneyTemplate(money.plain, groupDigits(costPerCell(perKilometre), separators)) + PER_CELL_SUFFIX;
+}
+
+/**
+ * A network's monthly upkeep per cell, from its per-kilometre figure, to one decimal, since a cell's
+ * share of a cheap road's bill is under a coin; in the template for a total, the month Sort's to say.
+ */
+export function formatUpkeepPerCell(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+
+  return applyMoneyTemplate(money.plain, groupDigits(perKilometre / NET_CELLS_PER_KILOMETRE, separators)) + PER_CELL_SUFFIX;
+}
+
+/**
+ * A network's monthly upkeep per cell with its month, where nothing beside it names the month: the
+ * game's per-kilometre monthly template with the cell in the kilometre's place, in the game's own
+ * spacing ("¢3.9 /c/mo."). Where that template does not hold the kilometre's unit, the month's template.
+ */
+export function formatMonthlyUpkeepPerCell(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+  const digits = groupDigits(perKilometre / NET_CELLS_PER_KILOMETRE, separators);
+  // What the per-kilometre template sets after the value, " /km", and the same with the cell, " /c".
+  const kilometre = money.perKilometre.split("{VALUE}")[1] ?? "";
+  const cell = kilometre.replace(/[^\s/]+$/u, PER_CELL_SUFFIX.slice(1));
+
+  return kilometre !== "" && cell !== kilometre && money.perKilometrePerMonth.includes(kilometre)
+    ? applyMoneyTemplate(money.perKilometrePerMonth.replace(kilometre, cell), digits)
+    : applyMoneyTemplate(money.perMonth, digits + PER_CELL_SUFFIX);
+}
+
+/**
+ * A network's money figure per cell, its cost or its monthly upkeep, from its per-kilometre figure, in
+ * its short forms as compactMoneyForms says a total, each keeping its cell: the cell tells a network's
+ * figure from a building's whole one.
+ */
+export function compactCostPerCellForms(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
+  return compactMoneyForms(perKilometre / NET_CELLS_PER_KILOMETRE, separators).map((form) => form + PER_CELL_SUFFIX);
+}
+
+/**
+ * A per-kilometre rate becomes a per-MILE rate, so the figure has to move with
+ * the unit or a road's cost is understated by more than a third. Money is
+ * rounded because it is whole everywhere else on the card.
+ */
+function perUnitDistance(value: number, isMoney: boolean, separators: NumberSeparators, perDistance: boolean): number {
+  if (!perDistance || separators.unitSystem !== UnitSystem.Freedom) return value;
+
+  return isMoney ? Math.round(value * KILOMETRES_PER_MILE) : value * KILOMETRES_PER_MILE;
+}
+
+/**
+ * The game's own template for a money figure: a total, a monthly bill, or a
+ * rate per kilometre or mile, suffix and all, so a rate is stated the way
+ * vanilla states it rather than by bolting our "/km" onto a number.
+ */
+function moneyTemplate(metric: "cost" | "upkeep", separators: NumberSeparators, perDistance: boolean): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+
+  if (perDistance) {
+    return separators.unitSystem === UnitSystem.Freedom
+      ? (metric === "upkeep" ? money.perMilePerMonth : money.perMile)
+      : (metric === "upkeep" ? money.perKilometrePerMonth : money.perKilometre);
+  }
+
+  return metric === "upkeep" ? money.perMonth : money.plain;
+}
+
 export function formatBuildingMetric(
   value: number | null | undefined,
   metric: AssetMenuMetric,
@@ -320,30 +384,16 @@ export function formatBuildingMetric(
     return METRIC_NO_DATA;
   }
 
-  const money = separators.money ?? FALLBACK_MONEY;
   const isMoney = metric === "cost" || metric === "upkeep";
   const imperial = separators.unitSystem === UnitSystem.Freedom;
-  // A per-kilometre rate becomes a per-MILE rate, so the figure has to move
-  // with the unit or a road's cost is understated by more than a third. Money
-  // is rounded because it is whole everywhere else on the card.
-  const scaled = perDistance && imperial
-    ? (isMoney ? Math.round(value * KILOMETRES_PER_MILE) : value * KILOMETRES_PER_MILE)
-    : value;
-  const digits = groupDigits(scaled, separators);
+  const digits = groupDigits(perUnitDistance(value, isMoney, separators, perDistance), separators);
 
   if (perDistance) {
     // Free is a statement about a total, so it has no meaning for a rate — a
     // road that costs nothing per kilometre costs nothing at all, and "0/km"
     // says that without implying the asset is a gift.
     if (isMoney) {
-      // The game has its own per-kilometre money forms, suffix and all, so the
-      // rate is stated the way vanilla states it rather than by bolting our
-      // "/km" onto a number.
-      const perDistanceTemplate = imperial
-        ? (metric === "upkeep" ? money.perMilePerMonth : money.perMile)
-        : (metric === "upkeep" ? money.perKilometrePerMonth : money.perKilometre);
-
-      return applyMoneyTemplate(perDistanceTemplate, digits);
+      return applyMoneyTemplate(moneyTemplate(metric, separators, perDistance), digits);
     }
 
     return `${digits}${imperial ? PER_MILE_SUFFIX : PER_DISTANCE_SUFFIX}`;
@@ -354,15 +404,92 @@ export function formatBuildingMetric(
       // The game bills upkeep monthly; without this the column is a bare
       // number the player cannot compare against anything. Its own template
       // carries both the symbol and the localized "per month".
-      return applyMoneyTemplate(money.perMonth, digits);
+      return applyMoneyTemplate(moneyTemplate(metric, separators, false), digits);
     case "cost":
       // A zero here is real: the indexer nulls the cost when there is no
       // PlaceableObjectData. Naming it keeps the dash meaning only "not known",
       // instead of a lone "0" reading as a third kind of nothing.
-      return value === 0 ? METRIC_FREE : applyMoneyTemplate(money.plain, digits);
+      return value === 0 ? METRIC_FREE : applyMoneyTemplate(moneyTemplate(metric, separators, false), digits);
     default:
       return digits;
   }
+}
+
+/** The units a money figure is said in, each a thousand of the one before. */
+const COMPACT_UNITS: readonly { unit: number; suffix: string }[] = [
+  { unit: 1, suffix: "" },
+  { unit: 1_000, suffix: "k" },
+  { unit: 1_000_000, suffix: "M" },
+];
+
+/** The own unit: millions from where a thousands figure would round to 1000k, thousands from 1000. */
+const ownUnit = (scaled: number): number => (Math.abs(scaled) >= 999_950 ? 2 : Math.abs(scaled) >= 1_000 ? 1 : 0);
+
+/** A figure to this many decimals, trailing zeros dropped, with the reader's own marks. */
+function fixedDigits(value: number, decimals: number, separators: NumberSeparators): string {
+  const [whole, fraction = ""] = Math.abs(value).toFixed(decimals).split(".");
+  const digits = groupDigits(Number(whole), separators) + (/[1-9]/.test(fraction) ? `${separators.decimal}${fraction.replace(/0+$/, "")}` : "");
+
+  return value < 0 ? `-${digits}` : digits;
+}
+
+/**
+ * A money figure's short forms, the most exact first, for a place too narrow for every digit: in
+ * thousands or millions to one decimal, to none, then in the next unit up to the fewest decimals
+ * that are not zero, in the game's template for a total ("¢16.5k"). Rounded rather than cut, since a
+ * cut figure reads as another number. Any unit the place says is the caller's to add.
+ */
+export function compactMoneyForms(value: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
+  const own = ownUnit(value);
+  const figures: string[] = [];
+  const add = (figure: string) => {
+    if (!figures.includes(figure)) figures.push(figure);
+  };
+  const at = (index: number, decimals: number) => fixedDigits(value / COMPACT_UNITS[index].unit, decimals, separators);
+
+  add(at(own, 1) + COMPACT_UNITS[own].suffix);
+  // A thousand of a unit is the next unit's to say.
+  if (own === COMPACT_UNITS.length - 1 || Math.abs(Math.round(value / COMPACT_UNITS[own].unit)) < 1_000) {
+    add(at(own, 0) + COMPACT_UNITS[own].suffix);
+  }
+  if (own < COMPACT_UNITS.length - 1) {
+    const decimals = [0, 1, 2].find((places) => /[1-9]/.test(at(own + 1, places)));
+    if (decimals !== undefined) add(at(own + 1, decimals) + COMPACT_UNITS[own + 1].suffix);
+  }
+
+  const plain = (separators.money ?? FALLBACK_MONEY).plain;
+  return figures.map((figure) => applyMoneyTemplate(plain, figure));
+}
+
+/**
+ * A figure with a unit's shorter forms, for a place too narrow for every digit, the most exact first: to
+ * one decimal, to none, then those with the space before the unit closed up ("1,139MWh"); only then, from
+ * a thousand on, in thousands ("1.1k MWh"), spaced and closed up, as a thousands form can be a few per
+ * cent out. Its unit is always kept, since a unit that scales with its size (kW or MW, t or kt) read bare
+ * beside another reads as one scale, and a unit already a thousand of another (kt, ktn) says no thousands
+ * of it. Rounded, never cut.
+ */
+export function compactUnitForms(text: string, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
+  const group = separators.group.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const decimal = separators.decimal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`^(\\d(?:[\\d${group}]*\\d)?)(?:${decimal}(\\d+))?(\\s*)(\\D.*)$`, "u").exec(text);
+  if (!match) return [text];
+
+  const [, whole, fraction = "0", gap, unit] = match;
+  const value = Number(`${whole.split(separators.group).join("")}.${fraction}`);
+  const forms = [text];
+  const add = (form: string) => {
+    if (!forms.includes(form)) forms.push(form);
+  };
+  const closed = (form: string) => form.slice(0, form.length - unit.length).trimEnd() + unit;
+  for (const decimals of [1, 0]) add(fixedDigits(value, decimals, separators) + gap + unit);
+  for (const form of [...forms]) add(closed(form));
+  if (Math.abs(value) >= 1_000 && !unit.startsWith("k")) {
+    const thousands = [1, 0].map((decimals) => `${fixedDigits(value / 1_000, decimals, separators)}k${gap}${unit}`);
+    for (const form of thousands) add(form);
+    for (const form of thousands) add(closed(form));
+  }
+  return forms;
 }
 
 /**
@@ -502,15 +629,21 @@ export function formatSpeedLimit(
   }
 
   // The game ships no speed template in either system — no VALUE_KMH and no
-  // VALUE_MPH — so both suffixes are ours. The conversion reuses the mile
-  // divisor above so the two never disagree.
-  if (separators.unitSystem === UnitSystem.Freedom) {
-    const mph = Math.round(value / KILOMETRES_PER_MILE);
+  // VALUE_MPH — so both suffixes are ours.
+  return `${speedNumber(value, separators)} ${speedUnit(separators)}`;
+}
 
-    return `${formatBuildingMetric(mph, "capacity", separators)} mph`;
-  }
+/** A speed limit's digits in the player's unit, without it: whole mph under Freedom, else whole km/h. */
+export function speedNumber(value: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  // The conversion reuses the mile divisor above so the two never disagree.
+  const speed = separators.unitSystem === UnitSystem.Freedom ? value / KILOMETRES_PER_MILE : value;
 
-  return `${formatBuildingMetric(Math.round(value), "capacity", separators)} km/h`;
+  return formatBuildingMetric(Math.round(speed), "capacity", separators);
+}
+
+/** The unit a speed limit is said in: "mph" under Freedom, else "km/h". */
+function speedUnit(separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  return separators.unitSystem === UnitSystem.Freedom ? "mph" : "km/h";
 }
 
 /**
@@ -575,112 +708,6 @@ export function formatCapacity(
     return volume === "" ? formatted : volume;
   }
   return unit === "" ? formatted : `${formatted} ${unit}`;
-}
-
-export interface BuildingDetailMetric {
-  key: string;
-  label: string;
-  value: string;
-}
-
-/**
- * Everything the indexer projected about one asset, ready to draw. A detail
- * view cannot know less than the row it expands from, so every field is a
- * candidate; absent stays absent, and formatting is delegated, never re-derived.
- */
-export function getBuildingDetailMetrics(entry: {
-  constructionCost?: number | null;
-  upkeep?: number | null;
-  costIsPerDistance?: boolean;
-  capacity?: number | null;
-  category?: string;
-  subCategory?: string;
-  buildingType?: string;
-  workers?: number | null;
-  households?: number | null;
-  parkingSlots?: number | null;
-  lotWidth?: number | null;
-  lotDepth?: number | null;
-  buildingLevel?: number | null;
-  electricityConsumption?: number | null;
-  waterConsumption?: number | null;
-  garbageAccumulation?: number | null;
-  telecomNeed?: number | null;
-  waterCapacity?: number | null;
-  sewageCapacity?: number | null;
-  groundPollution?: number | null;
-  airPollution?: number | null;
-  noisePollution?: number | null;
-}, separators: NumberSeparators = FALLBACK_SEPARATORS): BuildingDetailMetric[] {
-  const details: BuildingDetailMetric[] = [];
-
-  /** A metric this entry carries a number for. */
-  const add = (key: string, label: string, value: number | null | undefined, text: string) => {
-    if (value === null || value === undefined || !Number.isFinite(value)) return;
-    details.push({ key, label, value: text });
-  };
-
-  // Money first, because it changes what everything under it means.
-  add("cost", "Cost", entry.constructionCost,
-    formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance ?? false));
-  add("upkeep", "Upkeep", entry.upkeep,
-    formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance ?? false));
-
-  // Then what it buys.
-  add("capacity", "Capacity", entry.capacity,
-    formatCapacity(entry.capacity, entry.category ?? "", entry.subCategory ?? "", entry.buildingType, separators));
-  add("workers", "Workers", entry.workers, `${groupDigits(entry.workers as number, separators)} jobs`);
-  add("households", "Households", entry.households,
-    `${groupDigits(entry.households as number, separators)} households`);
-
-  // No bays is not a bay count.
-  if (typeof entry.parkingSlots === "number" && Number.isFinite(entry.parkingSlots) && entry.parkingSlots > 0) {
-    details.push({
-      key: "parking",
-      label: "Parking",
-      value: `${groupDigits(entry.parkingSlots, separators)} bays`,
-    });
-  }
-
-  // Then what it occupies. A road measures 0 x 0, which is not a footprint.
-  if (hasFootprint(entry.lotWidth, entry.lotDepth)) {
-    details.push({
-      key: "lot",
-      label: "Lot",
-      value: formatLotDimensions(entry.lotWidth, entry.lotDepth),
-    });
-  }
-
-  // A level of 0 means the asset has no level, not that it is level zero.
-  if (typeof entry.buildingLevel === "number" && Number.isFinite(entry.buildingLevel) && entry.buildingLevel > 0) {
-    details.push({ key: "level", label: "Level", value: String(entry.buildingLevel) });
-  }
-
-  // Then what it draws and what it emits.
-  const measured: Array<{ key: string; label: string; value: number | null | undefined; unit?: string; text?: (value: number) => string }> = [
-    // The three consumption figures in the game's own units: power in
-    // hundreds of watts, water in m³ a month, garbage in kilograms a month.
-    { key: "electricity", label: "Electricity", value: entry.electricityConsumption, text: (v) => formatPower(v, separators) },
-    { key: "water", label: "Water", value: entry.waterConsumption, text: (v) => formatVolumePerMonth(v, separators) },
-    { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, text: (v) => formatWeightPerMonth(v, separators) },
-    { key: "telecom", label: "Telecom", value: entry.telecomNeed },
-    { key: "waterCapacity", label: "Water capacity", value: entry.waterCapacity, text: (v) => formatVolumePerMonth(v, separators) },
-    { key: "sewageCapacity", label: "Sewage capacity", value: entry.sewageCapacity, text: (v) => formatVolumePerMonth(v, separators) },
-    { key: "groundPollution", label: "Ground pollution", value: entry.groundPollution },
-    { key: "airPollution", label: "Air pollution", value: entry.airPollution },
-    { key: "noisePollution", label: "Noise pollution", value: entry.noisePollution },
-  ];
-
-  for (const candidate of measured) {
-    add(candidate.key, candidate.label, candidate.value,
-      candidate.text && typeof candidate.value === "number"
-        ? candidate.text(candidate.value)
-        : candidate.unit
-          ? `${groupDigits(candidate.value as number, separators)} ${candidate.unit}`
-          : groupDigits(candidate.value as number, separators));
-  }
-
-  return details;
 }
 
 /**

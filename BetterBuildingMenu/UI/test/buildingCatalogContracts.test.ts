@@ -6,9 +6,12 @@ import {
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
   loadMoreCatalogCommand,
+  moveEnterTargetCommand,
+  setCatalogScreenCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "../src/domain/buildingCatalogContracts.ts";
+import { SORT_COLUMNS, SORT_FIRST_DESCENDING } from "../src/domain/sharedContracts.generated.ts";
 import {
   METRIC_RANGE_DEFINITIONS,
   countActiveMetricRanges,
@@ -18,6 +21,19 @@ import {
 } from "../src/domain/buildingCatalogRanges.ts";
 
 describe("BetterBuildingMenu UI binding contracts", () => {
+  it("names the target's move after its trigger, a row down or up a press", () => {
+    assert.deepEqual(moveEnterTargetCommand(1), { method: "MoveEnterTarget", args: [1] });
+    assert.deepEqual(moveEnterTargetCommand(-1), { method: "MoveEnterTarget", args: [-1] });
+  });
+
+  it("names the screen after its trigger, and sends a whole count of 0 or more", () => {
+    assert.deepEqual(setCatalogScreenCommand(20), { method: "SetCatalogScreen", args: [20] });
+    // C# reads an int: a body measured before its stylesheet loads must not send NaN or a fraction.
+    for (const [slots, sent] of [[Number.NaN, 0], [Number.POSITIVE_INFINITY, 0], [-5, 0], [20.7, 20]]) {
+      assert.deepEqual(setCatalogScreenCommand(slots).args, [sent], `${slots}`);
+    }
+  });
+
   it("names the window command after its trigger", () => {
     // The limit wanted, so a repeat is harmless; the backend clamps it to one step
     // and the ceiling. The name must match the CreateTrigger in BuildingMenuUISystem.OnCreate.
@@ -28,17 +44,22 @@ describe("BetterBuildingMenu UI binding contracts", () => {
     assert.deepEqual(searchChangedCommand("road"), { method: "SearchChanged", args: ["road"] });
   });
 
-  it("resets direction for a new sort column and toggles repeated clicks", () => {
-    assert.deepEqual(nextSortState({ column: "Name", descending: true }, "ConstructionCost"), {
-      column: "ConstructionCost",
-      descending: false,
-    });
-    assert.deepEqual(nextSortState({ column: "ConstructionCost", descending: false }, "ConstructionCost"), {
-      column: "ConstructionCost",
-      descending: true,
-    });
+  it("starts a new sort best first, and reverses a repeated click", () => {
+    // The cheapest first for cost, the most first for capacity: C# says which, per sort.
+    assert.deepEqual(nextSortState({ column: "Name", descending: true }, "ConstructionCost"), { column: "ConstructionCost", descending: false });
+    assert.deepEqual(nextSortState({ column: "Name", descending: false }, "Capacity"), { column: "Capacity", descending: true });
+    assert.deepEqual(nextSortState({ column: "ConstructionCost", descending: false }, "ConstructionCost"), { column: "ConstructionCost", descending: true });
+    assert.deepEqual(nextSortState({ column: "Capacity", descending: true }, "Capacity"), { column: "Capacity", descending: false });
     assert.deepEqual(setSortColumnCommand("Workers"), { method: "SetBuildingCatalogSortColumn", args: ["Workers"] });
     assert.deepEqual(setSortDescendingCommand(true), { method: "SetBuildingCatalogSortDescending", args: [true] });
+  });
+
+  it("starts every sort C# names highest first, and every other lowest first", () => {
+    assert.deepEqual([...SORT_FIRST_DESCENDING], ["Workers", "Capacity", "Households", "WaterCapacity", "SewageCapacity"]);
+    for (const column of SORT_COLUMNS.filter((candidate) => candidate !== "Name")) {
+      const expected = (SORT_FIRST_DESCENDING as readonly string[]).includes(column);
+      assert.equal(nextSortState({ column: "Name", descending: false }, column).descending, expected, column);
+    }
   });
 
   it("judges a swap on the bounds as clamped and rounded, not as typed", () => {

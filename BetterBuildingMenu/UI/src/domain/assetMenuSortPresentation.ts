@@ -1,5 +1,4 @@
 import type { SortColumn, SortState } from "./buildingCatalogContracts";
-import type { AssetMenuMetric } from "./assetMenuLayout";
 import { SORT_COLUMNS } from "./sharedContracts.generated";
 
 export interface AssetMenuSortOption {
@@ -14,7 +13,8 @@ export interface AssetMenuSortChoice extends AssetMenuSortOption {
 export interface AssetMenuSortPresentation {
   compact: AssetMenuSortOption & {
     direction: "ascending" | "descending";
-    indicator: "▲" | "▼";
+    /** ▲ or ▼, or none under Match, whose relevance has no reverse. */
+    indicator: "▲" | "▼" | "";
   };
   expanded: AssetMenuSortChoice[];
 }
@@ -24,12 +24,17 @@ const SORT_LABELS: Readonly<Record<SortColumn, string>> = {
   // The game's own UIObject.m_Priority order, authored per asset and
   // derivable from nothing the player can see — hence "Default".
   Default: "Default",
+  // A typed search's order: the best match first. Offered only while a query is typed.
+  Match: "Match",
   Name: "Name",
   Category: "Category",
   ConstructionCost: "Cost",
   Upkeep: "Upkeep",
   Workers: "Workers",
   Capacity: "Capacity",
+  Households: "Households",
+  WaterCapacity: "Water capacity",
+  SewageCapacity: "Sewage capacity",
   // "Lot", not a bare "Width": beside Cost and Workers that reads as a
   // dimension of the building, and the figure sorted on is the lot's.
   LotWidth: "Lot width",
@@ -44,60 +49,43 @@ export const ASSET_MENU_SORT_OPTIONS: readonly AssetMenuSortOption[] = SORT_COLU
   label: SORT_LABELS[key],
 }));
 
-/**
- * Which sort each metric column drives when its header is clicked, sorting a
- * table by its headers being the convention players know. `lot` renders both
- * dimensions and sorts by width; `LotDepth` stays in the sort list.
- */
-export const ASSET_MENU_COLUMN_SORT: Readonly<Record<AssetMenuMetric, SortColumn>> = {
-  cost: "ConstructionCost",
-  upkeep: "Upkeep",
-  workers: "Workers",
-  capacity: "Capacity",
-  lot: "LotWidth",
-  level: "BuildingLevel",
-  parking: "HasParking",
-};
+/** The order a typed search switches to, and the one the menu opens on. */
+export const MATCH_SORT: SortColumn = "Match";
+export const DEFAULT_SORT: SortColumn = "Default";
 
-/**
- * The direction glyph for a column header, or "" when that column is not the
- * active sort. Only the sorted column shows an indicator, so the header row
- * cannot imply several simultaneous orderings.
- */
-export function getAssetMenuColumnSortIndicator(
-  metric: AssetMenuMetric,
-  state: SortState,
-): "▲" | "▼" | "" {
-  if (ASSET_MENU_COLUMN_SORT[metric] !== state.column) {
-    return "";
-  }
-
-  return state.descending ? "▼" : "▲";
+/** Whether a sort is set away from how the menu opens: neither the game's own order nor a search's Match. */
+export function isSortSet(column: SortColumn): boolean {
+  return column !== DEFAULT_SORT && column !== MATCH_SORT;
 }
 
 /**
  * The sort fields worth offering for the current results: one that ties across
  * the whole set responds while the list does not move, which reads as broken.
  * Never drops the current selection; an empty answer means "not said yet".
+ * Match only while a query is typed, the one time it differs from the game's
+ * own order.
  */
 export function usableSortOptions(
   reorderable: readonly string[] | null | undefined,
-  selected: SortColumn
+  selected: SortColumn,
+  searching = false
 ): readonly AssetMenuSortOption[] {
   const usable = reorderable ?? [];
+  const offered = ASSET_MENU_SORT_OPTIONS.filter((option) => option.key !== MATCH_SORT || searching || option.key === selected);
 
   if (usable.length === 0) {
-    return ASSET_MENU_SORT_OPTIONS;
+    return offered;
   }
 
-  return ASSET_MENU_SORT_OPTIONS.filter(
-    (option) => option.key === selected || usable.includes(option.key)
+  return offered.filter(
+    (option) => option.key === selected || option.key === MATCH_SORT || usable.includes(option.key)
   );
 }
 
 export function getAssetMenuSortPresentation(
   state: SortState,
-  reorderable: readonly string[] | null | undefined = null
+  reorderable: readonly string[] | null | undefined = null,
+  searching = false
 ): AssetMenuSortPresentation {
   const selectedOption = ASSET_MENU_SORT_OPTIONS.find((option) => option.key === state.column)
     ?? ASSET_MENU_SORT_OPTIONS[0];
@@ -107,9 +95,9 @@ export function getAssetMenuSortPresentation(
     compact: {
       ...selectedOption,
       direction,
-      indicator: state.descending ? "▼" : "▲",
+      indicator: selectedOption.key === MATCH_SORT ? "" : state.descending ? "▼" : "▲",
     },
-    expanded: usableSortOptions(reorderable, selectedOption.key).map((option) => ({
+    expanded: usableSortOptions(reorderable, selectedOption.key, searching).map((option) => ({
       ...option,
       selected: option.key === selectedOption.key,
     })),

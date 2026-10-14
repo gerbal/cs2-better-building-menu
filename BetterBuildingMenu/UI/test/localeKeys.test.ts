@@ -33,18 +33,29 @@ const enumMembers = (file: string) =>
   [...readFileSync(join(MOD, "Domain", "Enums", file), "utf8").matchAll(/^\s*([A-Z]\w*)\s*(?:=[^,\n]+)?,?\s*$/gm)].map((m) => m[1]);
 const setting = readFileSync(join(MOD, "Setting.cs"), "utf8");
 const settings = [...setting.matchAll(/public (?:bool|int|float|string) (\w+) \{ get; set; \}/g)].map((m) => m[1]);
+// A property with a setter and no getter: the game draws it as a button and never saves it.
+const buttonMatches = [...setting.matchAll(/public bool (\w+)\s*\{\s*set\b/g)];
+const buttons = buttonMatches.map((m) => m[1]);
+
+/** The attributes on the property declared at an index: the text back to the previous `;` or `}`. */
+const attributesAt = (index: number | undefined): string => {
+  const before = setting.slice(0, index);
+  return before.slice(Math.max(before.lastIndexOf("}"), before.lastIndexOf(";")));
+};
 
 // The settings the Options screen draws, which it labels from these keys with
 // no fallback of its own: a missing one shows the raw key in every language.
 const SETTINGS_CLASS = "BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings";
 const MOD_OPTIONS = "BetterBuildingMenu.BetterBuildingMenu.Mod";
 const visibleSettings = [...setting.matchAll(/public (?:bool|int|float|string) (\w+) \{ get; set; \}/g)]
-  .filter((m) => {
-    const before = setting.slice(0, m.index);
-    const attributes = before.slice(Math.max(before.lastIndexOf("}"), before.lastIndexOf(";")));
-    return !attributes.includes("[SettingsUIHidden]");
-  })
+  .filter((m) => !attributesAt(m.index).includes("[SettingsUIHidden]"))
   .map((m) => m[1]);
+// A button that asks first draws its question from a WARNING key.
+const confirmedButtons = buttonMatches.filter((m) => attributesAt(m.index).includes("[SettingsUIConfirmation]")).map((m) => m[1]);
+const buttonKeys = [
+  ...buttons.flatMap((name) => [`Options.OPTION[${SETTINGS_CLASS}.${name}]`, `Options.OPTION_DESCRIPTION[${SETTINGS_CLASS}.${name}]`]),
+  ...confirmedButtons.map((name) => `Options.WARNING[${SETTINGS_CLASS}.${name}]`),
+];
 const constants = new Map([...setting.matchAll(/public const string (\w+) = "([^"]+)";/g)].map((m) => [m[1], m[2]]));
 const constantsIn = (attribute: string) =>
   [...setting.matchAll(new RegExp(`\\[${attribute}\\(([^)]*)\\)\\]`, "g"))]
@@ -71,9 +82,12 @@ function builtByCode(key: string): boolean {
     if (label.startsWith("Zone") && enumMembers("ZoneTypeFilter.cs").includes(label.slice(4))) return true;
     if (LOCALIZABLE_STRINGS.some((entry) => entry.key === key)) return true;
   }
-  // The game names a setting's label, description, section and tab itself.
-  const option = /^Options\.(?:OPTION|OPTION_DESCRIPTION)\[BetterBuildingMenu\.BetterBuildingMenu\.Mod\.BetterBuildingMenuSettings\.(\w+)\]$/.exec(key)?.[1];
-  if (option !== undefined) return settings.includes(option);
+  // The game names a setting's label, description, section and tab itself, and a confirmed button's question.
+  const option = /^Options\.(OPTION|OPTION_DESCRIPTION|WARNING)\[BetterBuildingMenu\.BetterBuildingMenu\.Mod\.BetterBuildingMenuSettings\.(\w+)\]$/.exec(key);
+  if (option !== null) {
+    const [, kind, name] = option;
+    return kind === "WARNING" ? confirmedButtons.includes(name) : settings.includes(name) || buttons.includes(name);
+  }
   return /^Options\.(?:SECTION|TAB|GROUP)\[/.test(key);
 }
 
@@ -88,6 +102,14 @@ describe("Locale.json against the code", () => {
     // Guards the derivation too: a regex that matched nothing would pass vacuously.
     assert.ok(visibleSettings.length > 0 && constantsIn("SettingsUIGroupOrder").length > 0);
     const missing = optionsScreenKeys.filter((key) => !(key in locale));
+
+    assert.deepEqual(missing, []);
+  });
+
+  it("has a label, a description and a question for every button the Options screen draws", () => {
+    // Guards the derivation too: Reset the build menu… is a button that asks first.
+    assert.ok(confirmedButtons.includes("ResetBuildMenu"), `buttons found: ${buttons.join(", ")}`);
+    const missing = buttonKeys.filter((key) => !(key in locale));
 
     assert.deepEqual(missing, []);
   });
@@ -107,5 +129,13 @@ describe("Locale.json against the code", () => {
 
       assert.deepEqual(extra, [], file);
     }
+  });
+});
+
+describe("the Look row's description", () => {
+  it("says where Plates names the pointed tile in every Hover card form: on its card, or at the tabs' end under Status line only", () => {
+    const description = locale["Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.MenuLook]"];
+
+    assert.match(description, /point at named on its card or at the tabs' end/);
   });
 });

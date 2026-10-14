@@ -17,9 +17,12 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 
 const ENTRY_CS = read("../../Domain/BuildingCatalogEntry.cs");
 const ENTRY_TS = read("../src/domain/buildingCatalog.ts");
+const PAGE_CS = read("../../Domain/BuildingCatalogPage.cs");
+const FACTS_CS = read("../../Domain/ViewFacts.cs");
+const ROW_NUMBERS_TS = read("../src/domain/rowNumbers.ts");
 
-/** The JSON names the C# writer emits, in the order it emits them. */
-function writtenNames(): string[] {
+/** The JSON names a C# writer emits, in the order it emits them. */
+function writtenNames(source = ENTRY_CS): string[] {
   const names: string[] = [];
   // Two spellings, because the writer has two: the bare PropertyName call and
   // the Write* helpers (WriteNullable, WriteStringArray, WriteArray) that take
@@ -28,16 +31,16 @@ function writtenNames(): string[] {
     /writer\.PropertyName\("([A-Za-z0-9_]+)"\)|Write[A-Za-z]*\(\s*writer,\s*"([A-Za-z0-9_]+)"/g;
   let match: RegExpExecArray | null;
 
-  while ((match = pattern.exec(ENTRY_CS)) !== null) {
+  while ((match = pattern.exec(source)) !== null) {
     names.push(match[1] ?? match[2]);
   }
 
   return names;
 }
 
-/** The field names the UI's entry interface declares. */
-function declaredNames(): string[] {
-  const body = ENTRY_TS.slice(ENTRY_TS.indexOf("export interface BuildingCatalogEntry"));
+/** The field names one of the UI's interfaces declares, the entry's by default. */
+function declaredNames(name = "BuildingCatalogEntry"): string[] {
+  const body = ENTRY_TS.slice(ENTRY_TS.indexOf(`export interface ${name} {`));
   const end = body.indexOf("\n}");
   const names: string[] = [];
   const pattern = /^\s{2}([A-Za-z][A-Za-z0-9_]*)\??:/gm;
@@ -87,5 +90,44 @@ describe("the catalog entry's two halves agree", () => {
     const written = writtenNames();
 
     assert.equal(new Set(written).size, written.length, "a duplicate property name overwrites the first");
+  });
+});
+
+describe("the page's view facts' two halves agree", () => {
+  // ViewFacts.cs holds two writers: the facts', then a shared value's.
+  const split = FACTS_CS.indexOf("public sealed record SharedValue");
+  const factsWritten = writtenNames(FACTS_CS.slice(0, split));
+  const valueWritten = writtenNames(FACTS_CS.slice(split));
+
+  it("names the same fields on both sides of the facts and of a shared value", () => {
+    assert.ok(split > 0, "expected SharedValue in ViewFacts.cs");
+    assert.deepEqual([...factsWritten].sort(), [...declaredNames("ViewFacts")].sort());
+    assert.deepEqual([...valueWritten].sort(), [...declaredNames("SharedValue")].sort());
+  });
+
+  it("finds both halves at all, so a rename cannot make this vacuous", () => {
+    assert.deepEqual(factsWritten, ["sharedValues", "keyKind"]);
+    assert.deepEqual(valueWritten, ["kind", "value", "depth", "perCell", "unit"]);
+  });
+
+  it("names the same kinds on both sides", () => {
+    // C#'s kind constants against the string unions the UI declares: SharedValue.kind, and KeyKind, which ViewFacts.keyKind is.
+    const constants = [...FACTS_CS.matchAll(/public const string \w+ = "(\w*)";/g)].map(([, kind]) => kind);
+    const kinds = (declared: string) => [...declared.matchAll(/"(\w*)"/g)].map(([, kind]) => kind);
+    const union = (name: string, field: string) => {
+      const body = ENTRY_TS.slice(ENTRY_TS.indexOf(`export interface ${name} {`));
+      return kinds(new RegExp(`^\\s{2}${field}: ([^;]+);`, "m").exec(body.slice(0, body.indexOf("\n}")))?.[1] ?? "");
+    };
+    const keyKinds = kinds(/^export type KeyKind = ([^;]+);/m.exec(ROW_NUMBERS_TS)?.[1] ?? "");
+
+    assert.ok(constants.length >= 6, "expected ViewFacts.cs' kind constants");
+    assert.match(ENTRY_TS, /^\s{2}keyKind: KeyKind;/m, "ViewFacts.keyKind is not KeyKind");
+    assert.ok(keyKinds.length >= 5, "expected KeyKind's union in rowNumbers.ts");
+    assert.deepEqual([...new Set([...union("SharedValue", "kind"), ...keyKinds])].sort(), [...constants].sort());
+  });
+
+  it("carries the facts on the page under the name the UI reads", () => {
+    assert.ok(writtenNames(PAGE_CS).includes("facts"), "BuildingCatalogPage.Write writes no facts");
+    assert.ok(declaredNames("BuildingCatalogPage").includes("facts"), "buildingCatalog.ts declares no facts on the page");
   });
 });

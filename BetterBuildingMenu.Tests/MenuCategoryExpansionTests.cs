@@ -10,12 +10,12 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// Which categories the strip draws sub-tabs for, instead of themselves.
+	/// Which categories the tab row draws sub-tabs for, instead of themselves.
 	/// </summary>
 	/// <remarks>
-	/// The rule is the school levels', stated in MenuCategoryStrip: sub-tabs may
-	/// stand in for a category only when they partition it exactly, because a
-	/// row that hides part of its own category is worse than no row.
+	/// Sub-tabs may stand in for a category only when they partition it exactly,
+	/// because a row that hides part of its own category is worse than no row.
+	/// See MenuCategoryTabs.
 	/// </remarks>
 	public class MenuCategoryExpansionTests
 	{

@@ -78,6 +78,122 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("SearchChanged", TypeScriptNames());
 		}
 
+		[Fact]
+		public void EachMenusOwnViewIsNamedOnBothSidesAndTheOneRememberedViewIsGone()
+		{
+			foreach (var name in new[] { "AssetMenuViews", "SetAssetMenuView", "AssetMenuDefaultView", "AssetMenuGroups", "MenuShares" })
+			{
+				Assert.Contains(name, CSharpNames());
+				Assert.Contains(name, TypeScriptNames());
+			}
+
+			foreach (var name in new[] { "AssetMenuViewMode", "SetAssetMenuViewMode" })
+			{
+				Assert.DoesNotContain(name, CSharpNames());
+				Assert.DoesNotContain(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
+		public void TheWidthStepIsNamedOnBothSidesAndTheFreeWidthIsGone()
+		{
+			foreach (var name in new[] { "AssetMenuWidthStep", "SetAssetMenuWidthStep" })
+			{
+				Assert.Contains(name, CSharpNames());
+				Assert.Contains(name, TypeScriptNames());
+			}
+
+			foreach (var name in new[] { "AssetMenuWidth", "AssetMenuCatalogWidth", "SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth" })
+			{
+				Assert.DoesNotContain(name, CSharpNames());
+				Assert.DoesNotContain(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
+		public void TheLookIsNamedOnBothSides()
+		{
+			foreach (var name in new[] { "AssetMenuLook", "SetAssetMenuLook" })
+			{
+				Assert.Contains(name, CSharpNames());
+				Assert.Contains(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
+		public void TheCollapseAndTheRestoreAreNamedOnBothSides()
+		{
+			foreach (var name in new[] { "AssetMenuCollapsed", "SetAssetMenuCollapsed", "RestoreAssetMenuSize" })
+			{
+				Assert.Contains(name, CSharpNames());
+				Assert.Contains(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
+		public void TheAllCountIsNamedOnBothSides()
+		{
+			Assert.Contains("AssetMenuAllCount", CSharpNames());
+			Assert.Contains("AssetMenuAllCount", TypeScriptNames());
+		}
+
+		[Fact]
+		public void TheAllCountStartsNegativeOnBothSidesSoTheRowDrawsItBlank()
+		{
+			var root = RepoRoot();
+
+			Assert.Contains("CreateBinding(\"AssetMenuAllCount\", -1)",
+				File.ReadAllText(Path.Combine(root, "BetterBuildingMenu", "Systems", "BuildingMenuUISystem.cs")));
+			Assert.Contains("\"AssetMenuAllCount\", -1)",
+				File.ReadAllText(Path.Combine(root, "BetterBuildingMenu", "UI", "src", "mods", "bindings.ts")));
+		}
+
+		[Fact]
+		public void TheTierBracketReplacesTheTierCounts()
+		{
+			Assert.Contains("AssetMenuTierBracket", CSharpNames());
+			Assert.Contains("AssetMenuTierBracket", TypeScriptNames());
+			Assert.DoesNotContain("AssetMenuSchoolTierCounts", CSharpNames());
+			Assert.DoesNotContain("AssetMenuSchoolTierCounts", TypeScriptNames());
+		}
+
+		[Fact]
+		public void TheTuningBindingIsNamedOnBothSides()
+		{
+			Assert.Contains("AssetMenuTuning", CSharpNames());
+			Assert.Contains("AssetMenuTuning", TypeScriptNames());
+		}
+
+		[Fact]
+		public void UpAndDownAreNamedOnBothSides()
+		{
+			Assert.Contains("MoveEnterTarget", CSharpNames());
+			Assert.Contains("MoveEnterTarget", TypeScriptNames());
+		}
+
+		[Fact]
+		public void MoreOptionsIsNamedOnBothSidesAndThePanesOldControlsAreGone()
+		{
+			Assert.Contains("OpenModOptions", CSharpNames());
+			Assert.Contains("OpenModOptions", TypeScriptNames());
+
+			foreach (var name in new[] { "SetAssetMenu", "ClearAssetMenuScope", "ResetAssetMenu" })
+			{
+				Assert.DoesNotContain(name, CSharpNames());
+				Assert.DoesNotContain(name, TypeScriptNames());
+			}
+		}
+
+		[Fact]
+		public void TheControlPaneIsSetFromOptionsAlone()
+		{
+			// The header's switch and its trigger give way to the Options row; the pane still reads the binding.
+			Assert.Contains("ControlPaneShown", CSharpNames());
+			Assert.Contains("ControlPaneShown", TypeScriptNames());
+			Assert.DoesNotContain("SetControlPaneShown", CSharpNames());
+			Assert.DoesNotContain("SetControlPaneShown", TypeScriptNames());
+		}
+
 		// Matches CreateBinding, CreateTrigger and the two-name CreateBinding
 		// overload. The generic argument may not contain parentheses, which
 		// keeps a lazy match from spanning one call into the next.

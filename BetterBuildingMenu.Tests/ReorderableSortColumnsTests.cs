@@ -79,6 +79,30 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void OffersHouseholdsAndTheWaterCapacitiesOnlyWhereTheyCanMoveARow()
+		{
+			var homes = new[]
+			{
+				Base with { Id = 1, PrefabName = "P1", Name = "Row Houses", Households = 4 },
+				Base with { Id = 2, PrefabName = "P2", Name = "Tower", Households = 120 },
+			};
+			var pumps = new[]
+			{
+				Base with { Id = 3, PrefabName = "P3", Name = "Pump", WaterCapacity = 1000, SewageCapacity = 50 },
+				Base with { Id = 4, PrefabName = "P4", Name = "Big Pump", WaterCapacity = 4000, SewageCapacity = 50 },
+			};
+
+			var forHomes = BuildingCatalogQueryEngine.ReorderableSortColumns(homes, Query(), BuildingCatalogQuery.OfferedSortColumns);
+			var forPumps = BuildingCatalogQueryEngine.ReorderableSortColumns(pumps, Query(), BuildingCatalogQuery.OfferedSortColumns);
+
+			Assert.Contains("Households", forHomes);
+			Assert.DoesNotContain("WaterCapacity", forHomes);
+			Assert.Contains("WaterCapacity", forPumps);
+			Assert.DoesNotContain("SewageCapacity", forPumps);
+			Assert.DoesNotContain("Households", forPumps);
+		}
+
+		[Fact]
 		public void AsksPerGroup_BecauseGroupingIsThePrimarySortKey()
 		{
 			// Two groups, two distinct costs overall, constant inside each. The

@@ -1,0 +1,260 @@
+@use "../../assetMenuGeometry" as *;
+@use "../../base.scss" as _base;
+
+// The tab row: a band along the box's bottom edge, under the list, holding the menu's tabs on one
+// line. It never wraps and never grows, so the box keeps its height however many tabs a menu has.
+// See docs/design-notes.md, "The tab row".
+.band {
+  flex: 0 0 auto;
+  padding-top: $tab-row-gap-above;
+  // Clear of the width strip, which lies over the band's last 6 rem.
+  padding-right: $tab-row-inset-right;
+  padding-bottom: $tab-row-pad-below;
+  padding-left: $tab-row-inset;
+  background-color: var(--bbm-head);
+  // The box's bottom edge, so the band rounds it; the list above it is square.
+  border-bottom-left-radius: var(--bbm-boxRadius);
+  border-bottom-right-radius: var(--bbm-boxRadius);
+}
+
+.tabRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: $tab-cell-gap;
+  height: $tab-row-height;
+  overflow: hidden;
+}
+
+// A cell: its icon over its count. The count is in flow, so a long one widens the cell.
+.cell {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: $tab-cell-min-width;
+  padding: 0 $tab-cell-padding;
+  // Each corner's longhand: Cohtml drops a border-radius shorthand fed by var().
+  border-bottom-left-radius: var(--bbm-tabRadius);
+  border-bottom-right-radius: var(--bbm-tabRadius);
+  background-color: var(--bbm-tabUnlit);
+  // A line box rounds up to whole pixels and can run past the row: the cell cuts it.
+  overflow: hidden;
+}
+
+// The cell is the game's Button, whose one class pins 24 x 24: two classes outrank it whichever
+// sheet loads last, so a cell is as wide as its picture or its name and the row as wide as them.
+.cells .cell {
+  width: auto;
+  height: $tab-row-height;
+}
+
+.cell:hover {
+  background-color: var(--bbm-tabHover);
+}
+
+// The game's highlight gradient, which no interface style changes.
+.lit {
+  background-image: var(--bbm-tabLit);
+}
+
+// Nothing in it under the filters or the search: faint, where it was.
+.empty {
+  opacity: 0.35;
+}
+
+// A worded cell, its name and count on one line, which fits the row at every text size.
+.inline {
+  flex-direction: row;
+  justify-content: center;
+  gap: $tab-name-gap;
+}
+
+// The icon takes what the count leaves of the row, so it shrinks as the text grows.
+$icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
+
+// Its width is the cell's floor: Cohtml sizes the row from each cell's own width and skips its
+// min-width, so the floor sits in the content, where the row sees it.
+.iconSlot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $tab-cell-min-width - 2 * $tab-cell-padding;
+  height: $icon-side;
+}
+
+// In a named tab the picture sits beside the name, in a slot no wider than the picture. Compound,
+// so it outranks the slot's width wherever the sheet puts it.
+.iconSlot.iconInline {
+  width: $icon-side;
+}
+
+// The picture fills the slot as a background, contained and centred, so a picture that is not
+// square keeps its shape: Cohtml has no object-fit and reports no picture's natural size.
+.picture {
+  flex: 0 0 auto;
+  width: $icon-side;
+  height: $icon-side;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+// The All cell's plate, which tells the menu's own icon from a tab that draws it.
+.plate {
+  border-radius: 50%;
+  background-color: var(--bbm-tabSeg);
+}
+
+.name {
+  color: var(--bbm-tabCount);
+  font-size: calc(#{$tab-name-size} * var(--fontScale));
+  white-space: nowrap;
+}
+
+.count {
+  flex: 0 0 auto;
+  color: var(--bbm-tabCount);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: calc(#{$tab-count-size} * var(--fontScale));
+  white-space: nowrap;
+}
+
+.lit .name,
+.lit .count {
+  color: var(--bbm-armText);
+}
+
+// While a search is typed the counts are match counts, in the search's own mark.
+.matches .count {
+  color: var(--bbm-entMark);
+  font-weight: 600;
+}
+
+// The lit cell keeps its own text: the mark's light cyan drops out against the lit gradient.
+.lit.matches .count {
+  color: var(--bbm-armText);
+}
+
+// Education's tab and its levels, one plate.
+.segment {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  gap: $tab-cell-gap;
+  margin: 0 $tab-segment-margin;
+  border-bottom-left-radius: var(--bbm-tabRadius);
+  border-bottom-right-radius: var(--bbm-tabRadius);
+  background-color: var(--bbm-tabSeg);
+}
+
+// The tabs, which shrink to the room the readout leaves and cut their last ones there.
+.cells {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: $tab-cell-gap;
+  overflow: hidden;
+}
+
+.spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+// The readout: the lit tab's name over the window the list holds, with the true total, right of
+// the tabs. Its range always shows; the name goes first when the row is short, then the last tabs
+// clip.
+.readout {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+// The readout's two faces, which Status line only's name and figures share: the first line's, brighter,
+// and the second's.
+@mixin read-first {
+  color: var(--bbm-tRead1);
+  font-size: calc(#{$tab-name-size} * var(--fontScale));
+  line-height: 13rem;
+  white-space: nowrap;
+}
+
+@mixin read-second {
+  color: var(--bbm-tRead2);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
+  white-space: nowrap;
+}
+
+.place {
+  @include read-first;
+}
+
+// The second line: the legend, then the range, side by side.
+.line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.range {
+  @include read-second;
+}
+
+// What Status line only says: the building's name, in the place line's look, and its figures, in the range's.
+.statusName {
+  @include read-first;
+}
+
+.statusFigure {
+  @include read-second;
+}
+
+// Status line only's texts drawn unseen, out of the row's flow, each in its readout face, so the readout
+// says what fits as the game draws it.
+.statusMeasure {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: row;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+// A value said once, or the key kind named: its glyph beside its words, in the place line's brighter ink.
+.said {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem;
+}
+
+.saidText {
+  color: var(--bbm-tRead1);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
+  white-space: nowrap;
+}
+
+// A sibling of the words, never inside a run of text: a mask there draws nothing.
+.saidGlyph {
+  @include _base.mask-glyph(9rem);
+  background-color: var(--bbm-tRead1);
+}
+
+.sep {
+  padding: 0 3rem;
+  color: var(--bbm-tRead2);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
+}

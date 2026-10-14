@@ -42,7 +42,15 @@ namespace BetterBuildingMenu.Services
 			return entries.Where(entry => Matches(entry, unfiltered));
 		}
 
-		public static BuildingCatalogPage Query(
+		/// <summary>
+		/// The entries the query matches, its facets included: what a count of the rows a tab
+		/// lists counts.
+		/// </summary>
+		/// <remarks>
+		/// InScope's other half. InScope ignores the facet selections, because the facet lists are
+		/// counted over it; the tab counts must follow them, as the list does.
+		/// </remarks>
+		public static IEnumerable<BuildingCatalogEntry> Matching(
 			IEnumerable<BuildingCatalogEntry> entries,
 			BuildingCatalogQuery query)
 		{
@@ -56,7 +64,31 @@ namespace BetterBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var limit = query.EffectiveLimit;
+			return entries.Where(entry => Matches(entry, query));
+		}
+
+		/// <summary>No row's distinguishing word: a page only counted carries none.</summary>
+		private static readonly IReadOnlyDictionary<int, string> NoWords = new Dictionary<int, string>();
+
+		/// <summary>No row's family: a page only counted carries none.</summary>
+		private static readonly IReadOnlyDictionary<int, Families.Member> NoFamilies = new Dictionary<int, Families.Member>();
+
+		/// <param name="labelsOf">A row's headings under the page's grouping, which name its groups' labels; null names each by its key.</param>
+		public static BuildingCatalogPage Query(
+			IEnumerable<BuildingCatalogEntry> entries,
+			BuildingCatalogQuery query,
+			Func<BuildingCatalogEntry, BuildingCatalogGrouping.GroupLabels>? labelsOf = null)
+		{
+			if (entries is null)
+			{
+				throw new ArgumentNullException(nameof(entries));
+			}
+
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
 			// Reframed before ordering, because the Roads menu's extra networks are placed
 			// behind its own categories by a rewritten priority. Materialised once: Count,
 			// Order and ReorderableSortColumns all read this array.
@@ -65,21 +97,52 @@ namespace BetterBuildingMenu.Services
 				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu))
 				.ToArray();
 			var totalCount = matching.Length;
-			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
-			var items = Order(matching, query)
+			// The whole result in display order: the window is a slice of it, and Enter's target
+			// is chosen from all of it, wherever its row is. A half-locked tab lists its locked rows last.
+			var ordered = Order(matching, query).ToArray();
+			var lockedCount = LockedLastCount(ordered, query);
+			var lockedLast = lockedCount > 0;
+
+			if (lockedLast)
+			{
+				// OrderBy is stable, so rows of one milestone keep the game's order.
+				ordered = ordered.Where(entry => !entry.IsLocked).Concat(ordered.Where(entry => entry.IsLocked).OrderBy(entry => entry.UnlockMilestone)).ToArray();
+			}
+
+			// What the window slices: the order, less the locked rows while their label is collapsed.
+			var visible = lockedLast && query.LockedCollapsed ? ordered.Take(ordered.Length - lockedCount).ToArray() : ordered;
+			var sections = lockedLast
+				? new[] { new CatalogSection(CatalogSection.LockedId, CatalogSection.Locked, string.Empty, string.Empty, ordered.Length - lockedCount, lockedCount, query.LockedCollapsed) }
+				: GroupSections(visible, query.GroupBy, labelsOf);
+			// The anchored row's place in that order, and a window that holds it, so the list can open
+			// on it. See docs/design-notes.md, "Opening on the building's tab".
+			var anchorIndex = query.AnchorId > 0 ? Array.FindIndex(visible, entry => entry.Id == query.AnchorId) : -1;
+			var limit = query.CoveringAnchor(anchorIndex).EffectiveLimit;
+			var offset = ClampOffset(query.EffectiveOffset, visible.Length, limit);
+			// Each row's distinguishing word and family, against every look-alike in the result, not the
+			// window's alone; none on a page only counted.
+			var distinct = query.WithFacts ? DistinctWords.Of(matching) : NoWords;
+			var families = query.WithFacts ? Families.Of(matching) : NoFamilies;
+			var items = visible
 				.Skip(offset)
 				.Take(limit)
+				.Select(entry => distinct.TryGetValue(entry.Id, out var word) ? entry with { DistinctWord = word } : entry)
+				.Select(entry => families.TryGetValue(entry.Id, out var member) ? entry with { FamilyToken = member.Token, FamilyKey = member.Key } : entry)
 				.ToArray();
 			// Both halves, because the window has a ceiling as well as an end. At MaxLimit
 			// growing it is a guaranteed no-op, and a Load more button that stays lit and does
-			// nothing is worse than none; the count beside it still names what is left.
-			var hasMore = offset + items.Length < totalCount
+			// nothing is worse than none; the readout states the window.
+			var hasMore = offset + items.Length < visible.Length
 				&& limit < BuildingCatalogQuery.MaxLimit;
 
 			// Over `matching`, not over `items`: the question is whether the sort can order
 			// these RESULTS, and a page that happens to tie says nothing about the rest.
 			var usableColumns = ReorderableSortColumns(
 				matching, query, BuildingCatalogQuery.OfferedSortColumns);
+
+			// Enter's target: the best match, moved by Up and Down through the rows that can be placed.
+			// See docs/design-notes.md, "The search field's keys".
+			var target = StepTarget(visible, FindBestMatch(visible, query.SearchText), query.EnterStep, out var enterStep);
 
 			return new BuildingCatalogPage(
 				items,
@@ -88,29 +151,127 @@ namespace BetterBuildingMenu.Services
 				limit,
 				HasMore: hasMore,
 				ReorderableSortColumns: usableColumns,
-				BestMatchId: FindBestMatchId(items, query.SearchText),
-				SearchText: query.SearchText ?? string.Empty);
+				BestMatchId: target?.Id,
+				SearchText: query.SearchText ?? string.Empty,
+				BestMatch: target,
+				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && target is null,
+				// At the ceiling with rows past it, Load more cannot reach them: the UI says so instead.
+				Capped: limit >= BuildingCatalogQuery.MaxLimit && offset + items.Length < visible.Length,
+				AnchorId: query.AnchorId,
+				AnchorIndex: anchorIndex,
+				EnterStep: enterStep,
+				Sections: sections)
+			{
+				VisibleCount = visible.Length,
+				// Over every match, the folded rows' too: a fold hides rows, it does not change the view.
+				Facts = query.WithFacts ? ViewFacts.Of(matching, query.SaidOnceAt, !string.IsNullOrWhiteSpace(query.SearchText), query.EffectiveSortColumn) : ViewFacts.None,
+			};
 		}
 
 		/// <summary>
-		/// The best-scoring row of this window that can be placed: by relevance, then the shorter
-		/// name, then page order, as a group orders. Locked and already-built rows are skipped,
-		/// because Enter on them does nothing.
+		/// Whether a tab lists its buildable rows first, then its locked rows by milestone: a tab, not
+		/// All; the game's own order, no search; half its rows or more locked; and no groups of its own to
+		/// split, so the locked label is the only one.
 		/// </summary>
-		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, string? searchText)
+		/// <remarks>
+		/// A sort the player picked keeps its order, and a search ranks locked matches in place, dimmed.
+		/// See docs/design-notes.md, "Label plates".
+		/// </remarks>
+		public static bool ListsLockedLast(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogQuery query) =>
+			LockedLastCount(ordered, query) > 0;
+
+		/// <summary>How many locked rows a tab lists last, as <see cref="ListsLockedLast"/> decides; 0 where it does not.</summary>
+		/// <remarks>The locked share is counted before the groups: it is the cheaper test.</remarks>
+		private static int LockedLastCount(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogQuery query)
+		{
+			var inTab = !string.IsNullOrWhiteSpace(query.UiCategory) || query.StripTabs is { Count: > 0 } || query.SchoolTier >= 0;
+
+			if (ordered.Count == 0
+				|| !inTab
+				|| !string.IsNullOrWhiteSpace(query.SearchText)
+				|| query.Descending
+				|| !string.Equals(query.EffectiveSortColumn, BuildingCatalogQuery.DefaultSort, StringComparison.OrdinalIgnoreCase))
+			{
+				return 0;
+			}
+
+			var lockedCount = ordered.Count(entry => entry.IsLocked);
+
+			if (lockedCount * 2 < ordered.Count)
+			{
+				return 0;
+			}
+
+			if (BuildingCatalogGrouping.IsGrouped(query.GroupBy)
+				&& ordered.Select(entry => BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy)).Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any())
+			{
+				return 0;
+			}
+
+			return lockedCount;
+		}
+
+		/// <summary>One label per group of the page's grouping, each with where it starts and its true count; none for fewer than two groups.</summary>
+		/// <remarks>The outer level only: a group's tiers keep their order under it without labels of their own.</remarks>
+		private static CatalogSection[] GroupSections(
+			IReadOnlyList<BuildingCatalogEntry> visible,
+			string? groupBy,
+			Func<BuildingCatalogEntry, BuildingCatalogGrouping.GroupLabels>? labelsOf)
+		{
+			if (!BuildingCatalogGrouping.IsGrouped(groupBy) || visible.Count == 0)
+			{
+				return Array.Empty<CatalogSection>();
+			}
+
+			var sections = new List<CatalogSection>();
+			var start = 0;
+			// The current group's key, kept so each row's key is built once.
+			var key = BuildingCatalogGrouping.PrimaryKey(visible[0], groupBy);
+
+			for (var index = 1; index <= visible.Count; index++)
+			{
+				var next = index < visible.Count ? BuildingCatalogGrouping.PrimaryKey(visible[index], groupBy) : null;
+
+				if (next is not null && string.Equals(next, key, StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				var labels = labelsOf?.Invoke(visible[start]);
+				var label = labels is { Path.Length: > 0 } named ? named.Path[0] : key;
+				sections.Add(new CatalogSection("group:" + sections.Count, CatalogSection.Group, label, labels?.LabelId ?? string.Empty, start, index - start, false));
+				start = index;
+				key = next ?? string.Empty;
+			}
+
+			return sections.Count < 2 ? Array.Empty<CatalogSection>() : sections.ToArray();
+		}
+
+		/// <summary>
+		/// Enter's target: the best-scoring row of the whole result that can be placed, by
+		/// relevance, then the shorter name, then display order. Locked and already-built rows
+		/// are skipped, because Enter on them does nothing.
+		/// </summary>
+		/// <remarks>
+		/// Over every match, not the window, so a target past the loaded rows, or under a sort
+		/// or a grouping that does not lead with it, is still the one armed.
+		/// </remarks>
+		private static BuildingCatalogBestMatch? FindBestMatch(IReadOnlyList<BuildingCatalogEntry> ordered, string? searchText)
 		{
 			if (string.IsNullOrWhiteSpace(searchText))
 			{
 				return null;
 			}
 
-			BuildingCatalogEntry? best = null;
+			var best = -1;
 			var bestScore = 0;
 			var bestLength = 0;
 
-			foreach (var entry in items)
+			for (var index = 0; index < ordered.Count; index++)
 			{
-				if (entry.IsLocked || entry.IsAlreadyBuilt)
+				var entry = ordered[index];
+
+				if (!CanArm(entry))
 				{
 					continue;
 				}
@@ -118,15 +279,62 @@ namespace BetterBuildingMenu.Services
 				var score = BuildingCatalogRelevance.Score(entry, searchText);
 				var length = (entry.Name ?? string.Empty).Length;
 
-				if (best is null || score > bestScore || (score == bestScore && length < bestLength))
+				if (best < 0 || score > bestScore || (score == bestScore && length < bestLength))
 				{
-					best = entry;
+					best = index;
 					bestScore = score;
 					bestLength = length;
 				}
 			}
 
-			return best?.Id;
+			if (best < 0)
+			{
+				return null;
+			}
+
+			return TargetAt(ordered, best);
+		}
+
+		/// <summary>
+		/// Enter's target moved <paramref name="step"/> rows that can be placed from the best match, in
+		/// display order, down for a positive step; it stops at the first or last such row, and
+		/// <paramref name="served"/> is the step taken.
+		/// </summary>
+		/// <remarks>Without a best match there is nothing to move, and no step is served.</remarks>
+		private static BuildingCatalogBestMatch? StepTarget(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogBestMatch? best, int step, out int served)
+		{
+			served = 0;
+
+			if (best is null || step == 0)
+			{
+				return best;
+			}
+
+			var direction = Math.Sign(step);
+			var at = best.Index;
+
+			for (var index = best.Index + direction; index >= 0 && index < ordered.Count && served != step; index += direction)
+			{
+				if (CanArm(ordered[index]))
+				{
+					at = index;
+					served += direction;
+				}
+			}
+
+			return at == best.Index ? best : TargetAt(ordered, at);
+		}
+
+		/// <summary>Whether Enter can place a row: locked rows and built uniques it cannot.</summary>
+		/// <remarks>Equal to the UI's canPlace (buildingLockState.ts): Enter trusts this alone.</remarks>
+		private static bool CanArm(BuildingCatalogEntry entry) => !entry.IsLocked && !entry.IsAlreadyBuilt;
+
+		/// <summary>The row at a place in the display order, named as Enter's target.</summary>
+		private static BuildingCatalogBestMatch TargetAt(IReadOnlyList<BuildingCatalogEntry> ordered, int index)
+		{
+			var entry = ordered[index];
+
+			return new BuildingCatalogBestMatch(entry.Id, entry.Name ?? string.Empty, entry.UiMenu ?? string.Empty, index);
 		}
 
 		/// <summary>
@@ -236,6 +444,65 @@ namespace BetterBuildingMenu.Services
 			string.Equals(entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(AssetTypeOf(entry), tab, StringComparison.OrdinalIgnoreCase)
 			|| DensityMatches(entry, tab);
+
+		/// <summary>
+		/// How many entries answer to each tab, as <see cref="StripMatches"/> matches them, in one walk
+		/// over the entries.
+		/// </summary>
+		/// <remarks>
+		/// An entry can only match a tab named by a value it carries, its branch, its asset type or its
+		/// density, so each tab is found by those values and StripMatches confirms it. A count per tab
+		/// would walk the entries once for every tab.
+		/// </remarks>
+		public static int[] StripCounts(IEnumerable<BuildingCatalogEntry> entries, IReadOnlyList<string> tabs)
+		{
+			var counts = new int[tabs.Count];
+			var byValue = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+			var densities = false;
+
+			for (var tab = 0; tab < tabs.Count; tab++)
+			{
+				if (!byValue.TryGetValue(tabs[tab], out var named))
+				{
+					byValue[tabs[tab]] = named = new List<int>();
+				}
+
+				named.Add(tab);
+				densities |= StripAxes.DensityTab.TryParse(tabs[tab], out _, out _);
+			}
+
+			var counted = new HashSet<int>();
+
+			foreach (var entry in entries)
+			{
+				counted.Clear();
+				Count(entry, entry.DevTreeBranch);
+				Count(entry, AssetTypeOf(entry));
+
+				if (densities)
+				{
+					Count(entry, StripAxes.DensityTab.Format(entry.UiCategory ?? string.Empty, BuildingCatalogLabels.DensityTier(entry.ZoneType)));
+				}
+			}
+
+			return counts;
+
+			void Count(BuildingCatalogEntry entry, string? value)
+			{
+				if (value is null || !byValue.TryGetValue(value, out var candidates))
+				{
+					return;
+				}
+
+				foreach (var tab in candidates)
+				{
+					if (StripMatches(entry, tabs[tab]) && counted.Add(tab))
+					{
+						counts[tab]++;
+					}
+				}
+			}
+		}
 
 		/// <summary>
 		/// A density tab, which carries its family as well as its tier.
@@ -416,6 +683,9 @@ namespace BetterBuildingMenu.Services
 
 			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
 			{
+				// A search's own order: after the relevance seeded above, the game's tabs in their order, then
+				// its order within each, as Default reads it.
+				"match" => seed.ThenBy(x => x.UiCategoryTab).ThenBy(x => x.UIOrder).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
 				// The game's own order, and the only sort here that is not a field the
 				// player can see. Name second, so two assets vanilla gave the same
 				// priority do not swap under the cursor.
@@ -449,6 +719,7 @@ namespace BetterBuildingMenu.Services
 				"upkeep" => ThenNullable(seed, x => x.Upkeep, query.Descending),
 				"workers" => ThenNullable(seed, x => x.Workers, query.Descending),
 				"capacity" => ThenNullable(seed, x => x.Capacity, query.Descending),
+				"households" => ThenNullable(seed, x => x.Households, query.Descending),
 				"electricity" or "electricityconsumption" => ThenNullable(seed, x => x.ElectricityConsumption, query.Descending),
 				"water" or "waterconsumption" => ThenNullable(seed, x => x.WaterConsumption, query.Descending),
 				"garbage" or "garbageaccumulation" => ThenNullable(seed, x => x.GarbageAccumulation, query.Descending),
@@ -461,6 +732,18 @@ namespace BetterBuildingMenu.Services
 					? seed.ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
 					: seed.ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
 			};
+
+			// A sort by a number leaves ties among equal values: they go to the cheaper
+			// building, rows with a cost first, then to the game's own order. The id last, so
+			// no two rows swap between refreshes.
+			if (SortDefaults.BreaksTiesByCost(query.EffectiveSortColumn))
+			{
+				ordered = ordered
+					.ThenBy(entry => entry.ConstructionCost.HasValue ? 0 : 1)
+					.ThenBy(entry => entry.ConstructionCost)
+					.ThenBy(entry => entry.UIOrder)
+					.ThenBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase);
+			}
 
 			return ordered.ThenBy(x => x.Id);
 		}
@@ -488,6 +771,7 @@ namespace BetterBuildingMenu.Services
 				"upkeep" => entry.Upkeep,
 				"workers" => entry.Workers,
 				"capacity" => entry.Capacity,
+				"households" => entry.Households,
 				"electricity" or "electricityconsumption" => entry.ElectricityConsumption,
 				"water" or "waterconsumption" => entry.WaterConsumption,
 				"garbage" or "garbageaccumulation" => entry.GarbageAccumulation,

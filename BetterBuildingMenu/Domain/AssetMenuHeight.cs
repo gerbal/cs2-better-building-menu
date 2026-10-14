@@ -1,12 +1,13 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// How tall the asset menu catalog is drawn — one number the player sets
-	/// by dragging, and the asset menu then keeps.
+	/// How tall the asset menu's body is — one number the player sets by dragging, and the asset
+	/// menu then keeps. The box is this and the chrome around it, 63.75 rem.
 	/// </summary>
 	/// <remarks>
 	/// The UI clamps its drag with the same three numbers, generated from these into
-	/// sharedContracts.generated.ts: see SharedContractsTests.
+	/// sharedContracts.generated.ts: see SharedContractsTests. The body draws at the box less the
+	/// chrome the box draws, never below <see cref="Min"/>. See docs/design-notes.md, "The box's height".
 	/// </remarks>
 	public static class AssetMenuHeight
 	{
@@ -27,13 +28,15 @@ namespace BetterBuildingMenu.Domain
 		public const float Max = 960f;
 
 		/// <summary>
-		/// A useful working height rather than the shortest legal one.
+		/// The body's height that makes the whole box as tall as the game's own build menu, 208, with
+		/// the top row's band above it and the tab row's below.
 		/// </summary>
 		/// <remarks>
-		/// Roughly five tile rows — enough for every view mode to be itself, since nothing grows the
-		/// asset menu automatically — and the player can drag it anywhere between Min and Max.
+		/// The box is this height and 63.75 in every look. The player can drag it anywhere between Min
+		/// and Max. A height an earlier release shipped as its default moves here once. See
+		/// docs/design-notes.md, "The box's height".
 		/// </remarks>
-		public const float Default = 420f;
+		public const float Default = 144.25f;
 
 		public static float Clamp(float height)
 		{

@@ -1,13 +1,12 @@
 @use "../../assetMenuGeometry" as *;
 
-// The width drag: a strip down the catalog's right side, over the catalog's own
-// right margin so it takes nothing from the catalog. Drawn as the game draws its
-// resizer, as nothing until the mouse is on it, plus the top strip's pill on its
-// side, as long and half as thick to fit the margin.
+// The width drag: a strip down the box's right edge, from under the top row to the box's bottom,
+// over the catalog's own right margin and the tab row's end. Drawn as the game draws its resizer,
+// as nothing until the mouse is on it, plus the top edge's pill on its side.
 
 .widthHandle {
   position: absolute;
-  top: 0;
+  top: $width-handle-top;
   bottom: 0;
   right: 0;
   width: $width-handle-width;
@@ -20,8 +19,34 @@
   // The game's own cursor, as on the height strip: the game draws its cursors and
   // maps no CSS keyword past default/pointer/none.
   cursor: url(cursor://horizontal-can-resize);
-  // The menu's bottom corner, for the fill below.
-  border-bottom-right-radius: var(--panelRadius);
+  // The box's bottom corner, for the fill below.
+  border-bottom-right-radius: var(--bbm-boxRadius);
+}
+
+// The left edge's strip, the right one's mirror across the box's first $width-handle-width, down the body
+// alone: the tab row's first cell, All, starts inside it. Under the body's $body-side-margin, so no building
+// sits beneath it.
+.widthHandleLeft {
+  position: absolute;
+  top: $width-handle-top;
+  bottom: $tab-row-gap-above + $tab-row-height + $tab-row-pad-below;
+  left: 0;
+  width: $width-handle-width;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: url(cursor://horizontal-can-resize);
+}
+
+// With no reach beside it, it lights under the mouse by itself.
+.widthHandleLeft:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.widthHandleLeft:hover .widthGrip {
+  background-color: rgba(var(--scrollbarColor), 0.8);
 }
 
 // The game's resizer fills white under the mouse and more while dragging. The
@@ -39,10 +64,12 @@
 }
 
 // The top strip's pill on its side: the game's scrollbar thumb at rest, brightening
-// in white as the thumb does, at once and never in the accent.
+// in white as the thumb does, at once and never in the accent. Never past its strip, which a
+// collapsed box makes shorter than the pill.
 .widthGrip {
   width: 4rem;
   height: 75rem;
+  max-height: 100%;
   border-radius: 2rem;
   background-color: rgba(var(--scrollbarColor), 0.6);
 }
@@ -56,13 +83,11 @@
   background-color: rgba(var(--scrollbarColor), 1);
 }
 
-// More of the strip to grab, past the menu's edge across the gap to the pane, from
-// the header down to the menu's bottom (never beside the top strip), so beside the
-// header and above a shorter pane too:
-// nothing until the mouse is on it, so the gap still shows the city.
+// More of the strip to grab, past the box's edge across the gap to the pane, as far down as the
+// strip runs: nothing until the mouse is on it, so the gap still shows the city.
 .widthReach {
   position: absolute;
-  top: $handle-height;
+  top: $width-handle-top;
   bottom: 0;
   right: -$width-handle-reach;
   width: $width-handle-reach;

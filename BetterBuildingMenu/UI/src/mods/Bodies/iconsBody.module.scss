@@ -1,0 +1,122 @@
+@use "../../base.scss" as _base;
+@use "bodyShell" as *;
+
+// The icons: pictures alone, placed from their slot index, a family member's pill at its foot, in the
+// look's tokens. See docs/design-notes.md, "The icons".
+
+@include body-shell;
+
+// The plate, its tone alternating with each run of a family's members.
+.icon {
+  @include cell-face(var(--bbm-radiusTile), var(--bbm-icon));
+}
+
+.alt {
+  background-color: var(--bbm-iconAlt);
+}
+
+@include cell-lit(".icon");
+
+// A building that cannot be placed, locked or a unique the city holds: a plate apart from both tones,
+// bare under the interface styles.
+.unplaceable,
+.unplaceable:hover {
+  background-color: var(--bbm-iconLocked);
+}
+
+// The one armed building: solid.
+.armed,
+.armed:hover {
+  background-color: var(--bbm-arm);
+}
+
+// The picture, a rem inside the plate on every side, sized inline from Icon size.
+.artwork {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+
+  .picture {
+    display: block;
+  }
+
+  .mark {
+    @include _base.unique-mark(100%);
+  }
+}
+
+@include unique-mark-states(".icon");
+
+// The silhouette, rasters only, keyed off "false", as Cohtml's selector engine rejects :not().
+.unplaceable[data-vector-thumb="false"] .picture {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
+}
+
+// Why a locked icon waits: its lock over "MS n", in the body's milestone ink, which turns dark on a
+// plate a style makes light, in the picture's upper part. iconPlate.ts places it and keeps the pill and
+// the band clear of it.
+.locked {
+  position: absolute;
+  left: 0;
+  top: 4rem;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+// Over a name band, the lock and "MS n" side by side at the top.
+.lockedRow {
+  top: 2rem;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.lockGlyph {
+  width: 13rem;
+  height: 13rem;
+}
+
+.milestone {
+  font-size: calc(10rem * var(--fontScale));
+  line-height: calc(11rem * var(--fontScale));
+  color: var(--bbm-bodyMilestone);
+}
+
+// A family member's varying word, centred at its foot, fully round. Its font and padding are
+// iconFamilies.ts's, which leaves off a pill too wide for the icon.
+.pill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.pillWord {
+  height: calc(12rem * var(--fontScale));
+  padding: 0 5rem;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: calc(12rem * var(--fontScale));
+  white-space: nowrap;
+  border-top-left-radius: calc(6rem * var(--fontScale));
+  border-top-right-radius: calc(6rem * var(--fontScale));
+  border-bottom-left-radius: calc(6rem * var(--fontScale));
+  border-bottom-right-radius: calc(6rem * var(--fontScale));
+  background-color: var(--bbm-pillBg);
+  color: var(--bbm-pillText);
+}
+
+// The icons with names: each name planned on two lines over the icon's foot, in the pill's face.
+.nameBand {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0 1rem;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: calc(12rem * var(--fontScale));
+  background-color: var(--bbm-pillBg);
+  color: var(--bbm-pillText);
+}

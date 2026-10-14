@@ -1,5 +1,5 @@
 /**
- * A line in a grid tile's hover card. A line earns its place by having a
+ * A line in a building's hover card. A line earns its place by having a
  * value, so a card never spends a row printing "—" for a field the asset
  * does not have.
  */
@@ -34,9 +34,9 @@ export interface TileTooltipCandidate extends TileTooltipLine {
 }
 
 /**
- * A ceiling, not a target: the grid is worth using because it reads faster
- * than the table, and an unbounded hover card is the table again. Applicability
- * is what actually keeps a card short; this only catches unnoticed growth.
+ * A ceiling, not a target: a body is worth using because it reads at a glance,
+ * and an unbounded hover card has to be read. Applicability is what actually
+ * keeps a card short; this only catches unnoticed growth.
  */
 export const TILE_TOOLTIP_MAX_LINES = 10;
 

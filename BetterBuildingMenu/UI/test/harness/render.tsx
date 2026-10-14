@@ -1,13 +1,28 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactElement } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
+import { setBinding } from "./stubs/cs2-api";
 import { installVanillaRegistry } from "./vanillaRegistry";
 
 // Every render test imports this module, so the resolver is seeded once.
 installVanillaRegistry();
 
-/** What a component draws, as markup. Effects do not run; hooks do. */
-export const renderHtml = (element: ReactElement): string => renderToStaticMarkup(element);
+/**
+ * What a component draws, as markup. Effects do not run; hooks do. React warns that a layout effect
+ * does nothing on the server, which is what this is and is the point of a markup render, so that
+ * one warning is dropped; any other still prints.
+ */
+export function renderHtml(element: ReactElement): string {
+  const error = console.error;
+  console.error = (...args: unknown[]) => {
+    if (!args.some((arg) => typeof arg === "string" && arg.includes("useLayoutEffect does nothing on the server"))) error(...args);
+  };
+  try {
+    return renderToStaticMarkup(element);
+  } finally {
+    console.error = error;
+  }
+}
 
 /** A catalog entry the components accept, with every field a row reads. */
 export function entry(id: number, over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry {
@@ -62,3 +77,9 @@ export function catalogPage(items: BuildingCatalogEntry[], over: Record<string, 
 /** How many times a pattern occurs in the markup. */
 export const count = (html: string, pattern: RegExp): number =>
   (html.match(new RegExp(pattern.source, "g")) ?? []).length;
+
+/** The open menu and its own VIEW pick, as C# publishes them; "" for none, so Default view and Auto decide. */
+export function showBody(kind: string, menu = "Roads"): void {
+  setBinding("BetterBuildingMenu", "AssetMenu", menu);
+  setBinding("BetterBuildingMenu", "AssetMenuViews", kind === "" ? [] : [{ menu, value: kind }]);
+}

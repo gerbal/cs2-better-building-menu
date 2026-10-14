@@ -125,6 +125,69 @@ export function declarationsIn(root: Root, selector: string): Record<string, str
   return declarations;
 }
 
+// A selector of plain classes and descendant spaces, the only kind the resolver below matches.
+const PLAIN_COMPOUND = /^(?:\.[\w-]+)+$/;
+
+/** A plain selector's compounds, outermost first, each as its classes; null for any other selector. */
+function plainCompounds(selector: string): string[][] | null {
+  const compounds = normalize(selector).split(" ");
+  return compounds.every((compound) => PLAIN_COMPOUND.test(compound))
+    ? compounds.map((compound) => compound.split(".").filter(Boolean))
+    : null;
+}
+
+/** Whether every compound matches one of the elements in order, the last compound the last element. */
+function matchesPath(compounds: readonly string[][], elements: readonly (readonly string[])[]): boolean {
+  const fits = (compound: readonly string[], classes: readonly string[]) => compound.every((name) => classes.includes(name));
+  if (!fits(compounds[compounds.length - 1], elements[elements.length - 1])) return false;
+
+  let element = elements.length - 2;
+  for (let compound = compounds.length - 2; compound >= 0; compound--) {
+    while (element >= 0 && !fits(compounds[compound], elements[element])) element--;
+    if (element < 0) return false;
+    element--;
+  }
+  return true;
+}
+
+/** The declaration the cascade picks for a property, with what it weighs: its classes, and whether it is `!important`. */
+export interface Winner {
+  value: string;
+  classes: number;
+  important: boolean;
+}
+
+/**
+ * The declaration `prop` resolves to on an element at rest, as the cascade picks it: an
+ * `!important` first, then the declaration of the most classes, the later of two equal. `elements`
+ * is each element's classes, from an ancestor down to the element. Only plain class selectors
+ * match, so a state (`:hover`) never applies.
+ */
+export function winnerOn(path: string, elements: readonly (readonly string[])[], prop: string): Winner | undefined {
+  let winner: (Winner & { weight: number }) | undefined;
+
+  for (const rule of topLevelRules(compiledSheet(path))) {
+    for (const selector of rule.selectors) {
+      const compounds = plainCompounds(selector);
+      if (!compounds || !matchesPath(compounds, elements)) continue;
+
+      const classes = compounds.reduce((sum, compound) => sum + compound.length, 0);
+      rule.walkDecls(prop, (declaration) => {
+        const weight = classes + (declaration.important ? 1000 : 0);
+        if (declaration.parent === rule && (!winner || weight >= winner.weight)) {
+          winner = { value: declaration.value, classes, important: declaration.important, weight };
+        }
+      });
+    }
+  }
+
+  return winner && { value: winner.value, classes: winner.classes, important: winner.important };
+}
+
+/** The value `prop` resolves to on an element at rest, as `winnerOn` picks it. */
+export const resolvedOn = (path: string, elements: readonly (readonly string[])[], prop: string): string | undefined =>
+  winnerOn(path, elements, prop)?.value;
+
 /** Every declaration in a sheet, with the selectors of the rule that holds it. */
 export function everyDeclaration(path: string): { selectors: string[]; prop: string; value: string }[] {
   const found: { selectors: string[]; prop: string; value: string }[] = [];

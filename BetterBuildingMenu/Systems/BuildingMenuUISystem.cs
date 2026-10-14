@@ -2,6 +2,8 @@
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
+using Colossal.Serialization.Entities;
+using Game;
 using Game.Input;
 using Game.Prefabs;
 using Game.Rendering;
@@ -29,10 +31,22 @@ namespace BetterBuildingMenu.Systems
 		// transition per trigger. Each trigger handler applies a transition,
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
 		private AssetMenuState _assetMenu = AssetMenuState.Initial;
+		// Each menu's sort this session, which its next open brings back.
+		private readonly SessionSorts _sessionSorts = new();
+		// The open menu's grouping without a pick of its own, from the last refresh: a GROUP pick of it
+		// takes the menu's own pick away.
+		private string _menuDefaultGroup = string.Empty;
+		// The small menus the UI names, whose rows all fit one screen: each opens on All. Empty until the UI
+		// first says, so a menu opened before then opens on its tab.
+		private IReadOnlyCollection<string> _menusOpeningOnAll = Array.Empty<string>();
+		// Of those, the ones of one tab drawn as a list with Small menus grow on: each groups by none unless
+		// picked.
+		private IReadOnlyCollection<string> _menusDrawingNoGroups = Array.Empty<string>();
 
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
 		private PrefabIndexingSystem _indexer = null!;
+		private PlacementWatchSystem _placementWatch = null!;
 		private DefaultToolSystem _defaultToolSystem = null!;
 		// Only for releasing the toolbar's menu selection when the asset menu closes;
 		// see CloseAssetMenu.
@@ -59,17 +73,44 @@ namespace BetterBuildingMenu.Systems
 		private int? _appliedMenuFrame;
 		private int _appliedMenuIndex;
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
+		// Each menu's own GROUP, as the settings keep it, for the control's dot.
+		private ValueBindingHelper<MenuPick[]> _AssetMenuGroups = null!;
+		// The text those picks were parsed from: a new array never equals the last, so a settings apply
+		// that left them alone, a width drag's save among them, pushes nothing.
+		private string? _publishedMenuGroups;
 		// The grouping dimensions that can act on the current menu set; the picker lists these.
 		private ValueBindingHelper<string[]> _AssetMenuGroupDimensions = null!;
+		// What the look's Auto rule reads of each menu opened, each from the index generation it was counted on.
+		private ValueBindingHelper<MenuShare[]> _MenuShares = null!;
+		private readonly MenuShareLedger _menuShares = new();
+		private bool _menuSharesWarned;
 		// Whether the menu the toolbar currently has open is one the asset menu takes
 		// over. Lets the vanilla menu stay hidden after the asset menu is closed, so
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _OwnsCurrentMenu = null!;
 		private ValueBindingHelper<int> _ActivePrefabId = null!;
-		private ValueBindingHelper<float> _AssetMenuWidth = null!;
 		private ValueBindingHelper<float> _AssetMenuHeight = null!;
-		private ValueBindingHelper<float> _AssetMenuCatalogWidth = null!;
+		private ValueBindingHelper<int> _AssetMenuWidthStep = null!;
+		// Whether the box is collapsed to its top row and tabs: read/write, the top edge, a tab and typing set it.
+		private ValueBindingHelper<bool> _AssetMenuCollapsed = null!;
 		private ValueBindingHelper<bool> _ControlPaneShown = null!;
+		// Each menu's own VIEW and Default view, as the settings keep them: the UI picks the body.
+		private ValueBindingHelper<MenuPick[]> _AssetMenuViews = null!;
+		// The text those picks were parsed from, so a settings apply that left them alone pushes nothing.
+		private string? _publishedMenuViews;
+		private ValueBindingHelper<string> _AssetMenuDefaultView = null!;
+		// Above 100% text, the list's form: more buildings, or whole names.
+		private ValueBindingHelper<string> _AssetMenuAtLargeText = null!;
+		// What shows when the pointer rests on a building: the UI draws the form.
+		private ValueBindingHelper<string> _AssetMenuHoverCard = null!;
+		// How the top edge's drag settles: the UI snaps it to whole lines, or keeps it free.
+		private ValueBindingHelper<string> _AssetMenuTopEdge = null!;
+		// How every menu is drawn: the finished look, read from Options and written by VIEW's Look.
+		private ValueBindingHelper<string> _AssetMenuLook = null!;
+		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
+		private ValueBindingHelper<TuningValues> _AssetMenuTuning = null!;
+		// The Said once at share as Options last applied it: a change redraws the open menu, as only C# counts it.
+		private int _appliedSaidOnceAt;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -105,6 +146,8 @@ namespace BetterBuildingMenu.Systems
 		// Sidecar to the above. See MenuCategoryCount for why it is not a field
 		// on the category record.
 		private ValueBindingHelper<MenuCategoryCount[]> _AssetMenuCategoryCounts = null!;
+		// The All cell's count: every row the filters and the search leave in the menu.
+		private ValueBindingHelper<int> _AssetMenuAllCount = null!;
 		// The strip's fallback axis for menus vanilla gives no categories: the tabs, which tab
 		// is picked, and WHICH AXIS they are — published so the row can say so, because the axis
 		// varies per menu and a tab row whose meaning changes silently is not learnable.
@@ -113,20 +156,22 @@ namespace BetterBuildingMenu.Systems
 		// Which category the strip draws as its development branches, and those
 		// branches. Empty on the menus that expand nothing.
 		private ValueBindingHelper<MenuCategoryTabs[]> _AssetMenuExpandedCategories = null!;
-		// The tier segment's other axis. Education navigates by level, not by
-		// the milestone the school unlocked at.
-		private ValueBindingHelper<MenuBranchCount[]> _AssetMenuSchoolTierCounts = null!;
+		// Education's levels, as chips beside the tab that holds its schools. Education
+		// navigates by level, not by the milestone the school unlocked at.
+		private ValueBindingHelper<TierBracket> _AssetMenuTierBracket = null!;
+		// That tab, as the last refresh found it: a level's pick lights it too.
+		private string _tierParent = string.Empty;
 		private ValueBindingHelper<int> _AssetMenuSchoolTierBinding = null!;
 		private ValueBindingHelper<string> _AssetMenuCategoryBinding = null!;
 		/// <summary>
 		/// The vanilla menu the asset menu is scoped to, or empty for the whole catalog.
 		/// </summary>
 		/// <remarks>
-		/// Published so the chip row can name it: the scope is set by clicking a toolbar icon,
-		/// and would otherwise be applied with nothing on screen saying so.
+		/// Published so the top row and the tab row can name it: the scope is set by clicking a
+		/// toolbar icon, and would otherwise be applied with nothing on screen saying so.
 		/// </remarks>
 		private ValueBindingHelper<string> _AssetMenuBinding = null!;
-		/// <summary>Every vanilla menu, so one can be chosen as a filter.</summary>
+		/// <summary>Every vanilla menu, so the tab row can draw the open one's icon.</summary>
 		private ValueBindingHelper<VanillaMenuCategory[]> _AssetMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _AssetMenuMilestonesBinding = null!;
@@ -138,6 +183,7 @@ namespace BetterBuildingMenu.Systems
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 			_indexer = World.GetOrCreateSystemManaged<PrefabIndexingSystem>();
+			_placementWatch = World.GetOrCreateSystemManaged<PlacementWatchSystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 			_selectedInfoUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>();
@@ -161,19 +207,37 @@ namespace BetterBuildingMenu.Systems
 			// size slider takes effect without a reload.
 			_AssetMenuTileSize = CreateBinding("AssetMenuTileSize", Mod.Settings.AssetMenuTileSize);
 			CreateTrigger("SearchEverything", SearchEverything);
-			_AssetMenuWidth = CreateBinding("AssetMenuWidth", 0f);
 			// Seeded from the setting rather than 0: the asset menu draws from this
 			// on its first frame, and a zero height would flash a collapsed
 			// catalog before the first drag published anything.
 			_AssetMenuHeight = CreateBinding(
 				"AssetMenuHeight",
 				AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight));
-			// Seeded from the settings like the height, so the first frame draws the
-			// player's width and pane rather than flashing the defaults.
-			_AssetMenuCatalogWidth = CreateBinding(
-				"AssetMenuCatalogWidth",
-				AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth));
+			// Read/write, and seeded from the settings like the height, so the first frame
+			// draws the player's step and pane rather than flashing the defaults.
+			_AssetMenuWidthStep = CreateBinding(
+				"AssetMenuWidthStep",
+				"SetAssetMenuWidthStep",
+				WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep),
+				SetAssetMenuWidthStep);
+			// Read/write like the Width step, and seeded so a box collapsed last session opens collapsed on its first frame.
+			_AssetMenuCollapsed = CreateBinding("AssetMenuCollapsed", "SetAssetMenuCollapsed", Mod.Settings.AssetMenuCollapsed, SetAssetMenuCollapsed);
+			// A double press on the top edge: the game's own size, saved once.
+			CreateTrigger("RestoreAssetMenuSize", RestoreAssetMenuSize);
 			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
+			// Seeded here like the pane, so the first frame draws each menu's body.
+			_AssetMenuViews = CreateBinding("AssetMenuViews", BodyViews.PicksOf(Mod.Settings.MenuViews, Knobs.DeveloperMode));
+			_publishedMenuViews = Mod.Settings.MenuViews;
+			_AssetMenuDefaultView = CreateBinding("AssetMenuDefaultView", BodyViews.SanitizeDefault(Mod.Settings.DefaultView));
+			_AssetMenuAtLargeText = CreateBinding("AssetMenuAtLargeText", LargeText.Sanitize(Mod.Settings.AtLargeText));
+			_AssetMenuHoverCard = CreateBinding("AssetMenuHoverCard", HoverCards.Sanitize(Mod.Settings.HoverCard));
+			_AssetMenuTopEdge = CreateBinding("AssetMenuTopEdge", TopEdges.Sanitize(Mod.Settings.TopEdge));
+			// Read/write like the Width step: VIEW's Look sends the pick, which saves once.
+			_AssetMenuLook = CreateBinding("AssetMenuLook", "SetAssetMenuLook", Looks.Sanitize(Mod.Settings.MenuLook), SetAssetMenuLook);
+			// The open menu's own VIEW, from the VIEW list; "" goes back to Default view.
+			CreateTrigger<string>("SetAssetMenuView", SetAssetMenuView);
+			_AssetMenuTuning = CreateBinding("AssetMenuTuning", CurrentTuning());
+			_appliedSaidOnceAt = CurrentSaidOnceAt();
 			// Only now, with every binding OnSettingsApplied re-pushes created.
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
@@ -198,6 +262,9 @@ namespace BetterBuildingMenu.Systems
 			// persistent query, so a write-only trigger would leave the picker
 			// showing "Nothing" over grouped rows after any remount.
 			_AssetMenuGroupDimensions = CreateBinding("AssetMenuGroupDimensions", Array.Empty<string>());
+			_AssetMenuGroups = CreateBinding("AssetMenuGroups", MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray());
+			_publishedMenuGroups = Mod.Settings.MenuGroups;
+			_MenuShares = CreateBinding("MenuShares", Array.Empty<MenuShare>());
 			_BuildingCatalogGroupBy = CreateBinding(
 				"BuildingCatalogGroupBy",
 				"SetBuildingCatalogGroupBy",
@@ -210,13 +277,14 @@ namespace BetterBuildingMenu.Systems
 				SetBuildingCatalogSortDescending);
 			_AssetMenuCategoriesBinding = CreateBinding("AssetMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_AssetMenuCategoryCounts = CreateBinding("AssetMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
+			_AssetMenuAllCount = CreateBinding("AssetMenuAllCount", -1);
 			_AssetMenuStripTabs = CreateBinding("AssetMenuStripTabs", Array.Empty<MenuBranchCount>());
 			_AssetMenuExpandedCategories = CreateBinding("AssetMenuExpandedCategories", Array.Empty<MenuCategoryTabs>());
 			// A plain value binding plus its own trigger, rather than the
 			// two-in-one form: the value is the LIST both controls share, while
 			// the trigger takes the single tab the row clicked.
 			_AssetMenuStripTabBinding = CreateBinding("AssetMenuStripTab", Array.Empty<string>());
-			_AssetMenuSchoolTierCounts = CreateBinding("AssetMenuSchoolTierCounts", Array.Empty<MenuBranchCount>());
+			_AssetMenuTierBracket = CreateBinding("AssetMenuTierBracket", TierBracket.Empty);
 			_AssetMenuSchoolTierBinding = CreateBinding(
 				"AssetMenuSchoolTier",
 				"SetAssetMenuSchoolTier",
@@ -246,19 +314,35 @@ namespace BetterBuildingMenu.Systems
 			// arrive comma-joined, because this bridge is happier with flat primitives.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
 			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
+			// Up and Down in the search field move Enter's target; the page says where it stops.
+			CreateTrigger<int>("MoveEnterTarget", MoveEnterTarget);
+			// How many buildings one screen of the drawn body holds, so the window reaches past it.
+			CreateTrigger<int>("SetCatalogScreen", SetCatalogScreen);
+			// A press on the Locked label: a half-locked tab's locked rows leave the window, or come back.
+			CreateTrigger<string, bool>("SetCatalogSectionCollapsed", SetCatalogSectionCollapsed);
+			// The small menus, whose rows all fit one screen of their body: each opens on All from its next open.
+			CreateTrigger<string>("SetMenusOpeningOnAll", joined => _menusOpeningOnAll = OpensOnAll.Parse(joined));
+			// Of those, the ones of one tab drawn as a list with Small menus grow on, which draw no groups unless
+			// picked.
+			CreateTrigger<string>("SetMenusDrawingNoGroups", SetMenusDrawingNoGroups);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);
 				CreateTrigger("ClearAssetMenuFilters", ClearAssetMenuFilters);
-				CreateTrigger("ResetAssetMenu", ResetAssetMenu);
 				CreateTrigger<string>("SetAssetMenuStripTab", SetAssetMenuStripTab);
-				CreateTrigger("ClearAssetMenuScope", ClearAssetMenuScope);
-				CreateTrigger<string>("SetAssetMenu", SetAssetMenu);
 			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
-			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
-			CreateTrigger<float>("SetAssetMenuCatalogWidth", SetAssetMenuCatalogWidth);
-			CreateTrigger("CommitAssetMenuCatalogWidth", CommitAssetMenuCatalogWidth);
-			CreateTrigger<bool>("SetControlPaneShown", SetControlPaneShown);
+			CreateTrigger<bool>("CommitAssetMenuHeight", CommitAssetMenuHeight);
+			// VIEW's More options.
+			CreateTrigger("OpenModOptions", OpenModOptions);
+			// Which of our strings the player's language lacks, for the game's words in their place.
+			CreateLocaleBindings();
+
+			// A gamepad cannot reach BBM's menu: the game's own stands in while one is used.
+			// Last, so the handler never runs before the bindings it reads exist.
+			if (InputManager.instance is { } input)
+			{
+				input.EventControlSchemeChanged += OnControlSchemeChanged;
+			}
 		}
 
 		protected override void OnDestroy()
@@ -276,7 +360,44 @@ namespace BetterBuildingMenu.Systems
 				_toolSystem.EventToolChanged -= OnToolChanged;
 			}
 
+			if (InputManager.instance is { } input)
+			{
+				input.EventControlSchemeChanged -= OnControlSchemeChanged;
+			}
+
+			DestroyLocaleBindings();
+
 			base.OnDestroy();
+		}
+
+		protected override void OnGamePreload(Purpose purpose, GameMode mode)
+		{
+			base.OnGamePreload(purpose, mode);
+
+			// A load or a return to the main menu clears the toolbar while the UI is gone, so no
+			// deselect arrives to forget a menu given up under the gamepad.
+			_gamepadMenu.Forget();
+		}
+
+		/// <summary>
+		/// The small menus of one tab drawn as a list with Small menus grow on, as the UI names them; the open
+		/// menu redraws when it joins or leaves them.
+		/// </summary>
+		/// <remarks>
+		/// The UI can name only a menu C# has counted, which is the open one on its first open, so its page is
+		/// grouped until the name arrives. See docs/design-notes.md, "The bodies".
+		/// </remarks>
+		private void SetMenusDrawingNoGroups(string joined)
+		{
+			var named = OpensOnAll.Parse(joined);
+			var menu = _assetMenu.Menu;
+			var changed = named.Contains(menu) != _menusDrawingNoGroups.Contains(menu);
+			_menusDrawingNoGroups = named;
+
+			if (changed && _assetMenuOpen)
+			{
+				RefreshBuildingCatalog();
+			}
 		}
 
 		/// <summary>
@@ -296,8 +417,43 @@ namespace BetterBuildingMenu.Systems
 			// The sizes too, so settings applied from anywhere but a drag (the Options
 			// screen, a tool, SetDefaults) redraw the asset menu at once.
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
-			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth);
+			_AssetMenuWidthStep.Value = WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep);
+			_AssetMenuCollapsed.Value = Mod.Settings.AssetMenuCollapsed;
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
+			_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);
+			_AssetMenuAtLargeText.Value = LargeText.Sanitize(Mod.Settings.AtLargeText);
+			_AssetMenuHoverCard.Value = HoverCards.Sanitize(Mod.Settings.HoverCard);
+			_AssetMenuTopEdge.Value = TopEdges.Sanitize(Mod.Settings.TopEdge);
+			_AssetMenuLook.Value = Looks.Sanitize(Mod.Settings.MenuLook);
+			_AssetMenuTuning.Value = CurrentTuning();
+			if (!string.Equals(_publishedMenuViews, Mod.Settings.MenuViews, StringComparison.Ordinal))
+			{
+				_publishedMenuViews = Mod.Settings.MenuViews;
+				_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews, Knobs.DeveloperMode);
+			}
+
+			// Whether this pass redrew the open menu already: a Reset that moves a GROUP pick and Said once at
+			// redraws it once.
+			var redrawn = false;
+			if (!string.Equals(_publishedMenuGroups, Mod.Settings.MenuGroups, StringComparison.Ordinal))
+			{
+				_publishedMenuGroups = Mod.Settings.MenuGroups;
+				_AssetMenuGroups.Value = MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray();
+
+				// The open menu follows its stored GROUP now, as after Reset; a closed menu reads it as it opens.
+				if (_assetMenuOpen
+					&& _assetMenu.Menu.Length > 0
+					&& MenuPicks.Regroup(MenuPicks.Get(Mod.Settings.MenuGroups, _assetMenu.Menu), _assetMenu.Query.GroupBy, _menuDefaultGroup) is { } regroup)
+				{
+					var before = _assetMenu;
+					Apply(_assetMenu.SetGroupBy(regroup));
+					redrawn = !ReferenceEquals(before, _assetMenu);
+				}
+			}
+
+			// Whoever has the menu: with the setting off the watcher sends no deselect, so a menu
+			// given up under the gamepad could outlive its close and reopen once switched back on.
+			_gamepadMenu.SettingsApplied(Mod.Settings.ReplaceVanillaBuildMenu);
 
 			// Switched off with the asset menu up: the menu goes back to its vanilla grid now
 			// rather than at the next click.
@@ -311,7 +467,41 @@ namespace BetterBuildingMenu.Systems
 				ReleaseMenuScope();
 				YieldMenuToVanilla();
 			}
+
+			// A share moved in Options changes what the open menu says once, so it redraws now, unless the
+			// regroup's redraw above already read it.
+			var saidOnceAt = CurrentSaidOnceAt();
+			if (saidOnceAt != _appliedSaidOnceAt)
+			{
+				_appliedSaidOnceAt = saidOnceAt;
+				if (_assetMenuOpen && !redrawn)
+				{
+					RefreshBuildingCatalog();
+				}
+			}
 		}
+
+		/// <summary>The knobs the UI reads, through the one rule every knob is read by.</summary>
+		private static TuningValues CurrentTuning() =>
+			new(
+				Knobs.DeveloperMode,
+				Knobs.Value(settings => settings.DevInterfaceStyles, Tuning.InterfaceStyles),
+				Knobs.Value(settings => settings.DevTabNames, Tuning.TabNames),
+				ListShare: Tuning.ListShareOf(Knobs.Value(settings => settings.DevListShare, Tuning.ListShare)),
+				WhatCounts: Tuning.OneOf(Tuning.WhatCountsValues, Knobs.Value(settings => settings.DevWhatCounts, Tuning.WhatCounts), Tuning.WhatCounts),
+				AutoLargeText: Tuning.OneOf(Tuning.AutoLargeTextValues, Knobs.Value(settings => settings.DevAutoLargeText, Tuning.AutoLargeText), Tuning.AutoLargeText),
+				CardsFrom: Tuning.OneOf(Tuning.CardsFromValues, Knobs.Value(settings => settings.DevCardsFrom, Tuning.CardsFrom), Tuning.CardsFrom),
+				ListPlateHeight: Tuning.ListPlateHeightOf(Knobs.Value(settings => settings.DevListPlateHeight, Tuning.ListPlateHeight)),
+				NameLines: Tuning.OneOf(Tuning.NameLinesValues, Knobs.Value(settings => settings.DevNameLines, Tuning.NameLines), Tuning.NameLines),
+				TileNameLine: Knobs.Value(settings => settings.DevTileNameLine, Tuning.TileNameLine),
+				BlockLabels: Tuning.OneOf(Tuning.BlockLabelsValues, Knobs.Value(settings => settings.DevBlockLabels, Tuning.BlockLabels), Tuning.BlockLabels),
+				CardHeight: Tuning.OneOf(Tuning.CardHeightValues, Knobs.Value(settings => settings.DevCardHeight, Tuning.CardHeight), Tuning.CardHeight),
+				SmallMenusGrow: Knobs.Value(settings => settings.DevSmallMenusGrow, Tuning.SmallMenusGrow),
+				SearchFlow: Tuning.OneOf(Tuning.SearchFlowValues, Knobs.Value(settings => settings.DevSearchFlow, Tuning.SearchFlow), Tuning.SearchFlow),
+				DimTypedWord: Knobs.Value(settings => settings.DevDimTypedWord, Tuning.DimTypedWord),
+				IconsAbove: Tuning.Within(Knobs.Value(settings => settings.DevIconsAbove, Tuning.IconsAbove), Tuning.IconsAboveMin, Tuning.IconsAboveMax),
+				IconSize: Tuning.Within(Knobs.Value(settings => settings.DevIconSize, Tuning.IconSize), Tuning.IconSizeMin, Tuning.IconSizeMax),
+				HoverDelay: Tuning.Within(Knobs.Value(settings => settings.DevHoverDelay, Tuning.HoverDelay), Tuning.HoverDelayMin, Tuning.HoverDelayMax));
 
 		protected override void OnUpdate()
 		{

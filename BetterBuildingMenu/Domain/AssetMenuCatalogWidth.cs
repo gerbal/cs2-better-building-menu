@@ -1,44 +1,24 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// The build menu's width as the player sets it by dragging its right edge, or
-	/// the default.
+	/// The width 0.2.4 stored for the build menu, which the settings migration turns into a Width
+	/// step.
 	/// </summary>
 	/// <remarks>
-	/// Only kept well-formed here. Which width is drawn depends on whether the control
-	/// pane is shown, so the UI resolves it (assetMenuLayout.ts, resolveCatalogWidth).
-	/// The numbers reach it through sharedContracts.generated.ts: see SharedContractsTests.
+	/// Legacy: the setting stays declared so the game keeps its key until the migration reads it,
+	/// and nothing writes it. See docs/design-notes.md, "The settings migration".
 	/// </remarks>
 	public static class AssetMenuCatalogWidth
 	{
-		/// <summary>
-		/// The narrowest the build menu draws: the header and a row of cards still fit.
-		/// </summary>
-		public const float Min = 735f;
-
-		/// <summary>Not a width: the build menu takes the room beside the control pane, shown or not.</summary>
+		/// <summary>Not a width: 0.2.4's default, the room beside the control pane.</summary>
 		/// <remarks>
 		/// Zero, because no real width is zero, and a value the settings file cannot read
-		/// decodes as zero, so it too draws the default.
+		/// decodes as zero, so it too reads as the default.
 		/// </remarks>
 		public const float Default = 0f;
 
-		/// <summary>How near the room a drag must end to be stored as filling it.</summary>
-		public const float FillSnap = 2f;
-
-		/// <summary>
-		/// A width fit to keep: anything that is not a width is the default, a width
-		/// below the minimum is the minimum, and any other is kept for the UI to fit to
-		/// the room.
-		/// </summary>
-		public static float Sanitize(float width)
-		{
-			if (float.IsNaN(width) || float.IsInfinity(width) || width <= Default)
-			{
-				return Default;
-			}
-
-			return width < Min ? Min : width;
-		}
+		/// <summary>The width <see cref="Default"/> drew: the room beside the control pane, on any screen.</summary>
+		/// <remarks>The settings migration gives a 0.2.4 player at the default the Width step nearest it.</remarks>
+		public const float UpgraderWidth = 1091f;
 	}
 }

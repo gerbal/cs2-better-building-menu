@@ -91,6 +91,17 @@ export function listLockConditions(
 }
 
 /**
+ * What a locked building shows where its cost would be: the milestone it waits on, while the city has
+ * not reached it, or the locked word for one that only the development tree or another requirement
+ * holds back. A prefab's milestone stays whatever the city reaches, so a reached one is no reason.
+ */
+export function lockedFact(entry: UnlockableEntry | null | undefined, lockedWord: string, achievedMilestone: number): string {
+  const milestone = entry?.unlockMilestone ?? 0;
+
+  return milestone > 0 && milestone > achievedMilestone ? `MS ${milestone}` : lockedWord;
+}
+
+/**
  * Whether this entry's thumbnail is a VECTOR, which decides how locked is
  * drawn: Cohtml cannot composite an effect over an SVG. See
  * docs/design-notes.md, "Locked artwork for vector thumbnails".

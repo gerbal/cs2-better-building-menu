@@ -3,32 +3,8 @@
 // nothing extra. domain/assetMenuLayout.module.scss exports the ones the
 // arithmetic reads.
 
-// Table column geometry. The header row and the data rows are two separate
-// flex containers describing one table, so a column lines up only if both
-// reserve identical space. A trailing control's width changes it HERE.
-$row-gap: 3rem;
-// Inside .rowSelect, after its last metric cell.
-$row-padding-right: 4rem;
-// On .row itself, after the details button.
-$row-outer-padding-right: 4rem;
-// The chevron that expands a row: a glyph, so vanilla's icon variant draws it
-// as a square of this width.
-$row-details-width: 26rem;
-$rows-scrollbar-width: 16rem;
-
-// Everything to the right of .rowSelect's last metric cell: the chevron, the
-// outer padding and ONE gap. The gap is counted once — without it the
-// header's identity column is wider than the cell's.
-$table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-padding-right + $row-gap;
-
-// Before the identity column: .rowSelect's left padding, which the header
-// matches, then the thumbnail and its gap. 68rem is vanilla's own image size.
-$row-padding-left: 8rem;
-$row-thumbnail-size: 68rem;
-$row-thumbnail-gap: 12rem;
-
-// Everything in a table row that is not the name or a metric column.
-$table-row-furniture: $table-trailing-reserve + $rows-scrollbar-width + $row-padding-left + $row-thumbnail-size + $row-thumbnail-gap;
+// The bodies' side margin, each side: the slots are the box less these.
+$body-side-margin: 8rem;
 
 // The control plane's width, a REM value matching a column measured in PIXELS:
 // the pixel number written as rem draws two thirds of it.
@@ -40,11 +16,91 @@ $pane-gap: 6rem;
 // reports pixels, and this is a length known in both.
 $handle-height: 14rem;
 
-// The width strip down the build menu's right side, which a width drag measures rem
-// against, as the height drag measures the top strip. As wide as the catalog's own
-// right margin, so it takes nothing from the catalog.
-$width-handle-width: 8rem;
+// The width strip down the box's right edge, which a width drag measures rem against, as the height
+// drag measures the top edge. 6 rem, inside the catalog's own right margin, so a body's 3 rem scroll
+// track at the box's edge stays clear.
+$width-handle-width: 6rem;
+
+// The tab row's right end: clear of the width strip, which lies over the band's last 6 rem.
+$tab-row-inset-right: $width-handle-width;
 
 // Past the menu's edge the strip can also be grabbed across the gap beside the
 // pane, and no further.
 $width-handle-reach: $pane-gap;
+
+// The top row's band above the body: a pad, the row, a gap. With the tab row's band under the body,
+// the box less its body in every look.
+$top-band-pad: 2rem;
+$top-row-height: 28rem;
+$top-band-gap: 4rem;
+$top-band: $top-band-pad + $top-row-height + $top-band-gap;
+// Where the width strip and its reach start: under the top row, so close keeps its presses.
+$width-handle-top: $top-band-pad + $top-row-height;
+// The top row sits this far inside the box's side edges.
+$top-row-inset: 4rem;
+
+// The search field takes what the row leaves, down to a floor the controls fold to keep: no CSS
+// min-width, which in Cohtml stops a flex item growing.
+$field-min-width: 150rem;
+$field-padding: 6rem;
+$field-gap: 4rem;
+$field-glyph: 13rem;
+$field-clear: 22rem;
+// The top row's text at 100%: the query, the Enter target, the controls' words and values.
+$top-row-text: 11rem;
+// Close, after the controls.
+$close-size: 24rem;
+$close-gap: 4rem;
+
+// The top edge's strip: over the box's top edge, from this far above it to this far inside.
+$top-edge-above: 6rem;
+$top-edge-inside: 2rem;
+
+// The tab row along the box's bottom edge: a gap under the list, the row, a pad above the bar.
+$tab-row-gap-above: 1.5rem;
+$tab-row-height: 26rem;
+$tab-row-pad-below: 2.25rem;
+// Its cells sit this far inside the box's side edges.
+$tab-row-inset: 4rem;
+// A cell: at least this wide, padded each side of its count, this far from the next.
+$tab-cell-min-width: 28rem;
+$tab-cell-padding: 5rem;
+$tab-cell-gap: 2rem;
+// A cell's count at 100% text; its icon takes what the count leaves of the row.
+$tab-count-size: 10rem;
+// A worded cell's name at 100% text, and its gap to the count beside it.
+$tab-name-size: 11rem;
+$tab-name-gap: 4rem;
+// Each side of Education's plate, between it and the cells beside it.
+$tab-segment-margin: 4rem;
+
+// The box less its body, in every look: the top row's band and the tab row's. The stored height is
+// the body's, so the box is it and this.
+$box-chrome: $top-band + $tab-row-gap-above + $tab-row-height + $tab-row-pad-below;
+
+// The controls strip after the field: a word or a glyph, a value in a slot of fixed width, a caret.
+$controls-gap: 6rem;
+$control-padding: 7rem;
+$control-padding-folded: 5rem;
+$control-word-gap: 4rem;
+$control-glyph: 12rem;
+$control-caret: 8rem;
+$control-caret-gap: 3rem;
+$control-divider: 1rem;
+
+// A control's popover: this wide, this far above the box, rows this tall inside this padding.
+$popover-width: 240rem;
+$popover-gap: 2.25rem;
+$popover-row: 24rem;
+$popover-padding: 4rem;
+// A list row's padding each side, and the gap before its note.
+$picker-row-padding: 8rem;
+$picker-note-gap: 8rem;
+// FILTER's list scrolls past this height.
+$popover-filter-height: 300rem;
+
+// The notch under the lit bar button: a trapezoid of borders this tall, this wide at its foot, its
+// sides this wide each, so its top is the foot and both sides.
+$notch-height: 4rem;
+$notch-foot: 26.4rem;
+$notch-side: 6rem;

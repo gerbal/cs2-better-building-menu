@@ -1,3 +1,5 @@
+@use "sass:math";
+
 // Spacing is margins throughout these stylesheets, except the card list, whose
 // group is sized to a max-content that counts gap and not item margins.
 
@@ -106,9 +108,9 @@
   }
 }
 
-// Unique-asset marks, at one scale across every view mode. Four modes draw one
-// catalogue at four picture sizes, so the badge is stated as a RATIO of the
-// picture and kept here rather than repeated per module.
+// Unique-asset marks, at one scale across every body. The bodies draw one
+// catalogue at different picture sizes, so the badge is stated as a RATIO of
+// the picture and kept here rather than repeated per module.
 
 // Vanilla pins the badge inside the item and leaves its size auto, which the
 // engine resolves to the SVG's own pixels; ours states the size and this
@@ -125,10 +127,10 @@ $mark-inset: 0.147;
 }
 
 /// The inset that leaves the badge at the picture's ratio, expressed in the
-/// FRAME's coordinates. Reduces to mark-inset when the two are the same,
-/// which is every mode but the table.
+/// FRAME's coordinates. Reduces to mark-inset when the two are the same, as
+/// they are wherever the picture fills its box.
 @function mark-frame-inset($picture, $frame) {
-  @return ($frame - ($picture - 2 * mark-inset($picture))) / 2;
+  @return math.div($frame - ($picture - 2 * mark-inset($picture)), 2);
 }
 
 @mixin artwork-box($picture) {
@@ -163,9 +165,30 @@ $mark-inset: 0.147;
 
 /// One line of text, cut with an ellipsis where it runs out of room. On a
 /// flex item Cohtml ignores text-overflow and this only clips, which is why
-/// tileLabel.ts elides names in JS.
+/// the bodies' names are cut by the name planner (namePlan.ts) instead.
 @mixin truncate {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/// Every side's border colour. Cohtml drops a `border-color` shorthand fed by
+/// var(), so a token colours each side's longhand.
+@mixin border-colors($color) {
+  border-top-color: $color;
+  border-right-color: $color;
+  border-bottom-color: $color;
+  border-left-color: $color;
+}
+
+/// A glyph drawn as a mask, $size square at 100% text and growing with it, in
+/// a box of its own beside the text: a mask inside a run of text draws nothing.
+/// The glyph's ink is its background colour, which the includer sets.
+@mixin mask-glyph($size) {
+  flex: 0 0 auto;
+  width: calc(#{$size} * var(--fontScale));
+  height: calc(#{$size} * var(--fontScale));
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
 }

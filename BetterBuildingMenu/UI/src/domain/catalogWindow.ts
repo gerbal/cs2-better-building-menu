@@ -3,12 +3,14 @@
  * stays at zero and the window grows by asking for a larger limit, because
  * placing a building unmounts the asset menu and an accumulator would go with it.
  */
+import { wholeLines } from "./bodyGeometry";
+import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { CATALOG_WINDOW_STEP } from "./sharedContracts.generated";
 
 /**
  * How close to the bottom counts as "nearly there" — a few rows of runway, so
- * the round trip through C# lands first. Smaller than the shortest catalog
- * viewport, or the band would already be satisfied at scrollTop 0.
+ * the round trip through C# lands first. It can be taller than a short body,
+ * so only a scroll arms it: shouldLoadMore refuses at scrollTop 0.
  */
 export const CATALOG_WINDOW_SCROLL_THRESHOLD = 280;
 
@@ -99,9 +101,66 @@ export function anchorScrollTop(
 }
 
 /**
- * How many frames the restore is allowed to keep trying for. A budget, not a
- * safety net — the first attempt always fails, see {@link isAnchorMeasurable} —
- * and short enough to give up before the player has scrolled somewhere else.
+ * Where to scroll so a row sits on the list's first line, as an open puts the armed building: `edge`
+ * below the list's top, the room the body's lines keep for a picture that overhangs its plate (see
+ * `bodyLines`). Never negative, for the reason anchorScrollTop is not.
+ */
+export function lineOneScrollTop(currentScrollTop: number, rowTop: number, containerTop: number, edge: number): number {
+  if (![currentScrollTop, rowTop, containerTop].every(Number.isFinite)) {
+    return currentScrollTop;
+  }
+
+  return Math.max(0, currentScrollTop + rowTop - containerTop - edge);
+}
+
+/**
+ * The scroll a screen down, or up, from here, held inside the list's ends: an engine need not clamp a
+ * scroll set past them. With a line pitch, the screen is the whole lines that fit it, counted as the
+ * body counts them (`wholeLines`, the gap and the edge in the height's unit), so a page lands lines on
+ * the top edge as it found them; a pitch of 0 pages the screen. The gap and the edge have no default,
+ * so no caller pages a line short or a line long.
+ */
+export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch: number, lineGap: number, pixel: number, edge: number): number {
+  const page = linePitch > 0 ? wholeLines(clientHeight, linePitch, lineGap, pixel, edge) * linePitch : clientHeight;
+
+  return Math.max(0, Math.min(scrollHeight - clientHeight, scrollTop + direction * page));
+}
+
+/**
+ * Where to scroll so a row is wholly on screen, moving as little as it takes: up to its top, or down
+ * until its bottom meets the list's foot; where it already is, nowhere. A row reaches `edge` past its
+ * plate above and below, where a picture overhangs it (see `bodyLines`). Never negative.
+ */
+export function revealScrollTop(scrollTop: number, rowTop: number, rowHeight: number, containerTop: number, containerHeight: number, edge: number): number {
+  if (![scrollTop, rowTop, rowHeight, containerTop, containerHeight].every(Number.isFinite)) {
+    return scrollTop;
+  }
+
+  if (rowTop - edge < containerTop) {
+    return Math.max(0, scrollTop + rowTop - edge - containerTop);
+  }
+
+  const overrun = rowTop + rowHeight + edge - (containerTop + containerHeight);
+
+  return overrun > 0 ? scrollTop + overrun : scrollTop;
+}
+
+/**
+ * Whether a row sits on the first line, `edge` below the list's top (see `lineOneScrollTop`), to a
+ * pixel: Cohtml rounds line boxes to whole device pixels. Above line 1 only by half a pixel where a
+ * picture overhangs its plate, so a row never counts with its picture above the top.
+ */
+export function isOnLineOne({ containerTop, rowTop }: AnchorGeometry, edge: number): boolean {
+  const off = rowTop - containerTop - edge;
+
+  return off <= 1 && off >= (edge > 0 ? -0.5 : -1);
+}
+
+/**
+ * How many frames each move of the list may take: a start's row onto line 1 or
+ * list to its top, or a remount's restore. Room for Cohtml's pre-layout zeroes,
+ * see {@link isAnchorMeasurable}, and short enough to give up before the player
+ * has scrolled somewhere else.
  */
 export const CATALOG_ANCHOR_MAX_FRAMES = 30;
 
@@ -173,47 +232,33 @@ export function catalogWindowRemaining({ shown, total }: CatalogWindowState): nu
   return remaining > 0 ? remaining : null;
 }
 
-/** The measurements a reveal needs, all in viewport coordinates. */
-export interface RevealGeometry {
-  currentScrollTop: number;
-  /** Top of the row that expanded — what must stay visible. */
-  rowTop: number;
-  /** Bottom of the expanded detail — what should become visible. */
-  detailBottom: number;
-  containerTop: number;
-  containerHeight: number;
-  /** Breathing room below the last line. */
-  margin?: number;
+/** Whether two values the page carries say the same: a number, a string, or arrays and objects of them. */
+export function sameValue(one: unknown, other: unknown): boolean {
+  if (one === other) return true;
+  if (typeof one !== "object" || typeof other !== "object" || one === null || other === null) return false;
+  if (Array.isArray(one)) return Array.isArray(other) && one.length === other.length && one.every((value, at) => sameValue(value, other[at]));
+  if (Array.isArray(other)) return false;
+  const keys = Object.keys(one);
+  return keys.length === Object.keys(other).length
+    && keys.every((key) => key in other && sameValue((one as Record<string, unknown>)[key], (other as Record<string, unknown>)[key]));
 }
 
+/** The rows of the last page, by id, as `keptRows` handed them on. */
+let lastRows = new Map<number, BuildingCatalogEntry>();
+
 /**
- * Scroll just enough to bring an expanded row's detail into view, BY THE
- * OVERFLOW ONLY, since this fires on every expand. Never past the row's own
- * top, so the name stays with its numbers; never upward; never on a NaN.
+ * A page's rows, each one the last page carried the same row for kept as that page's object: every page
+ * arrives as new objects, and a body's rows are memoised on theirs, so a Load more draws only its new
+ * rows, not every row loaded again.
  */
-export function revealScrollTop({
-  currentScrollTop,
-  rowTop,
-  detailBottom,
-  containerTop,
-  containerHeight,
-  margin = 0,
-}: RevealGeometry): number {
-  const measurements = [currentScrollTop, rowTop, detailBottom, containerTop, containerHeight, margin];
-
-  if (!measurements.every(Number.isFinite)) {
-    return currentScrollTop;
-  }
-
-  const overflow = detailBottom + margin - (containerTop + containerHeight);
-
-  if (overflow <= 0) {
-    return currentScrollTop;
-  }
-
-  // Whichever is less: what the overflow asks for, or what keeps the row's top
-  // at the container's top edge.
-  const headroom = Math.max(0, rowTop - containerTop);
-
-  return currentScrollTop + Math.min(overflow, headroom);
+export function keptRows(rows: readonly BuildingCatalogEntry[]): BuildingCatalogEntry[] {
+  const next = new Map<number, BuildingCatalogEntry>();
+  const kept = rows.map((row) => {
+    const last = lastRows.get(row.id);
+    const same = last !== undefined && sameValue(last, row) ? last : row;
+    next.set(row.id, same);
+    return same;
+  });
+  lastRows = next;
+  return kept;
 }

@@ -481,6 +481,21 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void NoMenuHasNoTabsHoweverItIsSpelt()
+		{
+			// Null, empty and blank all mean the whole catalog, even where a walk recorded a menu with
+			// no name, so every caller can pass the scope as the state holds it.
+			var index = ReadyIndex(Menus(
+				System.Array.Empty<(int, string, string)>(),
+				new() { [""] = new() { Tab("Nameless") }, ["Transportation"] = new() { Tab("TransportationTram") } }));
+
+			Assert.Empty(index.GetMenuCategories(null));
+			Assert.Empty(index.GetMenuCategories(""));
+			Assert.Empty(index.GetMenuCategories("   "));
+			Assert.Single(index.GetMenuCategories("Transportation"));
+		}
+
+		[Fact]
 		public void RoadsWithoutTabsOfItsOwnGetsNoExtras()
 		{
 			var tram = TestPrefabs.Entry(31, PrefabCategory.Networks, PrefabSubCategory.Networks_Tracks);
@@ -488,6 +503,66 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Empty(ReadyIndex(Menus(System.Array.Empty<(int, string, string)>()), tram)
 				.GetMenuCategories(NetworkMenuExtension.RoadsMenu));
+		}
+
+		/// <summary>Transportation, whose tabs carry an icon, none, and a content hash; and a mod's menu whose own icon is a hash.</summary>
+		private static VanillaMenuIndex IconMenus() => new(
+			new Dictionary<int, VanillaMenuPlacement>(),
+			new Dictionary<int, string>(),
+			new Dictionary<string, Entity>(),
+			new[]
+			{
+				new VanillaMenuCategory("Transportation", "Transportation", "Media/Game/Icons/Transportation.svg", 0),
+				new VanillaMenuCategory("ModMenu", "ModMenu", "assetdb://global/77aa", 1),
+			},
+			new Dictionary<string, List<VanillaMenuCategory>>
+			{
+				["Transportation"] = new()
+				{
+					new("TransportationTram", "TransportationTram", "Media/Game/Icons/Tram.svg", 0),
+					Tab("TransportationShip", 1),
+					new("TransportationFerry", "TransportationFerry", "assetdb://global/41bc", 2),
+				},
+				["ModMenu"] = new() { Tab("ModMenuProps") },
+			});
+
+		[Fact]
+		public void EveryTabDrawsAPictureItsMenuCanShowNeverAHashOrNothing()
+		{
+			var index = ReadyIndex(IconMenus());
+
+			Assert.Equal(
+				new[] { "Media/Game/Icons/Tram.svg", "Media/Game/Icons/Transportation.svg", "Media/Game/Icons/Transportation.svg" },
+				index.GetMenuCategories("Transportation").Select(tab => tab.Icon));
+			// A menu whose own icon cannot be drawn either: the game's placeholder, never a blank.
+			Assert.Equal(new[] { CategoryIcon.Placeholder }, index.GetMenuCategories("ModMenu").Select(tab => tab.Icon));
+		}
+
+		[Fact]
+		public void AMenusOwnIconIsOneItsAllCellCanDraw()
+		{
+			var menus = IconMenus();
+
+			Assert.Equal(new[] { "Media/Game/Icons/Transportation.svg", CategoryIcon.Placeholder }, menus.AssetMenus().Select(menu => menu.Icon));
+			Assert.Equal("Media/Game/Icons/Transportation.svg", menus.MenuIcon("Transportation"));
+			Assert.Equal(string.Empty, menus.MenuIcon("Nowhere"));
+		}
+
+		[Fact]
+		public void EveryTabAModAddsToRoadsResolvesToADrawablePictureOrThePlaceholder()
+		{
+			var tram = TestPrefabs.Entry(31, PrefabCategory.Networks, PrefabSubCategory.Networks_Tracks);
+			tram.UiMenuName = "Transportation";
+			var index = ReadyIndex(
+				Menus(
+					System.Array.Empty<(int, string, string)>(),
+					new() { [NetworkMenuExtension.RoadsMenu] = new() { Tab("RoadsSmall") } }),
+				tram);
+
+			var tabs = index.GetMenuCategories(NetworkMenuExtension.RoadsMenu);
+
+			Assert.Equal(2, tabs.Count);
+			Assert.All(tabs, tab => Assert.True(CategoryIcon.IsResolvable(tab.Icon) || tab.Icon == CategoryIcon.Placeholder));
 		}
 	}
 }

@@ -12,10 +12,10 @@ namespace BetterBuildingMenu.Systems
 		/// Picks one of the scoped menu's category tabs, or all of them.
 		/// </summary>
 		/// <remarks>
-		/// The empty string is "every category in this menu", the state a menu opens in.
-		/// Vanilla has no such tab, but the asset menu can show a whole menu at once.
+		/// The empty string is All, every category in this menu. Vanilla has no such tab, but the
+		/// asset menu can show a whole menu at once.
 		/// </remarks>
-		private void SetAssetMenuCategory(string category) => Apply(_assetMenu.SelectCategory(category));
+		private void SetAssetMenuCategory(string category) => ApplyTabPick(_assetMenu.SelectCategory(category, ArmedEntryId()));
 
 		/// <summary>
 		/// Narrows the menu to one branch of its service's development tree.
@@ -24,36 +24,23 @@ namespace BetterBuildingMenu.Systems
 		/// The strip's fallback axis. Single-select, like the category and
 		/// progression tabs beside it — the strip asks one question per segment.
 		/// </remarks>
-		private void SetAssetMenuStripTab(string tab) => Apply(_assetMenu.SelectStripTab(tab));
+		private void SetAssetMenuStripTab(string tab) => ApplyTabPick(_assetMenu.SelectStripTab(tab, ArmedEntryId()));
 
-		/// <summary>Narrows the education menu to one school tier.</summary>
-		private void SetAssetMenuSchoolTier(int tier) => Apply(_assetMenu.SelectSchoolTier(tier));
+		/// <summary>Narrows the education menu to one school tier, in the tab that holds the levels.</summary>
+		private void SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier, _tierParent, ArmedEntryId()));
 
-		/// <summary>
-		/// Scopes the asset menu to a vanilla menu chosen from the filters.
-		/// </summary>
-		/// <remarks>
-		/// The same state a bottom-bar icon sets, reached the other way, so the view the menu
-		/// chip names stays reachable without the shortcut. Deliberately not VanillaMenuSelected:
-		/// that one answers the game, this one answers a player already inside the asset menu.
-		/// </remarks>
-		private void SetAssetMenu(string menuName) => Apply(_assetMenu.SelectMenu(menuName), navigation: true);
-
-		/// <summary>
-		/// Drops the vanilla-menu scope and shows the whole catalog.
-		/// </summary>
-		/// <remarks>
-		/// The bottom-bar icons are shortcuts to a preconfigured view, not a box the player is
-		/// locked inside. The facets deliberately survive: this clears the scope, not the
-		/// narrowing chosen within it, so one × does one job.
-		/// </remarks>
-		private void ClearAssetMenuScope() => Apply(_assetMenu.ClearMenuScope(), navigation: true);
+		/// <summary>A tab, strip tab or school tier the player picks: the pick logger counts it, then it applies, its list starting at the armed building.</summary>
+		/// <remarks>Each of the three triggers is a click in the tab row, so each counts.</remarks>
+		private void ApplyTabPick(AssetMenuState next)
+		{
+			_placementWatch.TabSwitched();
+			Apply(next);
+		}
 
 		/// <summary>The scope bindings, from the one state that owns them.</summary>
 		private void PublishScope()
 		{
-			_AssetMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(
-				string.IsNullOrEmpty(_assetMenu.Menu) ? null : _assetMenu.Menu).ToArray();
+			_AssetMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(_assetMenu.Menu).ToArray();
 			_AssetMenuBinding.Value = _assetMenu.Menu;
 			_AssetMenusBinding.Value = _indexer.Index.Menus.AssetMenus().ToArray();
 			_AssetMenuCategoryBinding.Value = _assetMenu.Category;
@@ -96,20 +83,51 @@ namespace BetterBuildingMenu.Systems
 			RefreshAssetMenu();
 		}
 
-		private void SetBuildingCatalogSortColumn(string column) => Apply(_assetMenu.SetSortColumn(column));
+		/// <summary>A sort pick, which the open menu keeps for this session.</summary>
+		private void SetBuildingCatalogSortColumn(string column)
+		{
+			Apply(_assetMenu.SetSortColumn(column));
+			_sessionSorts.Keep(_assetMenu);
+		}
 
 		/// <summary>
-		/// Chooses the heading dimension, which is also the query's primary key.
+		/// Chooses the heading dimension, which is also the query's primary key, and keeps it as the open
+		/// menu's own, saved once; the menu's default takes its own pick away.
 		/// </summary>
 		/// <remarks>
 		/// The window shrinks back to the base chunk because grouping reorders the whole result.
-		/// Returns early when nothing changed: the UI derives this value from the menu, so it
-		/// re-sends it on every menu open.
+		/// Returns early when nothing changed. A change drops the open's anchor, so only the group
+		/// list's pick sends it; a menu open brings the menu's own back through OpenMenu. While a query
+		/// is typed the groups wait and the list lights None, so a pick then is ignored rather than kept
+		/// as the menu's own. The binding takes the pick before this runs and no refresh follows, so the
+		/// page's None goes back to it.
 		/// </remarks>
-		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_assetMenu.SetGroupBy(groupBy));
+		private void SetBuildingCatalogGroupBy(string groupBy)
+		{
+			if (!string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText))
+			{
+				_BuildingCatalogGroupBy.Value = BuildingCatalogGrouping.None;
+				return;
+			}
 
-		/// <remarks>Same idempotence guard as the group-by above.</remarks>
-		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_assetMenu.SetDescending(descending));
+			var kept = MenuPicks.WithGroup(Mod.Settings.MenuGroups, _assetMenu.Menu, BuildingCatalogGrouping.IsDimension(groupBy) ? groupBy.Trim() : MenuPicks.None, _menuDefaultGroup);
+
+			// Drawn before it is saved: the save's settings pass then finds the open menu drawing its pick.
+			Apply(_assetMenu.SetGroupBy(groupBy));
+
+			if (_assetMenu.Menu.Length > 0 && !string.Equals(kept, Mod.Settings.MenuGroups, StringComparison.Ordinal))
+			{
+				Mod.Settings.MenuGroups = kept;
+				Mod.Settings.ApplyAndSave();
+			}
+		}
+
+		/// <remarks>Same idempotence guard as the group-by above, and kept per menu as the column is.</remarks>
+		private void SetBuildingCatalogSortDescending(bool descending)
+		{
+			Apply(_assetMenu.SetDescending(descending));
+			_sessionSorts.Keep(_assetMenu);
+		}
 
 		/// <summary>
 		/// Grows the window to the limit the UI asked for, by one step at most, keeping the
@@ -122,17 +140,29 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_assetMenu.LoadMoreTo(requestedLimit));
 
-		private void ToggleAssetMenuFacet(string facetId, string optionId) => Apply(_assetMenu.ToggleFacet(facetId, optionId));
+		/// <summary>How many buildings one screen of the drawn body holds: the window reaches past it.</summary>
+		/// <remarks>A page only for another window: the same rows again would cost a projection for nothing.</remarks>
+		private void SetCatalogScreen(int slots)
+		{
+			var next = _assetMenu.SetScreenSlots(slots);
 
-		/// <summary>
-		/// Puts a menu back the way it opens.
-		/// </summary>
-		/// <remarks>
-		/// Clear drops only the facets; a menu also accumulates a strip tab, a school level, a
-		/// search and a sort, and this is the one gesture back to a known state. Grouping and
-		/// view mode are UI-side choices, so the pane clears its own alongside this.
-		/// </remarks>
-		private void ResetAssetMenu() => Apply(_assetMenu.ResetMenu());
+			if (next.ServesAnotherWindow(_assetMenu, _BuildingCatalogBinding.Value?.AnchorIndex ?? -1))
+			{
+				Apply(next);
+				return;
+			}
+
+			// The same rows: the screen is kept for the next start, and no page is built.
+			_assetMenu = next;
+		}
+
+		/// <summary>A press on the Locked label: the locked rows leave the window, or come back, the list staying where it is.</summary>
+		private void SetCatalogSectionCollapsed(string id, bool collapsed) => Apply(_assetMenu.CollapseSection(id, collapsed));
+
+		/// <summary>Up or Down in the search field: Enter's target a row that can be placed further down, or up.</summary>
+		private void MoveEnterTarget(int direction) => Apply(_assetMenu.MoveEnterTarget(direction));
+
+		private void ToggleAssetMenuFacet(string facetId, string optionId) => Apply(_assetMenu.ToggleFacet(facetId, optionId));
 
 		private void ClearAssetMenuFilters() => Apply(_assetMenu.ClearFilters());
 
@@ -143,15 +173,17 @@ namespace BetterBuildingMenu.Systems
 
 		private void SearchChanged(string text)
 		{
-			var next = _assetMenu.Search(text);
+			var next = _assetMenu.Search(text, ArmedEntryId());
 
 			if (ReferenceEquals(next, _assetMenu))
 			{
 				return;
 			}
 
+			// A typed search clears the tab and the level, and clearing it brings them back, so the tab row
+			// is told as the field is.
 			_assetMenu = next;
-			_CurrentSearch.Value = _assetMenu.SearchText;
+			PublishScope();
 			_CurrentSearch.ForceUpdate();
 			TriggerSearch();
 		}

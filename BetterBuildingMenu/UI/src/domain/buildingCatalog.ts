@@ -1,3 +1,5 @@
+import type { KeyKind } from "./rowNumbers";
+
 /** One lot shape, in cells. */
 export interface LotFootprint {
   width: number;
@@ -115,25 +117,60 @@ export interface BuildingCatalogEntry {
   /**
    * The headings this entry falls under for the page's effective grouping,
    * outermost first. C# stamps it on every page item when the page is
-   * grouped; empty when it is not. See groupTreeFromPaths.
+   * grouped; empty when it is not. The bodies label groups from the page's sections.
    */
   groupPath?: string[];
   /** The game's own id behind the outer heading, where there is one; "" otherwise. */
   groupLabelId?: string;
+  /** The word that tells this row apart from its nearest look-alike in the whole view; "" for none. */
+  distinctWord?: string;
+  /** The trailing word this row varies by within its family of three or more ("05", "2x"); "" for none. */
+  familyToken?: string;
+  /** The stem the row's family shares ("Boulder"), the same for every member; "" for none. */
+  familyKey?: string;
 }
 
-export function formatBuildingCatalogLabels(
-  entry: Pick<BuildingCatalogEntry, "category" | "subCategory" | "categoryLabel" | "subCategoryLabel">
-): string {
-  const category = entry.categoryLabel?.trim() || entry.category;
-  const subCategory = entry.subCategoryLabel?.trim() || entry.subCategory;
+/**
+ * A label over a run of the result, counted over the whole of it: a group's name, or a half-locked
+ * tab's locked rows, which a press collapses. See CatalogSection.cs.
+ */
+export interface CatalogSection {
+  id: string;
+  kind: "group" | "locked";
+  /** A group's heading; empty for the locked rows, which the body names. */
+  label: string;
+  /** The game's id behind a group's heading, so it can be said in the game's language; "" for none. */
+  labelId: string;
+  /** Where its first row sits in the result's order, counted from the result's first row. */
+  start: number;
+  /** How many rows it holds, collapsed or not. */
+  count: number;
+  /** Whether its rows are left out of the window, its label alone showing. */
+  collapsed: boolean;
+}
 
-  return [category, subCategory].filter((value) => value.length > 0).join(" · ");
+/** A value the readout says once: its kind, and the value, or for a lot its width with its depth. */
+export interface SharedValue {
+  kind: "speed" | "capacity" | "workers" | "lot" | "cost";
+  value: number;
+  depth: number;
+  /** Whether it is a network's figure, which the rows print per cell; absent, the value alone is compared. */
+  perCell?: boolean;
+  /** The role a capacity's unit follows, as the rows format it; absent, the value alone is compared. */
+  unit?: string;
+}
+
+/** What the page says of its whole view: the values said once, and the kind each row's second number shows, "" for none. */
+export interface ViewFacts {
+  sharedValues: SharedValue[];
+  keyKind: KeyKind;
 }
 
 export interface BuildingCatalogPage {
   items: BuildingCatalogEntry[];
   totalCount: number;
+  /** The rows the window can reach: the total less any rows a fold leaves out. Load more counts against it. */
+  visibleCount?: number;
   offset: number;
   limit: number;
   /**
@@ -144,11 +181,41 @@ export interface BuildingCatalogPage {
   hasMore?: boolean;
 
   /**
+   * Whether the window is at its ceiling with rows past it: the list stops, and
+   * the footer says how to narrow it, since Load more cannot reach them.
+   */
+  capped?: boolean;
+
+  /** The row the list starts at, as an entry id, or 0 for none: the armed building on an open or a tab pick. */
+  anchorId?: number;
+
+  /** That row's place in the result's order, or -1 when the result does not hold it. */
+  anchorIndex?: number;
+
+  /** Which start of the list this page answers: it moves on an open, a tab pick and a sort. */
+  listStart?: number;
+
+  /** The labels over the whole result, each with its true count; none where the result draws none. */
+  sections?: CatalogSection[];
+
+  /** The view's facts, over the whole result: the values said once, and the key kind. */
+  facts?: ViewFacts;
+
+  /** How many rows that can be placed Enter's target sits past the best match: Up and Down move it, C# stops it at the list's ends. */
+  enterStep?: number;
+
+  /**
    * The row Enter arms while a search is active; null without a search or a
-   * result. C#'s answer, because only it scores, and a grouped page is ordered
-   * by group before relevance.
+   * match that can be placed. C#'s answer, chosen from the whole result, because
+   * only it scores and only it sees past the window.
    */
   bestMatchId?: number | null;
+
+  /** The same target with its name, its menu and its place in the result's order. */
+  bestMatch?: { id: number; name: string; menu: string; index: number } | null;
+
+  /** Whether a search matched only rows that cannot be placed, so Enter does nothing. */
+  allMatchesLocked?: boolean;
 
   /** The search this page answers; it trails the box by the search debounce. */
   searchText?: string;

@@ -1,16 +1,30 @@
+import { useValue } from "cs2/api";
 import classNames from "classnames";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
+import { Notch } from "mods/Notch/Notch";
 import { ControlPane } from "mods/ControlPane/ControlPane";
-import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
-import { AssetMenuResizeHandle, useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
-import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
-import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
+import { ControlPopover } from "mods/ControlPopover/ControlPopover";
+import { HoverCard } from "mods/HoverCard/HoverCard";
+import { TabRow } from "mods/TabRow/TabRow";
+import { useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
+import { TopEdge } from "mods/TopEdge/TopEdge";
+import { TopRow } from "mods/TopRow/TopRow";
+import { AssetMenuWidthHandle, AssetMenuWidthHandleLeft, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
+import { useBoxEdges } from "mods/BuildingMenu/useBoxEdges";
+import { useGameSlotLeft } from "mods/BuildingMenu/useGameSlotLeft";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
+import { setOpenListCloser } from "mods/BuildingMenu/openListCloser";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, catalogLayoutWidth } from "domain/assetMenuLayout";
+import { useLookRoot } from "mods/useLookRoot";
+import { ASSET_MENU_BOX_CHROME, ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
+import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
+import { controlLeftRem, popoverAnchor, toggleList, type ControlKind, type OpenList } from "domain/topRow";
+import { boxPlacement, nearestSnapStep, popoverRightLimit, toolOptionsShift, topRowRightInset } from "domain/widthSteps";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
+import { AssetMenuCollapsed$ } from "mods/bindings";
 import { gameClasses } from "mods/gameModules";
 
 const AssetMenuTheme = gameClasses("game-ui/game/components/asset-menu/asset-menu.module.scss");
@@ -24,64 +38,154 @@ export interface AssetMenuProps {
   /**
    * The game's own menu close, from the AssetMenu extension point. Optional, so
    * the asset menu still renders if the game mounts it without one; the X then
-   * does not draw. See BuildingMenuHeader.
+   * does not draw. See TopRow.
    */
   onClose?: () => void;
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
-  const layout = useAssetMenuLayout();
-  const { menuWidth, rowWidth, paneShown } = layout;
-  const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
-  const widthDrag = useAssetMenuWidthDrag(layout);
-  // The header's small and large modes, judged against the menu plus the pane.
-  // Their classes carry no rules, so neither changes what is drawn.
-  const headerWidth = catalogLayoutWidth(menuWidth);
+  const { step, drawnStep, menuWidth, paneShown, snaps, screen: unmeasured } = useAssetMenuLayout();
+  // The box draws from the game's slot as the row reads it, and from the centred fallback until it does.
+  const row = useRef<HTMLDivElement>(null);
+  const slotLeft = useGameSlotLeft(row, unmeasured.textScale);
+  const screen = slotLeft === undefined ? unmeasured : { ...unmeasured, slotLeft };
+  // The top edge drags from the body as drawn, which a tall stored height exceeds under the top HUD; its release
+  // lands on whole lines of the open body, or below the floor collapses the box to its top row and tabs. See
+  // docs/design-notes.md, "The top edge".
+  const edges = useBoxEdges();
+  const rules = { snap: edges.snap, hold: edges.hold, collapsible: edges.collapsible, collapsed: useValue(AssetMenuCollapsed$) };
+  const { shownHeight: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
+  // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag. Below the
+  // floor the box is drawn as the drag found it, which says whether a release there collapses it.
+  const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged, collapsed)), [edges, dragged, collapsed]);
+  const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps });
+  // A side edge's drag says the step it lands on in the same place. It sends nothing until the release, and what it
+  // says depends on the step alone, so it is worked out once for each step the pointer lands on.
+  const sideStep = widthDrag.dragged === null ? null : nearestSnapStep(widthDrag.dragged, snaps);
+  const sideWidth = snaps.find((snap) => snap.step === sideStep)?.width ?? widthDrag.dragged;
+  // It counts at the body's height as the box draws it, and a collapsed box draws none.
+  const sideBodyHeight = collapsed ? null : drawnBodyHeight(catalogHeight);
+  const sideReadout = useMemo(
+    () => (sideStep === null || sideWidth === null ? null : edges.widthText(sideStep, sideWidth, sideBodyHeight)),
+    [edges, sideStep, sideWidth, sideBodyHeight]
+  );
+  const look = useLookRoot();
+  // The box follows a width drag, and keeps the snapped width until the stored step comes back.
+  const shownWidth = widthDrag.liveWidth ?? menuWidth;
+  // Where the box draws, from vanilla's slot. See docs/design-notes.md, "The box at its Width step, and the control pane".
+  const placement = boxPlacement(shownWidth, screen);
 
-  // The two patches on vanilla's own layout — the column trio left-aligned,
-  // the toolbar sunk beneath the control pane — live with their reasons in
-  // vanillaLayout.ts.
-  useVanillaLayoutForAssetMenu();
+  // One list open at a time, in the top row's popover, under its control's drawn left edge, or
+  // over the pane. See docs/design-notes.md, "The top row".
+  const root = useRef<HTMLDivElement>(null);
+  const [list, setList] = useState<OpenList | null>(null);
+  const togglePopover = useCallback((kind: ControlKind, cell: HTMLElement | null) => {
+    const left = controlLeftRem(
+      cell?.getBoundingClientRect?.().left,
+      root.current?.getBoundingClientRect?.().left,
+      typeof window === "undefined" ? 0 : window.innerHeight
+    );
+    setList((open) => toggleList(open, { home: "popover", kind, left }));
+  }, []);
+  const togglePaneList = useCallback((kind: ControlKind) => setList((open) => toggleList(open, { home: "pane", kind })), []);
+  const closeList = useCallback(() => setList(null), []);
+  const popover = list?.home === "popover" ? list : null;
+  // Escape from the search field closes the open list first, from the watcher beside the box. See
+  // docs/design-notes.md, "Escape".
+  useEffect(() => {
+    if (list === null) return undefined;
+    setOpenListCloser(closeList);
+    return () => setOpenListCloser(null);
+  }, [list, closeList]);
+
+  // The patches on vanilla's own layout, the toolbar sunk beneath the box and the pane and the tool
+  // options moved clear of a box that reaches left of the slot, live with their reason in vanillaLayout.ts.
+  useVanillaLayoutForAssetMenu(toolOptionsShift(placement, screen));
 
   return (
     <>
       {blocker}
       {widthDrag.blocker}
-      {/* The width is stated here rather than inherited: this row is wider
-          than the slot, and the slot's `overflow: visible` is what allows it.
-          It is the build menu and the pane and nothing more, so no empty
-          stretch of it is left to take the mouse. */}
-      <div className={classNames(styles.assetMenuRow)} style={{ width: rowWidth + "rem" }}>
-        <div className={styles.toolContainer} style={{ width: menuWidth + "rem" }}>
-          <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />
-          <div className={styles.topBar}>
-            <BuildingMenuHeader small={headerWidth <= 685} large={headerWidth >= 850} onClose={onClose} />
-            <VanillaTabBarHost onClose={onClose} />
-          </div>
-          <div
-            className={classNames(styles.content, AssetMenuTheme.assetPanel)}
-            style={{ height: `${catalogHeight}rem` }}
-          >
-            <BuildingCatalogComponent />
-            <AssetMenuWidthHandle
-              active={widthDrag.isResizing}
-              hovered={widthDrag.isHovered}
-              hoverProps={widthDrag.hoverProps}
-              onBeginResize={widthDrag.beginResize}
+      {/* The row keeps a 706 layout width at the left of the game's slot, where its own menu
+          sits, and moves by the step's offset; the box and the pane overflow it to the right,
+          which the slot's `overflow: visible` allows. Every step is at least 706, so no stretch
+          of the row lies beside the box to take the mouse. */}
+      <div ref={row} className={styles.assetMenuRow} style={{ width: `${WIDTH_STEP_VANILLA}rem`, left: `${placement.offset}rem` }}>
+        {/* The box carries the look: its tokens, the game's interface style followed, and its
+            panels' alphas under the game's transparency; its marker names the look for the live check.
+            See docs/design-notes.md, "The looks' tokens". */}
+        <div
+          ref={root}
+          className={classNames(styles.toolContainer, look.className)}
+          style={{ width: `${shownWidth}rem`, ...look.style } as CSSProperties}
+          data-bbm-look={look.id}
+          data-bbm-collapsed={collapsed ? "true" : undefined}
+        >
+          {/* The search field, the controls, the hosted tab-bar buttons and close, along the box's
+              top edge. See docs/design-notes.md, "The top row". */}
+          <TopRow
+            width={shownWidth}
+            rightInset={topRowRightInset(placement, shownWidth, screen.aspect)}
+            open={popover?.kind ?? null}
+            onToggle={togglePopover}
+            onClose={onClose}
+          />
+          {/* A collapsed box draws no body. */}
+          {!collapsed && (
+            <div
+              className={classNames(styles.content, AssetMenuTheme.assetPanel)}
+              style={{ height: `${drawnBodyHeight(catalogHeight)}rem` }}
+            >
+              {/* While the edge moves the body draws where the release lands, and so draws again only as that changes. */}
+              <BuildingCatalogComponent heldHeight={held} />
+            </div>
+          )}
+          {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
+              their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
+          <TabRow width={shownWidth} edgeReadout={edgeReadout ?? sideReadout} />
+          {/* Down the box's right edge from under the top row to its bottom, past the tab row:
+              a child of the box, not of the body, whose box would cut it. */}
+          <AssetMenuWidthHandle
+            active={widthDrag.activeEdge === "right"}
+            hovered={widthDrag.isHovered}
+            hoverProps={widthDrag.hoverProps}
+            onBeginResize={widthDrag.beginResize}
+          />
+          {/* Its mirror down the left edge, over the body alone: a collapsed box has none. */}
+          {!collapsed && (
+            <AssetMenuWidthHandleLeft
+              active={widthDrag.activeEdge === "left"}
+              onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_WIDTH, "left")}
             />
-          </div>
-          {/* Only beside the pane: with it hidden the menu may reach the band's
+          )}
+          {/* Only beside the pane: with it hidden the menu may reach the room's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (
             <AssetMenuWidthReach
-              active={widthDrag.isResizing}
+              active={widthDrag.activeEdge === "right"}
               hovered={widthDrag.isHovered}
               hoverProps={widthDrag.hoverProps}
               onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)}
             />
           )}
+          {/* Under the box's bottom edge, over the lit bar button. See docs/design-notes.md, "The notch". */}
+          <Notch boxRef={root} boxWidth={shownWidth} offset={placement.offset} />
+          {/* The open control's popover, above the box or, for a tall box, under the top row,
+              inside its root so it takes the look. */}
+          <ControlPopover
+            open={popover}
+            limit={popoverRightLimit(placement, shownWidth, screen.aspect)}
+            anchor={popoverAnchor(collapsed ? ASSET_MENU_BOX_CHROME : drawnBoxHeight(catalogHeight))}
+            onClose={closeList}
+          />
+          {/* The building pointed at, above the box, inside its root so it takes the look, hidden while a
+              list is open. See docs/design-notes.md, "The hover card". */}
+          <HoverCard boxRef={root} hidden={list !== null} />
+          {/* Last, so it paints over the top row's upper edge, under the popovers. See
+              docs/design-notes.md, "The top edge". */}
+          <TopEdge active={isResizing} onBeginResize={(event) => beginResize(event, TOP_EDGE_HEIGHT)} />
         </div>
-        {paneShown && <ControlPane />}
+        {paneShown && <ControlPane open={list?.home === "pane" ? list.kind : null} onToggle={togglePaneList} onClose={closeList} />}
       </div>
     </>
   );

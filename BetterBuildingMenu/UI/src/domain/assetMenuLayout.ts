@@ -1,12 +1,7 @@
-import { fontSizeRatio } from "./textScale";
 import sizes from "./assetMenuLayout.module.scss";
 import {
-  ASSET_MENU_CATALOG_DEFAULT,
-  ASSET_MENU_CATALOG_FILL_SNAP,
-  ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_DEFAULT_HEIGHT,
   ASSET_MENU_MAX_HEIGHT,
-  ASSET_MENU_MAX_WIDTH,
   ASSET_MENU_MIN_HEIGHT,
 } from "./sharedContracts.generated";
 
@@ -21,254 +16,16 @@ function sheetRem(name: string): number {
 }
 
 /**
- * Geometry shared by the asset menu resize affordance and its contract
- * tests. Values are in the same rem-like units as the width binding.
- */
-export const ASSET_MENU_CHROME_WIDTH = 35;
-export const ASSET_MENU_MIN_WIDTH = 700 + ASSET_MENU_CHROME_WIDTH;
-// The asset menu shell is bottom-aligned above the native toolbar. Reserve space
-// for that toolbar, the shell chrome, and a small top/bottom safety margin so
-// the catalog cannot push the shell's title/search bar outside a short view.
-export const ASSET_MENU_VIEWPORT_RESERVE = 210;
-export const ASSET_MENU_MIN_CATALOG_HEIGHT = 320;
-export const ASSET_MENU_REFERENCE_HEIGHT = 1080;
-
-export type AssetMenuDensityTier = "compact" | "default" | "expanded";
-export type AssetMenuMetric = "cost" | "upkeep" | "workers" | "capacity" | "lot" | "level" | "parking";
-
-export interface AssetMenuRowGeometry {
-  rowHeight: number;
-  selectorHeight: number;
-  identityHeight: number;
-  selectorVerticalPadding: number;
-}
-
-const rowGeometryByTier: Record<AssetMenuDensityTier, AssetMenuRowGeometry> = {
-  compact: { rowHeight: 84, selectorHeight: 80, identityHeight: 72, selectorVerticalPadding: 2 },
-  default: { rowHeight: 92, selectorHeight: 88, identityHeight: 72, selectorVerticalPadding: 2 },
-  expanded: { rowHeight: 92, selectorHeight: 88, identityHeight: 72, selectorVerticalPadding: 2 },
-};
-
-const compactMetricLabels: Record<AssetMenuMetric, string> = {
-  cost: "Cost",
-  upkeep: "Upk",
-  workers: "Wkr",
-  capacity: "Cap",
-  lot: "Lot",
-  level: "Lvl",
-  parking: "Park",
-};
-
-/** Map the assembly's outer width to the deterministic visual density tier. */
-export function getAssetMenuDensity(outerWidth: number): AssetMenuDensityTier {
-  if (outerWidth < 800) return "compact";
-  if (outerWidth < 1000) return "default";
-  return "expanded";
-}
-
-export function getAssetMenuRowGeometry(tier: AssetMenuDensityTier): AssetMenuRowGeometry {
-  return rowGeometryByTier[tier];
-}
-
-/** Return a compact header label while keeping localized full labels available to callers. */
-export function getAssetMenuMetricLabel(
-  metric: AssetMenuMetric,
-  tier: AssetMenuDensityTier,
-  fullLabel: string,
-): string {
-  return tier === "compact" ? compactMetricLabels[metric] : fullLabel;
-}
-
-/** Keep compact panels dense while restoring readable metric text at normal widths. */
-export function getAssetMenuMetricTextScale(tier: AssetMenuDensityTier): "compact" | "readable" {
-  return tier === "compact" ? "compact" : "readable";
-}
-
-/**
- * What each metric column costs at a comfortable width: the widest content each
- * one draws plus the right gutter the numeric columns carry, sized so nothing
- * clips.
- */
-export const ASSET_MENU_COLUMN_MAX: Record<AssetMenuMetric, number> = {
-  cost: 100,
-  // The widest figure here is a road's per-kilometre-per-month cost, in the
-  // game's own template, and it does not scale with the build menu. The minimum
-  // below holds the same figure for the same reason.
-  upkeep: 116,
-  workers: 62,
-  capacity: 122,
-  lot: 88,
-  level: 46,
-  parking: 52,
-};
-
-/**
- * What each column may be squeezed to before the name gives up any more. These
- * clip the rare widest value and fit the common one, and never fall below what
- * a two-digit figure and its gutter need.
- */
-export const ASSET_MENU_COLUMN_MIN: Record<AssetMenuMetric, number> = {
-  cost: 76,
-  // Holds the per-kilometre-per-month figure at any width — see above.
-  upkeep: 116,
-  workers: 48,
-  capacity: 88,
-  lot: 68,
-  level: 38,
-  parking: 44,
-};
-
-/**
- * What the identity column is expected to keep at the narrowest build menu. A budget,
- * not a CSS min-width: in Cohtml a min-width on a flex item disables its
- * flex-grow, so this floor has to be left over by the column minima instead.
- */
-export const ASSET_MENU_IDENTITY_MIN = 180;
-
-/**
- * Everything in a table row that is not the name, in rem: the trailing reserve,
- * the rows' scrollbar, the select padding and the thumbnail with its margin.
- */
-export const ASSET_MENU_TABLE_ROW_FURNITURE = sheetRem("tableRowFurniture");
-
-/**
- * What the control pane takes out of the assembly: its own width plus the margin
- * beside it. Here because both the asset menu and the table subtract it from the
- * width binding, which measures the whole assembly and not the build menu.
+ * What the control pane takes out of the room beside the build menu: its own width plus the
+ * margin beside it.
  */
 export const CONTROL_PANE_TOTAL = sheetRem("paneTotal");
 
-/**
- * What the build menu spends around the table's rows: the row viewport's
- * scrollbar, the rows' own padding and the build menu's inner margins — the gap
- * between the build menu's width and a row's.
- */
-export const ASSET_MENU_TABLE_CHROME = 30;
+/** The bodies' side margin, each side: the slots are the box less these. */
+export const BODY_SIDE_MARGIN = sheetRem("bodySideMargin");
 
-/**
- * The name column's basis: the room a row keeps for it before the metric
- * columns take theirs, and what it must keep as the build menu narrows.
- */
-export const ASSET_MENU_TABLE_NAME_BASIS = 260;
-
-/**
- * The room the metric columns really have: the assembly less the control pane,
- * the build menu's chrome, the row's furniture and the name's basis. Never negative
- * — a narrow build menu runs the arithmetic out and the columns sit at their minima.
- */
-export function tableColumnRoom(outerWidth: number): number {
-  const room = outerWidth
-    - ASSET_MENU_CHROME_WIDTH
-    - CONTROL_PANE_TOTAL
-    - ASSET_MENU_TABLE_CHROME
-    - ASSET_MENU_TABLE_ROW_FURNITURE
-    - ASSET_MENU_TABLE_NAME_BASIS;
-  return Math.max(room, 0);
-}
-
-/** The widths of the metric columns the table draws; a column it drops has none. */
-export type AssetMenuColumnWidths = Partial<Record<AssetMenuMetric, number>>;
-
-const sumWidths = (widths: AssetMenuColumnWidths): number =>
-  Object.values(widths).reduce<number>((total, width) => total + (width ?? 0), 0);
-
-/** The metric columns, in the order the table draws them. */
-export const ASSET_MENU_TABLE_METRICS: readonly AssetMenuMetric[] = [
-  "cost", "upkeep", "workers", "capacity", "lot", "level", "parking",
-];
-
-/** The order the table gives its columns up when the build menu is too narrow for all of them: the least asked-for first. */
-export const ASSET_MENU_COLUMN_DROP_ORDER: readonly AssetMenuMetric[] = [
-  "parking", "level", "lot", "workers", "capacity", "upkeep", "cost",
-];
-
-/**
- * The metric columns the table draws at this width: as many as fit beside the
- * name at their comfortable widths, grown by the text scale, so a figure is
- * never clipped. A narrow build menu drops the least asked-for first; the column
- * the table is sorted by always stays, and so does at least one.
- *
- * Not the column minima: at the minima a network's per-km cost ("¢3,500 /km")
- * clips in every row.
- */
-export function visibleTableMetrics(
-  outerWidth: number,
-  textScale = 1,
-  sorted: AssetMenuMetric | null = null
-): AssetMenuMetric[] {
-  const room = tableColumnRoom(Number.isFinite(outerWidth) ? outerWidth : ASSET_MENU_MIN_WIDTH);
-  const textRatio = fontSizeRatio("s", textScale);
-  const kept = new Set<AssetMenuMetric>(ASSET_MENU_TABLE_METRICS);
-  const needs = () => [...kept].reduce((total, metric) => total + ASSET_MENU_COLUMN_MAX[metric], 0) * textRatio;
-
-  for (const metric of ASSET_MENU_COLUMN_DROP_ORDER) {
-    if (needs() <= room || kept.size === 1) break;
-    if (metric !== sorted) kept.delete(metric);
-  }
-
-  return ASSET_MENU_TABLE_METRICS.filter((metric) => kept.has(metric));
-}
-
-/**
- * The metric column widths, moving between minimum and comfortable by the ROOM
- * beside the name — every metric cell is flex: 0 0 auto and the name is the
- * only item that yields. The figures scale, so the room is read unscaled. Only
- * the columns given are sized: the ones the table draws (visibleTableMetrics).
- */
-export function getAssetMenuColumnWidths(
-  outerWidth: number,
-  textScale = 1,
-  metrics: readonly AssetMenuMetric[] = ASSET_MENU_TABLE_METRICS
-): AssetMenuColumnWidths {
-  const width = Number.isFinite(outerWidth) ? outerWidth : ASSET_MENU_MIN_WIDTH;
-  const textRatio = fontSizeRatio("s", textScale);
-  const room = tableColumnRoom(width);
-
-  // How far along from the minimum set to the comfortable set the room
-  // reaches, read in unscaled units since the figures grow with the text.
-  const minTotal = metrics.reduce((total, metric) => total + ASSET_MENU_COLUMN_MIN[metric], 0);
-  const span = metrics.reduce((total, metric) => total + ASSET_MENU_COLUMN_MAX[metric], 0) - minTotal;
-  // A degenerate range would divide by zero; every column simply gets its
-  // comfortable width, which is what a single supported set deserves.
-  const share = span <= 0
-    ? 1
-    : Math.max(0, Math.min(1, (room / textRatio - minTotal) / span));
-
-  const base: AssetMenuColumnWidths = {};
-  for (const metric of metrics) {
-    const min = ASSET_MENU_COLUMN_MIN[metric];
-    const max = ASSET_MENU_COLUMN_MAX[metric];
-    base[metric] = min + (max - min) * share;
-  }
-
-  // The figures grow with the text scale as far as the room allows and no
-  // further: a set already at its minima cannot also grow. What does not fit
-  // clips inside its cell, which beats squeezing the name away.
-  const baseTotal = sumWidths(base);
-  const grow = room > 0 && baseTotal > 0
-    ? Math.min(textRatio, Math.max(1, room / baseTotal))
-    : 1;
-
-  const widths: AssetMenuColumnWidths = {};
-  for (const metric of metrics) {
-    // Whole units: a fractional width lands on a different pixel in the header
-    // than in the rows, and the columns stop lining up.
-    widths[metric] = Math.round((base[metric] ?? 0) * grow);
-  }
-
-  return widths;
-}
-
-/**
- * A deterministic max height for the catalog's bounded row viewport, because
- * Gameface's viewport units are not reliable across the game's render targets.
- * A constant in practice; the parameter keeps the arithmetic testable.
- */
-export function getAssetMenuCatalogMaxHeight(viewportHeight: number): number {
-  const safeViewportHeight = Number.isFinite(viewportHeight) ? viewportHeight : 720;
-  const physicalHeight = Math.max(ASSET_MENU_MIN_CATALOG_HEIGHT, safeViewportHeight - ASSET_MENU_VIEWPORT_RESERVE);
-  return Math.floor((physicalHeight * ASSET_MENU_REFERENCE_HEIGHT) / safeViewportHeight);
-}
+/** The figures a row can state and sort by. */
+export type AssetMenuMetric = "cost" | "upkeep" | "workers" | "capacity" | "lot" | "level" | "parking";
 
 /** The catalog's height range: AssetMenuHeight's, generated into sharedContracts.generated.ts. */
 export { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT };
@@ -298,9 +55,18 @@ export function draggedAssetMenuHeight(
   currentY: number,
   pxPerRem?: number
 ): number {
-  const delta = Number.isFinite(startY) && Number.isFinite(currentY) ? startY - currentY : 0;
+  return clampAssetMenuHeight(startHeight + dragDistanceRem(currentY, startY, pxPerRem));
+}
+
+/**
+ * How far a drag has gone, in rem, from `fromPx` to `toPx`: zero when either
+ * is not a number, and measured at `pxPerRem` or, for a drag whose measurement
+ * failed, the 720p ratio.
+ */
+export function dragDistanceRem(fromPx: number, toPx: number, pxPerRem?: number): number {
+  const delta = Number.isFinite(fromPx) && Number.isFinite(toPx) ? toPx - fromPx : 0;
   const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
-  return clampAssetMenuHeight(startHeight + delta / scale);
+  return delta / scale;
 }
 
 /**
@@ -334,28 +100,11 @@ export function pxPerRemFrom(lengthPx: number | null | undefined, lengthRem: num
   return lengthPx / lengthRem;
 }
 
-/** The build menu's width range and its default: AssetMenuCatalogWidth's, generated. */
-export { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FILL_SNAP, ASSET_MENU_CATALOG_MIN_WIDTH };
-
 /**
- * The stored width that fills the room with the pane hidden: the widest the band
- * ever is, so it is at the room or beyond it at every text scale, and the room is
- * what draws.
+ * Vanilla's tool-side column at the game's own text size, which the box starts
+ * beside. It grows by half the text scale's increase: see widthSteps.ts.
  */
-export const ASSET_MENU_CATALOG_FULL = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
-
-/** Vanilla's tool-side column at the game's own text size, which the row starts beside. */
 export const VANILLA_TOOL_COLUMN_WIDTH = 380;
-
-/**
- * The band the row may fill: C#'s width and the chrome, less what vanilla's tool
- * column gains with the text scale. The column grows by half the scale's increase
- * and pushes the row right, while the social icons stay put at the screen's edge.
- */
-export function assetMenuBandWidth(cSharpWidth: number, textScale: number): number {
-  const scale = Number.isFinite(textScale) && textScale > 1 ? textScale : 1;
-  return cSharpWidth + ASSET_MENU_CHROME_WIDTH - VANILLA_TOOL_COLUMN_WIDTH * (scale - 1) / 2;
-}
 
 /** The width strip's width, which a width drag measures rem against. */
 export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
@@ -363,78 +112,100 @@ export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
 /** The strip's grab area across the gap beside the pane, which a press there measures against. */
 export const ASSET_MENU_WIDTH_HANDLE_REACH = sheetRem("widthHandleReach");
 
-/**
- * The room the build menu has: the band, less the control pane while it is
- * shown. The width strip lies inside the menu, so without the pane the menu may
- * take the whole band.
- */
-export function catalogRoom(bandWidth: number, paneShown: boolean): number {
-  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth;
-}
+/** The tab row's band under the list: the gap, the row and the pad above the bar. */
+export const TAB_ROW_BAND = sheetRem("tabRowBand");
+
+/** The tab row's own numbers, which its sheet draws and its plan budgets: see _assetMenuGeometry.scss. */
+export const TAB_ROW_HEIGHT = sheetRem("tabRowHeight");
+export const TAB_ROW_INSET = sheetRem("tabRowInset");
+export const TAB_ROW_INSET_RIGHT = sheetRem("tabRowInsetRight");
+export const TAB_CELL_MIN_WIDTH = sheetRem("tabCellMinWidth");
+export const TAB_CELL_PADDING = sheetRem("tabCellPadding");
+export const TAB_CELL_GAP = sheetRem("tabCellGap");
+export const TAB_COUNT_SIZE = sheetRem("tabCountSize");
+export const TAB_NAME_SIZE = sheetRem("tabNameSize");
+export const TAB_NAME_GAP = sheetRem("tabNameGap");
+export const TAB_SEGMENT_MARGIN = sheetRem("tabSegmentMargin");
+
+/** The box less its body in every look, so the box is the stored height and this: see _assetMenuGeometry.scss. */
+export const ASSET_MENU_BOX_CHROME = sheetRem("boxChrome");
+
+/** What the box draws above its body: the top row's band. */
+export const TOP_CHROME_HEIGHT = sheetRem("topBand");
+
+/** The top edge's strip, which a height drag measures rem against. */
+export const TOP_EDGE_HEIGHT = sheetRem("topEdgeHeight");
+
+/** The top row's numbers, which its sheet draws and its plan budgets: see _assetMenuGeometry.scss. */
+export const TOP_ROW_INSET = sheetRem("topRowInset");
+export const FIELD_PADDING = sheetRem("fieldPadding");
+export const FIELD_GAP = sheetRem("fieldGap");
+export const FIELD_GLYPH = sheetRem("fieldGlyph");
+export const FIELD_CLEAR = sheetRem("fieldClear");
+export const TOP_ROW_TEXT = sheetRem("topRowText");
+export const CLOSE_SIZE = sheetRem("closeSize");
+export const CLOSE_GAP = sheetRem("closeGap");
+
+/** The field's floor, which the controls fold to keep: a budget, never a CSS min-width. */
+export const FIELD_MIN_WIDTH = sheetRem("fieldMinWidth");
+
+/** The controls strip's numbers, which its sheet draws and its plan budgets: see _assetMenuGeometry.scss. */
+export const CONTROLS_GAP = sheetRem("controlsGap");
+export const CONTROL_PADDING = sheetRem("controlPadding");
+export const CONTROL_PADDING_FOLDED = sheetRem("controlPaddingFolded");
+export const CONTROL_WORD_GAP = sheetRem("controlWordGap");
+export const CONTROL_GLYPH = sheetRem("controlGlyph");
+export const CONTROL_CARET = sheetRem("controlCaret");
+export const CONTROL_CARET_GAP = sheetRem("controlCaretGap");
+export const CONTROL_DIVIDER = sheetRem("controlDivider");
+
+/** A popover's width, and its gap above the box. */
+export const POPOVER_WIDTH = sheetRem("popoverWidth");
+export const POPOVER_GAP = sheetRem("popoverGap");
+
+/** The room a popover's rows take: its width inside its padding. */
+export const POPOVER_ROOM = POPOVER_WIDTH - 2 * sheetRem("popoverPadding");
+
+/** A list row's padding each side, and the gap before its note: pickerList.module.scss draws them. */
+export const PICKER_ROW_PADDING = sheetRem("pickerRowPadding");
+export const PICKER_NOTE_GAP = sheetRem("pickerNoteGap");
+
+/** FILTER's height, which its list scrolls past: the tallest a popover draws, so the room one needs. */
+export const POPOVER_FILTER_HEIGHT = sheetRem("popoverFilterHeight");
+
+/** The notch's width across its top, which it centres on the lit bar button: see _assetMenuGeometry.scss. */
+export const NOTCH_TOP_WIDTH = sheetRem("notchTop");
 
 /**
- * The width the build menu draws at. The default is the room beside the pane,
- * shown or hidden, so the toggle changes nothing it has room for. Any other width
- * is held at the minimum or above and at the room or below: a width wider than
- * the room beside the pane draws narrower while the pane is shown and comes back
- * when it goes.
+ * The box's bottom edge on the layout's 1080-tall frame, where vanilla's own menu ends above the
+ * toolbar. The UI reads only the game's slot's left edge, so the frame above this edge stands for its bottom.
  */
-export function resolveCatalogWidth(
-  chosen: number,
-  bandWidth: number,
-  paneShown: boolean
-): number {
-  const room = catalogRoom(bandWidth, paneShown);
-  if (!Number.isFinite(chosen) || chosen <= ASSET_MENU_CATALOG_DEFAULT) {
-    return Math.min(room, catalogRoom(bandWidth, true));
-  }
-  return Math.min(room, Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, chosen));
-}
+export const BOX_BOTTOM = 954;
 
-/** What filling the room in view stores: the default beside the pane, full without it. */
-export function filledCatalogWidth(paneShown: boolean): number {
-  return paneShown ? ASSET_MENU_CATALOG_DEFAULT : ASSET_MENU_CATALOG_FULL;
+/**
+ * The band along the screen's top that the game's HUD holds, with a margin: no popover opens into
+ * it, and the box stops short of it. An estimate of the HUD's height, still to be measured in game.
+ */
+export const TOP_HUD_ALLOWANCE = 60;
+
+/** The box's height: the stored body height and the chrome, the same in every look. */
+export function assetMenuBoxHeight(storedHeight: number): number {
+  return clampAssetMenuHeight(storedHeight) + ASSET_MENU_BOX_CHROME;
 }
 
 /**
- * The width a drag from `startX` to `currentX` asks for. The strip is on the right
- * edge, so moving right widens. Clamped here rather than resolved, because a drag
- * far to the left would otherwise reach zero, which reads as fill.
+ * The box's height as drawn: its height, stopped at the room between its bottom edge and the top
+ * HUD's band, so a tall stored height never puts the top row under the HUD.
  */
-export function draggedCatalogWidth(
-  startWidth: number,
-  startX: number,
-  currentX: number,
-  bandWidth: number,
-  paneShown: boolean,
-  pxPerRem?: number
-): number {
-  const delta = Number.isFinite(startX) && Number.isFinite(currentX) ? currentX - startX : 0;
-  const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
-  const raw = startWidth + delta / scale;
-  if (!Number.isFinite(raw)) return startWidth;
-  return Math.min(catalogRoom(bandWidth, paneShown), Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, raw));
-}
-
-/** What a drag that ended at `width` stores: the room filled when it ended against the room, else the width. */
-export function releasedCatalogWidth(width: number, bandWidth: number, paneShown: boolean): number {
-  return width >= catalogRoom(bandWidth, paneShown) - ASSET_MENU_CATALOG_FILL_SNAP ? filledCatalogWidth(paneShown) : width;
+export function drawnBoxHeight(storedHeight: number): number {
+  return Math.min(assetMenuBoxHeight(storedHeight), BOX_BOTTOM - TOP_HUD_ALLOWANCE);
 }
 
 /**
- * The row's width: the build menu, and the pane beside it while shown. Sized to
- * what it holds, so no empty stretch of the row is left to take the mouse.
+ * The body's height as drawn: the drawn box less the chrome it draws, never below the drag's floor.
+ * The stored height keeps its meaning for the drag, the settings and the upgrades panel's cap. See
+ * docs/design-notes.md, "The box's height".
  */
-export function assetMenuRowWidth(menuWidth: number, paneShown: boolean): number {
-  return paneShown ? menuWidth + CONTROL_PANE_TOTAL : menuWidth;
-}
-
-/**
- * The width the catalog's table arithmetic takes. Its functions were tuned
- * against the whole row with the pane in it, and they subtract the pane
- * themselves, so they get the build menu plus the pane, whether or not the pane
- * is shown.
- */
-export function catalogLayoutWidth(menuWidth: number): number {
-  return menuWidth + CONTROL_PANE_TOTAL;
+export function drawnBodyHeight(storedHeight: number): number {
+  return Math.max(ASSET_MENU_MIN_HEIGHT, drawnBoxHeight(storedHeight) - TOP_CHROME_HEIGHT - TAB_ROW_BAND);
 }

@@ -1,0 +1,183 @@
+@use "../../base.scss" as _base;
+@use "bodyShell" as *;
+
+// The list: plates placed from their slot index, in the look's tokens. See docs/design-notes.md,
+// "The bodies".
+
+@include body-shell;
+
+.plate {
+  @include cell-face(var(--bbm-radiusItem), var(--bbm-plate));
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 3rem;
+  padding: 0 4rem 0 1rem;
+  color: var(--bbm-tName);
+}
+
+@include cell-lit(".plate");
+
+// A building that cannot be placed, locked or a unique the city holds: its own plate, which a pointer
+// does not light as it lights one that places.
+.locked,
+.locked:hover,
+.built,
+.built:hover {
+  background-color: var(--bbm-plateLocked);
+}
+
+// The one armed building: solid, with its own inks.
+.armed,
+.armed:hover {
+  background-color: var(--bbm-arm);
+}
+
+// The picture and its mark, nested so the mark sizes from the picture by base.scss's one ratio.
+.artwork {
+  @include _base.artwork-box(25rem);
+
+  .picture {
+    @include _base.artwork-picture(25rem);
+  }
+
+  .mark {
+    @include _base.unique-mark(25rem);
+  }
+}
+
+// Above 100% text the picture keeps 24 rem, as the plates' own height shrinks: a one-line plate's
+// overhangs it by a rem above and below, into the gaps, so the plate does not clip it.
+.largeText {
+  overflow: visible;
+}
+
+.largeText .artwork {
+  @include _base.artwork-box(24rem);
+
+  .picture {
+    @include _base.artwork-picture(24rem);
+  }
+
+  .mark {
+    @include _base.unique-mark(24rem);
+  }
+}
+
+// A small menu's big plate: the picture as tall as the plate allows, sized inline, its mark a share of
+// it, and beside it the name at the top and the numbers at the foot.
+.big {
+  gap: 6rem;
+  padding: 0 6rem 0 2rem;
+
+  .artwork {
+    flex: 0 0 auto;
+
+    .mark {
+      @include _base.unique-mark(100%);
+    }
+  }
+
+  .numbers {
+    align-items: flex-start;
+  }
+}
+
+.bigWords {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4rem 0;
+}
+
+@include unique-mark-states(".plate");
+
+// The name's lines, as many as the planner gives it: none past the plate's own, so none is cut.
+.name {
+  flex: 1 1 auto;
+  font-size: calc(11rem * var(--fontScale));
+  line-height: calc(12.5rem * var(--fontScale));
+  color: var(--bbm-tName);
+}
+
+.locked .name,
+.built .name,
+.built .first,
+.built .second {
+  color: var(--bbm-tLocked);
+}
+
+.built .unitGlyph {
+  background-color: var(--bbm-tLocked);
+}
+
+.armed .name {
+  color: var(--bbm-armText);
+}
+
+// The cost over the second number, right-aligned, so the column reads down the list.
+.numbers {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: calc(12rem * var(--fontScale));
+  white-space: nowrap;
+}
+
+// The mark and the first number, side by side; the key number and its glyph, side by side.
+.firstLine,
+.secondLine {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem;
+}
+
+.first {
+  color: var(--bbm-tCost);
+}
+
+// On the locked plate, which an interface style can turn light: a body ink that follows it.
+.milestone {
+  color: var(--bbm-bodyMilestone);
+}
+
+.second {
+  color: var(--bbm-tNum2);
+}
+
+// A one-line plate's key number in the cost's place, where the readout said the cost: the key number's ink.
+.keyNumber {
+  color: var(--bbm-tNum2);
+}
+
+.armed .first,
+.armed .second {
+  color: var(--bbm-armNum);
+}
+
+// A sibling of the number, in the glyph ink, a step behind the number's digits.
+.unitGlyph {
+  @include _base.mask-glyph(9rem);
+  background-color: var(--bbm-tGlyph);
+}
+
+.armed .unitGlyph {
+  background-color: var(--bbm-armNum);
+}
+
+// A sibling of the number. On the plate, which an interface style can turn light: a body ink that
+// follows it.
+.enterMark {
+  @include _base.mask-glyph(10rem);
+  background-color: var(--bbm-bodyEntMark);
+}
+
+.armed .enterMark {
+  background-color: var(--bbm-armNum);
+}

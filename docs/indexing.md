@@ -146,10 +146,10 @@ The menus and their tabs, unlike the placements, wait for the next full pass. St
 only when the game regroups without recreating the assets. A recreated category is one such case:
 `ReplacePrefabSystem` does not move its members to the new entity, so the new category starts
 empty, and vanilla, which draws no empty category, hides the tab and its assets. The walk agrees
-and places none of them, so the tab counts nothing. The strip and the chip row's category picker
-draw only tabs with something behind them (`visibleCategories`), so they hide it at the same
-pass. Re-reading the tabs on a partial pass is not worth it: a category removed late in the frame
-would make its menu's read fail on every partial pass rather than on the next full one.
+and places none of them, so the tab counts nothing. The tab row draws only the tabs the menu
+fills (`presentCategories`), so it hides it at the same pass. Re-reading the tabs on a partial
+pass is not worth it: a category removed late in the frame would make its menu's read fail on
+every partial pass rather than on the next full one.
 
 ## A pass that fails
 
@@ -220,11 +220,11 @@ The walk follows any member that carries `UIAssetCategoryData` and has members o
 into it (`CategoryTree`). `NestedCategories.Flatten` then makes a tab of every category that holds
 assets: each parent's own assets first, then its children in their order (priority, then entity
 index for a tie). A nested menu's tabs are numbered 0, 1, 2… in that order, and the placements
-take the same numbers, so the strip, the headings and the placements agree. A menu with no
+take the same numbers, so the tab row, the headings and the placements agree. A menu with no
 nesting keeps the game's priorities untouched.
 
 **The menus and their tabs are in the game's order**, reached by the game's own steps
-(`SortedCategories`, `ToolbarOrder`), and the All tab's headings follow the strip's order
+(`SortedCategories`, `ToolbarOrder`), and the All tab's headings follow the tab row's order
 (`VanillaMenuIndex.TabOf`). The comments there say why.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
@@ -361,11 +361,18 @@ filed under the nearest. Both mostly affect service upgrades, which the catalog 
 reads as a broken icon rather than as none.
 
 **Folds** (`FoldedDevTreeNodes`). Transportation's Air category carries three assets and the tree
-gives each of the big two its own node, so the strip would draw one tab of three and two tabs of
-one, and neither of those nodes has an icon, so both would fall back to the menu's glyph and
-render as a pair of identical marks. An international airport and a space centre are things you
+gives each of the big two its own node, so the tab row would draw one tab of three and two tabs of
+one, and neither of those nodes has an icon, so both would have no picture to draw and say
+their names in its place. An international airport and a space centre are things you
 build at an airport, so they are drawn under the Airport tab. Folds are keyed on the node prefab
 name because the label is localized: a label key would fold in English but not in German.
+
+**Roads.** The tab row draws one cell per Roads category, with the game's own icon, and never splits
+one into branches (`CatalogView.ExpandedCategoryId`): a split category draws as its branches'
+generic glyphs, a road and a second roundabout for Cul-de-Sacs. Under a category, a Roads branch
+holding one building joins the category's largest branch (`RoadsLoneBranches`), so Parking's
+Parking Hall and Automated Parking Building sit with the rest of Parking instead of each heading
+a group of one. The rule counts rather than naming nodes, so a pack's lone branch folds too.
 
 ## Language changes
 

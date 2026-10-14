@@ -2,9 +2,9 @@
 // renders it into the same toolMainColumn slot as the asset menu, with the
 // same toolPanel class on the root.
 
-// The frame is the build menu's, rule for rule: assetMenu's .topBar
-// for the header and its .content for the body. Vanilla draws this slot as a
-// Panel, so without these the rows sit on bare black.
+// The frame is the look's, as the build menu's: its head over its list, in the
+// look's tokens, which the root's look class carries here outside the build menu.
+// Vanilla draws this slot as a Panel, so without these the rows sit on bare black.
 // Click-through itself, solid in its children. The game's tool column lays
 // this root out as tall as the column, from the top of the screen down to the
 // toolbar, with the drawn panel at its foot; a root that took the pointer
@@ -26,8 +26,8 @@
   flex-direction: row;
   align-items: center;
   padding: 6rem 10rem 4rem 12rem;
-  background-color: var(--panelColorDark);
-  backdrop-filter: var(--panelBlur);
+  background-color: var(--bbm-head);
+  backdrop-filter: var(--bbm-bodyBlur);
   // Square: the resize strip above owns the panel's top rounding.
   border-top-left-radius: 0;
   border-top-right-radius: 0;
@@ -43,7 +43,8 @@
 .title {
   font-size: var(--fontSizeL);
   font-weight: 500;
-  color: var(--textColor);
+  // On the head, which stays dark under every interface style: the look's light ink.
+  color: var(--bbm-tStateSet);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -53,7 +54,7 @@
   font-size: var(--fontSizeXS);
   text-transform: uppercase;
   letter-spacing: 0.5rem;
-  color: var(--textColorDim);
+  color: var(--bbm-tWord);
 }
 
 .close {
@@ -69,7 +70,7 @@
   width: 16rem;
   height: 16rem;
   mask-size: 100% 100%;
-  background-color: var(--textColor);
+  background-color: var(--bbm-tStateSet);
 }
 
 .content {
@@ -78,10 +79,9 @@
   // min-height 0 so the flex column lets it shrink to the cap at all.
   min-height: 0;
   overflow-y: auto;
-  background-color: var(--panelColorNormal);
-  backdrop-filter: var(--panelBlur);
-  background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
-  border-bottom-left-radius: var(--panelRadius);
-  border-bottom-right-radius: var(--panelRadius);
-  color: rgba(255, 255, 255, 1);
+  background-color: var(--bbm-body);
+  backdrop-filter: var(--bbm-bodyBlur);
+  border-bottom-left-radius: var(--bbm-boxRadius);
+  border-bottom-right-radius: var(--bbm-boxRadius);
+  color: var(--bbm-tName);
 }

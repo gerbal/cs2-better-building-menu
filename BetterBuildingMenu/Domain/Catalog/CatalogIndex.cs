@@ -123,19 +123,23 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 		public PrefabBase? GetPrefab(int id) => Get(id)?.Prefab;
 
-		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
+		/// <summary>The tab strip for a menu, empty when the menu has none or there is no menu.</summary>
 		/// <remarks>Roads gets more tabs than the game gives it: the asset menu gathers every network there
-		/// (see <see cref="NetworkMenuExtension"/>), so the strip has to offer the extras too.</remarks>
+		/// (see <see cref="NetworkMenuExtension"/>), so the strip has to offer the extras too. A blank menu,
+		/// however spelt, is the whole catalog, which has no tabs.</remarks>
 		public IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menu)
 		{
-			var tabs = Menus.CategoriesOf(menu);
-
-			if (!NetworkMenuExtension.IsExtended(menu) || tabs.Count == 0)
+			if (string.IsNullOrWhiteSpace(menu))
 			{
-				return tabs;
+				return Array.Empty<VanillaMenuCategory>();
 			}
 
-			return tabs.Concat(ExtraNetworkCategories()).ToArray();
+			var tabs = Menus.CategoriesOf(menu);
+			var all = NetworkMenuExtension.IsExtended(menu) && tabs.Count > 0 ? tabs.Concat(ExtraNetworkCategories()) : tabs;
+			var menuIcon = Menus.MenuIcon(menu);
+
+			// Every tab a picture its row can draw: its own, else its menu's. See CategoryIcon.Chain.
+			return all.Select(tab => tab with { Icon = CategoryIcon.Chain(tab.Icon, menuIcon) }).ToArray();
 		}
 
 		/// <summary>The school each level is named after, by level: the plain school the base game

@@ -1,15 +1,15 @@
 /**
- * The pure half of vanillaLayout.ts: what the two patches on vanilla's
- * layout do to an element, and how a stylesheet-module class is read. No
- * React and no `cs2/modding` here, so the test runner can load it.
+ * The pure half of vanillaLayout.ts: what its patch on vanilla's layout does
+ * to an element, and how a stylesheet-module class is read. No React and no
+ * `cs2/modding` here, so the test runner can load it.
  */
 
-/** The two properties the asset menu patches on vanilla's elements. */
-export type PatchedProperty = "justifyContent" | "zIndex";
+/** The properties the asset menu patches on vanilla's elements. */
+export type PatchedProperty = "zIndex" | "left";
 
 const CSS_NAME: Record<PatchedProperty, string> = {
-  justifyContent: "justify-content",
   zIndex: "z-index",
+  left: "left",
 };
 
 export interface StyledElement {

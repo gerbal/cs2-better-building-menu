@@ -1,40 +1,40 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { catalogPage, entry } from "../harness/render";
+import { fakeSearchField, keysPage, type KeysPage } from "../harness/fakeKeys";
+import { catalogPage, entry, showBody } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
-import { searchFieldClass } from "../../src/mods/BuildingMenu/searchField";
 
 // Mounted, not rendered to markup: the Enter listener is an effect. Node has no
 // document, so the few globals the catalog's effects reach for are faked here.
-type KeyEvent = { key: string; keyCode?: number; target?: unknown };
-type Listener = (event: KeyEvent) => void;
+type KeyEvent = { key: string; keyCode?: number; target?: unknown; preventDefault?: () => void };
 const globals = globalThis as unknown as Record<string, unknown>;
-let keydown: Listener[] = [];
+let page: KeysPage = keysPage();
 
 function installDocument(): void {
-  keydown = [];
-  globals.document = {
-    // Only capture-phase listeners hear a key typed in the asset menu: the game's app
-    // container stops keydown propagation before it bubbles to the document.
-    addEventListener: (type: string, listener: Listener, capture?: boolean) => {
-      if (type === "keydown" && capture === true) keydown.push(listener);
-    },
-    removeEventListener: (type: string, listener: Listener, capture?: boolean) => {
-      if (type === "keydown" && capture === true) keydown = keydown.filter((other) => other !== listener);
-    },
-  };
+  page = keysPage();
+  globals.document = page.document;
   globals.requestAnimationFrame = () => 0;
   globals.cancelAnimationFrame = () => undefined;
 }
 
-const press = (event: KeyEvent) => act(() => {
-  for (const listener of [...keydown]) listener(event);
-});
+const press = (event: KeyEvent) => act(() => page.keydown(event));
 const enter = (target?: unknown) => press({ key: "Enter", target });
 const armed = () => triggers.filter((call) => call.name === "SetCurrentPrefab").map((call) => call.args[0]);
+
+/** The search field, focused, counting its blurs; a blur takes the page's focus off it, as in the game. */
+function focusSearchField() {
+  const field = fakeSearchField();
+  const blur = field.blur;
+  field.blur = () => {
+    blur();
+    page.document.activeElement = null;
+  };
+  page.document.activeElement = field;
+  return field;
+}
 
 // Two groups, the weaker match first: grouping orders the page by group before
 // relevance, which is exactly when the first row is not the one to arm.
@@ -57,7 +57,6 @@ describe("Enter in the catalog", () => {
     resetBindings();
     resetAssetMenuView();
     installDocument();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
   afterEach(() => {
@@ -72,9 +71,12 @@ describe("Enter in the catalog", () => {
     root!.update(<BuildingCatalogComponent />);
   });
 
-  for (const mode of ["grid", "list", "cards", "table"]) {
-    it(`arms the best match exactly once in ${mode} mode`, () => {
-      setAssetMenuView({ viewMode: mode });
+  // A query draws the list in a menu whose view is the tiles, so that case says so.
+  for (const body of ["tiles", "list", "cards"]) {
+    const drawn = body === "tiles" ? "the list a tiles menu draws under a query" : `the ${body} body`;
+
+    it(`arms the best match exactly once in ${drawn}`, () => {
+      showBody(body);
       groupedPage("clinic", 1);
       typed("clinic");
       mount();
@@ -94,6 +96,20 @@ describe("Enter in the catalog", () => {
     press({ key: "", keyCode: 13 });
 
     assert.deepEqual(armed(), [1]);
+  });
+
+  it("arms the best match by id when its row is past the ones loaded", () => {
+    // C# chose it from the whole result; the window holds only the first rows.
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(
+      [entry(2, { name: "Parking Lot 001" })],
+      { bestMatchId: 240, searchText: "parking" }
+    ));
+    typed("parking");
+    mount();
+
+    enter();
+
+    assert.deepEqual(armed(), [240]);
   });
 
   it("holds an Enter pressed before the page catches up, and arms when it does", () => {
@@ -147,7 +163,7 @@ describe("Enter in the catalog", () => {
     enter({ tagName: "TEXTAREA" });
     assert.deepEqual(armed(), []);
 
-    enter({ tagName: "TEXTAREA", classList: { contains: (name: string) => name === searchFieldClass } });
+    enter(fakeSearchField());
     assert.deepEqual(armed(), [1], "the search box's own Enter still arms");
   });
 
@@ -161,6 +177,77 @@ describe("Enter in the catalog", () => {
     assert.deepEqual(armed(), []);
   });
 
+  it("moves the target with Down only once the page answers the query, and from the search field", () => {
+    const down = () => press({ key: "ArrowDown", keyCode: 40, target: fakeSearchField(), preventDefault: () => undefined });
+    const moves = () => triggers.filter((call) => call.name === "MoveEnterTarget").map((call) => call.args[0]);
+    // The page names a target, but for the search before the last letter.
+    groupedPage("clini", 1);
+    typed("clinic");
+    mount();
+
+    down();
+    assert.deepEqual(moves(), [], "the page still answers the older search");
+
+    groupedPage("clinic", 1);
+    rerender();
+    down();
+    assert.deepEqual(moves(), [1]);
+  });
+
+  it("gives the camera its keys back on Enter from the field, even when Enter arms nothing", () => {
+    groupedPage("", null);
+    typed("");
+    mount();
+    const field = focusSearchField();
+
+    enter(field);
+
+    assert.equal(field.blurred, 1);
+    assert.deepEqual(armed(), []);
+  });
+
+  it("gives the camera its keys back once on a held Enter from the field, at the press", () => {
+    // Pressed inside the search debounce: the field lets go while Enter waits for the page.
+    groupedPage("", null);
+    typed("clinic");
+    mount();
+    const field = focusSearchField();
+
+    enter(field);
+    assert.equal(field.blurred, 1);
+    assert.deepEqual(armed(), []);
+
+    groupedPage("clinic", 1);
+    rerender();
+    assert.deepEqual(armed(), [1]);
+    assert.equal(field.blurred, 1);
+  });
+
+  it("gives the camera its keys back once on Enter from the field that arms", () => {
+    groupedPage("clinic", 1);
+    typed("clinic");
+    mount();
+    const field = focusSearchField();
+
+    enter(field);
+
+    assert.deepEqual(armed(), [1]);
+    assert.equal(field.blurred, 1);
+  });
+
+  it("gives the camera its keys back on any arm, a tile's too", () => {
+    groupedPage("clinic", 1);
+    typed("clinic");
+    mount();
+    const field = focusSearchField();
+    const [results] = root!.root.findAll((node) => typeof node.props.onPlace === "function");
+
+    act(() => results.props.onPlace(entry(2, { name: "Old Clinic" })));
+
+    assert.deepEqual(armed(), [2]);
+    assert.equal(field.blurred, 1);
+  });
+
   it("ignores other keys, and lets go of the document when it unmounts", () => {
     groupedPage("clinic", 1);
     typed("clinic");
@@ -171,6 +258,6 @@ describe("Enter in the catalog", () => {
 
     act(() => root?.unmount());
     root = undefined;
-    assert.equal(keydown.length, 0);
+    assert.equal(page.listeners(), 0);
   });
 });

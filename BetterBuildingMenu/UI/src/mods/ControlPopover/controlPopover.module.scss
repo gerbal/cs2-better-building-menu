@@ -1,0 +1,20 @@
+@use "../../assetMenuGeometry" as *;
+@use "../../popoverSurface" as *;
+
+// A control's popover: a child of the box, so it takes the look's tokens, anchored inline by a fixed
+// bottom offset as the pane's own menus are, growing upward with its rows, or under a tall box by a
+// fixed top. Over the top edge's strip (45) and the top row (40). See docs/design-notes.md, "The top row".
+.popover {
+  @include popover-surface;
+
+  position: absolute;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+}
+
+// FILTER's list scrolls past its height: the rail's dropdowns draw outside it.
+.filterBody {
+  max-height: $popover-filter-height - 2 * $popover-padding;
+}

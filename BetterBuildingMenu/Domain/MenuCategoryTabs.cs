@@ -5,7 +5,7 @@ using System;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// One category's sub-tabs, drawn in its place in the strip.
+	/// One category's sub-tabs, drawn in its place in the tab row.
 	/// </summary>
 	/// <remarks>
 	/// A list, not the single expanded category the development tree needs: a zone

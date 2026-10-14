@@ -1,7 +1,7 @@
 /**
- * Showing the figure a result set is ordered by, so a re-sort is legible
- * outside the table: grouping is the primary key, so a sort only moves rows
- * within small groups, and a tile gives the eye nothing to attribute that to.
+ * Showing the figure a result set is ordered by, so a re-sort is legible:
+ * grouping is the primary key, so a sort only moves rows within small groups,
+ * and a picture gives the eye nothing to attribute that to.
  */
 
 import type { SortColumn } from "./buildingCatalogContracts";
@@ -21,8 +21,7 @@ export interface SortedMetricEntry {
 
 /**
  * The metric a sort column is ordering by, or null when there is nothing to
- * show. The inverse of ASSET_MENU_COLUMN_SORT, plus the two columns that
- * have no column of their own.
+ * show.
  */
 export function sortedMetricFor(column: SortColumn | null | undefined): AssetMenuMetric | null {
   switch (column) {
@@ -34,7 +33,7 @@ export function sortedMetricFor(column: SortColumn | null | undefined): AssetMen
       return "workers";
     case "Capacity":
       return "capacity";
-    // Both lot columns show the same combined cell, as the table does.
+    // Both lot columns sort by one lot, width by depth.
     case "LotWidth":
     case "LotDepth":
       return "lot";
@@ -48,9 +47,9 @@ export function sortedMetricFor(column: SortColumn | null | undefined): AssetMen
 }
 
 /**
- * The entry's value for a metric. `lot` has no single number — the table
- * renders width and depth together — so it returns null and the caller formats
- * the pair. Parking reads the bay count, which is what the sort orders on.
+ * The entry's value for a metric. `lot` has no single number — it is width and
+ * depth together — so it returns null and the caller formats the pair. Parking
+ * reads the bay count, which is what the sort orders on.
  */
 export function sortedMetricValue(
   entry: SortedMetricEntry | null | undefined,

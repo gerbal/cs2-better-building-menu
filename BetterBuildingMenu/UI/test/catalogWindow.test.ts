@@ -2,11 +2,17 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   CATALOG_WINDOW_SCROLL_THRESHOLD,
+  keptRows,
   nextWindowLimit,
   shouldLoadMore,
   catalogWindowRemaining,
+  isOnLineOne,
+  lineOneScrollTop,
+  pageScrollTop,
+  revealScrollTop,
 } from "../src/domain/catalogWindow.ts";
-import { ASSET_MENU_MIN_CATALOG_HEIGHT } from "../src/domain/assetMenuLayout.ts";
+import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
+import { bodyGrid, bodyLines } from "../src/domain/bodyGeometry.ts";
 
 describe("when the growing window asks for more", () => {
   it("asks once the viewport bottom is inside the threshold band", () => {
@@ -102,11 +108,6 @@ describe("when the growing window asks for more", () => {
     );
   });
 
-  it("keeps the default threshold smaller than the shortest catalog viewport", () => {
-    // A band taller than the viewport is armed at scrollTop 0, which makes the
-    // window grow before the player has scrolled at all.
-    assert.equal(CATALOG_WINDOW_SCROLL_THRESHOLD < ASSET_MENU_MIN_CATALOG_HEIGHT, true);
-  });
 });
 
 describe("growing the window", () => {
@@ -315,103 +316,164 @@ describe("What the window is holding back", () => {
   });
 });
 
-describe("revealing a row that grew past the fold", () => {
-  it("does nothing when the whole thing already fits", async () => {
-    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
-
-    assert.equal(
-      revealScrollTop({
-        currentScrollTop: 120,
-        rowTop: 400,
-        detailBottom: 600,
-        containerTop: 353,
-        containerHeight: 277,
-      }),
-      120,
-    );
+describe("putting a row on the list's first line", () => {
+  it("scrolls by the row's distance from the top of the list's viewport", () => {
+    // The row is 350 px down a viewport that starts at 50, with the list already 100 in.
+    assert.equal(lineOneScrollTop(100, 350, 50, 0), 400);
   });
 
-  it("scrolls by the overflow and no further", async () => {
-    // Expanding a row can leave its detail's bottom just past the viewport's
-    // content edge with nothing moving. Corrected by the overflow only: this
-    // fires on every expand, and anchoring would throw the list around.
-    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
-
-    assert.equal(
-      revealScrollTop({
-        currentScrollTop: 0,
-        rowTop: 519,
-        detailBottom: 642,
-        containerTop: 353,
-        containerHeight: 277,
-      }),
-      12,
-    );
+  it("never asks to scroll above the start of the list", () => {
+    assert.equal(lineOneScrollTop(10, 20, 50, 0), 0);
   });
 
-  it("keeps a margin below so the last line is not flush with the edge", async () => {
-    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
-
-    assert.equal(
-      revealScrollTop({
-        currentScrollTop: 0,
-        rowTop: 519,
-        detailBottom: 642,
-        containerTop: 353,
-        containerHeight: 277,
-        margin: 6,
-      }),
-      18,
-    );
+  it("counts a row within a pixel of the first line as on it, and no further", () => {
+    // Cohtml rounds line boxes to whole device pixels.
+    assert.equal(isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop: 51, rowHeight: 20 }, 0), true);
+    assert.equal(isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop: 52, rowHeight: 20 }, 0), false);
+    assert.equal(lineOneScrollTop(Number.NaN, 350, 50, 0), Number.NaN);
+    assert.equal(lineOneScrollTop(100, Number.NaN, 50, 0), 100);
   });
 
-  it("never scrolls the row's own top out of view", async () => {
-    // A detail taller than the viewport cannot be shown whole. Showing its
-    // BOTTOM would push the row's name off the top, leaving the player looking
-    // at numbers with nothing to say what they belong to.
-    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
-
-    assert.equal(
-      revealScrollTop({
-        currentScrollTop: 0,
-        rowTop: 400,
-        detailBottom: 1200,
-        containerTop: 353,
-        containerHeight: 277,
-      }),
-      47,
-    );
+  it("puts a one-line plate's row its picture's overhang below the top, so the picture's top draws whole", () => {
+    // Two pixels a rem: the picture overhangs its plate by 2 px above it.
+    assert.equal(lineOneScrollTop(100, 350, 50, 2), 398);
+    assert.equal(isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop: 52, rowHeight: 44 }, 2), true);
+    assert.equal(isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop: 50, rowHeight: 44 }, 2), false);
+    // The first row is on line 1 at the list's top.
+    assert.equal(lineOneScrollTop(0, 52, 50, 2), 0);
   });
 
-  it("never scrolls upward", async () => {
-    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+  it("never counts a one-line plate as on line 1 with its picture above the top, whatever the pixel's rounding", () => {
+    const at = (rowTop: number, edge: number) => isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop, rowHeight: 22 }, edge);
 
-    assert.equal(
-      revealScrollTop({
-        currentScrollTop: 90,
-        rowTop: 360,
-        detailBottom: 400,
-        containerTop: 353,
-        containerHeight: 277,
-      }),
-      90,
-    );
+    // 1080p: the overhang is a pixel, as much as the rounding the line forgives below it.
+    assert.deepEqual([at(50, 1), at(51, 1), at(52, 1)], [false, true, true]);
+    // 720p: two thirds of a pixel.
+    assert.deepEqual([at(50, 2 / 3), at(50 + 2 / 3, 2 / 3), at(51 + 2 / 3, 2 / 3)], [false, true, true]);
+    // With no overhang a line forgives a pixel either way.
+    assert.deepEqual([at(49, 0), at(51, 0)], [true, true]);
+  });
+});
+
+describe("a page of the list", () => {
+  it("is a screen down or up, held inside the list's ends", () => {
+    // A 100-tall viewport over 1,000 of list: the scroll runs 0-900.
+    assert.equal(pageScrollTop(200, 100, 1000, 1, 0, 0, 0, 0), 300);
+    assert.equal(pageScrollTop(300, 100, 1000, -1, 0, 0, 0, 0), 200);
+    assert.equal(pageScrollTop(850, 100, 1000, 1, 0, 0, 0, 0), 900);
+    assert.equal(pageScrollTop(50, 100, 1000, -1, 0, 0, 0, 0), 0);
+    // A list that fits has nowhere to go.
+    assert.equal(pageScrollTop(0, 100, 80, 1, 0, 0, 0, 0), 0);
+  });
+});
+
+describe("a page of a body's lines", () => {
+  it("is the whole lines that fit the screen, so lines land on the top edge as they were", () => {
+    // 29.25-pixel lines in a 100-pixel screen: three whole lines a page.
+    assert.equal(pageScrollTop(0, 100, 1000, 1, 29.25, 2, 0, 0), 87.75);
+    assert.equal(pageScrollTop(87.75, 100, 1000, -1, 29.25, 2, 0, 0), 0);
   });
 
-  it("returns the current position rather than NaN on a pre-layout measurement", async () => {
-    // Cohtml reports zeroes for a frame after a relayout; a NaN assigned to
-    // scrollTop would send the list to the top.
-    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+  it("is at least one line, however short the screen", () => {
+    assert.equal(pageScrollTop(0, 20, 1000, 1, 29.25, 2, 0, 0), 29.25);
+  });
 
-    assert.equal(
-      revealScrollTop({
-        currentScrollTop: 42,
-        rowTop: Number.NaN,
-        detailBottom: 600,
-        containerTop: 353,
-        containerHeight: 277,
-      }),
-      42,
-    );
+  it("counts the lines as the body does, the last needing no gap below it", () => {
+    // The game's own body, 144.25 tall, holds five 27.25 plates 2 apart: a page is all five.
+    assert.equal(pageScrollTop(0, 144.25, 1000, 1, 29.25, 2, 0, 0), 146.25);
+  });
+
+  it("keeps inside the list's ends", () => {
+    assert.equal(pageScrollTop(880, 100, 1000, 1, 29.25, 2, 0, 0), 900);
+  });
+
+  it("takes the gap and the edge with the pitch, so no caller can page a line short or a line long", () => {
+    // Eight parameters and no default: a pitch without its gap counts 4.93 lines as 4, and does not compile.
+    assert.equal(pageScrollTop.length, 8);
+    // @ts-expect-error The gap, the pixel and the edge are required.
+    const withoutGap = () => pageScrollTop(0, 144.25, 1000, 1, 29.25);
+    // @ts-expect-error The edge is required.
+    const withoutEdge = () => pageScrollTop(0, 144.25, 1000, 1, 29.25, 2, 1);
+    assert.equal(typeof withoutGap, "function");
+    assert.equal(typeof withoutEdge, "function");
+  });
+
+  it("pages a one-line plate's lines inside the room their pictures overhang into, at both ends", () => {
+    // At 1080p a rem is a pixel. Six lines and a rem above and below take 144 of a 166-pixel screen; a
+    // seventh needs 168, 167 with the pixel forgiven. Counted without the room, the page would step seven.
+    assert.equal(pageScrollTop(0, 166, 10000, 1, 24, 2, 1, 1), 6 * 24);
+    assert.equal(pageScrollTop(0, 166, 10000, 1, 24, 2, 1, 0), 7 * 24);
+  });
+
+  it("pages as many of a one-line plate's lines as the body draws, at every height", () => {
+    // At 1080p a rem is a pixel, and the scroller reads its height in whole pixels.
+    for (let bodyHeight = 100; bodyHeight <= 900; bodyHeight += 0.25) {
+      const grid = bodyGrid({ body: "list", boxWidth: 706, bodyHeight, pixelRem: 1, textScale: 1.3, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0 });
+      const lines = bodyLines(grid, null);
+
+      assert.equal(pageScrollTop(0, Math.floor(bodyHeight), 100000, 1, lines.pitch, lines.gap, 1, lines.edge), grid.lines * grid.pitchY, `${bodyHeight}`);
+    }
+  });
+
+  it("pages five lines of a scroller that reads whole pixels: 96 px at 720p is 144 rem, a rem short of five lines", () => {
+    // At 720p a rem is 2/3 px: the pitch 29.25 rem is 19.5 px and the gap 2 rem 4/3 px. Five lines need 96.17 px.
+    assert.equal(pageScrollTop(0, 96, 10000, 1, 19.5, 4 / 3, 1, 0), 5 * 19.5);
+    assert.equal(pageScrollTop(0, 94, 10000, 1, 19.5, 4 / 3, 1, 0), 4 * 19.5);
+  });
+});
+
+describe("bringing Enter's target on screen", () => {
+  it("leaves a row already wholly on screen where it is", () => {
+    assert.equal(revealScrollTop(300, 150, 27, 100, 144, 0), 300);
+  });
+
+  it("scrolls up to a row above the screen, and down until a row below meets the foot", () => {
+    assert.equal(revealScrollTop(300, 60, 27, 100, 144, 0), 260);
+    assert.equal(revealScrollTop(300, 230, 27, 100, 144, 0), 313);
+  });
+
+  it("brings a one-line plate's picture whole on screen, its overhang above and below its plate", () => {
+    // 22-tall plates whose pictures overhang them by 1.
+    assert.equal(revealScrollTop(300, 101, 22, 100, 144, 1), 300);
+    assert.equal(revealScrollTop(300, 60, 22, 100, 144, 1), 259);
+    assert.equal(revealScrollTop(300, 230, 22, 100, 144, 1), 309);
+  });
+
+  it("never asks for a scroll above the top, and keeps its place on a reading it cannot use", () => {
+    assert.equal(revealScrollTop(10, 40, 27, 100, 144, 0), 0);
+    assert.equal(revealScrollTop(300, Number.NaN, 27, 100, 144, 0), 300);
+  });
+});
+
+describe("a page's rows, kept from the last page", () => {
+  const row = (id: number, over: Record<string, unknown> = {}) =>
+    ({ id, name: `Plaza ${id}`, constructionCost: 1_000, assetPacks: ["Pack"], serviceFacts: [{ key: "range", value: 3 }], ...over }) as unknown as BuildingCatalogEntry;
+  // Each page arrives as new objects, as the binding's JSON does.
+  const fresh = (rows: BuildingCatalogEntry[]) => JSON.parse(JSON.stringify(rows)) as BuildingCatalogEntry[];
+
+  it("keeps the last page's object for a row that says the same, and takes the new one for a row that moved", () => {
+    const first = keptRows(fresh([row(1), row(2), row(3)]));
+    const next = keptRows(fresh([row(1), row(2, { constructionCost: 2_000 }), row(3, { serviceFacts: [{ key: "range", value: 4 }] }), row(4)]));
+
+    assert.equal(next[0], first[0]);
+    assert.notEqual(next[1], first[1]);
+    assert.equal(next[1].constructionCost, 2_000);
+    assert.notEqual(next[2], first[2]);
+    assert.equal(next.length, 4);
+  });
+
+  it("forgets a row the last page did not carry", () => {
+    const first = keptRows(fresh([row(1)]));
+    keptRows(fresh([row(2)]));
+
+    assert.notEqual(keptRows(fresh([row(1)]))[0], first[0]);
+  });
+
+  it("tells a field gone from one that is there, and an array from an object", () => {
+    const first = keptRows(fresh([row(1, { theme: "EU" })]));
+
+    assert.notEqual(keptRows(fresh([row(1)]))[0], first[0]);
+    const listed = keptRows(fresh([row(2)]))[0];
+    assert.notEqual(keptRows(fresh([row(2, { assetPacks: { 0: "Pack" } })]))[0], listed);
   });
 });

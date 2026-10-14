@@ -198,7 +198,15 @@ namespace BetterBuildingMenu.Domain
 		// BuildingCatalogGrouping.Labels: the UI builds its group tree from consecutive runs
 		// of these. LabelId is the game's category id, so the UI can localise that one.
 		string[]? GroupPath = null,
-		string? GroupLabelId = null) : IJsonWritable
+		string? GroupLabelId = null,
+		/// <summary>The word that tells this row apart from its nearest look-alike in the view; empty for none.</summary>
+		/// <remarks>Set on the page's rows from the whole result. See DistinctWords.</remarks>
+		string? DistinctWord = null,
+		/// <summary>The trailing word this row varies by within its family ("05", "2x"), which its pill says; empty for none.</summary>
+		/// <remarks>Set on the page's rows from the whole result, as DistinctWord is. See Families.</remarks>
+		string? FamilyToken = null,
+		/// <summary>The stem this row's family shares ("Boulder"), the same for every member; empty for none.</summary>
+		string? FamilyKey = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -307,6 +315,12 @@ namespace BetterBuildingMenu.Domain
 			writer.ArrayEnd();
 			writer.PropertyName("groupLabelId");
 			writer.Write(GroupLabelId ?? string.Empty);
+			writer.PropertyName("distinctWord");
+			writer.Write(DistinctWord ?? string.Empty);
+			writer.PropertyName("familyToken");
+			writer.Write(FamilyToken ?? string.Empty);
+			writer.PropertyName("familyKey");
+			writer.Write(FamilyKey ?? string.Empty);
 
 			writer.TypeEnd();
 		}

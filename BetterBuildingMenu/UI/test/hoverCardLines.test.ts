@@ -106,6 +106,13 @@ describe("the hover card's lines", () => {
     assert.equal(line(entry, "bonuses")?.tone, "good");
   });
 
+  it("say a road's cost and upkeep per kilometre, as the game's own panels do, where the bodies say a cell's", () => {
+    const road = building({ category: "Networks", constructionCost: 5_500, upkeep: 487, costIsPerDistance: true, lotWidth: 0, lotDepth: 0 });
+
+    assert.match(line(road, "cost")?.value ?? "", /^¢5\D500 ?\/km$/);
+    assert.match(line(road, "upkeep")?.value ?? "", /^¢487 ?\/km\/mo\.?$/);
+  });
+
   it("move a road's speed and width, and a zone's make-up, into the game's tier", () => {
     const road = hoverCardTiers(building({ category: "Networks", speedLimit: 80, networkWidth: 16, lotWidth: 0, lotDepth: 0 }), context);
     assert.deepEqual(keys(road.vanilla), ["cost", "upkeep", "speedLimit", "networkWidth"]);

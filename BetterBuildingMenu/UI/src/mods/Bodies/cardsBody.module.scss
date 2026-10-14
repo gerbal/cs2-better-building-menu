@@ -1,0 +1,164 @@
+@use "../../base.scss" as _base;
+@use "bodyShell" as *;
+
+// The cards: each building on a card placed by the row packer, in the look's tokens. The sizes here are
+// the ones domain/cardsLayout.ts packs from. See docs/design-notes.md, "The cards".
+
+@include body-shell;
+
+.card {
+  @include cell-face(var(--bbm-radiusItem), var(--bbm-plate));
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 11rem 0 5rem;
+}
+
+@include cell-lit(".card");
+
+// A building that cannot be placed, locked or a unique the city holds: its own plate.
+.locked,
+.locked:hover,
+.built,
+.built:hover {
+  background-color: var(--bbm-plateLocked);
+}
+
+// The one armed building: solid, with its own inks.
+.armed,
+.armed:hover {
+  background-color: var(--bbm-arm);
+}
+
+// The picture, its mark and Enter's badge, nested so the mark sizes from the picture by base.scss's one ratio.
+.artwork {
+  @include _base.artwork-box(40rem);
+  margin-right: 7rem;
+
+  .picture {
+    @include _base.artwork-picture(40rem);
+  }
+
+  .mark {
+    @include _base.unique-mark(40rem);
+  }
+}
+
+@include unique-mark-states(".card");
+
+// Locked and built cards in their silhouette, rasters only.
+.locked[data-vector-thumb="false"] .picture,
+.built[data-vector-thumb="false"] .picture {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
+}
+
+// "↵" on Enter's target: a mark on its own plate at the picture's top left, a sibling of the picture.
+.enterBadge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14rem;
+  height: 14rem;
+  border-top-left-radius: 3rem;
+  border-top-right-radius: 3rem;
+  border-bottom-left-radius: 3rem;
+  border-bottom-right-radius: 3rem;
+  background-color: var(--bbm-badgeBg);
+}
+
+// On the badge, which stays dark under every interface style.
+.enterMark {
+  width: 10rem;
+  height: 10rem;
+  background-color: var(--bbm-entMark);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}
+
+.words {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.name {
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+  line-height: calc(18rem * var(--fontScale));
+  color: var(--bbm-tName);
+}
+
+// A card the packer holds to the row is narrower than its words: its name is planned in them and cut
+// with "…", its box the words' whole width, which the name is planned in again once drawn.
+.nameHeld {
+  align-self: stretch;
+  overflow: hidden;
+}
+
+.facts {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  white-space: nowrap;
+  font-size: var(--fontSizeXS);
+  line-height: calc(15rem * var(--fontScale));
+  color: var(--bbm-tNum2);
+}
+
+.factRun {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.fact {
+  white-space: nowrap;
+}
+
+// A real character rather than spacing, which this engine would not draw.
+.factDot {
+  padding: 0 5rem;
+  opacity: 0.6;
+}
+
+.lockGlyph {
+  width: calc(10rem * var(--fontScale));
+  height: calc(10rem * var(--fontScale));
+  margin-right: 3rem;
+}
+
+// On the card, which an interface style can turn light: a body ink that follows it.
+.milestone {
+  color: var(--bbm-bodyMilestone);
+}
+
+// The value the list is sorted by, at the card's right, so the order reads down the rows.
+.sorted {
+  flex: 0 0 auto;
+  padding-left: 8rem;
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+  color: var(--bbm-tCost);
+}
+
+.locked .name,
+.built .name {
+  color: var(--bbm-tLocked);
+}
+
+.armed .name {
+  color: var(--bbm-armText);
+}
+
+.armed .facts,
+.armed .sorted,
+.armed .milestone {
+  color: var(--bbm-armNum);
+}

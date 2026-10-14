@@ -2,60 +2,99 @@ import assert from "node:assert/strict";
 import { describe, it, beforeEach } from "node:test";
 import {
   ASSET_MENU_DISCLOSURE_KEYS,
+  clearPointed,
   getAssetMenuAnchor,
   getAssetMenuAnchorKey,
   getAssetMenuDisclosure,
+  getAssetMenuListStart,
+  getAssetMenuSlotLeft,
   getAssetMenuView,
   resetAssetMenuView,
   setAssetMenuAnchor,
   setAssetMenuDisclosure,
+  setAssetMenuListStart,
+  setAssetMenuSlotLeft,
   setAssetMenuView,
+  setPointed,
+  setReadoutSaid,
   subscribeAssetMenuView,
 } from "../src/domain/assetMenuViewStore.ts";
+import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
 
 describe("Asset menu view store", () => {
   beforeEach(() => resetAssetMenuView());
 
   it("starts with nothing chosen", () => {
-    assert.deepEqual(getAssetMenuView(), { viewMode: "", expandedId: null, disclosures: {}, anchors: {} });
+    assert.deepEqual(getAssetMenuView(), { disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null, pointed: null });
+  });
+
+  it("takes the pointed building away only on its own cell's leave, or on any where none is named", () => {
+    const pointed = (id: number) => ({ entry: { id } as BuildingCatalogEntry, cell: { x: 0, y: 0, w: 44, h: 44 } });
+
+    setPointed(pointed(2));
+    // A leave the engine sends for the last cell after the next one's enter takes nothing away.
+    clearPointed(1);
+    assert.equal(getAssetMenuView().pointed?.entry.id, 2);
+    clearPointed(2);
+    assert.equal(getAssetMenuView().pointed, null);
+    setPointed(pointed(3));
+    clearPointed();
+    assert.equal(getAssetMenuView().pointed, null);
+  });
+
+  it("says the readout's values again where only a value's basis or unit moves, and not where nothing does", () => {
+    // A network's ¢5,000 a cell and a building's ¢5,000 whole are two values: a row holding back by the
+    // old basis would leave blank a value the readout no longer says.
+    let fired = 0;
+    const unsubscribe = subscribeAssetMenuView(() => { fired += 1; });
+
+    setReadoutSaid([{ kind: "cost", value: 5000, depth: 0, perCell: true, unit: "" }]);
+    setReadoutSaid([{ kind: "cost", value: 5000, depth: 0, perCell: true, unit: "" }]);
+    assert.equal(fired, 1);
+
+    setReadoutSaid([{ kind: "cost", value: 5000, depth: 0, perCell: false, unit: "" }]);
+    assert.equal(fired, 2);
+    assert.equal(getAssetMenuView().said[0].perCell, false);
+
+    setReadoutSaid([{ kind: "capacity", value: 400, depth: 0, perCell: false, unit: "PowerPlant" }]);
+    setReadoutSaid([{ kind: "capacity", value: 400, depth: 0, perCell: false, unit: "Battery" }]);
+    assert.equal(fired, 4);
+    assert.equal(getAssetMenuView().said[0].unit, "Battery");
+    unsubscribe();
   });
 
   it("tells a subscriber when a field moves, and not when it does not", () => {
     // The control pane and the catalog are siblings, not ancestor and
-    // descendant; the subscription is what keeps the view mode one value
-    // rather than two copies.
+    // descendant; the subscription is what keeps a field one value rather
+    // than two copies.
     let fired = 0;
     const unsubscribe = subscribeAssetMenuView(() => { fired += 1; });
 
-    setAssetMenuView({ viewMode: "table" });
+    setAssetMenuView({ listStart: 3 });
     assert.equal(fired, 1);
-    assert.equal(getAssetMenuView().viewMode, "table");
+    assert.equal(getAssetMenuView().listStart, 3);
 
-    setAssetMenuView({ viewMode: "table" });
+    setAssetMenuView({ listStart: 3 });
     assert.equal(fired, 1);
-
-    setAssetMenuView({ expandedId: 4206 });
-    assert.equal(fired, 2);
-    assert.equal(getAssetMenuView().expandedId, 4206);
 
     unsubscribe();
-    setAssetMenuView({ viewMode: "grid" });
-    assert.equal(fired, 2);
+    setAssetMenuView({ listStart: 4 });
+    assert.equal(fired, 1);
   });
 
   it("keeps the fields it was not asked to change", () => {
-    setAssetMenuView({ viewMode: "list" });
-    setAssetMenuView({ expandedId: 7 });
+    setAssetMenuView({ listStart: 2 });
+    setAssetMenuView({ disclosures: { facets: true } });
 
-    assert.equal(getAssetMenuView().viewMode, "list");
-    assert.equal(getAssetMenuView().expandedId, 7);
+    assert.equal(getAssetMenuView().listStart, 2);
+    assert.deepEqual(getAssetMenuView().disclosures, { facets: true });
   });
 
   it("hands out the same snapshot until something changes", () => {
     // useSyncExternalStore compares snapshots by identity; a fresh object per
     // read would re-render for ever.
     const before = getAssetMenuView();
-    setAssetMenuView({ viewMode: "" });
+    setAssetMenuView({ listStart: null });
 
     assert.equal(getAssetMenuView(), before);
   });
@@ -106,6 +145,16 @@ describe("Asset menu scroll anchor", () => {
   const tableByCategory = getAssetMenuAnchorKey({ list: "catalog", viewMode: "table", groupBy: "category" });
 
   beforeEach(() => resetAssetMenuView());
+
+  it("remembers the start it put the list in place for across a remount", () => {
+    // Placing a building unmounts the menu; the page it comes back to is the same start, not a new one.
+    assert.equal(getAssetMenuListStart(), null);
+
+    setAssetMenuListStart(7);
+
+    assert.equal(getAssetMenuListStart(), 7);
+    assert.equal(getAssetMenuView().listStart, 7);
+  });
 
   it("has no anchor until a row has been seen", () => {
     assert.equal(getAssetMenuAnchor(tableByCategory), null);
@@ -174,5 +223,28 @@ describe("Asset menu scroll anchor", () => {
     resetAssetMenuView();
 
     assert.equal(getAssetMenuAnchor(tableByCategory), null);
+  });
+});
+
+describe("the game's slot as last read", () => {
+  beforeEach(() => resetAssetMenuView());
+
+  it("is kept for a window of the same size, and nothing for another", () => {
+    setAssetMenuSlotLeft({ innerWidth: 1920, innerHeight: 1080, left: 608 });
+
+    assert.equal(getAssetMenuSlotLeft(1920, 1080), 608);
+    assert.equal(getAssetMenuSlotLeft(1280, 720), null);
+    assert.equal(getAssetMenuSlotLeft(2560, 1080), null);
+  });
+
+  it("tells no subscriber when the same reading comes again", () => {
+    setAssetMenuSlotLeft({ innerWidth: 1920, innerHeight: 1080, left: 608 });
+    let fired = 0;
+    subscribeAssetMenuView(() => { fired += 1; });
+
+    setAssetMenuSlotLeft({ innerWidth: 1920, innerHeight: 1080, left: 608 });
+    assert.equal(fired, 0);
+    setAssetMenuSlotLeft({ innerWidth: 1280, innerHeight: 720, left: 604 });
+    assert.equal(fired, 1);
   });
 });

@@ -10,6 +10,7 @@ import { AssetMenuResizeHandle, useAssetMenuHeight } from "mods/AssetMenuResizeH
 import styles from "./extensionMenu.module.scss";
 import { BuildingExtensionMenu$, ReplaceVanillaBuildMenu$ } from "mods/bindings";
 import { gameClasses } from "mods/gameModules";
+import { useLookRoot } from "mods/useLookRoot";
 
 // The same vanilla class the build menu's body wears, so both panels are sized
 // by the one rule vanilla applies to its asset panel.
@@ -67,8 +68,14 @@ interface ExtensionMenuPanelProps {
   onClose?: () => void;
 }
 
+/**
+ * The panel itself, BBM's own component, so it reads the look here and never in the wrapper above: it
+ * mounts outside the build menu, so its root carries the look's class, and so does its cards' tooltip,
+ * which the game draws outside it. See docs/design-notes.md, "The looks".
+ */
 const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, onPlace, onClose }: ExtensionMenuPanelProps) => {
   const { translate } = useLocalization();
+  const look = useLookRoot();
   // The build menu's height, as a CAP: a two-row picker stays two rows, a
   // long one scrolls at the dragged height instead of growing over the screen.
   const { height, isResizing, beginResize, blocker } = useAssetMenuHeight();
@@ -80,7 +87,7 @@ const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, on
   )?.entry.id;
 
   return (
-    <div className={classNames(styles.panel, className)} data-extension-menu="true">
+    <div className={classNames(styles.panel, look.className, className)} style={look.style} data-extension-menu="true" data-bbm-look={look.id}>
       {blocker}
       <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />
       <div className={styles.header}>
@@ -100,6 +107,7 @@ const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, on
         <BuildingList
           entries={rows.map((row) => row.entry)}
           variant="cards"
+          look={look}
           selectedId={selectedId}
           onPlace={(entry) => {
             const row = byId.get(entry.id);

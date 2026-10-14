@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create } from "react-test-renderer";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
-import { ASSET_MENU_CATALOG_FULL } from "../../src/domain/assetMenuLayout";
+import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { CONTROL_PANE_TOTAL } from "../../src/domain/assetMenuLayout";
+import { boxPlacement } from "../../src/domain/widthSteps";
 import { useAssetMenuLayout, type AssetMenuLayout } from "../../src/mods/useAssetMenuLayout";
 
+const globals = globalThis as unknown as Record<string, unknown>;
 let layout: AssetMenuLayout;
 const Probe = () => {
   layout = useAssetMenuLayout();
@@ -17,50 +19,81 @@ const read = () => {
   });
   return layout;
 };
+const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
 
 describe("the asset menu's layout", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
   });
 
-  it("draws today's layout by default: the menu filling the room beside the pane", () => {
-    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1091, rowWidth: 1476, paneShown: true });
+  afterEach(() => {
+    delete globals.window;
   });
 
-  it("keeps the default width when the pane is hidden, so the toggle moves nothing it has room for", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1091, rowWidth: 1091, paneShown: false });
+  it("opens a new player at the game's own width, with no pane beside it", () => {
+    assert.deepEqual(read(), {
+      step: 1,
+      drawnStep: 1,
+      menuWidth: 706,
+      paneShown: false,
+      snaps: [706, 893, 1091, 1280, 1475].map((width, index) => ({ step: index + 1, width })),
+      screen: { aspect: 16 / 9, textScale: 1, paneShown: false },
+    });
   });
 
-  it("gives the menu the whole band when the player fills it with the pane hidden", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FULL);
-    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1476, rowWidth: 1476, paneShown: false });
+  it("reads the step the box draws apart from the stored one beside the pane", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    const layout = read();
+
+    assert.equal(layout.step, 5);
+    assert.equal(layout.drawnStep, 3);
   });
 
-  it("narrows the band by what vanilla's tool column gains at a larger text scale", () => {
-    setBinding("options", "textScale", 1.5);
-    assert.deepEqual(read(), { bandWidth: 1381, menuWidth: 996, rowWidth: 1381, paneShown: true });
+  it("draws step 3 beside the pane as 0.2.4's row: the pane ends at the social column", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    const { menuWidth, screen } = read();
+
+    assert.equal(menuWidth, 1091);
+    assert.equal(boxPlacement(menuWidth, screen).left + menuWidth + CONTROL_PANE_TOTAL, 1872);
   });
 
-  it("sizes the row to a chosen width, leaving no empty stretch", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 900);
-    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 900, rowWidth: 1285, paneShown: true });
-  });
-
-  it("draws a chosen width that no longer fits at the room, and gives it back when the pane is hidden", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1200);
+  it("draws a step that does not fit beside the pane as the widest that does, and gives it back when the pane hides", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
     assert.equal(read().menuWidth, 1091);
 
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    assert.equal(read().menuWidth, 1200);
+    const hidden = read();
+    assert.equal(hidden.menuWidth, 1475);
+    assert.equal(boxPlacement(hidden.menuWidth, hidden.screen).left + hidden.menuWidth, 1871);
+    assert.deepEqual(hidden.snaps.map((snap) => snap.step), [1, 2, 3, 4, 5]);
   });
 
-  it("draws every view at the player's width, the table included", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    setAssetMenuView({ viewMode: "table" });
-    assert.equal(read().menuWidth, 735);
+  it("narrows step 3 to the room beside the pane at larger text", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    setBinding("options", "textScale", 1.1);
+
+    near(read().menuWidth, 1072);
+  });
+
+  it("sizes the steps to the screen it is drawn on", () => {
+    globals.window = { innerWidth: 2520, innerHeight: 1080 };
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 2);
+
+    assert.equal(read().menuWidth, 1039);
+  });
+
+  it("draws a step it cannot use as the first", () => {
+    for (const step of [0, 9, -1, 2.5, "3"]) {
+      setBinding("BetterBuildingMenu", "AssetMenuWidthStep", step);
+      const drawn = read();
+
+      assert.equal(drawn.step, 1, String(step));
+      assert.equal(drawn.menuWidth, 706, String(step));
+    }
   });
 });

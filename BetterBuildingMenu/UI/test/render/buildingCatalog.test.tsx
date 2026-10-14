@@ -1,49 +1,46 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { renderHtml, entry, catalogPage } from "../harness/render";
+import { renderHtml, entry, catalogPage, showBody } from "../harness/render";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
-import {
-  ASSET_MENU_CHROME_WIDTH,
-  ASSET_MENU_COLUMN_MAX,
-  ASSET_MENU_TABLE_ROW_FURNITURE,
-  type AssetMenuMetric,
-} from "../../src/domain/assetMenuLayout";
-import { shortenTileLabel, tableLabelCharBudget } from "../../src/domain/tileLabel";
+import { drawnBodyHeight } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_DEFAULT_HEIGHT } from "../../src/domain/sharedContracts.generated";
 
 const page = (over: Record<string, unknown> = {}) =>
   setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], over));
 const render = () => renderHtml(<BuildingCatalogComponent />);
+const BODIES = ["list", "tiles", "cards"];
 
 describe("the catalog container", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
-  for (const mode of ["table", "grid", "list", "cards"]) {
-    it(`ends the feed with a load-more inside the scroll in ${mode} mode`, () => {
+  for (const body of BODIES) {
+    it(`ends the feed with a load-more inside the scroll in the ${body} body`, () => {
       // Below the scroll is where nobody reads it. The number too: on
       // Landscaping that is 100 rows of 368 with nothing on screen saying so.
-      setAssetMenuView({ viewMode: mode });
+      showBody(body);
       page({ hasMore: true, totalCount: 403 });
       const html = render();
       const scroll = html.indexOf('data-scrollable="true"');
       const more = html.indexOf('class="loadMoreRow"');
 
-      assert.ok(scroll >= 0, `${mode}: expected a scroll container`);
-      assert.ok(more > scroll, `${mode}: the load-more must sit inside the scroll`);
-      assert.match(html, /Showing 2 of 403/);
+      assert.ok(scroll >= 0, `${body}: expected a scroll container`);
+      assert.ok(more > scroll, `${body}: the load-more must sit inside the scroll`);
+      // The tab row's readout states the window; the end of the list offers to grow it.
+      assert.match(html, /Load 100 more/);
+      assert.doesNotMatch(html, /Showing/);
     });
 
-    it(`offers to widen a scoped miss in ${mode} mode`, () => {
-      // A search that misses in Table mode must not simply say "No buildings
-      // match": that leaves no count of what exists elsewhere and no way there.
-      setAssetMenuView({ viewMode: mode });
+    it(`offers to widen a scoped miss in the ${body} body`, () => {
+      // A search that misses must not simply say "No buildings match": that
+      // leaves no count of what exists elsewhere and no way there.
+      showBody(body);
       page({ items: [], totalCount: 0 });
       setBinding("BetterBuildingMenu", "CurrentSearch", "police");
       setBinding("BetterBuildingMenu", "BuildingCatalogMatchesElsewhere", 5);
@@ -52,219 +49,250 @@ describe("the catalog container", () => {
       assert.match(html, /No matches here — 5 elsewhere/);
       assert.match(html, /aria-label="Search everything"/);
     });
+
+    it(`draws the cap line inside the scroll in the ${body} body`, () => {
+      showBody(body);
+      page({ hasMore: false, capped: true, totalCount: 14876 });
+      const html = render();
+
+      assert.ok(html.indexOf('class="loadMoreRow"') > html.indexOf('data-scrollable="true"'), body);
+    });
   }
 
-  it("groups the digits of the window count like every other number in the asset menu", () => {
-    // Built by hand, the count read "Showing 1200 of 4206" beside cells that
+  it("grows a small menu's list to hold its Locked label too, its slots no taller than the body", () => {
+    // Water's 16 in its tab, the locked half after its Locked label: 17 slots, more than 4 grown lines hold.
+    const menu = "Water & Sewage";
+    showBody("list", menu);
+    setBinding("BetterBuildingMenu", "MenuShares", [{ menu, rows: 16, costOrCapacity: 16, capacity: 16, locked: 8 }]);
+    page({
+      items: Array.from({ length: 16 }, (_, at) => entry(at + 1)),
+      totalCount: 16,
+      sections: [{ id: "locked", kind: "locked", label: "", labelId: "", start: 8, count: 8, collapsed: false }],
+    });
+    const html = render();
+    const slots = Number(/class="slots" style="height:([\d.]+)rem"/.exec(html)?.[1]);
+
+    assert.equal((html.match(/data-bbm-item="true"/g) ?? []).length, 16);
+    assert.match(html, /data-bbm-label="locked"/);
+    assert.ok(slots > 0 && slots <= drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT), `${slots}`);
+  });
+
+  it("groups the digits of the cap line's count like every other number in the asset menu", () => {
+    // Built by hand, the count reads "Showing 2000 of 4206" beside cells that
     // group theirs. toLocaleString would group it under node and not in Cohtml.
-    setAssetMenuView({ viewMode: "table" });
-    page({ hasMore: true, totalCount: 4206 });
+    showBody("list");
+    page({ hasMore: false, capped: true, totalCount: 4206 });
     const html = render();
 
-    assert.ok(html.includes(`Showing 2 of ${groupDigits(4206, FALLBACK_SEPARATORS)}`));
+    assert.ok(html.includes(`Showing 2 of ${groupDigits(4206, FALLBACK_SEPARATORS)} · `));
     assert.doesNotMatch(html, /4206/);
   });
 
   it("names one step on the load-more, however large the window has grown", () => {
     // Three loads in, the window is 300 rows; a click still adds 100.
-    setAssetMenuView({ viewMode: "table" });
+    showBody("list");
     page({ hasMore: true, totalCount: 403, limit: 300 });
 
     assert.match(render(), /Load 100 more/);
   });
 
   it("draws no load-more when the window holds everything", () => {
-    setAssetMenuView({ viewMode: "table" });
+    showBody("list");
     page({ hasMore: false, totalCount: 2 });
 
     assert.doesNotMatch(render(), /class="loadMoreRow"/);
   });
 
-  it("obeys the chosen view mode whatever the width", () => {
-    // Overridden to "grid" at the resting height, pressing Table would light
-    // the button, change nothing, and say nothing about why.
-    setAssetMenuView({ viewMode: "table" });
-    page();
+  it("says a list stopped at the ceiling, with its true total and how to narrow it, and offers no Load more", () => {
+    showBody("list");
+    page({ hasMore: false, capped: true, totalCount: 14876 });
+    const html = render();
 
-    for (const width of [300, 700, 1100]) {
-      setBinding("BetterBuildingMenu", "AssetMenuWidth", width);
-      assert.match(render(), /class="columnHeader"/, `width ${width}`);
-    }
+    assert.ok(
+      html.includes(`Showing 2 of ${groupDigits(14876, FALLBACK_SEPARATORS)} · narrow with a tab, the search or a filter`),
+      "the cap line");
+    assert.match(html, /windowState windowStateCapped/);
+    assert.doesNotMatch(html, /class="loadMore"/);
   });
 
-  it("names the constraints that emptied the table rather than blaming search", () => {
-    setAssetMenuView({ viewMode: "table" });
+  it("names the constraints that emptied the list rather than blaming search", () => {
+    showBody("list");
     page({ items: [], totalCount: 0 });
 
     assert.match(render(), /class="empty"/);
   });
 
-  it("draws no control chrome of its own", () => {
-    // Identity, count, Group by, Sort by and the view mode live in the
-    // control plane beside the build menu, visible at the strip height this rests
-    // at.
-    setAssetMenuView({ viewMode: "grid" });
+  for (const body of BODIES) {
+    it(`draws the Locked label, not the empty line, for a tab whose rows are all locked and folded away, in the ${body} body`, () => {
+      showBody(body);
+      page({ items: [], totalCount: 5, visibleCount: 0, sections: [{ id: "locked", kind: "locked", label: "", labelId: "", start: 0, count: 5, collapsed: true }] });
+      const html = render();
+
+      assert.match(html, /data-bbm-label="locked"/);
+      assert.doesNotMatch(html, /class="empty"/);
+    });
+  }
+
+  it("offers to load only the rows a fold leaves, never the folded ones", () => {
+    showBody("list");
+    page({ hasMore: true, totalCount: 403, visibleCount: 52 });
+
+    assert.match(render(), /Load 50 more/);
+  });
+
+  it("says the menu is still being indexed while no row has come", () => {
+    showBody("list");
+    page({ items: [], totalCount: 0, status: "indexing" });
+
+    assert.match(render(), /Indexing buildings…/);
+  });
+
+  it("draws the menu's own pick", () => {
+    showBody("cards");
+    page();
+
+    assert.match(render(), /data-bbm-view="cards"/);
+  });
+
+  it("draws Default view's body for a menu with no pick of its own", () => {
+    showBody("");
+    setBinding("BetterBuildingMenu", "AssetMenuDefaultView", "cards");
+    page();
+
+    assert.match(render(), /data-bbm-view="cards"/);
+  });
+
+  it("draws the look's Auto for a menu with no pick under Default view's Auto", () => {
+    showBody("", "Zones");
+    setBinding("BetterBuildingMenu", "MenuShares", [{ menu: "Zones", rows: 96, costOrCapacity: 0, capacity: 0, locked: 14 }]);
     page();
     const html = render();
 
-    for (const gone of [/class="toolbar"/, /class="heading"/, /class="sortBar"/, /data-sort-options/]) {
+    assert.doesNotMatch(html, /data-bbm-view="cards"/);
+    assert.doesNotMatch(html, /data-bbm-view="list"/);
+  });
+
+  it("draws the list while a query is typed, whatever the menu's tiles", () => {
+    showBody("tiles");
+    setBinding("BetterBuildingMenu", "CurrentSearch", "four");
+    page();
+
+    assert.match(render(), /data-bbm-view="list"/);
+  });
+
+  it("keeps Cards while a query is typed in a menu whose view is Cards", () => {
+    showBody("cards");
+    setBinding("BetterBuildingMenu", "CurrentSearch", "four");
+    page();
+
+    assert.match(render(), /data-bbm-view="cards"/);
+  });
+
+  it("fills a search's results nearest the field at a wider step once the page answers the query, not before", () => {
+    showBody("list");
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    setBinding("BetterBuildingMenu", "CurrentSearch", "four");
+    const rows = Array.from({ length: 30 }, (_, at) => entry(at + 1));
+    // The box is a letter ahead of the page: the last query's rows keep their order along the row.
+    page({ items: rows, totalCount: 30, searchText: "" });
+    assert.match(render(), /left:718rem;top:0rem[^>]*data-catalog-entry="5"/);
+
+    page({ items: rows, totalCount: 30, searchText: "four" });
+    assert.match(render(), /left:0rem;top:29\.25rem[^>]*data-catalog-entry="5"/);
+  });
+
+  it("draws no control chrome of its own", () => {
+    // Sort, Filter, Group and View live on the top row and in the control pane.
+    showBody("tiles");
+    page();
+    const html = render();
+
+    for (const gone of [/class="toolbar"/, /class="heading"/, /class="sortBar"/, /data-sort-options/, /class="columnHeader"/]) {
       assert.doesNotMatch(html, gone);
     }
   });
 
-  it("marks every row with the id the scroll hooks find it by", () => {
-    setAssetMenuView({ viewMode: "table" });
-    page();
-    const html = render();
+  for (const body of BODIES) {
+    it(`marks every row with the id the scroll hooks find it by in the ${body} body`, () => {
+      showBody(body);
+      page();
+      const html = render();
 
-    assert.match(html, /data-catalog-entry="1"/);
-    assert.match(html, /data-catalog-entry="2"/);
-  });
+      assert.match(html, /data-catalog-entry="1"/);
+      assert.match(html, /data-catalog-entry="2"/);
+    });
+  }
 });
 
-describe("the table under a larger text scale", () => {
-  // The game's Interface › Text scale reaches the page as ("options",
-  // "textScale"), and a column width that assumes 100 % clips its figures
-  // above it. The columns follow the S size's own growth; see domain/textScale.ts.
-  it("widens the metric columns by the S size's ratio", () => {
-    resetBindings();
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    // Wide, so the room beside the name does not cap the ratio — at a 720p
-    // width it does, and the columns grow only as far as the name allows.
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 2400);
-    const widthOf = (html: string) => Number(/metricUpkeep[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
-
-    const base = widthOf(render());
-    setBinding("options", "textScale", 1.25);
-    const scaled = widthOf(render());
-
-    assert.ok(base > 0, `base upkeep width ${base}`);
-    assert.equal(scaled, Math.round(base * (21.35 / 14)));
-  });
-});
-
-describe("the table follows the build menu's width", () => {
-  // Cost, because its column has a range (76 to 100); upkeep's minimum is its maximum.
-  const costWidth = (html: string) => Number(/metricCost[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
-
-  beforeEach(() => {
-    resetBindings();
-    resetAssetMenuView();
-    setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
-  });
-
-  it("drops columns rather than clip them when the player narrows the menu", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    const html = render();
-
-    assert.match(html, /metricCost/);
-    assert.match(html, /metricUpkeep/);
-    for (const dropped of ["metricWorkers", "metricCapacity", "metricLot", "metricLevel", "metricParking"]) {
-      assert.doesNotMatch(html, new RegExp(dropped), dropped);
-    }
-    assert.equal(costWidth(html), 100);
-  });
-
-  it("keeps the column the table is sorted by at any width", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "HasParking");
-
-    assert.match(render(), /metricParking/);
-  });
-
-  it("keeps the lot column when sorted by lot depth, as by lot width: one cell shows both", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "LotDepth");
-
-    assert.match(render(), /metricLot/);
-  });
-
-  it("keeps the columns it has at fill when the pane is hidden: the table's arithmetic counts the pane either way", () => {
-    const shown = costWidth(render());
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-
-    assert.ok(costWidth(render()) >= shown);
-  });
-});
-
-describe("the table's names follow the build menu's width", () => {
-  // Long enough to be shortened at every width the menu reaches.
-  const name = "Regional Transit Interchange with Underground Parking, Bus Terminal and Rooftop Gardens Extension";
-  // The room the name has: the build menu, less its chrome, the columns at their
-  // comfortable widths and the row's furniture. The width strip sits in the
-  // catalog's own margin and takes none of it.
-  const shortenedAt = (menuWidth: number, metrics: AssetMenuMetric[]) => shortenTileLabel(
-    name,
-    tableLabelCharBudget(
-      menuWidth - ASSET_MENU_CHROME_WIDTH
-        - metrics.reduce((total, metric) => total + ASSET_MENU_COLUMN_MAX[metric], 0)
-        - ASSET_MENU_TABLE_ROW_FURNITURE
-    )
-  );
-  const ALL: AssetMenuMetric[] = ["cost", "upkeep", "workers", "capacity", "lot", "level", "parking"];
-
-  beforeEach(() => {
-    resetBindings();
-    resetAssetMenuView();
-    setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1, { name })], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
-  });
-
-  it("gives the name what the default width leaves beside the columns", () => {
-    const expected = shortenedAt(1091, ALL);
-    assert.notEqual(expected, name);
-    assert.ok(render().includes(expected), expected);
-  });
-
-  it("gives the name what a narrow menu leaves beside the columns it keeps", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    assert.ok(render().includes(shortenedAt(735, ["cost", "upkeep"])));
-  });
-
-  it("gives a wide menu with the pane hidden its own room, counted without the pane", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300);
-    const expected = shortenedAt(1300, ALL);
-    assert.notEqual(expected, shortenedAt(1091, ALL));
-    assert.ok(render().includes(expected), expected);
-  });
-});
-
-describe("the table while the build menu's width is dragged", () => {
-  const globals = globalThis as unknown as Record<string, unknown>;
-  let saved: unknown;
+describe("a small menu's first open", () => {
   let root: ReactTestRenderer | undefined;
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const GARBAGE = "Garbage Management";
+  const rows = (first: number, count: number) => Array.from({ length: count }, (_, at) => entry(first + at));
+  const drawn = () => ({
+    labels: root!.root.findAll((node) => node.type === "div" && node.props["data-bbm-label"] !== undefined).length,
+    cells: root!.root.findAll((node) => node.type === "button" && node.props["data-catalog-entry"] !== undefined).map((node) => node.props["data-catalog-entry"] as number),
+    big: root!.root.findAll((node) => node.type === "button" && /\bbig\b/.test(String(node.props.className))).length,
+  });
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    saved = globals.document;
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
     globals.requestAnimationFrame = () => 0;
     globals.cancelAnimationFrame = () => undefined;
   });
 
-  it("hands the rows the same columns while a new width changes none of them", () => {
-    // Every row is memoised: new column props each frame would redraw them all.
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
-    const row = () => root!.root.find((node) => node.props.columnStyle !== undefined && node.props.entry !== undefined).props;
-    const before = row();
-
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300));
-    const after = row();
+  afterEach(() => {
     act(() => root?.unmount());
-    globals.document = saved;
+    root = undefined;
+  });
 
-    assert.equal(after.metrics, before.metrics);
-    assert.equal(after.columnStyle, before.columnStyle);
+  it("never draws the page grouped before C# has been told the menu draws no groups: the last body holds, then the grown form", () => {
+    // The last menu's page, under its own grouping.
+    setBinding("BetterBuildingMenu", "AssetMenu", "Electricity");
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(rows(101, 17)));
+    act(() => { root = create(<BuildingCatalogComponent />); });
+    assert.equal(drawn().cells.length, 17);
+
+    // Garbage opens: C# counts its share with its first page, grouped by its default before the UI can
+    // name it a small menu that draws no groups.
+    act(() => {
+      setBinding("BetterBuildingMenu", "AssetMenu", GARBAGE);
+      setBinding("BetterBuildingMenu", "MenuShares", [{ menu: GARBAGE, rows: 7, costOrCapacity: 7, capacity: 7, locked: 0 }]);
+      setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(rows(1, 7), {
+        sections: [0, 2, 4, 6].map((start, at) => ({ id: `group:${at}`, kind: "group", label: `Group ${at}`, labelId: "", start, count: at === 3 ? 1 : 2, collapsed: false })),
+      }));
+    });
+    const grouped = drawn();
+
+    act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(rows(1, 7))));
+    const grown = drawn();
+
+    assert.equal(grouped.labels, 0);
+    assert.deepEqual(grouped.cells, rows(101, 17).map((row) => row.id));
+    assert.deepEqual(grown.cells, [1, 2, 3, 4, 5, 6, 7]);
+    assert.equal(grown.big, 7);
+  });
+
+  it("draws a grouped page all the same where C# answers it grouped again, or the player picked the grouping", () => {
+    setBinding("BetterBuildingMenu", "AssetMenu", GARBAGE);
+    setBinding("BetterBuildingMenu", "MenuShares", [{ menu: GARBAGE, rows: 7, costOrCapacity: 7, capacity: 7, locked: 0 }]);
+    const groupedPage = () => catalogPage(rows(1, 7), { sections: [{ id: "group:0", kind: "group", label: "Group", labelId: "", start: 0, count: 7, collapsed: false }] });
+    setBinding("BetterBuildingMenu", "BuildingCatalog", groupedPage());
+    act(() => { root = create(<BuildingCatalogComponent />); });
+    // Held: nothing was drawn before it.
+    assert.equal(drawn().cells.length, 0);
+
+    // A second grouped page: C# was told and grouped it all the same, so it draws.
+    act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", groupedPage()));
+    assert.equal(drawn().labels, 1);
+    assert.equal(drawn().cells.length, 7);
+
+    // The player's own GROUP pick draws its groups at once.
+    act(() => root!.unmount());
+    setBinding("BetterBuildingMenu", "AssetMenuGroups", [{ menu: GARBAGE, value: "development" }]);
+    act(() => { root = create(<BuildingCatalogComponent />); });
+    assert.equal(drawn().labels, 1);
   });
 });

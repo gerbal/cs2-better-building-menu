@@ -1,0 +1,226 @@
+@use "sass:map";
+
+// The looks' tokens: each look a map of --bbm-* values, written onto the build menu's root, with
+// one follow map for the game's interface styles. A key holds one kind of value in every look and
+// every style. See docs/design-notes.md, "The looks' tokens".
+
+// The looks' light ink, T(a) in the design.
+@function ink($alpha) {
+  @return rgba(240, 251, 255, $alpha);
+}
+
+// Each panel's own alpha at the game's default transparency. The root overrides them as the
+// player's setting moves; domain/looks.ts holds the same numbers, and a test holds them together.
+$standard-alphas: (
+  head: 0.96,
+  body: 0.92,
+  popBg: 0.97,
+);
+
+$standard: (
+  // Material. The panels take their alpha from the root, which follows the game's transparency.
+  head: rgba(20, 27, 34, var(--bbm-a-head)),
+  body: rgba(26, 35, 52, var(--bbm-a-body)),
+  bodyBlur: var(--panelBlur),
+  boxRadius: 6rem,
+  boxShadow: (0 8rem 24rem rgba(0, 0, 0, 0.34), 0 0 0 1rem ink(0.05)),
+  rim: none,
+  strip: transparent,
+  // Items on the list.
+  plate: rgba(98, 128, 138, 0.34),
+  plateAlt: rgba(98, 128, 138, 0.21),
+  plateLocked: rgba(98, 128, 138, 0.21),
+  plateHover: rgba(128, 164, 178, 0.52),
+  rowSep: transparent,
+  tile: rgba(98, 128, 138, 0.4),
+  tileLocked: rgba(255, 255, 255, 0.08),
+  icon: rgba(98, 128, 138, 0.34),
+  iconAlt: rgba(98, 128, 138, 0.21),
+  iconAlt2: rgba(98, 128, 138, 0.21),
+  // A locked icon's plate, apart from both family tones, so a lock never reads as a run's edge.
+  iconLocked: rgba(255, 255, 255, 0.08),
+  radiusItem: 4rem,
+  radiusTile: 6rem,
+  labBg: ink(0.06),
+  // Selection. The armed fill and the lit tab are game tokens no interface style changes.
+  arm: var(--selectedColor),
+  armEdge: none,
+  armText: #fff,
+  armNum: rgba(255, 255, 255, 0.88),
+  slotArm: var(--selectedColor),
+  entMark: rgb(120, 204, 236),
+  entRing: none,
+  focusRing: inset 0 0 0 1.5rem #1e83aa,
+  dot: rgb(120, 204, 236),
+  tabLit: linear-gradient(var(--gradientHighlightStart), var(--gradientHighlightEnd)),
+  tabUnlit: transparent,
+  tabHover: rgba(98, 128, 138, 0.2),
+  tabSeg: rgba(98, 128, 138, 0.2),
+  // The cells hang from the band: their bottom corners round, their top ones stay square.
+  tabRadius: 4rem,
+  tabIcon: ink(0.72),
+  tabCount: ink(0.55),
+  // Text.
+  tName: ink(0.93),
+  // A name's typed word, dimmed by the Dim the typed word knob.
+  tTyped: ink(0.4),
+  tCost: ink(0.82),
+  tNum2: ink(0.72),
+  tGlyph: ink(0.55),
+  tWord: ink(0.55),
+  tState: ink(0.72),
+  tStateSet: #fff,
+  tDim: ink(0.4),
+  tLocked: ink(0.52),
+  tRead1: ink(0.72),
+  tRead2: ink(0.55),
+  tQuery: ink(0.93),
+  amber: #f0b84a,
+  // Chrome.
+  fieldBg: rgba(0, 0, 0, 0.28),
+  fieldRing: inset 0 0 0 1rem ink(0.28),
+  ctlStrip: ink(0.05),
+  ctlOpen: rgba(30, 131, 170, 0.22),
+  // The open control's inks on that fill: a closed control's in the look, which the style turns over. A
+  // popover's row and FILTER's chip buttons take the fill under the pointer, and these inks with it; the dim
+  // one is a dimmed row's word and a row's note.
+  ctlOpenWord: ink(0.55),
+  ctlOpenValue: ink(0.72),
+  ctlOpenSet: #fff,
+  ctlOpenDot: rgb(120, 204, 236),
+  ctlOpenDim: ink(0.4),
+  divider: ink(0.1),
+  hair: transparent,
+  slotBg: rgba(98, 128, 138, 0.34),
+  pillBg: rgba(20, 27, 34, 0.8),
+  pillText: ink(0.92),
+  tagBg: rgba(20, 27, 35, 0.55),
+  tagText: ink(0.92),
+  tagRadius: 3rem,
+  bandBg: rgba(20, 27, 34, 0.66),
+  badgeBg: rgba(20, 27, 35, 0.88),
+  badgeLit: rgba(12, 38, 70, 0.78),
+  iconSlot: ink(0.07),
+  // The empty square's edge, which keeps it in sight on a plate of any kind.
+  iconSlotEdge: ink(0.16),
+  chipBg: ink(0.07),
+  // On the body, which a style turns light: the pane's chips and its summaries, whose ink and plate
+  // follow the style together.
+  bodyChipBg: ink(0.07),
+  bodyChipText: ink(0.72),
+  bodyChipDim: ink(0.4),
+  bodyWord: ink(0.55),
+  bodyCtl: rgba(20, 27, 34, 1),
+  bodyCtlHover: rgba(52, 63, 74, 1),
+  bodyCtlText: ink(0.8),
+  bodyCtlDim: ink(0.55),
+  bodyLabel: rgba(255, 255, 255, 1),
+  // The list's plates: a locked building's milestone, and the mark on Enter's target.
+  bodyMilestone: #f0b84a,
+  bodyEntMark: rgb(120, 204, 236),
+  seamLocked: rgba(240, 184, 74, 0.55),
+  seamElse: rgba(120, 204, 236, 0.7),
+  track: ink(0.08),
+  thumb: ink(0.42),
+  popBg: rgba(20, 27, 34, var(--bbm-a-popBg)),
+  popRing: (0 6rem 20rem rgba(0, 0, 0, 0.45), 0 0 0 1rem ink(0.08)),
+  popOn: var(--selectedColor),
+  notch: var(--selectedColor),
+  notchLine: transparent,
+);
+
+// Plates: Standard's plates and box, with plain tiles, its pills (lighter than Standard's) and tags
+// (darker) in the one shade its name bands have, and plated tabs. Its panels are Standard's, so it
+// takes Standard's alphas.
+$plates-alphas: $standard-alphas;
+
+$plates: map.merge(
+  $standard,
+  (
+    tile: rgba(98, 128, 138, 0.34),
+    pillBg: rgba(20, 27, 34, 0.66),
+    tagBg: rgba(20, 27, 34, 0.66),
+    tabUnlit: rgba(98, 128, 138, 0.2),
+    tabHover: rgba(98, 128, 138, 0.3),
+  )
+);
+
+// Under the game's Bright blue and Dark grey-orange, in every look: the list and its plates, the ink on
+// them and the accents from the style's own tokens, which each style redefines. The head and the
+// popovers take the style's dark panel, which stays dark under both, so their ink stays the look's.
+$standard-follow: (
+  head: var(--panelColorDark),
+  popBg: var(--panelColorDark),
+  body: var(--panelColorNormal),
+  plate: var(--menuPanel1),
+  plateAlt: var(--menuPanel2),
+  plateLocked: var(--menuPanel2),
+  plateHover: var(--menuPanel3),
+  tile: var(--menuPanel1),
+  tileLocked: var(--menuPanel2),
+  // The label plates, whose inks are body inks that follow the style with them.
+  labBg: var(--menuPanel2),
+  icon: var(--menuPanel1),
+  iconAlt: var(--menuPanel2),
+  iconAlt2: var(--menuPanel2),
+  // The style's panels give the two tones and the lit plate: a locked icon's plate is bare, on the body.
+  iconLocked: transparent,
+  // The empty thumbnail square on a plate: the style's third panel, apart from a plate's first and a
+  // locked or built plate's second; the style has no fourth, so its edge, in the style's second ink,
+  // keeps it in sight on the hovered plate's.
+  iconSlot: var(--menuPanel3),
+  iconSlotEdge: var(--menuText2Normal),
+  track: var(--menuPanel2),
+  thumb: var(--menuText2Normal),
+  tName: var(--menuText1Normal),
+  tTyped: var(--menuText2Normal),
+  tCost: var(--menuText1Normal),
+  tNum2: var(--menuText2Normal),
+  tGlyph: var(--menuText2Normal),
+  tLocked: var(--menuText2Normal),
+  dot: var(--accentColorLight),
+  entMark: var(--accentColorLight),
+  focusRing: inset 0 0 0 1.5rem var(--accentColorNormal),
+  // The open control takes the style's bright accent, and the ink the style draws on it: its inverted
+  // ink, dark under both styles, where the look's light ink would not read.
+  ctlOpen: var(--accentColorDark),
+  ctlOpenWord: var(--menuText1Inverted),
+  ctlOpenValue: var(--menuText1Inverted),
+  ctlOpenSet: var(--menuText1Inverted),
+  ctlOpenDot: var(--menuText1Inverted),
+  ctlOpenDim: var(--menuText1Inverted),
+  bodyChipBg: var(--menuPanel1),
+  bodyChipText: var(--menuText1Normal),
+  bodyChipDim: var(--menuText2Normal),
+  bodyWord: var(--menuText1Normal),
+  bodyCtl: var(--menuPanel1),
+  bodyCtlHover: var(--menuPanel3),
+  bodyCtlText: var(--menuText1Normal),
+  bodyCtlDim: var(--menuText2Normal),
+  bodyLabel: var(--menuText1Normal),
+  bodyMilestone: var(--menuText1Normal),
+  bodyEntMark: var(--menuText1Normal),
+);
+
+@mixin tokens($map) {
+  @each $key, $value in $map {
+    --bbm-#{$key}: #{$value};
+  }
+}
+
+@mixin alphas($map) {
+  @each $surface, $alpha in $map {
+    --bbm-a-#{$surface}: #{$alpha};
+  }
+}
+
+// A look's map with a style's overrides; a key the look does not declare stops the build.
+@function follow($look, $overrides) {
+  @each $key, $value in $overrides {
+    @if not map.has-key($look, $key) {
+      @error "#{$key} is not a key the look declares";
+    }
+  }
+
+  @return map.merge($look, $overrides);
+}
