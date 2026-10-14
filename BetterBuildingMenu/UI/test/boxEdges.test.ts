@@ -1,15 +1,24 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { lineSpacing, type BodyGridInput } from "../src/domain/bodyGeometry";
+import { drawnBodyHeight } from "../src/domain/assetMenuLayout";
+import { bodyGrid, lineSpacing, type BodyGridInput } from "../src/domain/bodyGeometry";
 import { collapses, DOUBLE_PRESS_MS, GAME_MENU_SCREEN, heightOfLines, heightReadout, isDoublePress, restoreSizeCommand, setCollapsedCommand, snapToLines, type EdgeWords } from "../src/domain/boxEdges";
-import { cardLineSpacing } from "../src/domain/cardsLayout";
+import { cardGeometry, cardLineSpacing } from "../src/domain/cardsLayout";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
 
 const spacingOf = (over: Partial<BodyGridInput>) =>
   lineSpacing({ body: "list", textScale: 1, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, ...over });
 const list = spacingOf({});
 const tiles = spacingOf({ body: "tiles" });
-const words: EdgeWords = { lines: "{0} lines · {1} buildings (game: {2})", linesOnly: "{0} lines (game: {1})", collapse: "Release to collapse" };
+const words: EdgeWords = {
+  lines: "{0} lines · {1} buildings (game: {2})",
+  linesOnly: "{0} lines (game: {1})",
+  line: "{0} line · {1} buildings (game: {2})",
+  lineOnly: "{0} line (game: {1})",
+  collapse: "Release to collapse",
+};
+/** The most body the box draws, under the top HUD's band. */
+const ROOM = drawnBodyHeight(ASSET_MENU_MAX_HEIGHT);
 
 describe("where a release of the top edge lands", () => {
   it("lands on whole List lines: five make the game's own 144.25, seven 202.75", () => {
@@ -24,11 +33,47 @@ describe("where a release of the top edge lands", () => {
     assert.equal(snapToLines(20, list), 115);
   });
 
-  it("never lands over the drag's ceiling: the most whole lines under it", () => {
+  it("never lands past the room the box draws its body in: the most whole lines that fit it", () => {
     const top = snapToLines(5000, list);
 
-    assert.ok(top <= ASSET_MENU_MAX_HEIGHT && top + list.pitch > ASSET_MENU_MAX_HEIGHT, `${top}`);
-    assert.equal(top, heightOfLines(32, list));
+    assert.ok(ROOM < ASSET_MENU_MAX_HEIGHT);
+    assert.ok(top <= ROOM && top + list.pitch > ROOM, `${top}`);
+    assert.equal(top, heightOfLines(28, list));
+  });
+
+  it("lands near the top of the room on whole lines the body draws there, in every body at 100 % to 150 %", () => {
+    const forms: Array<[string, Partial<BodyGridInput>]> = [
+      ["list", {}],
+      ["list, whole names", { atLargeText: "wholeNames" }],
+      ["tiles", { body: "tiles" }],
+      ["tiles in Plates", { body: "tiles", tileNameLine: false }],
+      ["tiles of 100", { body: "tiles", tileSize: 100 }],
+      ["tiles of 120", { body: "tiles", tileSize: 120 }],
+      ["icons", { body: "icons" }],
+      ["icons of 36", { body: "icons", iconSize: 36 }],
+    ];
+    const input = (over: Partial<BodyGridInput>, textScale: number, bodyHeight: number): BodyGridInput =>
+      ({ body: "list", boxWidth: 706, bodyHeight, textScale, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0, ...over });
+
+    for (const textScale of [1, 1.3, 1.5]) {
+      for (let pointer = ROOM - 90; pointer <= ROOM; pointer += 0.75) {
+        for (const [name, over] of forms) {
+          const spacing = lineSpacing(input(over, textScale, 0));
+          const landed = snapToLines(pointer, spacing);
+          const drawn = bodyGrid(input(over, textScale, drawnBodyHeight(landed))).lines;
+
+          assert.ok(landed <= ROOM, `${name} at ${textScale}, ${pointer}: ${landed}`);
+          assert.equal(heightOfLines(drawn, spacing), landed, `${name} at ${textScale}, ${pointer}`);
+        }
+        for (const knob of [46, 50, 60]) {
+          const spacing = cardLineSpacing(knob, textScale);
+          const landed = snapToLines(pointer, spacing);
+
+          assert.ok(landed <= ROOM, `cards of ${knob} at ${textScale}, ${pointer}: ${landed}`);
+          assert.equal(heightOfLines(cardGeometry(knob, drawnBodyHeight(landed), textScale).lines, spacing), landed, `cards of ${knob} at ${textScale}, ${pointer}`);
+        }
+      }
+    }
   });
 
   it("keeps the tiles' name line under their whole lines", () => {
@@ -55,6 +100,11 @@ describe("the readout while the top edge is dragged", () => {
   it("names the lines the release lands on, the buildings they show and the game's own", () => {
     assert.equal(heightReadout(7, 28, words, String), "7 lines · 28 buildings (game: 18)");
     assert.equal(GAME_MENU_SCREEN, 18);
+  });
+
+  it("names one line as one", () => {
+    assert.equal(heightReadout(1, 6, words, String), "1 line · 6 buildings (game: 18)");
+    assert.equal(heightReadout(1, null, words, String), "1 line (game: 18)");
   });
 
   it("names the lines alone where the body cannot count its buildings, as the cards", () => {

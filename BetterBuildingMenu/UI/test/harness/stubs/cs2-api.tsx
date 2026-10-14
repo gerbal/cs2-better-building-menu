@@ -5,6 +5,8 @@ const values = new Map<string, unknown>();
 // bindings do. A memoised component re-renders on its own bindings only.
 const readers = new Map<string, Set<() => void>>();
 export const triggers: Array<{ group: string; name: string; args: unknown[] }> = [];
+/** How many times each binding was read by a render, by its "group.name": a render count for a binding one component reads. */
+export const reads = new Map<string, number>();
 
 export interface StubBinding<T> { key: string; fallback: T | undefined; readonly value: T }
 
@@ -28,6 +30,7 @@ export function useValue<T>(binding: StubBinding<T>): T {
     set.add(listener);
     return () => { set.delete(listener); };
   }, [binding.key]);
+  reads.set(binding.key, (reads.get(binding.key) ?? 0) + 1);
   return read(binding);
 }
 export function trigger(group: string, name: string, ...args: unknown[]): void {
@@ -59,4 +62,4 @@ export function setBinding(group: string, name: string, value: unknown): void {
   values.set(key, value);
   for (const listener of [...(readers.get(key) ?? [])]) listener();
 }
-export function resetBindings(): void { values.clear(); triggers.length = 0; }
+export function resetBindings(): void { values.clear(); triggers.length = 0; reads.clear(); }

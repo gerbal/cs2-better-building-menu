@@ -3,7 +3,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import { setReadoutSaid } from "domain/assetMenuViewStore";
@@ -91,9 +91,10 @@ export interface TabRowProps {
 
 /**
  * The menu's tabs along the box's bottom edge, under the list: All, then the game's tabs with their
- * branches or levels, each with its count, on one line. See docs/design-notes.md, "The tab row".
+ * branches or levels, each with its count, on one line. Memoised, so a height's echo during a drag plans
+ * nothing again. See docs/design-notes.md, "The tab row".
  */
-export const TabRow = ({ width, edgeReadout = null }: TabRowProps) => {
+export const TabRow = memo(function TabRow({ width, edgeReadout = null }: TabRowProps) {
   const { translate } = useLocalization();
   const page = useValue(BuildingCatalog$);
   // During a load the index has counted nothing yet: no count has arrived, nor the total.
@@ -299,4 +300,4 @@ export const TabRow = ({ width, edgeReadout = null }: TabRowProps) => {
       )}
     </div>
   );
-};
+});

@@ -242,6 +242,8 @@
   "Tooltip.LABEL[BetterBuildingMenu.ReadoutOthers]": "others {0}",
   "Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLines]": "{0} lines · {1} buildings (game: {2})",
   "Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLinesOnly]": "{0} lines (game: {1})",
+  "Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLine]": "{0} line · {1} buildings (game: {2})",
+  "Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLineOnly]": "{0} line (game: {1})",
   "Tooltip.LABEL[BetterBuildingMenu.ReadoutDragCollapse]": "Release to collapse",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy]": "Group by",
   "Tooltip.LABEL[BetterBuildingMenu.GroupedBy]": "Grouped by {0}",

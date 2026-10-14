@@ -1,18 +1,16 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry, showBody } from "../harness/render";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { reads as bindingReads, resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
-import { ListBody } from "../../src/mods/Bodies/ListBody";
-import { TilesBody } from "../../src/mods/Bodies/TilesBody";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 
-// What a drag of the top edge re-renders: the body, counted by each change of the props its memo compares,
-// and its rows, each of which reads its entry's prefabName twice a render (the name is blank). The height
-// each frame sends comes back in the binding, as C# echoes it.
+// What a drag of the top edge re-renders: the body, each of whose renders reads the armed building, a binding no
+// other component reads, and its rows, each of which reads its entry's prefabName twice a render (the name is
+// blank). Each pointer frame the hook's own render and C#'s echo of the height it sent come apart, as in game.
 const globals = globalThis as unknown as Record<string, unknown>;
 let reads = 0;
 
@@ -31,17 +29,20 @@ const FRAMES = 60;
 const ROWS = 60;
 /** The prefabName reads of every row drawn once. */
 const ALL_ROWS = 2 * ROWS;
+const bodyRenders = (): number => bindingReads.get("BetterBuildingMenu.ActivePrefabId") ?? 0;
+// The tab row is the one reader of the All count, so its reads count the tab row's plans.
+const tabRowRenders = (): number => bindingReads.get("BetterBuildingMenu.AssetMenuAllCount") ?? 0;
 
 describe("what a drag of the top edge re-renders", () => {
   let root: ReactTestRenderer | undefined;
   let frames: Array<() => void> = [];
-  let saved: unknown;
+  let saved: Record<string, unknown> = {};
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
     reads = 0;
-    saved = globals.document;
+    saved = { document: globals.document, requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
     frames = [];
     globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
@@ -51,37 +52,29 @@ describe("what a drag of the top edge re-renders", () => {
   afterEach(() => {
     act(() => root?.unmount());
     root = undefined;
-    globals.document = saved;
+    Object.assign(globals, saved);
   });
 
-  /** Mounts the menu in this body under this Top edge, drags the edge up a rem a frame, and releases it. */
-  const drag = (body: "list" | "tiles", topEdge: string) => {
+  /** Mounts the menu in this body, text scale and Top edge, drags the edge up a rem a frame, and releases it. */
+  const drag = (body: "list" | "tiles" | "icons" | "cards", topEdge: string, textScale = 1) => {
     showBody(body);
     setBinding("BetterBuildingMenu", "AssetMenuTopEdge", topEdge);
+    setBinding("options", "textScale", textScale);
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(Array.from({ length: ROWS }, (_, at) => counted(at + 1))));
     act(() => {
       root = create(<AssetMenu onClose={() => {}} />);
     });
-    const kind = body === "list" ? ListBody : TilesBody;
-    // The memo's own component, whose props it compares.
-    const bodyOf = (): ReactTestInstance => root!.root.find((node) => node.type === (kind as unknown as { type: unknown }).type);
-    let props = bodyOf().props;
-    let bodyRenders = 0;
-    const count = () => {
-      const next = bodyOf().props;
-      if (Object.keys(next).some((key) => next[key] !== props[key])) bodyRenders += 1;
-      props = next;
-    };
     // Echoes what the drag sends since the last echo, as C# does.
     let echoed = 0;
     const echo = () => {
       const sent = triggers.filter((call) => call.name === "SetAssetMenuHeight");
       for (const call of sent.slice(echoed)) act(() => setBinding("BetterBuildingMenu", "AssetMenuHeight", call.args[0]));
       echoed = sent.length;
-      count();
     };
     const blocker = () => root!.root.find((node) => node.props.className === "resizeBlocker");
     const rowsAtMount = reads;
+    const rendersAtMount = bodyRenders();
+    const tabRowsAtMount = tabRowRenders();
 
     // The edge is drawn as many pixels tall as it is rem, so a pixel is a rem.
     act(() => root!.root.find((node) => node.props.className === "topEdge").props.onMouseDown({ button: 0, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }));
@@ -93,39 +86,50 @@ describe("what a drag of the top edge re-renders", () => {
     act(() => blocker().props.onMouseUp());
     echo();
 
-    assert.ok(rowsAtMount > 0, "the rows drew at mount");
-    return { bodyRenders, rowRenders: reads - rowsAtMount };
+    assert.ok(rowsAtMount > 0 && rendersAtMount > 0, "the body and its rows drew at mount");
+    return { renders: bodyRenders() - rendersAtMount, rowRenders: reads - rowsAtMount, tabRows: tabRowRenders() - tabRowsAtMount };
   };
 
-  it("under Whole lines redraws the list only as the lines the release lands on change", () => {
-    // From 144.25 up 60 rem: the release lands on 6 lines from 159.25, on 7 from 188.25.
-    const { bodyRenders, rowRenders } = drag("list", "whole");
+  // From 144.25 up 60 rem, in each body under Whole lines: the renders are the changes of the height the release
+  // lands on, the first move's included where 144.25 is not that body's whole lines.
+  for (const [body, textScale, renders, why] of [
+    ["list", 1, 2, "6 lines from 159.25, 7 from 188.25"],
+    ["list", 1.5, 3, "one-line plates of 22, a pitch of 24: 7 lines from 156, 8 from 180, 9 from 204"],
+    ["tiles", 1, 2, "their 2 whole lines' 144 at the first move, 3 from 177"],
+    ["icons", 1, 2, "their 3 whole lines' 136 at the first move, 4 from 159"],
+    ["cards", 1, 2, "rows of 46: their 3 whole rows' 142 at the first move, 4 from 166"],
+  ] as const) {
+    it(`under Whole lines redraws the ${body} at ${textScale * 100} % only as the lines the release lands on change: ${why}`, () => {
+      const { renders: drawn, rowRenders } = drag(body, "whole", textScale);
 
-    assert.equal(bodyRenders, 2);
-    assert.ok(rowRenders <= 2 * ALL_ROWS, `${rowRenders}`);
-  });
+      assert.equal(drawn, renders);
+      assert.ok(rowRenders <= renders * ALL_ROWS, `${rowRenders}`);
+    });
+  }
 
-  it("under Whole lines redraws the tiles only as their lines change, never for the name line's room", () => {
-    // Tiles of 64 draw at their 2 whole lines' 144 from the first move, and land on 3 from 177.
-    const { bodyRenders, rowRenders } = drag("tiles", "whole");
-
-    assert.equal(bodyRenders, 2);
-    assert.ok(rowRenders <= 2 * ALL_ROWS, `${rowRenders}`);
-  });
-
-  it("under Free redraws the list at most once a frame, and its rows only as its lines change", () => {
+  it("under Free redraws the list once at each line it gains, its slots as they were between", () => {
     // The list draws 6 lines from 173.5 and 7 from 202.75.
-    const { bodyRenders, rowRenders } = drag("list", "free");
+    const { renders, rowRenders } = drag("list", "free");
 
-    assert.ok(bodyRenders <= FRAMES, `${bodyRenders}`);
+    assert.equal(renders, 2);
     assert.ok(rowRenders <= 2 * ALL_ROWS, `${rowRenders}`);
   });
 
-  it("under Free redraws the tiles at most once a frame, and the tiles themselves only as their lines change", () => {
-    // The name line's room under the tiles grows each frame; the tiles' places do not.
-    const { bodyRenders, rowRenders } = drag("tiles", "free");
+  for (const topEdge of ["whole", "free"]) {
+    it(`under ${topEdge === "whole" ? "Whole lines" : "Free"} plans the tab row and its readout at most once a pointer frame, not again for the echo`, () => {
+      const { tabRows } = drag("list", topEdge);
 
-    assert.ok(bodyRenders <= FRAMES, `${bodyRenders}`);
-    assert.ok(rowRenders <= 2 * ALL_ROWS, `${rowRenders}`);
-  });
+      assert.ok(tabRows <= FRAMES, `${tabRows}`);
+    });
+  }
+
+  // The room under the tiles grows each frame, their places do not; the icons and the cards sit centred, so they move.
+  for (const [body, textScale, rowDraws] of [["tiles", 1, 2], ["icons", 1, FRAMES], ["cards", 1, FRAMES], ["list", 1.5, 3]] as const) {
+    it(`under Free redraws the ${body} at ${textScale * 100} % at most once a pointer frame, and its rows only as their places change`, () => {
+      const { renders, rowRenders } = drag(body, "free", textScale);
+
+      assert.ok(renders <= FRAMES, `${renders}`);
+      assert.ok(rowRenders <= rowDraws * ALL_ROWS, `${rowRenders}`);
+    });
+  }
 });

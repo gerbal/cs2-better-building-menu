@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
+import { after, afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import {
@@ -14,8 +14,10 @@ import {
 import { DOUBLE_PRESS_MS } from "../../src/domain/boxEdges";
 import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight, type TopEdgeRules } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 
-// A frame clock the test advances by hand, so "one per frame" can be counted.
+// A frame clock the test advances by hand, so "one per frame" can be counted; the real one comes back after the file.
 const globals = globalThis as unknown as Record<string, unknown>;
+const realFrames = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
+after(() => Object.assign(globals, realFrames));
 let frames: Array<(() => void) | null> = [];
 const nextFrame = () => act(() => {
   const due = frames;

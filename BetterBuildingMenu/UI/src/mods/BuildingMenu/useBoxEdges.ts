@@ -2,14 +2,14 @@ import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import { useMemo } from "react";
 
-import { clampAssetMenuHeight } from "domain/assetMenuLayout";
+import { ASSET_MENU_DEFAULT_HEIGHT, clampAssetMenuHeight, drawnBodyHeight } from "domain/assetMenuLayout";
 import { groupDigits } from "domain/assetMenuMetricFormat";
 import { bodyGrid, lineSpacing, screenSlots, type LineSpacing } from "domain/bodyGeometry";
 import { collapses, heightReadout, snapToLines, type EdgeWords } from "domain/boxEdges";
 import { cardGeometry, cardLineSpacing } from "domain/cardsLayout";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenuCollapsed$, AssetMenuTopEdge$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
-import { useBodyGridInput } from "mods/BuildingCatalog/useBodyGrid";
+import { screenPixelRem, useBodyGridInput } from "mods/BuildingCatalog/useBodyGrid";
 import { useNumberSeparators } from "mods/Bodies/useBodyWords";
 import { useMenuBody } from "mods/useMenuBody";
 
@@ -34,7 +34,8 @@ export interface BoxEdges {
 export function useBoxEdges(): BoxEdges {
   const { translate } = useLocalization();
   const body = useMenuBody().drawn;
-  const input = useBodyGridInput(body);
+  // At a fixed height, which the readout replaces with the dragged one, so a height's echo builds nothing again.
+  const input = useBodyGridInput(body, ASSET_MENU_DEFAULT_HEIGHT);
   const textScale = useTextScale();
   const cardHeight = useValue(AssetMenuTuning$).cardHeight ?? SHIPPED_TUNING.cardHeight;
   const separators = useNumberSeparators();
@@ -48,15 +49,18 @@ export function useBoxEdges(): BoxEdges {
     const words: EdgeWords = {
       lines: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLines]", "{0} lines · {1} buildings (game: {2})") ?? "{0} lines · {1} buildings (game: {2})",
       linesOnly: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLinesOnly]", "{0} lines (game: {1})") ?? "{0} lines (game: {1})",
+      line: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLine]", "{0} line · {1} buildings (game: {2})") ?? "{0} line · {1} buildings (game: {2})",
+      lineOnly: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragLineOnly]", "{0} line (game: {1})") ?? "{0} line (game: {1})",
       collapse: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutDragCollapse]", "Release to collapse") ?? "Release to collapse",
     };
     const format = (count: number) => groupDigits(count, separators);
     const snap = free ? clampAssetMenuHeight : (height: number) => snapToLines(height, spacing);
-    // The slots the body would show at the height the release lands on; the cards' rows alone, as a card is as wide as its words.
+    // The slots the body would show at the height the release lands on, as the box draws it; the cards' rows alone, as a
+    // card is as wide as its words.
     const heightText = (height: number) => {
       if (collapses(height) && (!free || collapsed)) return words.collapse;
-      const landed = snap(height);
-      if (input === null) return heightReadout(cardGeometry(cardHeight, landed, textScale).lines, null, words, format);
+      const landed = drawnBodyHeight(snap(height));
+      if (input === null) return heightReadout(cardGeometry(cardHeight, landed, textScale, screenPixelRem()).lines, null, words, format);
       const grid = bodyGrid({ ...input, bodyHeight: landed, smallMenusGrow: false });
       return heightReadout(grid.lines, screenSlots(grid), words, format);
     };

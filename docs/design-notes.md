@@ -653,15 +653,17 @@ the whole lines of the open body the release lands on, the buildings they show a
 and the game's own menu's eighteen beside them; the cards, whose width follows their words, say their
 rows alone. The tabs keep their form, and a long line clips the last of them until the release, as a
 long range does; the rows keep what the readout said. The release sends the height of the whole lines
-nearest the pointer's (`snapToLines`), never under the drag's floor or over its ceiling: in the list
-five make the game's own 144.25 and four the fewest, 115; the tiles keep their name line under their
-lines. Each body's lines are its own form's (`lineSpacing`, `cardLineSpacing`), a small menu's grown
+nearest the pointer's (`snapToLines`), never under the drag's floor or past the room the box draws
+its body in under the top HUD's band, 830.25, the drawn ceiling below the stored one: in the list five
+make the game's own 144.25, four the fewest, 115, and 28 the most, 817; the tiles keep their name line
+under their lines. The readout counts at the height the box draws, and says "1 line" for one. Each body's lines are its own form's (`lineSpacing`, `cardLineSpacing`), a small menu's grown
 plates left out, and the height is the one at which the body draws those lines. The upgrades panel's
 drag keeps none of this: it moves at the first pixel and saves where it ends.
 
 **The Top edge row** (UI/UX, after Width) picks how a release settles: Whole lines, as above, or
 Free, where the pointer lets go, held to the drag's floor and ceiling. Under Free a press still
-becomes a drag at three pixels, the readout counts the lines and buildings the body draws at
+becomes a drag at three pixels, so one that moves less saves nothing (the double press needs the
+click), the readout counts the lines and buildings the body draws at
 the pointer's height, and a drag below the floor holds the floor and saves it: only Whole lines
 collapses the box (below). A new player and Reset get Whole lines; the settings migration's version 5
 gives an upgrader Free (see "The settings migration"). The binding is `AssetMenuTopEdge`, "whole"
@@ -676,7 +678,8 @@ leaves room under it, until the release; the body draws again only as the lines 
 on change, and not at the release. Under Free that height is the pointer's, so the body draws at
 most once a frame, and its rows only as its lines change: a grid that places every slot alike keeps
 its object (`sameGrid`), and a tile keeps its render while its slot holds (`sameSlots`), as the
-room under the tiles grows.
+room under the tiles grows. The readout is worked out once a frame, and the tab row, memoised, plans
+again only when it changes: the echo of the height sent re-renders the menu with the same drag.
 
 **Below the floor the box collapses.** Under Whole lines, dragged below the body's floor of 108, the
 box holds its floor and the readout says "Release to collapse"; the release collapses it to its top

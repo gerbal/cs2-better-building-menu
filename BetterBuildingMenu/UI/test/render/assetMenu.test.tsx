@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { selectorsOf } from "../harness/compiledCss";
-import { renderHtml } from "../harness/render";
+import { renderHtml, showBody } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_CHROME_HEIGHT, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
@@ -219,7 +219,7 @@ describe("a drag on the asset menu's right edge", () => {
 
 describe("a drag on the asset menu's top edge", () => {
   const globals = globalThis as unknown as Record<string, unknown>;
-  let saved: unknown;
+  let saved: Record<string, unknown> = {};
   let frames: Array<() => void> = [];
   let root: ReactTestRenderer | undefined;
   const readout = () => root!.root.findAll((node) => node.props["data-readout"] !== undefined)[0];
@@ -228,7 +228,7 @@ describe("a drag on the asset menu's top edge", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    saved = globals.document;
+    saved = { document: globals.document, window: globals.window, requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
     frames = [];
     globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
@@ -244,7 +244,7 @@ describe("a drag on the asset menu's top edge", () => {
   afterEach(() => {
     act(() => root?.unmount());
     root = undefined;
-    globals.document = saved;
+    Object.assign(globals, saved);
   });
 
   const move = (clientY: number) => act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseMove({ clientY, buttons: 1 }));
@@ -265,6 +265,29 @@ describe("a drag on the asset menu's top edge", () => {
 
     assert.deepEqual(heights(), [199.25, 202.75]);
     assert.notEqual(readout().props["data-readout"], "edge");
+  });
+
+  it("at 130 % lands a drag held at the top of the room on the whole lines the body draws there, and says those", () => {
+    act(() => setBinding("options", "textScale", 1.3));
+    // The pointer asks for 828, inside the room's 830.25: one-line plates of 24 hold 34 whole lines there, at 816.
+    move(500 - (828 - 144.25));
+    frame();
+
+    assert.deepEqual(readout().findAll((node) => node.props.className === "range")[0].children, ["34 lines · 102 buildings (game: 18)"]);
+    act(() => root!.root.find((node) => node.props.className === "resizeBlocker").props.onMouseUp());
+
+    assert.equal(heights().at(-1), 816);
+  });
+
+  it("under Free counts the cards' rows as the body does, a device pixel short of a row forgiven", () => {
+    globals.window = { innerHeight: 1080 };
+    showBody("cards");
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuTopEdge", "free"));
+    // Rows of 46, 48 apart: four need 190, and 189.5 is half a device pixel short of them.
+    move(500 - (189.5 - 144.25));
+    frame();
+
+    assert.deepEqual(readout().findAll((node) => node.props.className === "range")[0].children, ["4 lines (game: 18)"]);
   });
 
   it("says nothing of a press that has not moved", () => {
@@ -605,14 +628,14 @@ describe("the asset menu's top row and top edge", () => {
 
 describe("a drag on the asset menu's top edge", () => {
   const globals = globalThis as unknown as Record<string, unknown>;
-  let saved: unknown;
+  let saved: Record<string, unknown> = {};
   let frames: Array<() => void> = [];
   let root: ReactTestRenderer | undefined;
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    saved = globals.document;
+    saved = { document: globals.document, window: globals.window, requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
     frames = [];
     globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
@@ -625,7 +648,7 @@ describe("a drag on the asset menu's top edge", () => {
   afterEach(() => {
     act(() => root?.unmount());
     root = undefined;
-    globals.document = saved;
+    Object.assign(globals, saved);
   });
 
   it("changes the height one for one with the pointer, measured against the edge's own height", () => {

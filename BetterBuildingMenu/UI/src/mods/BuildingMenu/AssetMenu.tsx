@@ -1,6 +1,6 @@
 import { useValue } from "cs2/api";
 import classNames from "classnames";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { Notch } from "mods/Notch/Notch";
@@ -55,6 +55,8 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const edges = useBoxEdges();
   const rules = { snap: edges.snap, collapsible: edges.collapsible, collapsed: useValue(AssetMenuCollapsed$) };
   const { height: catalogHeight, isResizing, beginResize, blocker, dragged, held, collapsed } = useAssetMenuHeight(drawnBodyHeight, rules);
+  // Worked out once per pointer frame: the echo of the height sent re-renders the menu with the same drag.
+  const edgeReadout = useMemo(() => (dragged === null ? null : edges.heightText(dragged)), [edges, dragged]);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
   const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
@@ -129,7 +131,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           )}
           {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
               their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
-          <TabRow width={shownWidth} edgeReadout={dragged === null ? null : edges.heightText(dragged)} />
+          <TabRow width={shownWidth} edgeReadout={edgeReadout} />
           {/* Down the box's right edge from under the top row to its bottom, past the tab row:
               a child of the box, not of the body, whose box would cut it. */}
           <AssetMenuWidthHandle

@@ -2,7 +2,7 @@
  * The box's edges: where a release of the top edge lands, whole lines of the open body, and what the readout says
  * while an edge is dragged. Pure. See docs/design-notes.md, "The top edge".
  */
-import { ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT, clampAssetMenuHeight } from "./assetMenuLayout";
+import { ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT, clampAssetMenuHeight, drawnBodyHeight } from "./assetMenuLayout";
 import type { LineSpacing } from "./bodyGeometry";
 import type { Command } from "./command";
 
@@ -45,6 +45,9 @@ export const GAME_MENU_SCREEN = 18;
 
 const thousandths = (rem: number): number => Math.round(rem * 1000) / 1000;
 
+/** The most body the box draws, under the top HUD's band, which a release's whole lines must fit. */
+const ROOM = Math.min(ASSET_MENU_MAX_HEIGHT, drawnBodyHeight(ASSET_MENU_MAX_HEIGHT));
+
 /**
  * The body's height that holds this many whole lines: the lines, the room above and below them, what it keeps under
  * them, to the thousandth of a rem, and a thousandth more where rounding leaves the last line a hair short, which the
@@ -59,19 +62,20 @@ export function heightOfLines(lines: number, spacing: LineSpacing): number {
 }
 
 /**
- * Where a release of the top edge lands: the height of the whole lines nearest the pointer's, inside the drag's
- * range, the lines nearest the floor or the ceiling where the pointer's are past them; the height itself, held to
- * the range, where the lines have no length or no whole line fits.
+ * Where a release of the top edge lands: the height of the whole lines nearest the pointer's, from the drag's floor
+ * to the room the box draws its body in, the lines nearest the floor or the room where the pointer's are past them;
+ * the height itself, held to that range, where the lines have no length or no whole line fits.
  */
 export function snapToLines(height: number, spacing: LineSpacing): number {
-  if (!Number.isFinite(height) || !(spacing.pitch > 0)) return clampAssetMenuHeight(height);
+  const held = (rem: number) => Math.min(ROOM, clampAssetMenuHeight(rem));
+  if (!Number.isFinite(height) || !(spacing.pitch > 0)) return held(height);
 
   let lines = Math.max(1, Math.round((height - spacing.below - 2 * spacing.edge + spacing.gap) / spacing.pitch));
   while (heightOfLines(lines, spacing) < ASSET_MENU_MIN_HEIGHT) lines += 1;
-  while (lines > 1 && heightOfLines(lines, spacing) > ASSET_MENU_MAX_HEIGHT) lines -= 1;
+  while (lines > 1 && heightOfLines(lines, spacing) > ROOM) lines -= 1;
   const snapped = heightOfLines(lines, spacing);
 
-  return snapped >= ASSET_MENU_MIN_HEIGHT && snapped <= ASSET_MENU_MAX_HEIGHT ? snapped : clampAssetMenuHeight(height);
+  return snapped >= ASSET_MENU_MIN_HEIGHT && snapped <= ROOM ? snapped : held(height);
 }
 
 /** The readout's words for a drag: its templates, in the player's language. */
@@ -80,6 +84,10 @@ export interface EdgeWords {
   lines: string;
   /** "{0} lines (game: {1})", where the body cannot say how many buildings its lines hold. */
   linesOnly: string;
+  /** "{0} line · {1} buildings (game: {2})", for one line. */
+  line: string;
+  /** "{0} line (game: {1})", for one line where the body cannot count its buildings. */
+  lineOnly: string;
   /** "Release to collapse", for a drag below the body's floor. */
   collapse: string;
 }
@@ -89,9 +97,10 @@ export interface EdgeWords {
  * show where the body knows, and the game's own menu's beside them.
  */
 export function heightReadout(lines: number, buildings: number | null, words: EdgeWords, format: (count: number) => string): string {
+  const one = lines === 1;
   return buildings === null
-    ? words.linesOnly.replace("{0}", format(lines)).replace("{1}", format(GAME_MENU_SCREEN))
-    : words.lines.replace("{0}", format(lines)).replace("{1}", format(buildings)).replace("{2}", format(GAME_MENU_SCREEN));
+    ? (one ? words.lineOnly : words.linesOnly).replace("{0}", format(lines)).replace("{1}", format(GAME_MENU_SCREEN))
+    : (one ? words.line : words.lines).replace("{0}", format(lines)).replace("{1}", format(buildings)).replace("{2}", format(GAME_MENU_SCREEN));
 }
 
 /** Whether a height the top edge is dragged to collapses the box on release: below the body's floor. */

@@ -43,8 +43,9 @@ export interface BuildingCatalogProps {
 }
 
 /**
- * Memoised, and takes one prop that changes only as a drag's lines do: it re-renders on its own bindings,
- * not on every keystroke that re-renders the asset menu around it. A width step and a height-drag echo do
+ * Memoised, and takes one prop, the height a drag of the top edge holds the body at: under Whole lines it changes
+ * only as the drag's lines do, under Free each frame. It re-renders on its own bindings, not on every keystroke
+ * that re-renders the asset menu around it. A width step and a height-drag echo do
  * re-render it, since the Auto rule reads the step and the slots read both; the memoised body below them is
  * spared.
  */

@@ -66,7 +66,7 @@ namespace BetterBuildingMenu.Tests
 				StringComparison.Ordinal);
 		}
 
-		// An upgrader's drag stays where they let go, as it did; a new player's lands on whole lines.
+		// An upgrader's drag stays where they let go; a new player's lands on whole lines.
 		[Theory]
 		[InlineData(true, "free")]
 		[InlineData(false, "whole")]
