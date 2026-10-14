@@ -3,14 +3,15 @@
  * a sort by a value the value sorted by, as 0.2.x's Grid drew it, so a re-sort says why the tiles moved.
  * A money figure too wide for the tag is said in thousands or millions, shortened a step at a time,
  * rather than cut, and where no form fits, not said; a tag drops only a unit every tile beside it shares,
- * and a word that still runs over is cut by the name planner, with "…". Pure. See docs/design-notes.md, "The bodies".
+ * none in a look that writes units in words, and a word that still runs over is cut by the name planner,
+ * with "…". Pure. See docs/design-notes.md, "The bodies".
  */
 import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
 import { oneNumber, plateNumbers } from "./listPlate";
 import { CUT_MARK, planName } from "./namePlan";
-import { isPerCell, keepsUnit, sortsByValue } from "./rowNumbers";
+import { GLYPH_MARKS, isPerCell, keepsUnit, sortsByValue, type UnitMarks } from "./rowNumbers";
 import { NOTHING_SAID } from "./saidOnce";
 import { sortedMetricValue } from "./sortedMetric";
 import { textWidth } from "./textWidth";
@@ -55,9 +56,10 @@ export function tileTag(
   tileWidth: number,
   textScale: number,
   said: readonly SharedValue[] = NOTHING_SAID,
+  marks: UnitMarks = GLYPH_MARKS,
 ): TileTag {
   // A cost the readout said once leaves the tag blank, as a list plate's cell.
-  const { first: text, locked } = oneNumber(plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone, "capacity", said), sortedMetric);
+  const { first: text, locked } = oneNumber(plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone, "capacity", said, marks), sortedMetric);
   const bySort = sortsByValue(sortedMetric);
 
   // The plate's text keeps every unit that tells the tiles apart: a network's cell, an upkeep without
@@ -79,9 +81,10 @@ export function tileTag(
 
   // Any other sorted value keeps its whole number and drops its unit, which the Sort control names: a
   // cut word reads as noise, and a number too long for the tag is not said, as a clipped one reads as a
-  // smaller one. A word, the locked word, that still runs over is cut by the name planner, with "…".
+  // smaller one. In a look that writes units in words a tag never says a bare count, so it is left off.
+  // A word, the locked word, that still runs over is cut by the name planner, with "…".
   const number = bySort ? leadingNumber(text) : null;
-  if (number !== null) return { text: tagFits(number, tileWidth, textScale) ? number : "", locked };
+  if (number !== null) return { text: marks.mode === "glyph" && tagFits(number, tileWidth, textScale) ? number : "", locked };
   return { text: cutToTag(text, tileWidth, textScale), locked };
 }
 

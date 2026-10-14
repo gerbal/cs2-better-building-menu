@@ -111,6 +111,18 @@ describe("a list plate's numbers in words", () => {
     assert.equal(plateNumbers(lot, null, FALLBACK_SEPARATORS, "Locked", 0, "lot", [{ kind: "lot", value: 2, depth: 2 }], words).glyph, null);
   });
 
+  it("say the value sorted by with its unit under a sort by workers or capacity, as the key number does", () => {
+    const words = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
+    const crematorium = row({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500 });
+
+    assert.equal(plateNumbers(row(), "workers", FALLBACK_SEPARATORS, "Locked", 0, "capacity", [], words).second, "20 jobs");
+    const digits = groupDigits(1_500, FALLBACK_SEPARATORS);
+
+    assert.equal(plateNumbers(row(), "workers", FALLBACK_SEPARATORS, "Locked", 0, "capacity", []).second, "20");
+    assert.equal(plateNumbers(crematorium, "capacity", FALLBACK_SEPARATORS, "Locked", 0, "capacity", [], words).second, `${digits} capacity`);
+    assert.equal(plateNumbers(crematorium, "capacity", FALLBACK_SEPARATORS, "Locked", 0, "capacity", []).second, digits);
+  });
+
   it("say the key number with its unit on a one-line plate, where the readout said the cost", () => {
     const words = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
     const road = row({ speedLimit: 80, capacity: null, costIsPerDistance: true, constructionCost: 5000 });

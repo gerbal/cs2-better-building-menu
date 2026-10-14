@@ -45,7 +45,7 @@ export function plateNumbers(
   const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : holdsBack(entry, said, "cost") ? "" : costText(entry, separators) ?? missingCost(said);
 
   if (sortsByValue(sortedMetric)) {
-    return { first, second: sortedText(entry, sortedMetric, separators), glyph: null, locked };
+    return { first, second: sortedText(entry, sortedMetric, separators, marks), glyph: null, locked };
   }
 
   const key = holdsBack(entry, said, keyKind, separators) ? null : keyFigure(entry, keyKind, separators, marks) ?? missingFigure(entry, said, keyKind);

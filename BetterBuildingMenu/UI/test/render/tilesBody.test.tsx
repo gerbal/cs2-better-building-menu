@@ -80,6 +80,14 @@ describe("the tiles", () => {
     assert.match(render([entry(1, { capacity: 300 })]), /<span class="tag"[^>]*>¢1[^<]*000<\/span>/);
   });
 
+  it("in Plates, say the value sorted by on the tag with its unit, and no tag where the unit does not fit", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Workers");
+    assert.match(render([entry(1, { workers: 20 })], { tileNameLine: false }), /<span class="tag pill"[^>]*>20 jobs<\/span>/);
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Capacity");
+    assert.doesNotMatch(render([entry(1, { capacity: 300 })], { tileNameLine: false }), /class="tag/);
+  });
+
   it("draw no name on a tile that has no look-alike drawn with it, only its tag: the name is the line's under them", () => {
     const named = rows(2, (id) => ({ name: id === 1 ? "Clinic" : "Hospital" }));
     const tiles = [...render(named).matchAll(/<button class="tile[^"]*"[^>]*>(.*?)<\/button>/g)].map(([, inner]) => inner.replace(/<[^>]*>/g, ""));

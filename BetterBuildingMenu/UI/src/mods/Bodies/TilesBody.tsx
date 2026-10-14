@@ -6,6 +6,7 @@ import classNames from "classnames";
 import { memo, useEffect, useMemo, useRef, type ReactNode } from "react";
 
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
+import type { UnitMarks } from "domain/rowNumbers";
 import type { AssetMenuMetric } from "domain/assetMenuLayout";
 import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
@@ -28,7 +29,7 @@ import { PlannedName } from "./PlannedName";
 import styles from "./tilesBody.module.scss";
 import { UniqueMark } from "./UniqueMark";
 import { useBodyCells } from "./useBodyCells";
-import { useNumberSeparators, useStateWords, type StateWords } from "./useBodyWords";
+import { useNumberSeparators, useStateWords, useUnitMarks, type StateWords } from "./useBodyWords";
 import { slotIsNear, useNearLines } from "./useNearLines";
 
 /** The share of the line under the tiles the name may take; the numbers after it take the rest. */
@@ -52,6 +53,8 @@ interface TileProps {
   plated: boolean;
   textScale: number;
   separators: NumberSeparators;
+  /** How the look marks a sorted value's unit on the tag. */
+  marks: UnitMarks;
   stateWords: StateWords;
   achievedMilestone: number;
   onPlace: (entry: BuildingCatalogEntry) => void;
@@ -64,12 +67,12 @@ interface TileProps {
  * under the tiles. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, lookAlike, plated, textScale, separators, stateWords, achievedMilestone, onPlace }: TileProps) {
+const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, lookAlike, plated, textScale, separators, marks, stateWords, achievedMilestone, onPlace }: TileProps) {
   const name = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
   const { left, top } = slotPosition(grid, slot);
-  const tag = tileTag(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, grid.cellWidth, textScale, said);
+  const tag = tileTag(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, grid.cellWidth, textScale, said, marks);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   // A cell that goes from under the pointer sends no leave: it takes its own building away as it goes.
   useEffect(() => () => clearPointed(entry.id), [entry.id]);
@@ -167,6 +170,7 @@ export interface TilesBodyProps {
 export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_SECTIONS, offset = 0, onPlace, footer }: TilesBodyProps) {
   const separators = useNumberSeparators();
   const stateWords = useStateWords();
+  const marks = useUnitMarks();
   const textScale = useTextScale();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const armedId = useValue(ActivePrefabId$);
@@ -220,6 +224,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
                 plated={plated}
                 textScale={textScale}
                 separators={separators}
+                marks={marks}
                 stateWords={stateWords}
                 achievedMilestone={achievedMilestone}
                 onPlace={onPlace}

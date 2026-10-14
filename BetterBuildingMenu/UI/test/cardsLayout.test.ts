@@ -96,6 +96,31 @@ describe("a card's words", () => {
   });
 });
 
+describe("a card's words in a look that writes units in words", () => {
+  const words = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
+  const crematorium = entry({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500, workers: 20 });
+
+  it("say a capacity the game gives no unit with the capacity word, and a counted one with its own unit", () => {
+    assert.deepEqual(cardText(crematorium, null, separators, "Locked", 0).facts, [lot, "¢5,000", "1,500"]);
+    assert.deepEqual(cardText(crematorium, null, separators, "Locked", 0, words).facts, [lot, "¢5,000", "1,500 capacity"]);
+    assert.deepEqual(cardText(entry(), null, separators, "Locked", 0, words).facts, [lot, "¢5,000", "20 patients"]);
+  });
+
+  it("say the value sorted by with its unit under a sort by workers or capacity", () => {
+    assert.deepEqual([cardText(crematorium, "workers", separators, "Locked", 0).sorted, cardText(crematorium, "workers", separators, "Locked", 0, words).sorted], ["20", "20 jobs"]);
+    assert.equal(cardText(crematorium, "capacity", separators, "Locked", 0, words).sorted, "1,500 capacity");
+  });
+
+  it("are as wide as the words they draw", () => {
+    // A name longer than either facts line, so only the sorted column's words differ.
+    const long = { ...crematorium, name: "A Very Long Crematorium Name Indeed, Longer Still" };
+    const glyphs = cardText(long, "workers", separators, "Locked", 0);
+    const inWords = cardText(long, "workers", separators, "Locked", 0, words);
+
+    near(cardWidth(inWords, 1) - cardWidth(glyphs, 1), textWidth("20 jobs", 14) - textWidth("20", 14));
+  });
+});
+
 describe("a card's width", () => {
   it("is its picture and padding, and its name or its facts line, whichever is longer, as the stylesheet draws them", () => {
     const text = cardText(entry({ name: "A Very Long Hospital Name Indeed" }), null, separators, "Locked", 0);

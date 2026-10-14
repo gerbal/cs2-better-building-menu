@@ -205,6 +205,24 @@ describe("the extension picker", () => {
     assert.match(render(), /<span class="fact">1[^<]?500<\/span>/);
   });
 
+  it("says the value sorted by with its unit in Plates under a sort by Workers or Capacity, and Standard's digits", () => {
+    const unitless = { subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500, workers: 20 };
+    setBinding("BetterBuildingMenu", "BuildingExtensionMenu", {
+      buildingName: "Crematorium",
+      entries: [entry(8, { prefabName: "Columbarium", name: "Columbarium", ...unitless }), entry(7, { prefabName: "HearseGarage", name: "Hearse Garage" })],
+    });
+    const sorted = (look: string, sort: string) => {
+      setBinding("BetterBuildingMenu", "AssetMenuLook", look);
+      setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", sort);
+      return /data-catalog-entry="8"[^]*?<span class="sortedMetric">([^<]*)<\/span>/.exec(render())?.[1];
+    };
+
+    assert.equal(sorted("standard", "Workers"), "20");
+    assert.equal(sorted("plates", "Workers"), "20 jobs");
+    assert.match(sorted("standard", "Capacity") ?? "", /^1\D?500$/);
+    assert.match(sorted("plates", "Capacity") ?? "", /^1\D?500 capacity$/);
+  });
+
   it("keeps the wrapper around the game's panel to its own hooks, which read no look", () => {
     // A hook added to a wrapper around a vanilla component blanks the UI when the mod loads mid-session.
     const source = readFileSync(new URL("../../src/mods/ExtensionMenu/ExtensionMenu.tsx", import.meta.url), "utf8");

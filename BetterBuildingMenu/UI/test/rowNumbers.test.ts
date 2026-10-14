@@ -94,6 +94,22 @@ describe("the value sorted by", () => {
     assert.equal(sortedText(row(), null, FALLBACK_SEPARATORS), null);
   });
 
+  it("says workers and a capacity with their units in words, as the key number does, and as digits by glyph", () => {
+    const words: UnitMarks = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" };
+    const crematorium = row({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500 });
+    const plant = row({ subCategory: "ServiceBuildings_Electricity", buildingType: "PowerPlant", capacity: 245_000 });
+
+    assert.deepEqual([sortedText(row(), "workers", FALLBACK_SEPARATORS), sortedText(row(), "workers", FALLBACK_SEPARATORS, words)], ["20", "20 jobs"]);
+    assert.equal(sortedText(row({ workers: 0 }), "workers", FALLBACK_SEPARATORS, words), "0 jobs");
+    const digits = groupDigits(1_500, FALLBACK_SEPARATORS);
+    assert.deepEqual([sortedText(crematorium, "capacity", FALLBACK_SEPARATORS), sortedText(crematorium, "capacity", FALLBACK_SEPARATORS, words)], [digits, `${digits} capacity`]);
+    assert.equal(sortedText(row(), "capacity", FALLBACK_SEPARATORS, words), "400 patients");
+    assert.equal(sortedText(plant, "capacity", FALLBACK_SEPARATORS, words), sortedText(plant, "capacity", FALLBACK_SEPARATORS));
+    // A level and a parking count stay digits in words: Sort names them, and the game gives them no unit.
+    assert.equal(sortedText(row({ buildingLevel: 3 }), "level", FALLBACK_SEPARATORS, words), "3");
+    assert.equal(sortedText(row({ parkingSlots: 12 }), "parking", FALLBACK_SEPARATORS, words), "12");
+  });
+
   it("is a network's upkeep per cell, a cell's share to one decimal; the hover card keeps its kilometre", () => {
     assert.equal(sortedText(row({ upkeep: 4_612, costIsPerDistance: true }), "upkeep", FALLBACK_SEPARATORS), "¢36.9/c");
     assert.equal(sortedText(row({ upkeep: 500, costIsPerDistance: true }), "upkeep", FALLBACK_SEPARATORS), "¢4/c");

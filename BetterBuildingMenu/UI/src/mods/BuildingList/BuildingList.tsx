@@ -17,7 +17,7 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { useUnitSystem } from "domain/unitSettings";
 import { useStateWords, useUnitMarks } from "mods/Bodies/useBodyWords";
-import { keyFigure } from "domain/rowNumbers";
+import { keyFigure, sortedText } from "domain/rowNumbers";
 import type { LookRoot } from "mods/useLookRoot";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
@@ -73,8 +73,10 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", look, sele
       return null;
     }
 
-    const text = sortedMetric === "lot"
-      ? (hasFootprint(entry.lotWidth, entry.lotDepth)
+    // In a look that writes units in words, a count says its unit as the build menu's rows do.
+    const text = marks.mode === "word" && (sortedMetric === "workers" || sortedMetric === "capacity")
+      ? sortedText(entry, sortedMetric, separators, marks)
+      : sortedMetric === "lot" ? (hasFootprint(entry.lotWidth, entry.lotDepth)
         ? formatLotDimensions(entry.lotWidth, entry.lotDepth)
         : null)
       : (() => {

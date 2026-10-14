@@ -10,7 +10,7 @@ import { SLOT_GAP, wholeLines } from "./bodyGeometry";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
 import type { NameBox } from "./namePlan";
-import { capacityText, costText, lotText, sortedText } from "./rowNumbers";
+import { capacityFact, costText, GLYPH_MARKS, lotText, sortedText, type UnitMarks } from "./rowNumbers";
 import { fontSizeRatio } from "./textScale";
 import { listLabel } from "./tileLabel";
 import { textWidth } from "./textWidth";
@@ -96,7 +96,8 @@ export interface CardText {
 /**
  * A card's words: the whole name (cut only past the list's cap on a name), the lot, the cost and the
  * capacity, each where the building has it; a locked card keeps its cost, its milestone beside the
- * lock; under a sort by a number, the value sorted by.
+ * lock; under a sort by a number, the value sorted by; the capacity and that value with their units
+ * as the look marks them, so a look that writes units in words prints no bare count.
  */
 export function cardText(
   entry: BuildingCatalogEntry,
@@ -104,15 +105,16 @@ export function cardText(
   separators: NumberSeparators,
   lockedWord: string,
   achievedMilestone: number,
+  marks: UnitMarks = GLYPH_MARKS,
 ): CardText {
-  const facts = [lotText(entry), costText(entry, separators), capacityText(entry, entry.capacity, separators)]
+  const facts = [lotText(entry), costText(entry, separators), capacityFact(entry, separators, marks)]
     .filter((fact): fact is string => fact !== null);
 
   return {
     name: listLabel(entry.name || entry.prefabName),
     facts,
     locked: isEntryLocked(entry) ? lockedFact(entry, lockedWord, achievedMilestone) : null,
-    sorted: sortedText(entry, sortedMetric, separators),
+    sorted: sortedText(entry, sortedMetric, separators, marks),
   };
 }
 

@@ -152,6 +152,24 @@ describe("a tile's tag", () => {
     assert.deepEqual(tag(row({ isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>), 1, "capacity"), { text: capacity, locked: false });
   });
 
+  it("in words, says a sorted count with its unit where it fits, and draws no tag where it does not, never the bare number", () => {
+    const words = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
+    const crematorium = row({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500, workers: 20 });
+    const inWords = (entry: BuildingCatalogEntry, sorted: Parameters<typeof tileTag>[1], width: number, scale = 1) =>
+      tileTag(entry, sorted, FALLBACK_SEPARATORS, "Locked", 0, width, scale, [], words).text;
+    const digits = groupDigits(1_500, FALLBACK_SEPARATORS);
+
+    assert.equal(inWords(crematorium, "workers", 64), "20 jobs");
+    assert.equal(inWords(crematorium, "capacity", 120), `${digits} capacity`);
+    // Too wide for the smallest tile with its unit: no tag, where glyphs say the number alone.
+    assert.equal(inWords(crematorium, "capacity", 64), "");
+    assert.equal(tag(crematorium, 1, "capacity").text, digits);
+    assert.equal(inWords(row(), "capacity", 64), "");
+    // A level says its digits, as the game gives it no unit; money keeps its short forms.
+    assert.equal(inWords(row({ buildingLevel: 3 }), "level", 64), "3");
+    assert.equal(inWords(row({ upkeep: 1_500_000 }), "upkeep", 64, 1.1), "¢1.5M");
+  });
+
   it("says a sorted upkeep too wide for the tag in thousands or millions, without its month", () => {
     assert.equal(tag(row({ upkeep: 1_500_000 }), 1.1, "upkeep").text, "¢1.5M");
     assert.equal(gameTag(row({ upkeep: 16_500 }), 1.5, "upkeep"), "¢16.5k");

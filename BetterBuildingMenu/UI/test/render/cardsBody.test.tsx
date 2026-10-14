@@ -82,6 +82,17 @@ describe("the cards", () => {
     assert.doesNotMatch(render(rows(1)), /class="sorted"/);
   });
 
+  it("say a capacity and the value sorted by with their units in Plates, which writes units in words", () => {
+    const crematorium = rows(1, () => ({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1500, workers: 20 }));
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Workers");
+
+    assert.match(render(crematorium), /<span class="fact">1\D?500<\/span>/);
+    assert.match(render(crematorium), /<span class="sorted">20<\/span>/);
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    assert.match(render(crematorium), /<span class="fact">1\D?500 capacity<\/span>/);
+    assert.match(render(crematorium), /<span class="sorted">20 jobs<\/span>/);
+  });
+
   it("mark Enter's target with ↵ on its picture, and no other card", () => {
     const html = render(rows(3), { enterId: 2 });
 

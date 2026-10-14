@@ -140,6 +140,20 @@ describe("the list", () => {
     assert.doesNotMatch(html, /unitGlyph/);
   });
 
+  it("says the value sorted by with its unit in Plates under a sort by Workers or Capacity, and Standard's digits", () => {
+    const crematorium = rows(1, () => ({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1500, workers: 20 }));
+    const second = (look: string, sort: string) => {
+      setBinding("BetterBuildingMenu", "AssetMenuLook", look);
+      setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", sort);
+      return /<span class="second">([^<]*)<\/span>/.exec(render(crematorium))?.[1];
+    };
+
+    assert.equal(second("standard", "Workers"), "20");
+    assert.equal(second("plates", "Workers"), "20 jobs");
+    assert.match(second("standard", "Capacity") ?? "", /^1\D?500$/);
+    assert.match(second("plates", "Capacity") ?? "", /^1\D?500 capacity$/);
+  });
+
   it("leaves blank only the numbers the readout says once, and prints every other", () => {
     setReadoutSaid([{ kind: "speed", value: 100, depth: 0 }]);
     const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : 80 } as Partial<BuildingCatalogEntry>));

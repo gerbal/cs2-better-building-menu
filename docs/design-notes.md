@@ -368,7 +368,7 @@ The upgrades panel follows the Look too. It mounts outside the build menu, so it
 look's class, read in the panel (`ExtensionMenuPanel`), never in the wrapper around the game's panel,
 whose hooks stay as they are: a hook added there blanks the UI when the mod loads mid-session. Its
 frame is the look's head over the look's list, its rows the look's plates and inks, the armed one in
-the armed fill; in a look that writes units in words a row's capacity says its unit as the build menu's
+the armed fill; in a look that writes units in words a row's capacity and the value it is sorted by say their units as the build menu's
 rows do ("1,500 capacity"), and its empty thumbnail square follows the style, apart from the plate. The game draws a row's tooltip outside the panel, so the card's content carries the
 look's class itself and draws in the look's light inks (`lookInks`), as the detail slot does: the
 game's tooltip ground (`--tooltipColor`) stays dark under every interface style.
@@ -1247,8 +1247,8 @@ bill fit the smallest tile at every text scale; only a mod's road dearer than te
 the tag at 150%, where the tile draws no tag: a figure is never cut nor clipped, as a cut number reads as
 another number. A sorted value whose unit does not fit beside it keeps its whole number and drops the
 unit ("1 000", not "1 000 stu…"), which the Sort control names, unless the unit scales with its size (see
-"Numbers said once"); a number too long for the tag alone ("1 234 567" at 130% on the smallest tile) is
-not said. The fit is judged from the glyph advances of the game's own fonts, the wider of Overpass and
+"Numbers said once") or the look writes units in words, where the tile draws no tag rather than a bare
+count; a number too long for the tag alone ("1 234 567" at 130% on the smallest tile) is not said. The fit is judged from the glyph advances of the game's own fonts, the wider of Overpass and
 Noto Sans per character, so it errs toward the short form; a word too wide (a long locked word) is cut
 once by the name planner, with "…", as Cohtml draws no CSS ellipsis. The advances are the one table the
 cards are sized from (`textWidth`, see "The cards"), so every letter of a unit counts its own measured
@@ -1491,12 +1491,15 @@ the readout now says it once and only the rows that differ print it.
 **Units in words.** A look marks a key number's unit one way (`Look.units`): Standard by its glyph,
 Plates in words after the number, "80 km/h", "400 patients", "20 jobs", a count the game gives no unit
 "1,500 capacity", a lot by its two sides (`UnitMarks`, held still by `useUnitMarks` for every body and
-the readout), so no row prints a bare number. The word always follows the number, joined by a space
-rather than placed by a template, so a language that puts it first, or inflects it, still reads it
-after; the strings ship in English only. In words a plate draws no glyph; the readout says each value as
-its rows do, in every form, never its digits alone, and names no kind alone, since every row says its
-own unit; and the hover card draws no glyph by its key number, whose line says it by the same word rule
-(`keyFigure`), a count the game gives no unit bare under the card's "Capacity".
+the readout), so no row prints a bare count. The value a sort orders by and a card's capacity say theirs
+by the same rule (`sortedText`, `capacityFact`), in the upgrades panel's rows too, and a tile's tag says
+it or nothing (see "The bodies"); a level and a parking count stay digits, as the game gives them no
+unit and Sort names them. The word always follows the number, joined by a space rather than placed by a
+template, so a language that puts it first, or inflects it, still reads it after; the strings ship in
+English only. In words a plate draws no glyph; the readout says each value as its rows do, in every
+form, never its digits alone, and names no kind alone, since every row says its own unit; and the hover
+card draws no glyph by its key number, whose line says it by the same word rule (`keyFigure`), a count
+the game gives no unit bare under the card's "Capacity".
 
 ## Names
 

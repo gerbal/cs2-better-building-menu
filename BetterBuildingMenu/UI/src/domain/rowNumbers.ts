@@ -95,10 +95,20 @@ export function sortsByValue(sortedMetric: AssetMenuMetric | null): sortedMetric
 }
 
 /**
- * The value a sort orders by, with its unit, which Sort names; an upkeep without the month every row
- * shares, a network's per cell. Null under no sort by a number, or where the row has none.
+ * A capacity as the look says it: with the game's unit where it has one; in words, through the key
+ * number's word rule, a count it gives none says "capacity" after it. Null where it is not above 0.
  */
-export function sortedText(entry: BuildingCatalogEntry, sortedMetric: AssetMenuMetric | null, separators: NumberSeparators): string | null {
+export function capacityFact(entry: BuildingCatalogEntry, separators: NumberSeparators, marks: UnitMarks = GLYPH_MARKS): string | null {
+  return (marks.mode === "word" ? keyFigure(entry, "capacity", separators, marks)?.text : null) ?? capacityText(entry, entry.capacity, separators);
+}
+
+/**
+ * The value a sort orders by, with its unit, which Sort names; an upkeep without the month every row
+ * shares, a network's per cell. In words, workers and a capacity say their units as the key number
+ * does; a level and a parking count stay digits, as the game gives them no unit. Null under no sort by
+ * a number, or where the row has none.
+ */
+export function sortedText(entry: BuildingCatalogEntry, sortedMetric: AssetMenuMetric | null, separators: NumberSeparators, marks: UnitMarks = GLYPH_MARKS): string | null {
   if (sortedMetric === null) return null;
   if (sortedMetric === "lot") return lotText(entry);
 
@@ -107,8 +117,15 @@ export function sortedText(entry: BuildingCatalogEntry, sortedMetric: AssetMenuM
   if (sortedMetric === "upkeep" && Number.isFinite(value)) {
     return isPerCell(entry) ? formatUpkeepPerCell(value, separators) : applyMoneyTemplate((separators.money ?? FALLBACK_MONEY).plain, groupDigits(value, separators));
   }
+  if (sortedMetric === "capacity") return capacityFact(entry, separators, marks);
 
-  return sortedMetric === "capacity" ? capacityText(entry, value, separators) : known(formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance));
+  const text = known(formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance));
+  return text !== null && sortedMetric === "workers" ? withWorkersUnit(text, marks) : text;
+}
+
+/** A count of workers as the look marks it: in words with the workers' word after it, else its digits alone. */
+function withWorkersUnit(text: string, marks: UnitMarks): string {
+  return marks.mode === "word" ? `${text} ${marks.workersUnit}` : text;
 }
 
 /**
@@ -158,7 +175,7 @@ export function keyFigure(entry: BuildingCatalogEntry, kind: KeyKind, separators
       return { text: said !== figure.text || marks.labelled === true ? said : `${figure.text} ${marks.capacityUnit}`, glyph: null };
     }
     case "workers":
-      return { text: `${figure.text} ${marks.workersUnit}`, glyph: null };
+      return { text: withWorkersUnit(figure.text, marks), glyph: null };
     default:
       return { text: figure.text, glyph: null };
   }

@@ -13,7 +13,7 @@ import { sortedMetricFor } from "domain/sortedMetric";
 import { sectionLabel } from "domain/vanillaServiceLabels";
 import { useTextScale } from "domain/textScaleSetting";
 import { useBlockLabels } from "mods/Bodies/useBodyCells";
-import { useNumberSeparators, useStateWords } from "mods/Bodies/useBodyWords";
+import { useNumberSeparators, useStateWords, useUnitMarks } from "mods/Bodies/useBodyWords";
 import { AssetMenuHeight$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { screenPixelRem } from "./useBodyGrid";
@@ -61,6 +61,7 @@ export function useCardsLayout(
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const separators = useNumberSeparators();
   const lockedWord = useStateWords().locked;
+  const marks = useUnitMarks();
   const { translate } = useLocalization();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
@@ -72,7 +73,7 @@ export function useCardsLayout(
     const geometry = cardGeometry(knob, bodyHeight, textScale, pixelRem);
     const rowWidth = Math.max(0, menuWidth - 2 * BODY_SIDE_MARGIN);
     const order = bodyOrder(entries, sections, offset).map((next) => next.kind === "item"
-      ? { ...next, text: cardText(next.entry, sortedMetric, separators, lockedWord, achievedMilestone) }
+      ? { ...next, text: cardText(next.entry, sortedMetric, separators, lockedWord, achievedMilestone, marks) }
       : next);
     // A label is sized from the words its plate draws, the game's in the player's language.
     const inputs = order.map((next) => next.kind === "item"
@@ -100,5 +101,5 @@ export function useCardsLayout(
       height: rows === 0 ? 0 : geometry.y0 + rows * geometry.pitchY - geometry.rowGap,
       screen: cells.filter((cell, at) => cell.kind === "item" && packed[at].row < geometry.lines).length,
     };
-  }, [body, entries, sections, offset, knob, bodyHeight, textScale, pixelRem, menuWidth, blockLabels, sortedMetric, separators, lockedWord, translate, achievedMilestone]);
+  }, [body, entries, sections, offset, knob, bodyHeight, textScale, pixelRem, menuWidth, blockLabels, sortedMetric, separators, lockedWord, marks, translate, achievedMilestone]);
 }
