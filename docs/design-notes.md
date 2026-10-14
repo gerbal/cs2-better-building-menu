@@ -366,12 +366,14 @@ each. Its cost tag keeps the tag's place and room and rounds its ends.
 
 The upgrades panel follows the Look too. It mounts outside the build menu, so its own root carries the
 look's class, read in the panel (`ExtensionMenuPanel`), never in the wrapper around the game's panel,
-whose hooks stay as they are: a hook added there blanks the UI when the mod loads mid-session. Its
-frame is the look's head over the look's list, its rows the look's plates and inks, the armed one in
-the armed fill; in a look that writes units in words a row's capacity and the value it is sorted by say their units as the build menu's
-rows do ("1,500 capacity"), and its empty thumbnail square follows the style, apart from the plate. The game draws a row's tooltip outside the panel, so the card's content carries the
-look's class itself and draws in the look's light inks (`lookInks`), as the detail slot does: the
-game's tooltip ground (`--tooltipColor`) stays dark under every interface style.
+whose hooks stay as they are: a hook added there blanks the UI when the mod loads mid-session. Its frame
+is the look's head over the look's list, its rows the look's plates and inks, the armed one in the armed
+fill; in a look that writes units in words a row's capacity and the value it is sorted by say their
+units as the build menu's rows do ("1,500 capacity"), and its empty thumbnail square follows the style,
+apart from the plate and from a locked or built row's. The game draws a row's tooltip outside the panel,
+so the card's content carries the look's class itself and draws in the look's light inks (`lookInks`),
+as the detail slot does: the game's tooltip ground (`--tooltipColor`) stays dark under every interface
+style.
 
 **This changes 0.2.x:** the upgrades panel drew the game's own panel, a gradient on its body; its rows
 on dark glass with a hairline, an accent edge under the pointer and on the row being placed, which was

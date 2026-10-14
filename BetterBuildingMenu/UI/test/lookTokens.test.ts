@@ -77,8 +77,10 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
 
 /** Each fill and the surface it sits on: a style that turns the surface light must set the fill apart on it. */
 const FILL_ON: readonly (readonly [fill: string, surface: string])[] = [
-  // The upgrades panel's empty thumbnail square, which holds a row's baseline until its picture is drawn.
+  // The upgrades panel's empty thumbnail square, which holds a row's baseline until its picture is drawn,
+  // on a row's plate and on a locked or built row's.
   ["iconSlot", "plate"],
+  ["iconSlot", "plateLocked"],
 ];
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */
