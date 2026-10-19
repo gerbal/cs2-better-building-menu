@@ -259,11 +259,20 @@ namespace BetterBuildingMenu.Domain
 				}
 
 				// Transit before the branch, because its branches divide nothing: they run
-				// one to one with its categories. Its subcategory is the real split —
-				// tracks, stops, lines, and the stations themselves.
+				// one to one with its categories. What each asset is for is the real split.
+				// See docs/design-notes.md, "Transit tiers".
 				if (IsTransitMenu(entry.UiMenu))
 				{
-					return "s" + Normalize(entry.SubCategory);
+					var tier = TransitTier(entry);
+
+					// The ways keep their subcategory in the key: lanes, seaways and tracks are
+					// each their own heading, all ahead of the stations.
+					return tier switch
+					{
+						0 => "s0" + Normalize(entry.SubCategory),
+						> 0 => "s" + tier.ToString(CultureInfo.InvariantCulture),
+						_ => "s9" + Normalize(entry.SubCategory),
+					};
 				}
 
 				// Depth first, so the branches read in the order the game's own
@@ -508,14 +517,106 @@ namespace BetterBuildingMenu.Domain
 
 		private static string TransitTierLabel(BuildingCatalogEntry entry)
 		{
-			var sub = entry.SubCategory ?? string.Empty;
+			// Chosen by the tier, not the entry: the key is the tier, and two entries
+			// under one key must read one heading.
+			switch (TransitTier(entry) is int tier && tier >= 0 ? TransitTiers[tier] : null)
+			{
+				case TracksTier:
+					return SubCategoryHeading(entry, TransitWay(entry) ?? PrefabSubCategory.Networks_Tracks);
+				case TransitRole.Stop:
+					return SubCategoryHeading(entry, PrefabSubCategory.Networks_Stops);
+				case TransitRole.Station:
+					return "Stations";
+				case TransitRole.Depot:
+					return "Depots";
+				case TransitRole.CargoStation:
+					return "Cargo Stations";
+				default:
+					return Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other;
+			}
+		}
+
+		/// <summary>A subcategory's heading: the entry's own label where it is filed there, else the
+		/// label the adapter would have given it.</summary>
+		private static string SubCategoryHeading(BuildingCatalogEntry entry, PrefabSubCategory subCategory) =>
+			(string.Equals(entry.SubCategory?.Trim(), subCategory.ToString(), StringComparison.Ordinal)
+				? Text(entry.SubCategoryLabel)
+				: null)
+			?? Text(BuildingCatalogLabels.ForSubCategory(subCategory, subCategory.ToString()))
+			?? Other;
+
+		/// <summary>The tier a mode's way files under: a network, so it has no transit role.</summary>
+		private const string TracksTier = nameof(PrefabSubCategory.Networks_Tracks);
+
+		/// <summary>
+		/// What a mode runs on: Train, Tram and Subway their tracks, Road its public transport
+		/// lanes, Ship its seaways.
+		/// </summary>
+		private static readonly PrefabSubCategory[] TransitWays =
+		{
+			PrefabSubCategory.Networks_Tracks, PrefabSubCategory.Networks_Roads, PrefabSubCategory.Networks_Waterways,
+		};
+
+		/// <summary>The way an entry is filed under, or null when it is none.</summary>
+		private static PrefabSubCategory? TransitWay(BuildingCatalogEntry entry)
+		{
+			var sub = (entry.SubCategory ?? string.Empty).Trim();
+
+			foreach (var way in TransitWays)
+			{
+				if (string.Equals(sub, way.ToString(), StringComparison.Ordinal))
+				{
+					return way;
+				}
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// A transit mode's tiers in the order it is built: the track, then where passengers
+		/// board, then the depot that runs the vehicles, then freight.
+		/// </summary>
+		private static readonly string[] TransitTiers =
+		{
+			TracksTier, TransitRole.Station, TransitRole.Stop, TransitRole.Depot, TransitRole.CargoStation,
+		};
+
+		/// <summary>
+		/// A transit asset's place within its mode, as its index in <see cref="TransitTiers"/>;
+		/// -1 for one that has none, such as a line.
+		/// </summary>
+		/// <remarks>
+		/// The role where the indexer found one. Otherwise its subcategory stands in: a way (a
+		/// track, a lane, a seaway) by its own, a building with no transit component with the stations, the transit building
+		/// a player looks for first, and a stop with no role still with the stops.
+		/// </remarks>
+		private static int TransitTier(BuildingCatalogEntry entry)
+		{
+			var role = entry.BuildingType?.Trim();
+			var sub = (entry.SubCategory ?? string.Empty).Trim();
+
+			if (role is { Length: > 0 } && Array.IndexOf(TransitTiers, role) is var rank && rank > 0)
+			{
+				return rank;
+			}
+
+			if (TransitWay(entry) is not null)
+			{
+				return Array.IndexOf(TransitTiers, TracksTier);
+			}
 
 			if (sub.StartsWith("ServiceBuildings_", StringComparison.Ordinal))
 			{
-				return "Stations";
+				return Array.IndexOf(TransitTiers, TransitRole.Station);
 			}
 
-			return Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other;
+			if (string.Equals(sub, nameof(PrefabSubCategory.Networks_Stops), StringComparison.Ordinal))
+			{
+				return Array.IndexOf(TransitTiers, TransitRole.Stop);
+			}
+
+			return -1;
 		}
 
 		/// <summary>The second level under a menu category: density tier, transit type, branch, or milestone.</summary>
