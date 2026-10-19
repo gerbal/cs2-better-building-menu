@@ -9,7 +9,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// A Roads development branch holding one building, folded into its category; and
+	/// A Parking development branch holding one building, folded into Parking's largest; and
 	/// Roads' strip, which splits no category into branch chips.
 	/// </summary>
 	/// <remarks>
@@ -129,6 +129,34 @@ namespace BetterBuildingMenu.Tests
 			var entries = Parking().Append(bare).ToArray();
 
 			Assert.Same(bare, RoadsLoneBranches.Fold(entries, VanillaMenus.Roads).Single(entry => entry.Id == 9));
+		}
+
+		[Fact]
+		public void LeavesEveryOtherRoadsCategoryAlone()
+		{
+			// Services' Road Zones is its base node's, and Sound Barrier the Highways node's:
+			// filed under Advanced Road Services, both would name a node that does not unlock them.
+			var entries = new[]
+			{
+				Entry(1, "RoadsServices", "Road Services", 1, "services.svg"),
+				Entry(2, "RoadsServices", "Advanced Road Services", 2, "advanced.svg"),
+				Entry(3, "RoadsServices", "Advanced Road Services", 2, "advanced.svg"),
+				Entry(4, "RoadsServices", "Highways", 3, "highways.svg"),
+			};
+
+			Assert.Equal(entries, RoadsLoneBranches.Fold(entries, VanillaMenus.Roads));
+		}
+
+		[Theory]
+		[InlineData("menuCategory", "Parking Areas")]
+		[InlineData("development", "Parking Hall")]
+		public void FoldsOnlyWhereTheCategoryHeadsTheBranches(string groupBy, string hallsBranch)
+		{
+			// Grouped by development, each heading is the node that unlocks its buildings,
+			// so the Parking Hall keeps its own.
+			var view = new CatalogView(Parking(), new BuildingCatalogQuery(UiMenu: VanillaMenus.Roads, GroupBy: groupBy));
+
+			Assert.Equal(hallsBranch, view.Page.Items.Single(entry => entry.Id == 2).DevTreeBranch);
 		}
 
 		[Fact]

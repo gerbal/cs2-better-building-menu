@@ -78,7 +78,16 @@ namespace BetterBuildingMenu.Services
 		/// <summary>Menu and strip tab, no category or tier — what the school tiers count.</summary>
 		public BuildingCatalogEntry[] TierSet => _tierSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query with { SchoolTier = -1, UiCategory = string.Empty }).ToArray();
 
-		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(MenuSet, _query with { GroupBy = EffectiveGroupBy }));
+		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(GroupedSet, _query with { GroupBy = EffectiveGroupBy }));
+
+		/// <summary>
+		/// The menu set the page is grouped from: Parking's lone branches folded where the category
+		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else.
+		/// </summary>
+		private IReadOnlyList<BuildingCatalogEntry> GroupedSet =>
+			string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
+				? RoadsLoneBranches.Fold(MenuSet, _query.UiMenu)
+				: MenuSet;
 
 		/// <summary>Stamps the page's items with their headings. The page only — a hundred entries, not the set.</summary>
 		private BuildingCatalogPage WithGroupLabels(BuildingCatalogPage page)

@@ -369,10 +369,13 @@ name because the label is localized: a label key would fold in English but not i
 
 **Roads.** The strip draws one chip per Roads category, with the game's own icon, and never splits
 one into branches (`CatalogView.ExpandedCategoryId`): a split category draws as its branches'
-generic glyphs, a road and a second roundabout for Cul-de-Sacs. Under a category, a Roads branch
-holding one building joins the category's largest branch (`RoadsLoneBranches`), so Parking's
-Parking Hall and Automated Parking Building sit with the rest of Parking instead of each heading
-a group of one. The rule counts rather than naming nodes, so a pack's lone branch folds too.
+generic glyphs, a road and a second roundabout for Cul-de-Sacs. Grouped by category, a Parking
+branch holding one building joins Parking's largest branch (`RoadsLoneBranches`, applied in
+`CatalogView.Page`), so the Underground and Automated Parking Buildings sit with the rest of Parking
+instead of each heading a group of one; a pack's lone Parking branch folds too. Roads' other
+categories keep theirs: Services' Road Zones is the base node's and Sound Barrier the Highways
+node's, and folding either into Advanced Road Services would name a node that does not unlock it.
+Grouped by development, every building keeps its own node.
 
 ## Language changes
 

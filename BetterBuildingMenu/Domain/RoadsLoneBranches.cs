@@ -5,15 +5,21 @@ using System.Linq;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// Folds a Roads development branch of one building into its category's largest branch.
+	/// Folds a Parking development branch of one building into Parking's largest branch.
 	/// </summary>
 	/// <remarks>
-	/// Parking's dev tree gives the Parking Hall and the Automated Parking Building a branch
-	/// each, which grouping by category would draw as a sub-group per building. Roads only:
-	/// other menus keep every branch they have.
+	/// Parking's dev tree gives the Underground and the Automated Parking Building a branch
+	/// each, which grouping by category would draw as a sub-group per building. Parking only:
+	/// in Roads' other categories a lone branch is a node of its own, such as Services' Road
+	/// Zones, the base node, beside Advanced Road Services, and folding it would name a node
+	/// that does not unlock it. For the same reason it runs only where the category heads the
+	/// branches (CatalogView.Page); grouped by development, every building keeps its own node.
 	/// </remarks>
 	public static class RoadsLoneBranches
 	{
+		/// <summary>The Roads category whose lone branches fold.</summary>
+		public const string ParkingCategory = "RoadsParking";
+
 		public static IReadOnlyList<BuildingCatalogEntry> Fold(IReadOnlyList<BuildingCatalogEntry> entries, string? menu)
 		{
 			if (!VanillaMenus.IsRoads(menu))
@@ -25,7 +31,8 @@ namespace BetterBuildingMenu.Domain
 
 			var categories = entries
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
-				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, menu) ?? string.Empty);
+				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, menu) ?? string.Empty)
+				.Where(category => string.Equals(category.Key, ParkingCategory, StringComparison.Ordinal));
 
 			foreach (var category in categories)
 			{
