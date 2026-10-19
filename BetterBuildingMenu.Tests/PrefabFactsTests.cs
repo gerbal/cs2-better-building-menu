@@ -998,6 +998,19 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ARocketDepotIsNoTransitDepot()
+		{
+			// The space center launches rockets, not a line's vehicles: it keeps the stations'
+			// place rather than reading as a depot.
+			var spaceCenter = Apply(new PrefabSnapshot
+			{
+				TransportDepotData = new TransportDepotData { m_TransportType = TransportType.Rocket, m_VehicleCapacity = 1 },
+			});
+
+			Assert.Null(spaceCenter.BuildingTypeName);
+		}
+
+		[Fact]
 		public void ATransitRoleNeverOutranksAServiceOrPassengers()
 		{
 			// A station that also runs vehicles is found where passengers board.

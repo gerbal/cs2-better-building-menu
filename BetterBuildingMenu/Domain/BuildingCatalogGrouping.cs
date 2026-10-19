@@ -265,9 +265,14 @@ namespace BetterBuildingMenu.Domain
 				{
 					var tier = TransitTier(entry);
 
-					return tier >= 0
-						? "s" + tier.ToString(CultureInfo.InvariantCulture)
-						: "s9" + Normalize(entry.SubCategory);
+					// The ways keep their subcategory in the key: lanes, seaways and tracks are
+					// each their own heading, all ahead of the stations.
+					return tier switch
+					{
+						0 => "s0" + Normalize(entry.SubCategory),
+						> 0 => "s" + tier.ToString(CultureInfo.InvariantCulture),
+						_ => "s9" + Normalize(entry.SubCategory),
+					};
 				}
 
 				// Depth first, so the branches read in the order the game's own
@@ -517,7 +522,7 @@ namespace BetterBuildingMenu.Domain
 			switch (TransitTier(entry) is int tier && tier >= 0 ? TransitTiers[tier] : null)
 			{
 				case TracksTier:
-					return SubCategoryHeading(entry, PrefabSubCategory.Networks_Tracks);
+					return SubCategoryHeading(entry, TransitWay(entry) ?? PrefabSubCategory.Networks_Tracks);
 				case TransitRole.Stop:
 					return SubCategoryHeading(entry, PrefabSubCategory.Networks_Stops);
 				case TransitRole.Station:
@@ -540,8 +545,33 @@ namespace BetterBuildingMenu.Domain
 			?? Text(BuildingCatalogLabels.ForSubCategory(subCategory, subCategory.ToString()))
 			?? Other;
 
-		/// <summary>The tier a track files under: a network, so it has no transit role.</summary>
+		/// <summary>The tier a mode's way files under: a network, so it has no transit role.</summary>
 		private const string TracksTier = nameof(PrefabSubCategory.Networks_Tracks);
+
+		/// <summary>
+		/// What a mode runs on: Train, Tram and Subway their tracks, Road its public transport
+		/// lanes, Ship its seaways.
+		/// </summary>
+		private static readonly PrefabSubCategory[] TransitWays =
+		{
+			PrefabSubCategory.Networks_Tracks, PrefabSubCategory.Networks_Roads, PrefabSubCategory.Networks_Waterways,
+		};
+
+		/// <summary>The way an entry is filed under, or null when it is none.</summary>
+		private static PrefabSubCategory? TransitWay(BuildingCatalogEntry entry)
+		{
+			var sub = (entry.SubCategory ?? string.Empty).Trim();
+
+			foreach (var way in TransitWays)
+			{
+				if (string.Equals(sub, way.ToString(), StringComparison.Ordinal))
+				{
+					return way;
+				}
+			}
+
+			return null;
+		}
 
 		/// <summary>
 		/// A transit mode's tiers in the order it is built: the track, then where passengers
@@ -557,8 +587,8 @@ namespace BetterBuildingMenu.Domain
 		/// -1 for one that has none, such as a line.
 		/// </summary>
 		/// <remarks>
-		/// The role where the indexer found one. Otherwise its subcategory stands in: a track by
-		/// its own, a building with no transit component with the stations, the transit building
+		/// The role where the indexer found one. Otherwise its subcategory stands in: a way (a
+		/// track, a lane, a seaway) by its own, a building with no transit component with the stations, the transit building
 		/// a player looks for first, and a stop with no role still with the stops.
 		/// </remarks>
 		private static int TransitTier(BuildingCatalogEntry entry)
@@ -571,7 +601,7 @@ namespace BetterBuildingMenu.Domain
 				return rank;
 			}
 
-			if (string.Equals(sub, TracksTier, StringComparison.Ordinal))
+			if (TransitWay(entry) is not null)
 			{
 				return Array.IndexOf(TransitTiers, TracksTier);
 			}

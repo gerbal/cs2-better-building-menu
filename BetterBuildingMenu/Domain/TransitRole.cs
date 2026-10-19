@@ -36,7 +36,8 @@ namespace BetterBuildingMenu.Domain
 				return snapshot.IsCargoStation && !snapshot.IsPublicTransportStation ? CargoStation : Station;
 			}
 
-			if (snapshot.TransportDepotData.HasValue)
+			// The space center's depot launches rockets, which no line runs.
+			if (snapshot.TransportDepotData is { } depot && IsPublicTransport(depot.m_TransportType))
 			{
 				return Depot;
 			}
@@ -54,7 +55,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>
 		/// The kinds a passenger line runs on. A mailbox, a parking space and an industry's
-		/// work stop carry stop data too, for post, cars and freight, and are no transit stop.
+		/// work stop carry stop data too, for post, cars and freight, and are no transit stop;
+		/// the space center carries depot data for its rockets, and is no transit depot.
 		/// </summary>
 		private static bool IsPublicTransport(TransportType type) =>
 			type is TransportType.Bus
