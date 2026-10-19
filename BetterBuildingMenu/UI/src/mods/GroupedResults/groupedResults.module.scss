@@ -38,7 +38,7 @@
   padding-top: 17rem;
   // NO min-width. Reserving label room whatever the group holds buys readable
   // headings at the price of empty row — a wide group around a single tile.
-  // The heading wraps to the width the tiles occupy instead.
+  // The heading is cut to the width the tiles occupy instead.
   overflow: hidden;
 }
 
@@ -61,7 +61,7 @@
 .groupHeading {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   // OUT OF FLOW, so the heading follows the group's width instead of setting
   // it: a long name would otherwise make its group several times the width of
@@ -70,9 +70,6 @@
   left: 0;
   right: 0;
   top: 0;
-  // With a wrapping label the count sits against the FIRST line, not the
-  // middle of the stack.
-  align-items: flex-start;
   padding: 1rem 2rem 0;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
   color: var(--menuText1Normal);
@@ -100,10 +97,11 @@
   // shrink-to-fit box feeds its own trimmed width back into the next measure.
   flex: 1 1 auto;
   min-width: 0;
-  // WRAPS rather than eliding. The group is only as wide as its tiles, so a
-  // name that does not fit gets more lines instead of fewer characters.
-  white-space: normal;
-  overflow-wrap: break-word;
+  // ONE line: a second one costs every group in the row a heading's height.
+  // A flex item gets no text-overflow here, so the "…" is fitLabelToWidth's
+  // and this only clips what that cut missed.
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 // Holds the FULL label so its width can be measured while the visible span
