@@ -1,6 +1,20 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.5",
+    "Date": "2026-10-08",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "The menu reopens in the view you last picked.",
+          "The mod now keeps a list, on your computer, of what you place with the game's own tools; nothing uses it yet, and nothing is sent anywhere."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.4",
     "Date": "2026-10-05",
     "ChangeGroups": [

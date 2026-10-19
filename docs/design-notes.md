@@ -168,6 +168,114 @@ the game, both the width and the height drag end as a release does. Left unsaved
 the dragged value sat in the binding until the next save of any setting re-pushed
 the saved one, so hiding the pane could change the width.
 
+## The release marker and the settings version
+
+A release leaves two signs that it ran, so a later release can tell a player who upgraded from
+one who installed it fresh.
+
+- **`SettingsVersion`**, a hidden setting. A load raises a stored value below 1 to 1 and saves
+  once; a higher value is kept, so a later release's version survives a return to this one. Its
+  initializer stays 0 and `SetDefaults` never touches it: the game writes a key only once it
+  differs from the default object's, and from then on rewrites it at every save.
+- **`release.json`**, in ModsData: `version` (the format, 1), `first` (the release that first
+  wrote it), `last` (the release that loaded last) and `stampBefore` (whether the silhouettes
+  stamp existed before the first release that wrote the file ran). `first` and `stampBefore` are
+  kept once written, since every later load finds a stamp its own cache wrote; `last` moves at
+  every load. A release is the assembly version in three parts, which a later release compares.
+  A marker in a later format is left as it is, and one that cannot be read is replaced.
+
+**The order in `OnLoad`.** The marker is read and written first, because the silhouette cache
+writes its stamp as it is built. The version is stepped after the settings load and before the
+systems are created, so nothing is subscribed to the apply.
+
+**Nothing here stops a load.** A failure is one warning. `FolderUtil` is first touched inside the
+marker's guard, since its static constructor creates the folder and can fail. The file is written
+through `release.json.tmp`, then `File.Replace`, or `File.Move` when there is no file yet: the
+mod runs on net48, where `File.Move` cannot overwrite.
+
+## The remembered view
+
+The view the player picks in the control pane (Cards, List, Grid or Table) is kept in the hidden
+setting `AssetMenuViewMode`, so the next session opens in it. Until the player picks one it holds
+`""`, and the menu opens in Cards.
+
+- **This session's pick draws first.** The UI's store keeps it, so a pick redraws at once, with
+  no round trip. `chooseViewMode` draws that pick, else the stored view, else Cards, and both the
+  catalog and the control pane read it, so they cannot disagree. A stored value the UI does not
+  know, from a file edited by hand, draws Cards.
+- **A pick saves once.** The click sends `SetAssetMenuViewMode`. C# keeps one of the four kinds,
+  or `""` for anything else, and saves only when the stored value changes. The binding is
+  read/write, like the sort's, so the stored view reaches the UI on its first frame; nothing is
+  sent back from an effect, which would answer C#'s own echo.
+- **Reset menu forgets it.** It sends `""`, so the next session opens in Cards; the store holds
+  Cards for the rest of this one.
+
+## The placement history
+
+The mod keeps, in `ModsData/BetterBuildingMenu/history.json`, how often the player places each
+prefab, per game menu: the counts, the latest placement, and the two most placed, which hold the
+menu's slots. It stays on the player's computer; nothing is sent anywhere.
+
+```json
+{ "version": 1,
+  "menus": { "Roads": { "latest": "<prefab>", "held": ["<prefab>", "<prefab>"],
+                        "counts": { "<prefab>": 6.5 } } } }
+```
+
+- **Keys.** A menu is the game's UIAssetMenuPrefab name as the index entry holds it
+  (`PrefabIndex.UiMenuName`), not the catalog row's, which shows some extra networks under Roads.
+  A prefab is its prefab name, so a prefab a mod renames starts again. Every city shares one
+  history.
+- **Slots.** The first two prefabs placed in a menu hold its slots, most placed first. A newcomer
+  takes the weaker slot once its count reaches 1.25 times that holder's (5 against 4), so two close
+  favourites do not trade places.
+- **Ageing.** Once a launch, as the file is read, every count halves, counts under a half go, and
+  each menu keeps its eight most placed; the latest and the holders are never cut, and count
+  towards the eight. Recent habits outweigh old ones, and a miscount fades. The halving alone
+  does not write the file, so a launch that places nothing leaves it as it was.
+- **Writing.** Only when something was placed since the last write: when the build menu closes,
+  at a city load or an exit to the main menu, every two minutes, and at quit; never at each
+  placement, and never through the settings. Through `history.json.tmp`, then `File.Replace`, or
+  `File.Move` when there is no file yet. A crash loses at most two minutes. A write that fails
+  warns once a session and is tried again at the next flush.
+- **Reading.** A file that is not JSON, has no numeric `version`, or has a version below 1, is
+  kept as `history.json.bad` and the history starts empty; if it cannot be kept aside either, it
+  is left as it is and nothing is counted that session. In a readable file, what is not
+  well-formed (a count that is not a positive number, a holder or latest with no count) is
+  dropped and the rest kept. A file from a newer release is left as it is and nothing is counted
+  that session, so going back to an older release never loses a newer one's data. A file that
+  exists but cannot be read is not written over that session. When `history.json` is missing but
+  `history.json.tmp` holds a version 1 history, as after a first flush killed before its move,
+  that is read instead and written out at the next flush; any other `.tmp` is ignored.
+
+## Counting placements
+
+`PlacementWatchSystem` counts what the player places with the game's own tools into the placement
+history, whatever "Replace the vanilla build menu" holds: it watches the tools, not the menu.
+
+- **What counts.** The game's object, net, area and route tools, by exact type: a mod's tool can
+  derive from one of them and inherit its id, and is not counted. The object tool counts placing
+  and brushing, not moving, upgrading or erasing; the area and route tools count a new district,
+  surface or line, not an edit. The prefab must be indexed and in a game menu. The bulldozer and
+  the zone, terrain and upgrade tools never count, so Zones has no history. The editors use the
+  same tools, so only a city counts.
+- **When.** The game runs `ApplyTool` only on frames a tool applies, and the system counts there.
+  It also runs at `PreTool`, every frame, to read what is armed before the tool updates: a tool can
+  hand over to another in the update that applies, as a move does to the default tool.
+- **One placement per burst.** A building, a district or a transit line is one apply. A brush
+  stroke counts once, from the press to the release: the brush applies only on held frames where
+  the object fits and the pointer is over the ground, so the stroke is read from the tool's held
+  state, not from unbroken applies. A road applies once per segment and counts once while the net
+  tool keeps drawing from the last point placed; a right-click that ends the road, or another
+  prefab, starts a new one. An apply the game repeats on the next frame, as the net and area tools
+  do after a focus change, counts once. A road upgrade counts once per drag, a removal included,
+  which the tool's public state cannot tell apart.
+- **The fallback.** If a game update changes which frames apply, `PlacementWatchSystem.Rule`
+  is set to `PerArm`: a prefab counts once, and counts again after the player arms another tool
+  or prefab, or leaves the tool.
+- **Never in the way.** A failure warns once a session and the game goes on. The flushes are the
+  placement history's: on a close of the build menu, at a load, every two minutes and at quit.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size
