@@ -1,11 +1,12 @@
 /**
- * The one store for the asset menu's purely visual state, which has to outlive a
- * React unmount but has no bearing on the query, so it is neither a backend
- * binding nor persisted. One object, because two subtrees read it.
+ * The one store for the asset menu's visual state, which has to outlive a React
+ * unmount but has no bearing on the query. One object, because two subtrees read
+ * it. It keeps this session only: a picked view is also sent to C#, which keeps
+ * it across sessions, and viewModeChoice.ts decides which of the two is drawn.
  */
 
 export interface AssetMenuView {
-  /** Grid, list, cards or table; "" until the player has chosen, meaning the component's default. */
+  /** Grid, list, cards or table: this session's pick, or "" until the player picks one this session. */
   viewMode: string;
   /** The table row opened to its full height, by entry id. */
   expandedId: number | null;

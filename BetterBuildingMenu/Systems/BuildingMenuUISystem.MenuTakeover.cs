@@ -179,6 +179,8 @@ namespace BetterBuildingMenu.Systems
 
 			if (!visible)
 			{
+				// A close is a moment the player is not placing: keep what they placed.
+				_placementWatch.FlushIfDirty();
 				return;
 			}
 
