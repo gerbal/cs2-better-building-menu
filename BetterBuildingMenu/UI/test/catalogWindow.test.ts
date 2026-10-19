@@ -5,6 +5,7 @@ import {
   nextWindowLimit,
   shouldLoadMore,
   catalogWindowRemaining,
+  shouldFillViewport,
 } from "../src/domain/catalogWindow.ts";
 import { ASSET_MENU_MIN_CATALOG_HEIGHT } from "../src/domain/assetMenuLayout.ts";
 
@@ -413,5 +414,25 @@ describe("revealing a row that grew past the fold", () => {
       }),
       42,
     );
+  });
+});
+
+describe("when the first page does not fill the menu", () => {
+  it("asks for more while the last row ends inside the visible area", () => {
+    assert.equal(shouldFillViewport({ hasMore: true, lastRowBottom: 500, lastRowHeight: 50, viewportBottom: 900 }), true);
+  });
+
+  it("stops once the rows reach past the visible area", () => {
+    assert.equal(shouldFillViewport({ hasMore: true, lastRowBottom: 950, lastRowHeight: 50, viewportBottom: 900 }), false);
+  });
+
+  it("waits for a laid-out row rather than fetching on a zero-height mount", () => {
+    // Cohtml lays the container out over several frames; a row with no height yet
+    // says nothing about whether the menu is full.
+    assert.equal(shouldFillViewport({ hasMore: true, lastRowBottom: 0, lastRowHeight: 0, viewportBottom: 900 }), false);
+  });
+
+  it("asks for nothing when the backend has nothing more", () => {
+    assert.equal(shouldFillViewport({ hasMore: false, lastRowBottom: 500, lastRowHeight: 50, viewportBottom: 900 }), false);
   });
 });

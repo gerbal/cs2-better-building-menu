@@ -17,7 +17,8 @@ namespace BetterBuildingMenu.Domain
 		IReadOnlyList<string>? Availability = null,
 		bool Descending = false,
 		int Offset = 0,
-		int Limit = 100,
+		// DefaultLimit, which the record's own defaults cannot name.
+		int Limit = 40,
 		int? MinLotWidth = null,
 		int? MaxLotWidth = null,
 		int? MinLotDepth = null,
@@ -81,10 +82,10 @@ namespace BetterBuildingMenu.Domain
 		public const int MaxLimit = 2000;
 
 		/// <summary>The window every fresh result set starts at.</summary>
-		public const int DefaultLimit = 100;
+		public const int DefaultLimit = 40;
 
 		/// <summary>How much one Load more adds to the window.</summary>
-		public const int WindowStep = 100;
+		public const int WindowStep = 40;
 
 		/// <summary>How many rows this window holds, clamped to <see cref="MaxLimit"/>.</summary>
 		public int EffectiveLimit => Limit switch

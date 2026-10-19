@@ -35,6 +35,24 @@ namespace BetterBuildingMenu.Tests
 				.Page.Items);
 
 		[Fact]
+		public void APrewarmedMenuOpensFromTheProjectionCache()
+		{
+			var source = new CatalogSource(TestPrefabs.ReadyIndex(Hospital()), new PlacedUniques(), 1);
+			var adapter = new BuildingCatalogAdapter();
+
+			Assert.Equal(1, adapter.Prewarm(source, new[] { "Health & Deathcare" }, VanillaToolbarSelection.None));
+
+			adapter.BeginRefresh();
+			_ = adapter.Build(source, new BuildingCatalogQuery(UiMenu: "Health & Deathcare"), VanillaToolbarSelection.None).Page;
+			Assert.True(adapter.LastProjectionWasHit);
+
+			// One it was not given still projects on its first open.
+			adapter.BeginRefresh();
+			_ = adapter.Build(source, new BuildingCatalogQuery(UiMenu: "Roads"), VanillaToolbarSelection.None).Page;
+			Assert.False(adapter.LastProjectionWasHit);
+		}
+
+		[Fact]
 		public void AnEntryIsProjectedWithItsNameAndFacts()
 		{
 			var row = ProjectOnly(new CatalogSource(TestPrefabs.ReadyIndex(Hospital()), new PlacedUniques(), 1));

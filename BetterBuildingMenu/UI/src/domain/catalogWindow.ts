@@ -20,6 +20,31 @@ export interface CatalogScrollMetrics {
   threshold?: number;
 }
 
+/**
+ * Whether a window that does not fill the menu should grow without a scroll: the
+ * last row is laid out and ends inside the visible area, and the backend has more.
+ * The window starts at one step, about a screen of cards, so a taller menu or a
+ * denser view fills itself a step at a time. Ends by itself: once a step reaches
+ * past the visible area, the rows below wait for a scroll.
+ */
+export function shouldFillViewport({
+  hasMore,
+  lastRowBottom,
+  lastRowHeight,
+  viewportBottom,
+}: {
+  hasMore: boolean;
+  lastRowBottom: number;
+  lastRowHeight: number;
+  viewportBottom: number;
+}): boolean {
+  if (!hasMore || !(lastRowHeight > 0) || !Number.isFinite(lastRowBottom) || !Number.isFinite(viewportBottom)) {
+    return false;
+  }
+
+  return lastRowBottom <= viewportBottom;
+}
+
 /** Whether the viewport bottom has come within `threshold` px of the content bottom. */
 export function shouldLoadMore({ scrollTop, clientHeight, scrollHeight, threshold }: CatalogScrollMetrics): boolean {
   if (!Number.isFinite(scrollTop) || !Number.isFinite(clientHeight) || !Number.isFinite(scrollHeight)) {

@@ -401,3 +401,21 @@ Stations, Stops, Depots, Cargo Stations, then the lines and anything else by sub
   stop with no role with the stops. Stations, Depots and Cargo Stations are our English, as the
   density tiers are (see "Labels in the game's words"); a way and Stops read the subcategory's
   label.
+
+## Opening a menu
+
+An open draws about a screen of cards and grows from there, because Cohtml's cost is per element
+drawn: React's render, then the engine's attribute writes, then garbage collection, all grow with
+the cards built, and most of a long menu sits below the fold.
+
+- **The window starts at one step.** `BuildingCatalogQuery.DefaultLimit` and `WindowStep` (40,
+  generated into the UI as `CATALOG_WINDOW_STEP`). A menu taller than the first step, or a denser
+  view, fills itself a step at a time while its last row ends inside the visible area
+  (`shouldFillViewport`); below that, scrolling loads the rest as before.
+- **A step draws only the new cards.** Each page arrives as fresh objects, so `useCatalogWindow`
+  hands back the previous object for every row whose content is unchanged (`stableEntries`), and the
+  list cards, grid tiles and table rows are memoised on it. Without that, every step redrew every card
+  above it.
+- **Projections are built during the load.** At `OnGameLoadingComplete` the UI system projects
+  every menu into the adapter's snapshot cache (`BuildingCatalogAdapter.Prewarm`), so no menu's
+  first open pays for it. The cache is keyed on the toolbar's theme and pack selection.

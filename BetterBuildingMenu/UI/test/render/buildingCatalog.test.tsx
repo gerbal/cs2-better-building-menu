@@ -6,6 +6,7 @@ import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
+import { CATALOG_WINDOW_STEP } from "../../src/domain/catalogWindow";
 import {
   ASSET_MENU_CHROME_WIDTH,
   ASSET_MENU_COLUMN_MAX,
@@ -66,11 +67,11 @@ describe("the catalog container", () => {
   });
 
   it("names one step on the load-more, however large the window has grown", () => {
-    // Three loads in, the window is 300 rows; a click still adds 100.
+    // Several loads in, the window is 300 rows; a click still adds one step.
     setAssetMenuView({ viewMode: "table" });
     page({ hasMore: true, totalCount: 403, limit: 300 });
 
-    assert.match(render(), /Load 100 more/);
+    assert.ok(render().includes(`Load ${CATALOG_WINDOW_STEP} more`));
   });
 
   it("draws no load-more when the window holds everything", () => {

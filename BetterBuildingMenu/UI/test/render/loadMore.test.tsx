@@ -5,6 +5,7 @@ import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
+import { CATALOG_WINDOW_STEP } from "../../src/domain/catalogWindow";
 
 // Mounted, so the button's handler runs. The effects need a document and a
 // frame clock; neither does anything here.
@@ -41,6 +42,6 @@ describe("Load more", () => {
     act(() => button.props.onSelect());
 
     const requests = triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").map((call) => call.args);
-    assert.deepEqual(requests, [[400], [400]]);
+    assert.deepEqual(requests, [[300 + CATALOG_WINDOW_STEP], [300 + CATALOG_WINDOW_STEP]]);
   });
 });

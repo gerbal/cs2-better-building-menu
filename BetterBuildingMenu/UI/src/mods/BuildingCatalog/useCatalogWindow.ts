@@ -1,8 +1,9 @@
 import { useValue } from "cs2/api";
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
-import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldFillViewport, shouldLoadMore } from "domain/catalogWindow";
+import { reuseUnchanged } from "domain/stableEntries";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
@@ -40,7 +41,14 @@ export function useCatalogWindow(
   scope: { viewMode: string; groupBy: string }
 ): CatalogWindow {
   const page = useValue(BuildingCatalog$);
-  const items = page?.items ?? [];
+  // Unchanged rows keep their objects across pages, so memoised cards skip their
+  // render when the window grows or a page is republished. See stableEntries.
+  const kept = useRef<ReadonlyMap<number, BuildingCatalogEntry>>(new Map());
+  const items = useMemo(() => {
+    const next = reuseUnchanged(kept.current, page?.items ?? []);
+    kept.current = next.byId;
+    return next.items;
+  }, [page]);
   const totalCount = page?.totalCount ?? 0;
   const offset = page?.offset ?? 0;
   const limit = page?.limit ?? 100;
@@ -101,6 +109,21 @@ export function useCatalogWindow(
         if (!scroller && root) {
           const row = lastCatalogRow(root);
           scroller = row ? findScrollContainer(row, root, isScrollContainer) : null;
+
+          // Nothing scrolls yet: the window may not fill a tall menu or a dense view.
+          if (!scroller && row) {
+            const rowBox = row.getBoundingClientRect();
+
+            if (shouldFillViewport({
+              hasMore,
+              lastRowBottom: rowBox.bottom,
+              lastRowHeight: rowBox.height,
+              viewportBottom: root.getBoundingClientRect().bottom,
+            })) {
+              latestLoadMore.current();
+              return;
+            }
+          }
         }
 
         if (scroller && shouldLoadMore({
