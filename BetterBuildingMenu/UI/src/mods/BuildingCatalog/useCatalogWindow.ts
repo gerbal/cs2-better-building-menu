@@ -5,7 +5,7 @@ import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
 import { CATALOG_WINDOW_STEP, confirmFill, drawnCount, isScrollContainer, nextGrowth, nextWindowLimit, shouldFillViewport, shouldLoadMore, type FillLook } from "domain/catalogWindow";
 import { reuseUnchanged } from "domain/stableEntries";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
-import { findScrollContainer, lastCatalogRow } from "./catalogDom";
+import { canScroll, findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 export type { BuildingCatalogPageStatus };
 
@@ -173,7 +173,7 @@ export function useCatalogWindow(
 
         if (!scroller && root) {
           const row = lastCatalogRow(root);
-          scroller = row ? findScrollContainer(row, root, isScrollContainer) : null;
+          scroller = row ? findScrollContainer(row, root, isScrollContainer, canScroll) : null;
 
           // Nothing scrolls yet: the window may not fill a tall menu or a dense view.
           if (!scroller && row) {
