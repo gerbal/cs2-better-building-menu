@@ -13,6 +13,7 @@ import {
   isEducationMenu,
   levelDrawsHeading,
   shouldShowHeading,
+  takeRows,
   type GroupedEntry,
 } from "../src/domain/buildingGroups.ts";
 
@@ -274,6 +275,32 @@ describe("Flattening groups for the table", () => {
   it("has nothing to say about an empty result", () => {
     assert.deepEqual(flattenGroupedRows([], key), []);
     assert.deepEqual(flattenGroupedRows(null, key), []);
+  });
+});
+
+describe("Drawing the first rows of a grouped table", () => {
+  // The table draws a screen of rows. Its headings still come from the whole page, so the
+  // first group's heading and count are there from the first frame, as before, rather than
+  // appearing once a second group scrolls into the drawn rows.
+  const page = [
+    ...Array.from({ length: 6 }, (_, i) => item(i + 1, ["Small"])),
+    ...Array.from({ length: 4 }, (_, i) => item(i + 7, ["Medium"])),
+  ];
+  const lines = flattenGroupedRows(page, (entry) => String(entry.id));
+
+  it("keeps the whole page's headings and counts over the rows it draws", () => {
+    const drawn = takeRows(lines, 3);
+
+    assert.deepEqual(drawn.map((line) => line.kind === "heading" ? `h:${line.label}:${line.count}` : line.key), ["h:Small:6", "1", "2", "3"]);
+  });
+
+  it("draws the next group's heading with its first row, not before", () => {
+    assert.deepEqual(takeRows(lines, 6).map((line) => line.kind === "heading" ? `h:${line.label}` : line.key), ["h:Small", "1", "2", "3", "4", "5", "6"]);
+    assert.deepEqual(takeRows(lines, 7).slice(-2).map((line) => line.kind === "heading" ? `h:${line.label}` : line.key), ["h:Medium", "7"]);
+  });
+
+  it("draws everything when asked for more rows than there are", () => {
+    assert.equal(takeRows(lines, 99), lines);
   });
 });
 

@@ -39,7 +39,15 @@ namespace BetterBuildingMenu.Domain
 		/// The box echoes a keystroke at once and the page follows a debounce later, so Enter
 		/// holds until the two agree rather than arming the previous search's match.
 		/// </remarks>
-		string? SearchText = null) : IJsonWritable
+		string? SearchText = null,
+		/// <summary>The menu this page is the opening view of; empty when it is not one.</summary>
+		/// <remarks>
+		/// AssetMenuState.OpeningMenu: the menu with no category, tab or tier. A close sends no
+		/// page, so the page a kept asset menu holds still says this at the next open. The UI
+		/// shows the kept menu at once when this names the menu being opened, and waits for the
+		/// next page when it does not.
+		/// </remarks>
+		string? Menu = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -74,6 +82,8 @@ namespace BetterBuildingMenu.Domain
 			if (BestMatchId.HasValue) writer.Write(BestMatchId.Value); else writer.WriteNull();
 			writer.PropertyName("searchText");
 			writer.Write(SearchText ?? string.Empty);
+			writer.PropertyName("menu");
+			writer.Write(Menu ?? string.Empty);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

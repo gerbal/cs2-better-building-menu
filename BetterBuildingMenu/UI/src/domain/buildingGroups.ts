@@ -233,6 +233,27 @@ export type GroupedRow<T> =
   | { kind: "row"; key: string; entry: T };
 
 /**
+ * The lines of a flattened table up to its `rows`-th row: the headings above each drawn
+ * row, and none below the last. The headings were built from the whole page, so their
+ * labels and counts do not change as more rows are drawn.
+ */
+export function takeRows<T>(lines: GroupedRow<T>[], rows: number): GroupedRow<T>[] {
+  if (rows <= 0) {
+    return [];
+  }
+
+  let seen = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].kind === "row" && ++seen === rows) {
+      return i + 1 >= lines.length ? lines : lines.slice(0, i + 1);
+    }
+  }
+
+  return lines;
+}
+
+/**
  * Flatten a group tree into the sequence a table renders. Interleaved headings
  * rather than nested sections, because the table's columns line up only under
  * one flex geometry. Nothing here re-sorts; the backend's order is kept.

@@ -438,6 +438,29 @@ the cards built, and most of a long menu sits below the fold.
   sends again, about 45 ms of engine layout for the reattached panel, and the game's own work. The
   hidden panel holds what it last showed until the next open: 300–900 elements and up to 1.4 MB of
   JS heap at a menu's first window, about 4,000 elements and 9 MB for Roads scrolled to its end.
+- **The menu opens in the frame the player clicks.** C# clears `OwnsCurrentMenu` on every close and
+  sets it again only when it hears the next selection, a frame after the game has mounted its own
+  asset menu; until then vanilla's grid was built and drawn for a frame. C# now publishes the menus it
+  would take over (`OwnedAssetMenus`, `MenuRouting.OwnedMenus`, the complement of `ShouldYield`), and
+  `RemoveVanillaAssetMenu` decides in the click frame (`domain/menuOwnership`). A menu is taken over
+  early only when it was selected while C# listed it (`MenuClaim`, tracked from the bindings in
+  `mods/menuClaim.ts`): C# hears a selection only when it changes, so a menu already open when it
+  joins the list, or when the UI first looked, waits for C# as before. The kept menu joins the slot
+  at once when its page is that menu's opening view (`BuildingCatalogPage.Menu`,
+  `AssetMenuState.OpeningMenu`: no category, tab or tier), and otherwise when C#'s answer arrives,
+  so an open from closed never shows another menu's page; a switch with the menu up stays joined
+  through the round trip, as before. A close keeps the scope bindings (only the kept menu reads them),
+  so a reopen's strip is there in the click frame. Measured 2026-10-20 against the kept panel alone
+  (AZ testbed, 1080p, 3 reps): reopens 33–68% faster (36–43 ms, vanilla 30–50), table switches
+  20–57% faster, grid switches −29% to +10% (an icon-heavy menu now does its work in one longer
+  frame instead of two); vanilla's grid, laid out on every open before, never appears.
+- **The table draws a screen of rows.** Its 92 rem rows show four or five of a page's 40, and drawing
+  the rest cost about 55 ms of DOM and layout per open. `useCatalogWindow` draws the rows that fit the
+  catalog's height and two more (`rowsThatFit`), grows a screen at a time from the page before asking
+  C# for the next step (`nextGrowth`), always draws a row the menu returns to (`drawnCount`), and goes
+  back to a screen when hidden. The table's group headings and counts still come from the whole page
+  (`takeRows` cuts the flattened lines), so none appears mid-scroll. Grid, list and cards show most of
+  a page and draw all of it.
 - **Projections are built during the load.** At `OnGameLoadingComplete` the UI system projects
   every menu into the adapter's snapshot cache (`BuildingCatalogAdapter.Prewarm`), so no menu's
   first open pays for it. The cache is keyed on the toolbar's theme and pack selection.
