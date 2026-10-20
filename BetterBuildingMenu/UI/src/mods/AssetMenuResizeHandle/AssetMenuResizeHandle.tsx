@@ -29,9 +29,10 @@ export interface AssetMenuHeight {
 /**
  * One height for both panels. The drag runs through the live binding and only
  * the release writes the settings file; the game owns the number, so the
- * build menu and the extension picker cannot disagree about it.
+ * build menu and the extension picker cannot disagree about it. `shown` false
+ * ends a drag, as unmounting does.
  */
-export function useAssetMenuHeight(): AssetMenuHeight {
+export function useAssetMenuHeight(shown = true): AssetMenuHeight {
   const [isResizing, setIsResizing] = useState(false);
   const resizeState = useRef<{ active: boolean; startY: number; startHeight: number; pxPerRem?: number }>({
     active: false,
@@ -56,19 +57,21 @@ export function useAssetMenuHeight(): AssetMenuHeight {
 
   // The asset menu going away mid-drag (closed by a key or by the game) ends the
   // drag as a release does. Left unsaved, the dragged height would sit in the
-  // binding until the next save of any setting re-pushed the saved one.
+  // binding until the next save of any setting re-pushed the saved one. Hidden
+  // counts as gone: the kept menu stays mounted, and its blocker with it.
   useEffect(() => () => {
     cancelAnimationFrame(pending.current.frame);
     if (!resizeState.current.active) return;
 
     resizeState.current.active = false;
+    setIsResizing(false);
     const next = pending.current.height;
     pending.current = { frame: 0, height: null };
     if (next !== null) {
       send({ method: "SetAssetMenuHeight", args: [next] });
     }
     send({ method: "CommitAssetMenuHeight", args: [] });
-  }, []);
+  }, [shown]);
 
   function beginResize(event: any): void {
     if (!isPrimaryPress(event)) return;

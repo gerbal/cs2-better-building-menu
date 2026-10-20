@@ -31,6 +31,21 @@
   // AssetMenu sets it on the game's own element instead.
 }
 
+// The two elements the kept menu travels in (see KeptAssetMenu): the slot the
+// game mounts, and the menu's own element moved into it. Both stand where the
+// row stood, as vanilla's column lays out its child: bottom-aligned, no wider
+// than the column (the row states its own width and overflows it), and
+// unpositioned, so the blockers still cover the column as before.
+.slot {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  pointer-events: none;
+}
+
 .toolContainer {
   position: relative;
   display: flex;

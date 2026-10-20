@@ -29,6 +29,19 @@ export function findScrollContainer<T extends ScrollBox>(
 }
 
 /**
+ * Scrolls every element between a row and the catalog's root back to the top.
+ * By what each has scrolled rather than by which overflows, so it needs no
+ * layout: it runs on a menu just put back into the document.
+ */
+export function scrollToTopAbove<T extends { scrollTop: number; parentElement: T | null }>(from: T, within: T): void {
+  for (let node = from.parentElement; node && node !== within; node = node.parentElement) {
+    if (node.scrollTop > 0) {
+      node.scrollTop = 0;
+    }
+  }
+}
+
+/**
  * The row to measure: the LAST `[data-catalog-entry]` under the root, so a
  * pinned copy drawn above the body cannot answer for the one in the list.
  * Under the root, never the document, because these rows are ours.

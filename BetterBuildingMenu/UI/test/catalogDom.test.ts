@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { findScrollContainer, lastCatalogRow } from "../src/mods/BuildingCatalog/catalogDom.ts";
+import { findScrollContainer, lastCatalogRow, scrollToTopAbove } from "../src/mods/BuildingCatalog/catalogDom.ts";
 import { CATALOG_SCROLL_MIN_OVERFLOW, isScrollContainer } from "../src/domain/catalogWindow.ts";
 
 type Box = { scrollHeight: number; clientHeight: number; parentElement: Box | null };
@@ -68,5 +68,33 @@ describe("the row a hook should measure", () => {
   it("has nothing to say about an entry that is not rendered", () => {
     assert.equal(lastCatalogRow(root([el(1)]), 2), null);
     assert.equal(lastCatalogRow(root([])), null);
+  });
+});
+
+describe("putting a kept menu back at the top", () => {
+  type Scrolled = { scrollTop: number; parentElement: Scrolled | null };
+  const at = (scrollTop: number, parent: Scrolled | null): Scrolled => ({ scrollTop, parentElement: parent });
+
+  it("scrolls every scrolled element between the row and the root to the top", () => {
+    const root = at(0, null);
+    const outer = at(120, root);
+    const inner = at(600, outer);
+    const row = at(0, inner);
+
+    scrollToTopAbove(row, root);
+
+    assert.equal(inner.scrollTop, 0);
+    assert.equal(outer.scrollTop, 0);
+  });
+
+  it("leaves the root and everything above it alone", () => {
+    const game = at(300, null);
+    const root = at(50, game);
+    const row = at(0, at(0, root));
+
+    scrollToTopAbove(row, root);
+
+    assert.equal(root.scrollTop, 50);
+    assert.equal(game.scrollTop, 300);
   });
 });

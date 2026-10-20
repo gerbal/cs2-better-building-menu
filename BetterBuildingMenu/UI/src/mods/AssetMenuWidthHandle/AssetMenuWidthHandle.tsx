@@ -58,11 +58,13 @@ export interface AssetMenuWidthBounds {
 
 /**
  * The build menu's width drag, run as the height's is: one width a frame through
- * the live binding, and only the release writes the settings file.
+ * the live binding, and only the release writes the settings file. `shown`
+ * false ends a drag, as unmounting does.
  */
 export function useAssetMenuWidthDrag(
   { menuWidth, bandWidth, paneShown }: AssetMenuWidthBounds,
-  now: () => number = Date.now
+  now: () => number = Date.now,
+  shown = true
 ): AssetMenuWidthDrag {
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -94,19 +96,22 @@ export function useAssetMenuWidthDrag(
 
   // The asset menu going away mid-drag (closed by a key or by the game) ends the
   // drag as a release does. Left unsaved, the dragged width would sit in the
-  // binding until the next save of any setting re-pushed the saved one.
+  // binding until the next save of any setting re-pushed the saved one. Hidden
+  // counts as gone: the kept menu stays mounted, and its blocker with it.
   useEffect(() => () => {
     cancelAnimationFrame(pending.current.frame);
+    setIsHovered(false);
     const state = drag.current;
     if (!state.active) return;
 
     state.active = false;
+    setIsResizing(false);
     pending.current = { frame: 0, width: null };
     if (!state.moved) return;
 
     send({ method: "SetAssetMenuCatalogWidth", args: [releasedCatalogWidth(state.last, room.current.bandWidth, room.current.paneShown)] });
     send({ method: "CommitAssetMenuCatalogWidth", args: [] });
-  }, []);
+  }, [shown]);
 
   function fill(): void {
     send({ method: "SetAssetMenuCatalogWidth", args: [filledCatalogWidth(paneShown)] });
