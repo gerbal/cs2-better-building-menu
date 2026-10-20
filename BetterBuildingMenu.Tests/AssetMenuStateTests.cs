@@ -326,10 +326,11 @@ public sealed class AssetMenuStateTransitionTests
     public void ANarrowingResetsAGrownWindowAndOneThatChangesNothingKeepsIt()
     {
         var grown = S().SelectMenu("Roads").SetMetricRange("cost", "1000", "5000").LoadMore().LoadMore();
-        Assert.Equal(300, grown.Query.Limit);
+        const int Grown = BuildingCatalogQuery.DefaultLimit + 2 * BuildingCatalogQuery.WindowStep;
+        Assert.Equal(Grown, grown.Query.Limit);
 
-        Assert.Equal(300, grown.SetMetricRange("cost", "1000", "5000").Query.Limit);
-        Assert.Equal(300, grown.ClearFacets().Query.Limit);
+        Assert.Equal(Grown, grown.SetMetricRange("cost", "1000", "5000").Query.Limit);
+        Assert.Equal(Grown, grown.ClearFacets().Query.Limit);
 
         foreach (var narrowed in new[]
         {

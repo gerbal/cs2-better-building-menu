@@ -530,6 +530,29 @@ namespace BetterBuildingMenu.Services
 			LastProjectionWasHit = true;
 		}
 
+		/// <summary>
+		/// Projects each menu into the snapshot cache ahead of its first open, and returns how
+		/// many it projected.
+		/// </summary>
+		/// <remarks>
+		/// A menu's first open otherwise pays its projection, the bulk of that refresh: run while
+		/// the load screen is still up, the cost lands where nothing is drawn. The cache is
+		/// keyed on the toolbar's theme and pack selection, so a later change to it projects
+		/// again on the next open.
+		/// </remarks>
+		public int Prewarm(CatalogSource source, IEnumerable<string> menus, VanillaToolbarSelection selection)
+		{
+			var projected = 0;
+
+			foreach (var menu in menus)
+			{
+				ProjectForMenu(source, menu, selection);
+				projected++;
+			}
+
+			return projected;
+		}
+
 		private BuildingCatalogEntry[] ProjectForMenu(
 			CatalogSource source,
 			string? menu,

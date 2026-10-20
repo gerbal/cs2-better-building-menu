@@ -46,7 +46,7 @@ export type FacetId = "buildingType" | "provenance" | "availability" | "content"
 export type AvailabilityOption = "Unlocked" | "Locked" | "AlreadyBuilt";
 
 /** BuildingCatalogQuery.WindowStep: how many rows one Load more adds. */
-export const CATALOG_WINDOW_STEP = 100;
+export const CATALOG_WINDOW_STEP = 40;
 
 /** AssetMenuHeight: the catalog height the player drags between, and where it starts. */
 export const ASSET_MENU_MIN_HEIGHT = 108;
