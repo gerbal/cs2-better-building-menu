@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { getAssetMenuAnchorKey, resetAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { CATALOG_WINDOW_STEP } from "../../src/domain/catalogWindow";
 
@@ -43,5 +43,65 @@ describe("Load more", () => {
 
     const requests = triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").map((call) => call.args);
     assert.deepEqual(requests, [[300 + CATALOG_WINDOW_STEP], [300 + CATALOG_WINDOW_STEP]]);
+  });
+
+  const page40 = () => catalogPage(Array.from({ length: 40 }, (_, i) => entry(i + 1)), { hasMore: true, totalCount: 204, limit: 40 });
+  const drawnRows = () => root!.root.findAll((node) => typeof node.type === "string" && node.props["data-catalog-entry"] !== undefined).length;
+  const loadMoreButton = () => root!.root.find((node) => node.props.className === "loadMore" && typeof node.props.onSelect === "function");
+
+  it("draws a screen of the table's rows, not the whole page", () => {
+    // 420 rem of catalog over 92 rem rows reaches five rows; two more to scroll into.
+    setAssetMenuView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
+    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+
+    assert.equal(drawnRows(), 7);
+  });
+
+  it("draws the page's next screen before asking C# for more", () => {
+    setAssetMenuView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
+    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+
+    act(() => loadMoreButton().props.onSelect());
+
+    assert.equal(drawnRows(), 14);
+    assert.equal(triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").length, 0);
+
+    for (let i = 0; i < 4; i++) act(() => loadMoreButton().props.onSelect());
+    assert.equal(drawnRows(), 40);
+
+    act(() => loadMoreButton().props.onSelect());
+    assert.deepEqual(triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").map((call) => call.args), [[40 + CATALOG_WINDOW_STEP]]);
+  });
+
+  it("draws far enough to reach a building the menu returns to", () => {
+    // Placed from row 31: the next open scrolls back to it, so its row must be drawn.
+    setAssetMenuView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
+    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
+    setAssetMenuAnchor(getAssetMenuAnchorKey({ list: "catalog", viewMode: "table", groupBy: "category" }), 31);
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+
+    assert.equal(drawnRows(), 33);
+  });
+
+  it("draws the whole page in the grid, which shows most of it", () => {
+    setAssetMenuView({ viewMode: "grid" });
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
+    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+
+    assert.equal(drawnRows(), 40);
   });
 });

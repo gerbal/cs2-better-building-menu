@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   CATALOG_WINDOW_SCROLL_THRESHOLD,
+  drawnCount,
+  nextGrowth,
   nextWindowLimit,
+  rowsThatFit,
   shouldLoadMore,
   catalogWindowRemaining,
   shouldFillViewport,
@@ -434,5 +437,51 @@ describe("when the first page does not fill the menu", () => {
 
   it("asks for nothing when the backend has nothing more", () => {
     assert.equal(shouldFillViewport({ hasMore: false, lastRowBottom: 500, lastRowHeight: 50, viewportBottom: 900 }), false);
+  });
+});
+
+describe("how many of the page's rows the table draws", () => {
+  // The page holds 40 entries; a table at the default height shows four or five of
+  // them. Drawing the rest costs about 55 ms of DOM and layout on every open.
+
+  it("draws the rows that fit the catalog's height, and two more", () => {
+    // 420 rem of catalog over 92 rem rows: 5 rows reach into view.
+    assert.equal(rowsThatFit(420, 92), 7);
+  });
+
+  it("draws at least one row and its margin in a catalog shorter than a row", () => {
+    assert.equal(rowsThatFit(40, 92), 3);
+  });
+
+  it("falls back to a fixed estimate when a measurement is not a number", () => {
+    assert.equal(rowsThatFit(Number.NaN, 92), 8);
+    assert.equal(rowsThatFit(420, 0), 8);
+  });
+
+  it("draws the whole page when there is no estimate", () => {
+    assert.equal(drawnCount({ pageLength: 40, drawn: null, mustInclude: -1 }), 40);
+  });
+
+  it("never draws more rows than the page holds", () => {
+    assert.equal(drawnCount({ pageLength: 5, drawn: 7, mustInclude: -1 }), 5);
+  });
+
+  it("reaches far enough to draw a row the menu must return to", () => {
+    // A building placed from row 30 is anchored there; the anchor finds its row
+    // by measuring it, so the row must be drawn, with a margin to scroll into.
+    assert.equal(drawnCount({ pageLength: 40, drawn: 7, mustInclude: 30 }), 33);
+  });
+
+  it("grows the drawn rows a screen at a time before asking C# for more", () => {
+    assert.deepEqual(nextGrowth({ pageLength: 40, drawn: 7, screen: 7, remaining: 164 }), { kind: "draw", count: 14 });
+    assert.deepEqual(nextGrowth({ pageLength: 40, drawn: 38, screen: 7, remaining: 164 }), { kind: "draw", count: 40 });
+  });
+
+  it("asks C# for more once every row of the page is drawn", () => {
+    assert.deepEqual(nextGrowth({ pageLength: 40, drawn: 40, screen: 7, remaining: 164 }), { kind: "fetch" });
+  });
+
+  it("does nothing when everything is drawn and C# has no more", () => {
+    assert.deepEqual(nextGrowth({ pageLength: 40, drawn: 40, screen: 7, remaining: 0 }), { kind: "none" });
   });
 });

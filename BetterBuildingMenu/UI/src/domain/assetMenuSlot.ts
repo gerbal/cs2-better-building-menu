@@ -11,6 +11,11 @@ export interface AssetMenuSlot<TElement = unknown> {
   element: TElement;
   /** The game's own menu close, from the extension point's props. */
   onClose?: () => void;
+  /**
+   * The toolbar menu the slot was opened for, when the UI knows it; null when only
+   * OwnsCurrentMenu put the slot up. See domain/menuOwnership, shouldJoinSlot.
+   */
+  menu?: string | null;
 }
 
 export interface AssetMenuSlotStore<TElement = unknown> {

@@ -29,7 +29,7 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			ReleaseMenuScope();
+			ReleaseMenuScope(publish: false);
 
 			if (ownedMenu)
 			{
@@ -43,12 +43,19 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// Shared by both close paths, so the scope cannot survive one of them and leave the
-		/// next open filtered to whichever menu was clicked last.
+		/// next open filtered to whichever menu was clicked last. A close leaves the scope
+		/// bindings as they were (<paramref name="publish"/> false): only the closed asset menu
+		/// reads them, it is kept built with the page it showed, and a reopen of the same menu
+		/// shows it in the click frame, strip and all; every open publishes its own scope.
 		/// </remarks>
-		private void ReleaseMenuScope()
+		private void ReleaseMenuScope(bool publish = true)
 		{
 			_assetMenu = _assetMenu.ClearMenuScope();
-			PublishScope();
+
+			if (publish)
+			{
+				PublishScope();
+			}
 		}
 
 		/// <summary>
@@ -160,7 +167,7 @@ namespace BetterBuildingMenu.Systems
 			// The same release CloseAssetMenu does. A toolbar deselect is a close like any
 			// other, and an asset menu that forgets its menu on only one of the two paths
 			// filters by whichever button you happened to use.
-			ReleaseMenuScope();
+			ReleaseMenuScope(publish: false);
 
 			if (_assetMenuOpen)
 			{

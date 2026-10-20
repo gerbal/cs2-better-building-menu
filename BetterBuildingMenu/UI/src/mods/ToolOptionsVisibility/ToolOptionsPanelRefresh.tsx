@@ -1,7 +1,7 @@
 import { ModuleRegistryExtend } from "cs2/modding";
 import { useValue } from "cs2/api";
 import { forwardRef } from "react";
-import { OwnsCurrentMenu$ } from "mods/bindings";
+import { OwnedAssetMenus$, OwnsCurrentMenu$, ReplaceVanillaBuildMenu$, SelectedAssetMenu$ } from "mods/bindings";
 
 /**
  * Re-renders the vanilla tool options panel whenever asset menu ownership changes,
@@ -10,7 +10,11 @@ import { OwnsCurrentMenu$ } from "mods/bindings";
  */
 export const ToolOptionsPanelRefresh: ModuleRegistryExtend = (Component: any) => {
   const Refresh = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
+    // Everything ToolOptionsVisibility decides ownership from.
     useValue(OwnsCurrentMenu$);
+    useValue(OwnedAssetMenus$);
+    useValue(ReplaceVanillaBuildMenu$);
+    useValue(SelectedAssetMenu$);
 
     return <Component {...props} ref={ref} />;
   });

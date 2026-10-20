@@ -73,9 +73,12 @@ export function shouldLoadMore({ scrollTop, clientHeight, scrollHeight, threshol
 // How many rows one Load more adds: BuildingCatalogQuery.WindowStep, generated.
 export { CATALOG_WINDOW_STEP };
 
-/** The count the Load more button names: one step, or what is left when less. */
-export function loadMoreCount(remaining: number): number {
-  return Math.min(remaining, CATALOG_WINDOW_STEP);
+/**
+ * The count the Load more button names: what the next step adds (a screen more of
+ * the page, or a step from C#; see useCatalogWindow), or what is left when less.
+ */
+export function loadMoreCount(remaining: number, nextStep: number = CATALOG_WINDOW_STEP): number {
+  return Math.min(remaining, nextStep);
 }
 
 /**
@@ -241,4 +244,50 @@ export function revealScrollTop({
   const headroom = Math.max(0, rowTop - containerTop);
 
   return currentScrollTop + Math.min(overflow, headroom);
+}
+
+/**
+ * The rows a list view should draw first: those that reach into a catalog of this
+ * height, plus `margin` below to scroll into. The page holds a step of 40 entries
+ * and the table shows four or five, so drawing the page costs about 55 ms of DOM
+ * and layout on every open. An estimate only: the fill loop draws more while the
+ * last drawn row still ends inside the visible area.
+ */
+export function rowsThatFit(catalogHeightRem: number, rowHeightRem: number, margin = 2): number {
+  if (!Number.isFinite(catalogHeightRem) || !Number.isFinite(rowHeightRem) || rowHeightRem <= 0) {
+    return 8;
+  }
+
+  return Math.max(1, Math.ceil(catalogHeightRem / rowHeightRem)) + margin;
+}
+
+/**
+ * How many of the page's entries to draw: `drawn` (null draws the whole page),
+ * reaching past `mustInclude` (an index into the page, -1 for none) with a margin,
+ * because a scroll anchor finds its row by measuring it. Never more than the page.
+ */
+export function drawnCount({ pageLength, drawn, mustInclude }: { pageLength: number; drawn: number | null; mustInclude: number }): number {
+  if (drawn === null) {
+    return pageLength;
+  }
+
+  const reach = mustInclude >= 0 ? mustInclude + 3 : 0;
+
+  return Math.min(pageLength, Math.max(drawn, reach));
+}
+
+/** What growing the window does next: draw more of the page, ask C# for more, or nothing. */
+export type CatalogGrowth = { kind: "draw"; count: number } | { kind: "fetch" } | { kind: "none" };
+
+/**
+ * The next step of growth: a screen more of the page while it has undrawn rows, so
+ * a scroll waits on nothing; a Load more to C# once every row is drawn and C# has
+ * `remaining` beyond the page.
+ */
+export function nextGrowth({ pageLength, drawn, screen, remaining }: { pageLength: number; drawn: number; screen: number; remaining: number }): CatalogGrowth {
+  if (drawn < pageLength) {
+    return { kind: "draw", count: Math.min(pageLength, drawn + Math.max(1, screen)) };
+  }
+
+  return remaining > 0 ? { kind: "fetch" } : { kind: "none" };
 }

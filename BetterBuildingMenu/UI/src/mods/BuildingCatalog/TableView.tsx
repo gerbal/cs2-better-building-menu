@@ -11,7 +11,7 @@ import {
   ASSET_MENU_COLUMN_SORT,
   getAssetMenuColumnSortIndicator,
 } from "domain/assetMenuSortPresentation";
-import { flattenGroupedRows } from "domain/buildingGroups";
+import { flattenGroupedRows, takeRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { useUnitSystem } from "domain/unitSettings";
 import { useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
@@ -34,7 +34,10 @@ const metricColumns: Array<{
 ];
 
 export interface TableViewProps {
+  /** The whole page: the group headings and their counts are built from it. */
   items: BuildingCatalogEntry[];
+  /** How many of its rows to draw; see useCatalogWindow. All of them when absent. */
+  drawCount?: number;
   /** What to draw when there are no rows: the indexing notice, the scope notice, or the empty message. */
   emptyState: ReactNode;
   density: AssetMenuDensityTier;
@@ -59,8 +62,15 @@ export interface TableViewProps {
  * rows. The one view that cannot use GroupedResults — a scrolling section per
  * group breaks the shared column geometry — so flattenGroupedRows interleaves.
  */
+/** The page's lines, headings built from all of it, cut after the rows drawn. */
+function drawnLines(items: BuildingCatalogEntry[], drawCount: number | undefined) {
+  const lines = flattenGroupedRows(items, (entry) => String(entry.id));
+  return drawCount === undefined ? lines : takeRows(lines, drawCount);
+}
+
 export const TableView = ({
   items,
+  drawCount,
   emptyState,
   density,
   metrics,
@@ -140,7 +150,7 @@ export const TableView = ({
         trackVisibility="scrollable"
       >
         {items.length === 0 && emptyState}
-        {flattenGroupedRows(items, (entry) => String(entry.id)).map((line) => {
+        {drawnLines(items, drawCount).map((line) => {
           if (line.kind === "heading") {
             return (
               <div

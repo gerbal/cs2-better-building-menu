@@ -103,6 +103,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// entity, and entity indices are runtime values that must not be persisted.</remarks>
 		public string? MenuName(int entityIndex) => _menuNames.TryGetValue(entityIndex, out var name) ? name : null;
 
+		/// <summary>Every toolbar menu's prefab name, by entity index; see <see cref="MenuName"/>.</summary>
+		public IReadOnlyDictionary<int, string> MenuNames => _menuNames;
+
 		/// <summary>Every vanilla menu that has something in it, in the game's order.</summary>
 		/// <remarks>Filtered to menus with at least one category tab, the same test vanilla applies
 		/// before drawing one: a menu whose categories are all empty is a button the game hides.</remarks>

@@ -20,7 +20,7 @@ import {
   visibleTableMetrics,
 } from "domain/assetMenuLayout";
 import type { AssetMenuColumnWidths, AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
-import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
+import { catalogWindowRemaining, loadMoreCount, rowsThatFit } from "domain/catalogWindow";
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { sortedMetricFor } from "domain/sortedMetric";
@@ -29,7 +29,7 @@ import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
 import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
-import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
+import { getAssetMenuAnchor, getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
 // asset menu rather than a descendant, so it goes through the subscribing hook.
 import { useAssetMenuView } from "mods/useAssetMenuView";
@@ -45,6 +45,7 @@ import { TableView } from "./TableView";
 import { useCatalogWindow } from "./useCatalogWindow";
 import { useRevealExpandedRow, useScrollAnchor, useScrollToTopOnShow } from "./useScrollAnchor";
 import {
+  AssetMenuHeight$,
   BuildingCatalogGroupBy$,
   BuildingCatalogMatchesElsewhere$,
   BuildingCatalogMetricRanges$,
@@ -100,7 +101,21 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const rootRef = useRef<HTMLDivElement>(null);
   // False while the menu is kept built behind a closed menu; see KeptAssetMenu.
   const shown = useAssetMenuShown();
-  const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy }, shown);
+  // Scoped to the list and the layout, because which element owns the scroll
+  // and how tall its children are both depend on them: an offset remembered in
+  // the table means nothing in the grid.
+  const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode, groupBy });
+  // The table draws a screen of rows and more as the player scrolls: its 92 rem rows
+  // show four or five of the page's 40, and drawing the rest cost about 55 ms of DOM
+  // and layout on every open. The other views show most of a page and draw all of it.
+  const catalogHeight = useValue(AssetMenuHeight$);
+  const tableRows = tableMode ? rowsThatFit(catalogHeight, getAssetMenuRowGeometry(getAssetMenuDensity(layoutWidth)).rowHeight) : null;
+  // The anchor is read on every render, not memoised: it is set by placing a building,
+  // while this kept menu stays built, and the open after that must draw its row.
+  const anchoredId = getAssetMenuAnchor(anchorKey);
+  const drawing = useMemo(() => ({ rows: tableRows, mustIncludeId: anchoredId }), [tableRows, anchoredId]);
+  const { items, pageItems, nextCount, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } =
+    useCatalogWindow(rootRef, { viewMode, groupBy }, shown, drawing);
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -202,11 +217,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     setAssetMenuView({ expandedId: getAssetMenuView().expandedId === id ? null : id });
   }, []);
 
-  // Scoped to the list and the layout, because which element owns the scroll
-  // and how tall its children are both depend on them: an offset remembered in
-  // the table means nothing in the grid.
-  const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode, groupBy });
-
   // Stable across renders, like every callback a row receives, so a memoised
   // row skips the re-render its parent does on each keystroke.
   const activate = useCallback((entry: BuildingCatalogEntry): void => {
@@ -241,7 +251,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   onEnter.current = (event) => {
     if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
 
-    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
+    const decision = enterDecision({ items: pageItems, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
     pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
     if (decision && "arm" in decision) activate(decision.arm);
   };
@@ -255,12 +265,12 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       return;
     }
 
-    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, waiting);
+    const decision = enterDecision({ items: pageItems, bestMatchId, searchText: pageSearch }, waiting);
     if (decision && "wait" in decision) return;
 
     pendingEnter.current = null;
     if (decision) activate(decision.arm);
-  }, [items, bestMatchId, pageSearch, currentSearch, activate]);
+  }, [pageItems, bestMatchId, pageSearch, currentSearch, activate]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isPlainEnter(event)) onEnter.current(event);
@@ -294,10 +304,10 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
         {remaining === null
           ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
           : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
+            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining, nextCount)}`)}
       </Button>
     </div>
-  ) : null, [hasMore, items.length, totalCount, remaining, translate, separators, loadMore]);
+  ) : null, [hasMore, items.length, totalCount, remaining, nextCount, translate, separators, loadMore]);
 
   return (
     <div
@@ -320,7 +330,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
       {tableMode ? (
         <TableView
-          items={items}
+          items={pageItems}
+          drawCount={items.length}
           emptyState={emptyState}
           density={density}
           metrics={tableMetrics}

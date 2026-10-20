@@ -27,6 +27,20 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The game's menu the asset menu stands in for, or blank for the whole catalog.</summary>
 		public string Menu => Query.UiMenu;
 
+		/// <summary>
+		/// The menu, while this is the view opening it shows: no category, strip tab or school
+		/// tier. Empty otherwise, and with no menu.
+		/// </summary>
+		/// <remarks>
+		/// Carried by the page as BuildingCatalogPage.Menu. A kept asset menu is shown in the
+		/// frame its menu is reopened only when its page is exactly what that open shows; see
+		/// SelectMenu, which drops the category, tab and tier.
+		/// </remarks>
+		public string OpeningMenu =>
+			string.IsNullOrEmpty(Query.UiCategory) && Query.SchoolTier < 0 && (Query.StripTabs is null || Query.StripTabs.Count == 0)
+				? Query.UiMenu
+				: string.Empty;
+
 		public string Category => Query.UiCategory;
 
 		public int SchoolTier => Query.SchoolTier;

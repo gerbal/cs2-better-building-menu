@@ -154,6 +154,12 @@ export interface BuildingCatalogPage {
   searchText?: string;
 
   /**
+   * The menu the query ran scoped to; empty when unscoped. A close sends no page,
+   * so the page a kept asset menu holds still names its menu at the next open.
+   */
+  menu?: string;
+
+  /**
    * The offered sort fields that could actually move a row of these results;
    * the picker drops the rest, a control that responds while the list does not
    * reading as broken. C#'s answer, since only it sees the whole matched set.
