@@ -3,12 +3,21 @@ import { createPortal } from "react-dom";
 
 import { AssetMenu } from "mods/BuildingMenu/AssetMenu";
 import { AssetMenuShownContext } from "mods/BuildingMenu/assetMenuShown";
+import { BuildingCatalog$ } from "mods/bindings";
 import { ExtensionBoundary } from "mods/ExtensionBoundary";
 import { createAssetMenuSlotStore, type AssetMenuSlot as Slot } from "domain/assetMenuSlot";
+import { shouldJoinSlot } from "domain/menuOwnership";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 
 const slots = createAssetMenuSlotStore<HTMLElement>();
+
+/**
+ * How long a slot waits for C#'s answer to the open before the menu joins it
+ * anyway. The answer comes a frame later; this only keeps a page that never
+ * comes from leaving the slot empty.
+ */
+const JOIN_WAIT_MS = 250;
 
 /**
  * Whether the kept menu has failed to render. It draws outside the slot, so the
@@ -36,15 +45,15 @@ const ReportFailure = () => {
  * What the game's asset-menu slot draws: an empty element that the kept menu
  * moves into for as long as the slot exists.
  */
-export const AssetMenuSlot = ({ onClose }: { onClose?: () => void }) => {
+export const AssetMenuSlot = ({ onClose, menu = null }: { onClose?: () => void; menu?: string | null }) => {
   const ref = useRef<HTMLDivElement>(null);
 
   // A layout effect, so the menu is in the slot before the slot first paints.
   useLayoutEffect(() => {
     const element = ref.current;
 
-    return element ? slots.open({ element, onClose }) : undefined;
-  }, [onClose]);
+    return element ? slots.open({ element, onClose, menu }) : undefined;
+  }, [onClose, menu]);
 
   return <div ref={ref} className={styles.slot} />;
 };
@@ -58,6 +67,11 @@ export const AssetMenuSlot = ({ onClose }: { onClose?: () => void }) => {
  * Game, this outlives the slot. The menu renders into one element of its own,
  * which is moved into the slot while there is one and is out of the document
  * while there is none.
+ *
+ * It joins a slot at once when the page it holds is the opened menu's (a reopen,
+ * shown in the frame the player clicked), and otherwise when C#'s answer to the
+ * open arrives (a switch), so another menu's page is never shown. See
+ * domain/menuOwnership, shouldJoinSlot.
  */
 export const KeptAssetMenu = () => {
   const [slot, setSlot] = useState<Slot<HTMLElement> | null>(slots.current);
@@ -82,8 +96,40 @@ export const KeptAssetMenu = () => {
     return unsubscribe;
   }, []);
 
-  useLayoutEffect(() => {
+  // The menu the held page answers, and the slot C# has answered since it opened
+  // (a page arrived, or the wait ran out). Read through a subscription that only
+  // re-renders on a change of menu, not on every page.
+  const [pageMenu, setPageMenu] = useState(() => BuildingCatalog$.value?.menu ?? "");
+  const [answered, setAnswered] = useState<Slot<HTMLElement> | null>(null);
+  const currentSlot = useRef(slot);
+  currentSlot.current = slot;
+
+  useEffect(() => {
+    const subscription = BuildingCatalog$.subscribe((page) => {
+      setPageMenu(page?.menu ?? "");
+      setAnswered(currentSlot.current);
+    });
+    return () => subscription.dispose();
+  }, []);
+
+  useEffect(() => {
     if (!slot) {
+      return;
+    }
+
+    const timer = setTimeout(() => setAnswered(slot), JOIN_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [slot]);
+
+  const joined = slot !== null && shouldJoinSlot({
+    slotMenu: slot.menu ?? null,
+    pageMenu,
+    pageSinceOpen: answered === slot,
+    waitedOut: false,
+  });
+
+  useLayoutEffect(() => {
+    if (!slot || !joined) {
       return;
     }
 
@@ -92,7 +138,7 @@ export const KeptAssetMenu = () => {
     return () => {
       container.parentNode?.removeChild(container);
     };
-  }, [slot, container]);
+  }, [slot, joined, container]);
 
   if (!built.current) {
     return null;
@@ -100,7 +146,7 @@ export const KeptAssetMenu = () => {
 
   return createPortal(
     <ExtensionBoundary name="AssetMenu" fallback={() => <ReportFailure />}>
-      <AssetMenuShownContext.Provider value={slot !== null}>
+      <AssetMenuShownContext.Provider value={joined}>
         <AssetMenu onClose={slot?.onClose ?? lastClose.current} />
       </AssetMenuShownContext.Provider>
     </ExtensionBoundary>,

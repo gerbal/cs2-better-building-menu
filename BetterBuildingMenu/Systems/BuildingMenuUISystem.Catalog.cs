@@ -78,6 +78,7 @@ namespace BetterBuildingMenu.Systems
 			_BuildingCatalogBinding.Value = page with
 			{
 				Status = AssetMenuState.GetPageStatus(source.Index.IsReady, page.TotalCount),
+				Menu = _assetMenu.Menu,
 			};
 			// Publish the order the query actually ran with, so the header can
 			// never disagree with the rows beneath it.

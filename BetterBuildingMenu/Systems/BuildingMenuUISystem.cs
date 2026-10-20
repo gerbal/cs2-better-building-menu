@@ -132,6 +132,11 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<VanillaMenuCategory[]> _AssetMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _AssetMenuMilestonesBinding = null!;
+		private ValueBindingHelper<OwnedAssetMenu[]> _OwnedAssetMenus = null!;
+		// What OwnedAssetMenus was last computed from; see PublishOwnedMenus.
+		private (int Generation, int Selection, bool Replace, bool Ready)? _ownedMenusFrom;
+		// Bumped by every toolbar filter change, so PublishOwnedMenus can tell one happened.
+		private int _toolbarSelectionVersion;
 
 		protected override void OnCreate()
 		{
@@ -235,6 +240,9 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuBinding = CreateBinding("AssetMenu", string.Empty);
 			_AssetMenusBinding = CreateBinding("AssetMenus", Array.Empty<VanillaMenuCategory>());
 			_AssetMenuMilestonesBinding = CreateBinding("AssetMenuMilestones", Array.Empty<string>());
+			// The menus we stand in for, so the UI can take one over in the frame it opens
+			// rather than a round trip later. See PublishOwnedMenus.
+			_OwnedAssetMenus = CreateBinding("OwnedAssetMenus", Array.Empty<OwnedAssetMenu>());
 			_AssetMenuCategoryBinding = CreateBinding(
 				"AssetMenuCategory",
 				"SetAssetMenuCategory",
@@ -324,6 +332,32 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
+		/// <summary>
+		/// Republishes the toolbar menus VanillaMenuSelected would take over, whenever anything it
+		/// decides by has changed: the index, the toolbar's own filters, the replace setting.
+		/// </summary>
+		/// <remarks>
+		/// The UI reads it to put the asset menu up in the frame the game opens a menu, instead of
+		/// waiting for OwnsCurrentMenu to come back from the selection. Both answer through
+		/// MenuRouting, so they cannot disagree. Checked every frame, recomputed only on a change.
+		/// </remarks>
+		private void PublishOwnedMenus()
+		{
+			var index = _indexer.Index;
+			var from = (Generation: _indexer.Generation, Selection: _toolbarSelectionVersion, Replace: Mod.Settings.ReplaceVanillaBuildMenu, Ready: index.IsReady);
+
+			if (_ownedMenusFrom == from)
+			{
+				return;
+			}
+
+			_ownedMenusFrom = from;
+			_OwnedAssetMenus.Value = MenuRouting.OwnedMenus(
+				from.Replace && from.Ready,
+				index.Menus.MenuNames,
+				menu => BuildingCatalogAdapter.MenuHasAssets(index, menu, _toolbarSelection));
+		}
+
 		protected override void OnUpdate()
 		{
 			// The indexer bumps its Generation and leaves the rest to us: a pass, an
@@ -342,6 +376,7 @@ namespace BetterBuildingMenu.Systems
 
 			RefreshExtensionMenu();
 			HandSelectionToTheGame();
+			PublishOwnedMenus();
 
 			base.OnUpdate();
 		}

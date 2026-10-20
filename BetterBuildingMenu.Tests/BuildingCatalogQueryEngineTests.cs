@@ -680,7 +680,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(
             new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText", "menu" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -690,6 +690,22 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Contains("Write:String:Education & Research", writer.Tokens);
         Assert.Contains("Write:Int32:100", writer.Tokens);
         Assert.Contains("Write:Double:80000", writer.Tokens);
+    }
+
+    [Fact]
+    public void PageWrite_NamesTheMenuItAnswers()
+    {
+        // A close clears the scope without sending a page, so the page a kept asset menu
+        // holds still names its menu at the next open: the UI shows it at once when it
+        // names the menu being opened. Empty when the query was not scoped to a menu.
+        RecordingJsonWriter scoped = new();
+        RecordingJsonWriter unscoped = new();
+
+        new BuildingCatalogPage(System.Array.Empty<BuildingCatalogEntry>(), 0, 0, 40, Menu: "Roads").Write(scoped);
+        new BuildingCatalogPage(System.Array.Empty<BuildingCatalogEntry>(), 0, 0, 40).Write(unscoped);
+
+        Assert.Equal(new[] { "PropertyName:menu", "Write:String:Roads" }, scoped.Tokens.SkipWhile(token => token != "PropertyName:menu").Take(2));
+        Assert.Equal(new[] { "PropertyName:menu", "Write:String:" }, unscoped.Tokens.SkipWhile(token => token != "PropertyName:menu").Take(2));
     }
 
     [Fact]

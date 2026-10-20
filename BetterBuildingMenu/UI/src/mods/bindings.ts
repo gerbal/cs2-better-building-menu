@@ -6,6 +6,7 @@ import type { SortColumn, SortState } from "domain/buildingCatalogContracts";
 import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
 import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
 import type { Command } from "domain/command";
+import type { OwnedAssetMenu } from "domain/menuOwnership";
 import type { MenuBranchCount, MenuCategoryTabs } from "domain/menuProgression";
 import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
@@ -68,6 +69,8 @@ export const AssetMenuViewMode$ = bindValue<string>(mod.id, "AssetMenuViewMode",
 export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
 /** True while the toolbar's open menu is one the asset menu takes over. */
 export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);
+/** The toolbar menus C# takes over, so the UI can take one over in the frame it opens. See domain/menuOwnership. */
+export const OwnedAssetMenus$ = bindValue<OwnedAssetMenu[]>(mod.id, "OwnedAssetMenus", []);
 /** The mod's replace-vanilla-menus setting: one switch for both pickers. */
 export const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuildMenu", false);
 

@@ -182,6 +182,7 @@ namespace BetterBuildingMenu.Systems
 				ParseEntityIndices(packs),
 				vanillaSelected,
 				modsSelected);
+			_toolbarSelectionVersion++;
 
 			RefreshBuildingCatalog();
 		}
