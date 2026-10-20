@@ -5,6 +5,7 @@ import {
   nextWindowLimit,
   shouldLoadMore,
   catalogWindowRemaining,
+  confirmFill,
   shouldFillViewport,
 } from "../src/domain/catalogWindow.ts";
 import { ASSET_MENU_MIN_CATALOG_HEIGHT } from "../src/domain/assetMenuLayout.ts";
@@ -434,5 +435,46 @@ describe("when the first page does not fill the menu", () => {
 
   it("asks for nothing when the backend has nothing more", () => {
     assert.equal(shouldFillViewport({ hasMore: false, lastRowBottom: 500, lastRowHeight: 50, viewportBottom: 900 }), false);
+  });
+});
+
+describe("filling only a menu whose layout has settled", () => {
+  // A grouped view lays out twice: each line makes room for its heading only after
+  // the headings were measured, a frame after the rows first appear. On that first
+  // frame the rows end higher than they will, and filling on it fetched a page the
+  // menu had no room for (in game: list view, Transportation 40 -> 59 on every open).
+  const look = (lastRowBottom: number, frame: number, viewportBottom = 956) => ({ lastRowBottom, viewportBottom, frame });
+
+  it("never fills on the first look", () => {
+    const first = look(886, 1);
+
+    assert.deepEqual(confirmFill(null, first), { fill: false, seen: first });
+  });
+
+  it("fills when the same rows are still short two frames later", () => {
+    assert.equal(confirmFill(look(886, 1), look(886, 3)).fill, true);
+  });
+
+  it("keeps the first look while it waits, so the frames add up", () => {
+    const first = look(886, 1);
+
+    assert.deepEqual(confirmFill(first, look(886, 2)), { fill: false, seen: first });
+  });
+
+  it("starts over when the rows moved between looks", () => {
+    // The first frame's rows, then the same rows with room made for their headings.
+    const settled = look(940, 4);
+
+    assert.deepEqual(confirmFill(look(886, 1), settled), { fill: false, seen: settled });
+  });
+
+  it("starts over when the menu changed height between looks", () => {
+    const taller = look(886, 6, 1100);
+
+    assert.deepEqual(confirmFill(look(886, 1), taller), { fill: false, seen: taller });
+  });
+
+  it("does not count a sub-pixel difference as a move", () => {
+    assert.equal(confirmFill(look(886, 1), look(886.4, 3, 956.3)).fill, true);
   });
 });
