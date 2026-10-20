@@ -1,7 +1,7 @@
 /**
  * The arithmetic behind the catalog's growing window. Backend-owned: the offset
- * stays at zero and the window grows by asking for a larger limit, because
- * placing a building unmounts the asset menu and an accumulator would go with it.
+ * stays at zero and the window grows by asking for a larger limit, because an
+ * accumulator in the UI would go with any rebuild of the asset menu.
  */
 import { CATALOG_WINDOW_STEP } from "./sharedContracts.generated";
 

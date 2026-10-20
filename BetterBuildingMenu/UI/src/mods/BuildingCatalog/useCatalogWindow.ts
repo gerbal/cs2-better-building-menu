@@ -38,7 +38,8 @@ export interface CatalogWindow {
  */
 export function useCatalogWindow(
   rootRef: RefObject<HTMLElement>,
-  scope: { viewMode: string; groupBy: string }
+  scope: { viewMode: string; groupBy: string },
+  shown = true
 ): CatalogWindow {
   const page = useValue(BuildingCatalog$);
   // Unchanged rows keep their objects across pages, so memoised cards skip their
@@ -81,7 +82,9 @@ export function useCatalogWindow(
    * forwards onScroll and Cohtml emits no scroll event — but scrollTop is true.
    */
   useEffect(() => {
-    if (!hasMore || items.length === 0) {
+    // Hidden, the kept menu measures as nothing at all, which reads as a
+    // viewport to fill: polling then would grow the window behind a closed menu.
+    if (!shown || !hasMore || items.length === 0) {
       return;
     }
 
@@ -158,7 +161,7 @@ export function useCatalogWindow(
       cancelled = true;
       cancelAnimationFrame(handle);
     };
-  }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
+  }, [rootRef, shown, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
   return { items, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
 }

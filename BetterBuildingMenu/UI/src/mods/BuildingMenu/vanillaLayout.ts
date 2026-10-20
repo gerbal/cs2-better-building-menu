@@ -54,12 +54,17 @@ export function findVanillaToolbar(doc: Document): HTMLElement | null {
 }
 
 /**
- * The two patches vanilla's layout needs while the asset menu is open, applied on
- * mount and undone on unmount: `toolLayout` left-aligned, and the toolbar sunk
- * below us. See docs/design-notes.md, "Patching vanilla's layout for the asset menu".
+ * The two patches vanilla's layout needs while the asset menu is open, applied
+ * while it is shown and undone when it is hidden or unmounted: `toolLayout`
+ * left-aligned, and the toolbar sunk below us. See docs/design-notes.md,
+ * "Patching vanilla's layout for the asset menu".
  */
-export function useVanillaLayoutForAssetMenu(): void {
+export function useVanillaLayoutForAssetMenu(shown = true): void {
   useEffect(() => {
+    if (!shown) {
+      return;
+    }
+
     const restores: Array<() => void> = [];
     const layout = findVanillaToolLayout(document);
     const toolbar = findVanillaToolbar(document);
@@ -77,5 +82,5 @@ export function useVanillaLayoutForAssetMenu(): void {
         restore();
       }
     };
-  }, []);
+  }, [shown]);
 }

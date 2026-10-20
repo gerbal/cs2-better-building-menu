@@ -34,6 +34,7 @@ import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMe
 // asset menu rather than a descendant, so it goes through the subscribing hook.
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
+import { useAssetMenuShown } from "mods/BuildingMenu/assetMenuShown";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
 import { chooseViewMode } from "domain/viewModeChoice";
@@ -42,7 +43,7 @@ import {
 } from "domain/buildingGroups";
 import { TableView } from "./TableView";
 import { useCatalogWindow } from "./useCatalogWindow";
-import { useRevealExpandedRow, useScrollAnchor } from "./useScrollAnchor";
+import { useRevealExpandedRow, useScrollAnchor, useScrollToTopOnShow } from "./useScrollAnchor";
 import {
   BuildingCatalogGroupBy$,
   BuildingCatalogMatchesElsewhere$,
@@ -97,7 +98,9 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
+  // False while the menu is kept built behind a closed menu; see KeptAssetMenu.
+  const shown = useAssetMenuShown();
+  const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy }, shown);
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -212,8 +215,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     // arrow-key navigation also calls and must step past a locked tile.
     if (!canPlace(entry)) return;
 
-    // Placing unmounts the whole asset menu, so this is the last moment the scroll
-    // position exists — and the building just chosen is what to come back to.
+    // The next open would start at the top, and the building just chosen is
+    // what to come back to: the anchor takes the menu there instead.
     setAssetMenuAnchor(anchorKey, entry.id);
 
     // The backend resolves this id through its prefab index and activates the
@@ -226,7 +229,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     [sortColumn, descending]
   );
 
-  useScrollAnchor(rootRef, anchorKey, items.length);
+  useScrollAnchor(rootRef, anchorKey, items.length, shown);
+  useScrollToTopOnShow(rootRef, anchorKey, shown);
 
   // Enter arms the backend's best match, so a search can be finished without
   // leaving the keyboard. One listener for every view, on the document because

@@ -47,8 +47,9 @@ drives.
 ## Patching vanilla's layout for the asset menu
 
 `useVanillaLayoutForAssetMenu` in `mods/BuildingMenu/vanillaLayout.ts` makes two
-changes to elements the game owns, applied on mount and undone on unmount. Both
-are imperative and scoped to the mount rather than expressed as a stylesheet
+changes to elements the game owns, applied while the asset menu is shown and
+undone when it is hidden or unmounted. Both are imperative and scoped to the
+menu being shown rather than expressed as a stylesheet
 rule: a rule would restyle the game for the whole session, including while the
 asset menu is closed and for whatever other mod is looking at the same node. A
 missing module or class makes the patch a silent no-op.
@@ -420,6 +421,20 @@ the cards built, and most of a long menu sits below the fold.
   hands back the previous object for every row whose content is unchanged (`stableEntries`), and the
   list cards, grid tiles and table rows are memoised on it. Without that, every step redrew every card
   above it.
+- **The panel is built once.** The game unmounts its asset-menu slot whenever a menu closes, so a
+  menu drawn inside it rebuilt the header, strip, pane, filters and catalog and resubscribed every
+  binding on each open. `KeptAssetMenu` is appended to `Game` instead and renders the menu into an
+  element of its own; the slot (`AssetMenuSlot`) only publishes where it is, and the kept element is
+  moved into it while it exists and is out of the document while it does not. Hidden, the menu is
+  still mounted, so whatever measures, polls or patches the page waits for `useAssetMenuShown`:
+  the load-more poll, the scroll anchor, vanilla's layout patches, a drag in progress, and other
+  mods' tab-bar buttons. Each open starts at the top unless a placed building's anchor is pending,
+  as a freshly built menu did. A render error in the kept menu makes the slot draw vanilla's grid,
+  as the slot's own boundary would. Measured 2026-10-20 (AZ testbed, 1080p): opens 15–20% faster
+  when switching menus and 25–35% faster when reopening the same one; what remains is the page C#
+  sends again, about 45 ms of engine layout for the reattached panel, and the game's own work. The
+  hidden panel holds what it last showed until the next open: 300–900 elements and up to 1.4 MB of
+  JS heap at a menu's first window, about 4,000 elements and 9 MB for Roads scrolled to its end.
 - **Projections are built during the load.** At `OnGameLoadingComplete` the UI system projects
   every menu into the adapter's snapshot cache (`BuildingCatalogAdapter.Prewarm`), so no menu's
   first open pays for it. The cache is keyed on the toolbar's theme and pack selection.

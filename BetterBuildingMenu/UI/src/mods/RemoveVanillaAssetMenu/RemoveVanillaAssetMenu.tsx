@@ -1,7 +1,7 @@
 import { useValue } from "cs2/api";
 import { game } from "cs2/bindings";
 import { ModuleRegistryExtend } from "cs2/modding";
-import { AssetMenu } from "mods/BuildingMenu/AssetMenu";
+import { AssetMenuSlot, useKeptAssetMenuFailed } from "mods/BuildingMenu/KeptAssetMenu";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { FindItPanelShown$, OwnsCurrentMenu$ } from "mods/bindings";
 
@@ -13,17 +13,19 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     const OwnsCurrentMenu = useValue(OwnsCurrentMenu$);
     const findItPanelShown = useValue(FindItPanelShown$) === true;
     const isPhotoMode = useValue(game.activeGamePanel$)?.__Type == game.GamePanelType.PhotoMode;
+    const keptMenuFailed = useKeptAssetMenuFailed();
 
     // Do not put any Hooks (i.e. UseXXXX) after this point.
 
     // When the toolbar's open menu is one we stand in for, we ARE the asset
     // menu rather than something drawn over the hole, so vanilla has no gap to
     // redraw into. The condition lives in buildingMenuMount, where it is tested.
-    if (shouldMountInAssetMenu({ ownsCurrentMenu: OwnsCurrentMenu, isPhotoMode, findItPanelShown })) {
+    if (!keptMenuFailed && shouldMountInAssetMenu({ ownsCurrentMenu: OwnsCurrentMenu, isPhotoMode, findItPanelShown })) {
       // onClose is the game's own menu close: it clears the toolbar selection,
       // so the asset menu goes with no vanilla grid behind it and the button unlit.
       // The extension point's own prop needs no round trip through C#.
-      return <AssetMenu onClose={otherProps.onClose} />;
+      // The menu itself is kept built in KeptAssetMenu and moves in here.
+      return <AssetMenuSlot onClose={otherProps.onClose} />;
     }
 
     // Photo mode is the one case where we own the menu and decline to draw it,

@@ -7,6 +7,7 @@ import { ToolOptionsVisibility } from "mods/ToolOptionsVisibility/ToolOptionsVis
 import { ToolOptionsPanelRefresh } from "mods/ToolOptionsVisibility/ToolOptionsPanelRefresh";
 import { AssetMenuToolOptions } from "mods/AssetMenuToolOptions/AssetMenuToolOptions";
 
+import { KeptAssetMenu } from "mods/BuildingMenu/KeptAssetMenu";
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
 import { VanillaToolbarWatcher } from "mods/VanillaMenuWatcher/VanillaToolbarWatcher";
 import { safeAppend, safeExtension } from "mods/ExtensionBoundary";
@@ -42,6 +43,10 @@ const register: ModRegistrar = (moduleRegistry) => {
   // The hook above reads its binding without subscribing; this re-renders the
   // panel when that value changes.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "ToolOptionsPanel", safeExtension("ToolOptionsPanel", ToolOptionsPanelRefresh));
+
+  // The build menu, kept built between opens and moved into the asset-menu
+  // slot above whenever it exists. See KeptAssetMenu.
+  moduleRegistry.append("Game", safeAppend("KeptAssetMenu", KeptAssetMenu));
 
   // Renders nothing; watches the vanilla toolbar so its menus open the asset menu.
   moduleRegistry.append("Game", safeAppend("VanillaMenuWatcher", VanillaMenuWatcher));

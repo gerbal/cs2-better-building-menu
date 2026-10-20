@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import {
   CATALOG_ANCHOR_MAX_FRAMES,
   anchorScrollTop,
@@ -9,7 +9,7 @@ import {
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
 import { getAssetMenuAnchor, setAssetMenuAnchor } from "domain/assetMenuViewStore";
-import { findScrollContainer, lastCatalogRow } from "./catalogDom";
+import { findScrollContainer, lastCatalogRow, scrollToTopAbove } from "./catalogDom";
 
 /**
  * Breathing room under a revealed detail, in CSS pixels. Small on purpose: it
@@ -22,11 +22,12 @@ const EXPANDED_ROW_REVEAL_MARGIN = 6;
  * retry loop, not one measurement: Cohtml lays out asynchronously and the
  * window is still arriving from C#, so neither has settled by the first effect.
  */
-export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, itemCount: number): void {
+export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, itemCount: number, shown = true): void {
   useEffect(() => {
     const anchored = getAssetMenuAnchor(anchorKey);
 
-    if (anchored === null || itemCount === 0) {
+    // Hidden, nothing measures; the anchor waits for the menu to be shown again.
+    if (!shown || anchored === null || itemCount === 0) {
       return;
     }
 
@@ -121,7 +122,31 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
     // itemCount rather than the items array: the effect has to wait for the
     // rows to be in the document before it can find one, and a new array
     // identity every publish would re-run it on data that has not moved.
-  }, [rootRef, anchorKey, itemCount]);
+  }, [rootRef, anchorKey, itemCount, shown]);
+}
+
+/**
+ * Start each open at the top, as a menu built fresh did. The kept menu holds
+ * its scroll position while hidden, so without this the next menu opened as
+ * far down as the last one was left. A pending anchor — a building just
+ * placed — wins: useScrollAnchor takes the player back to it instead.
+ */
+export function useScrollToTopOnShow(rootRef: RefObject<HTMLElement>, anchorKey: string, shown: boolean): void {
+  const wasShown = useRef(shown);
+
+  useEffect(() => {
+    const opened = shown && !wasShown.current;
+    wasShown.current = shown;
+
+    const root = rootRef.current;
+    const row = root ? lastCatalogRow(root) : null;
+
+    if (!opened || !root || !row || getAssetMenuAnchor(anchorKey) !== null) {
+      return;
+    }
+
+    scrollToTopAbove<HTMLElement>(row, root);
+  }, [rootRef, anchorKey, shown]);
 }
 
 /**

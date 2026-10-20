@@ -8,6 +8,7 @@ import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
+import { useAssetMenuShown } from "mods/BuildingMenu/assetMenuShown";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, catalogLayoutWidth } from "domain/assetMenuLayout";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
@@ -30,10 +31,12 @@ export interface AssetMenuProps {
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
+  // False while the menu is kept built but out of the document: see KeptAssetMenu.
+  const shown = useAssetMenuShown();
   const layout = useAssetMenuLayout();
   const { menuWidth, rowWidth, paneShown } = layout;
-  const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
-  const widthDrag = useAssetMenuWidthDrag(layout);
+  const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight(shown);
+  const widthDrag = useAssetMenuWidthDrag(layout, Date.now, shown);
   // The header's small and large modes, judged against the menu plus the pane.
   // Their classes carry no rules, so neither changes what is drawn.
   const headerWidth = catalogLayoutWidth(menuWidth);
@@ -41,7 +44,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   // The two patches on vanilla's own layout — the column trio left-aligned,
   // the toolbar sunk beneath the control pane — live with their reasons in
   // vanillaLayout.ts.
-  useVanillaLayoutForAssetMenu();
+  useVanillaLayoutForAssetMenu(shown);
 
   return (
     <>
@@ -56,7 +59,9 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />
           <div className={styles.topBar}>
             <BuildingMenuHeader small={headerWidth <= 685} large={headerWidth >= 850} onClose={onClose} />
-            <VanillaTabBarHost onClose={onClose} />
+            {/* Other mods' buttons: mounted only while shown, so their code
+                does not run behind a closed menu. */}
+            {shown && <VanillaTabBarHost onClose={onClose} />}
           </div>
           <div
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}
