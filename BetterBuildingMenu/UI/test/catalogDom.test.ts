@@ -3,12 +3,15 @@ import { describe, it } from "node:test";
 import { findScrollContainer, lastCatalogRow, scrollToTopAbove } from "../src/mods/BuildingCatalog/catalogDom.ts";
 import { CATALOG_SCROLL_MIN_OVERFLOW, isScrollContainer } from "../src/domain/catalogWindow.ts";
 
-type Box = { scrollHeight: number; clientHeight: number; parentElement: Box | null };
-const box = (over: number, parent: Box | null): Box => ({
+type Box = { scrollHeight: number; clientHeight: number; parentElement: Box | null; overflowY?: string };
+const box = (over: number, parent: Box | null, overflowY = "auto"): Box => ({
   scrollHeight: 100 + over,
   clientHeight: 100,
   parentElement: parent,
+  overflowY,
 });
+/** Stands in for canScroll, which reads the computed style off a real element. */
+const scrolls = (node: Box): boolean => node.overflowY === "auto" || node.overflowY === "scroll";
 
 describe("finding the element that scrolls", () => {
   it("returns the first ancestor that overflows by the threshold", () => {
@@ -16,7 +19,7 @@ describe("finding the element that scrolls", () => {
     const scroller = box(CATALOG_SCROLL_MIN_OVERFLOW, root);
     const row = box(0, box(0, scroller));
 
-    assert.equal(findScrollContainer(row, root, isScrollContainer), scroller);
+    assert.equal(findScrollContainer(row, root, isScrollContainer, scrolls), scroller);
   });
 
   it("skips a container sub-pixel rounding pushed over by less than the threshold", () => {
@@ -25,7 +28,7 @@ describe("finding the element that scrolls", () => {
     const nearly = box(CATALOG_SCROLL_MIN_OVERFLOW - 1, scroller);
     const row = box(0, nearly);
 
-    assert.equal(findScrollContainer(row, root, isScrollContainer), scroller);
+    assert.equal(findScrollContainer(row, root, isScrollContainer, scrolls), scroller);
   });
 
   it("stops at the root rather than walking into the game's own tree", () => {
@@ -36,14 +39,36 @@ describe("finding the element that scrolls", () => {
     const root = box(0, game);
     const row = box(0, box(0, root));
 
-    assert.equal(findScrollContainer(row, root, isScrollContainer), null);
+    assert.equal(findScrollContainer(row, root, isScrollContainer, scrolls), null);
   });
 
   it("does not return the root itself even when it overflows", () => {
     const root = box(50, null);
     const row = box(0, root);
 
-    assert.equal(findScrollContainer(row, root, isScrollContainer), null);
+    assert.equal(findScrollContainer(row, root, isScrollContainer, scrolls), null);
+  });
+
+  it("skips an element that overflows but cannot scroll", () => {
+    // Measured in game: cs2/ui's Scrollable shrinks to a short list, and its
+    // scrollbar thumb, still sized from the longer list the kept menu last showed,
+    // hangs 10 px out of the track. The wrapper is overflow: hidden, so nothing
+    // scrolls; taking it for the list's scroll box left a short list unfilled.
+    const root = box(0, null);
+    const wrapper: Box = { scrollHeight: 350, clientHeight: 340, parentElement: root, overflowY: "hidden" };
+    const content: Box = { scrollHeight: 340, clientHeight: 340, parentElement: wrapper, overflowY: "auto" };
+    const row = box(0, box(0, content, "visible"));
+
+    assert.equal(findScrollContainer(row, root, isScrollContainer, scrolls), null);
+  });
+
+  it("finds the element inside the wrapper that scrolls a long list", () => {
+    const root = box(0, null);
+    const wrapper: Box = { scrollHeight: 404, clientHeight: 404, parentElement: root, overflowY: "hidden" };
+    const content: Box = { scrollHeight: 610, clientHeight: 404, parentElement: wrapper, overflowY: "auto" };
+    const row = box(0, box(0, content, "visible"));
+
+    assert.equal(findScrollContainer(row, root, isScrollContainer, scrolls), content);
   });
 });
 
