@@ -7,4 +7,10 @@ describe("the Load more button", () => {
     assert.equal(loadMoreCount(250), CATALOG_WINDOW_STEP);
     assert.equal(loadMoreCount(37), 37);
   });
+
+  it("names a screen of rows while the page still has undrawn ones", () => {
+    // The table draws a screen at a time from the page before asking C# for more.
+    assert.equal(loadMoreCount(197, 7), 7);
+    assert.equal(loadMoreCount(3, 7), 3);
+  });
 });
