@@ -430,7 +430,10 @@ the cards built, and most of a long menu sits below the fold.
   the load-more poll, the scroll anchor, vanilla's layout patches, a drag in progress, and other
   mods' tab-bar buttons. Each open starts at the top unless a placed building's anchor is pending,
   as a freshly built menu did. A render error in the kept menu makes the slot draw vanilla's grid,
-  as the slot's own boundary would. Measured 2026-10-20 (AZ testbed, 1080p): opens 15–20% faster
+  as the slot's own boundary would. The list's scroll box is the nearest element that overflows and
+  can scroll (`canScroll`): after a longer list, Scrollable's overflow-hidden wrapper shrinks to a
+  short one while its scrollbar thumb keeps the old size and hangs 10 px out, and taking the wrapper
+  for the scroll box left a short list unfilled. Measured 2026-10-20 (AZ testbed, 1080p): opens 15–20% faster
   when switching menus and 25–35% faster when reopening the same one; what remains is the page C#
   sends again, about 45 ms of engine layout for the reattached panel, and the game's own work. The
   hidden panel holds what it last showed until the next open: 300–900 elements and up to 1.4 MB of

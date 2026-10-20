@@ -9,7 +9,7 @@ import {
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
 import { getAssetMenuAnchor, setAssetMenuAnchor } from "domain/assetMenuViewStore";
-import { findScrollContainer, lastCatalogRow, scrollToTopAbove } from "./catalogDom";
+import { canScroll, findScrollContainer, lastCatalogRow, scrollToTopAbove } from "./catalogDom";
 
 /**
  * Breathing room under a revealed detail, in CSS pixels. Small on purpose: it
@@ -49,7 +49,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
         return null;
       }
 
-      const scroller = findScrollContainer(row, root, isScrollContainer);
+      const scroller = findScrollContainer(row, root, isScrollContainer, canScroll);
 
       if (!scroller) {
         return null;
@@ -173,7 +173,7 @@ export function useRevealExpandedRow(
     }
 
     const detail = row.querySelector(`.${detailClassName}`) ?? row;
-    const scroller = findScrollContainer(row, root, isScrollContainer);
+    const scroller = findScrollContainer(row, root, isScrollContainer, canScroll);
 
     if (!scroller || !(detail instanceof HTMLElement)) {
       return;

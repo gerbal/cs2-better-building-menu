@@ -8,17 +8,21 @@ export interface ScrollBox {
 /**
  * The element that actually scrolls, found by walking up from a row and never
  * past the catalog's own root. A walk, because which element owns the scroll
- * differs by view mode and cs2/ui's Scrollable drops any marker prop.
+ * differs by view mode and cs2/ui's Scrollable drops any marker prop. Overflowing
+ * is not enough: Scrollable's own wrapper is overflow: hidden, and its scrollbar
+ * thumb can hang out of the track (see canScroll), so `scrolls` is asked too,
+ * only of what overflows.
  */
 export function findScrollContainer<T extends ScrollBox>(
   from: T,
   within: T,
-  overflows: (scrollHeight: number, clientHeight: number) => boolean
+  overflows: (scrollHeight: number, clientHeight: number) => boolean,
+  scrolls: (node: T) => boolean
 ): T | null {
   let node = from.parentElement as T | null;
 
   while (node && node !== within) {
-    if (overflows(node.scrollHeight, node.clientHeight)) {
+    if (overflows(node.scrollHeight, node.clientHeight) && scrolls(node)) {
       return node;
     }
 
@@ -26,6 +30,17 @@ export function findScrollContainer<T extends ScrollBox>(
   }
 
   return null;
+}
+
+/**
+ * Whether an element can scroll at all. Measured in game: when the kept menu
+ * shows a list shorter than the one before, Scrollable's wrapper shrinks to it
+ * but its scrollbar thumb keeps the old size and hangs 10 px out of the track,
+ * so the wrapper overflows while nothing in it can scroll.
+ */
+export function canScroll(node: Element): boolean {
+  const overflowY = getComputedStyle(node).overflowY;
+  return overflowY === "auto" || overflowY === "scroll";
 }
 
 /**
