@@ -388,6 +388,11 @@
 
 .row {
   @include _base.lightButton(false, true);
+  // The panel behind already blurs the world, so a row's own blur draws nothing
+  // new (a screenshot with and without it differs by no pixel) while each of
+  // the forty rows costs a blur pass every frame: 0.4 ms of frame time with the
+  // sim running at 1920x1080.
+  backdrop-filter: none;
   width: 100%;
   // Keep enough vertical room for the thumbnail and the two identity lines;
   // every metric remains on the same baseline rather than being folded into
