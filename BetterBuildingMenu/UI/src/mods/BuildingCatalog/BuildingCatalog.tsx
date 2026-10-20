@@ -110,11 +110,10 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // and layout on every open. The other views show most of a page and draw all of it.
   const catalogHeight = useValue(AssetMenuHeight$);
   const tableRows = tableMode ? rowsThatFit(catalogHeight, getAssetMenuRowGeometry(getAssetMenuDensity(layoutWidth)).rowHeight) : null;
-  const drawing = useMemo(
-    () => ({ rows: tableRows, mustIncludeId: getAssetMenuAnchor(anchorKey) }),
-    // The anchor is read with the screen size: it is set before an open, not during one.
-    [tableRows, anchorKey]
-  );
+  // The anchor is read on every render, not memoised: it is set by placing a building,
+  // while this kept menu stays built, and the open after that must draw its row.
+  const anchoredId = getAssetMenuAnchor(anchorKey);
+  const drawing = useMemo(() => ({ rows: tableRows, mustIncludeId: anchoredId }), [tableRows, anchoredId]);
   const { items, pageItems, nextCount, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } =
     useCatalogWindow(rootRef, { viewMode, groupBy }, shown, drawing);
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);

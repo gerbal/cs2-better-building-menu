@@ -93,6 +93,12 @@ export function useCatalogWindow(
   }, [shown, drawing.rows]);
   const mustInclude = drawing.mustIncludeId === null ? -1 : pageItems.findIndex((item) => item.id === drawing.mustIncludeId);
   const count = drawnCount({ pageLength: pageItems.length, drawn: drawnRows, mustInclude });
+  // A row the menu returned to stays drawn after the anchor that reached it clears.
+  useEffect(() => {
+    if (drawnRows !== null && count > drawnRows) {
+      setGrown({ screen: drawing.rows, count });
+    }
+  }, [count, drawnRows, drawing.rows]);
   const items = useMemo(() => count >= pageItems.length ? pageItems : pageItems.slice(0, count), [pageItems, count]);
   const hasMore = count < pageItems.length || pageHasMore;
   const growth = nextGrowth({
@@ -199,7 +205,9 @@ export function useCatalogWindow(
       cancelled = true;
       cancelAnimationFrame(handle);
     };
-  }, [rootRef, shown, hasMore, items.length, scope.viewMode, scope.groupBy]);
+    // The page's length as well as the drawn rows': a Load more that C# answers grows
+    // the page, not the rows drawn, and the poll stopped when it asked.
+  }, [rootRef, shown, hasMore, items.length, pageItems.length, scope.viewMode, scope.groupBy]);
 
   return { items, pageItems, nextCount, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
 }

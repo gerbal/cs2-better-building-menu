@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { getAssetMenuAnchorKey, resetAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { CATALOG_WINDOW_STEP } from "../../src/domain/catalogWindow";
 
@@ -79,6 +79,19 @@ describe("Load more", () => {
 
     act(() => loadMoreButton().props.onSelect());
     assert.deepEqual(triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").map((call) => call.args), [[40 + CATALOG_WINDOW_STEP]]);
+  });
+
+  it("draws far enough to reach a building the menu returns to", () => {
+    // Placed from row 31: the next open scrolls back to it, so its row must be drawn.
+    setAssetMenuView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
+    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
+    setAssetMenuAnchor(getAssetMenuAnchorKey({ list: "catalog", viewMode: "table", groupBy: "category" }), 31);
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+
+    assert.equal(drawnRows(), 33);
   });
 
   it("draws the whole page in the grid, which shows most of it", () => {
