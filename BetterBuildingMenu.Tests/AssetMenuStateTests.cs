@@ -95,6 +95,30 @@ public sealed class AssetMenuStateTransitionTests
 {
     private static AssetMenuState S() => AssetMenuState.Initial;
 
+    [Fact]
+    public void OpeningMenu_NamesTheMenuWhileItsViewIsTheOneAnOpenShows()
+    {
+        // The page carries this, and the UI shows a kept page at once only when it is
+        // exactly what reopening that menu shows: the menu, with no category, tab or tier.
+        Assert.Equal("Roads", S().SelectMenu("Roads").OpeningMenu);
+        Assert.Equal("Roads", S().SelectMenu("Roads").Search("bridge").LoadMore().OpeningMenu);
+    }
+
+    [Fact]
+    public void OpeningMenu_IsEmptyOnceTheViewIsNarrowedWithinTheMenu()
+    {
+        Assert.Equal(string.Empty, S().SelectMenu("Roads").SelectCategory("RoadsSmallRoads").OpeningMenu);
+        Assert.Equal(string.Empty, S().SelectMenu("Education").SelectStripTab("Elementary").OpeningMenu);
+        Assert.Equal(string.Empty, S().SelectMenu("Education").SelectSchoolTier(2).OpeningMenu);
+    }
+
+    [Fact]
+    public void OpeningMenu_IsEmptyWithNoMenu()
+    {
+        Assert.Equal(string.Empty, S().OpeningMenu);
+        Assert.Equal(string.Empty, S().SelectMenu("Roads").ClearMenuScope().OpeningMenu);
+    }
+
     private static AssetMenuState Grown(AssetMenuState state) =>
         state with { Query = state.Query with { Offset = 100, Limit = 300 } };
 

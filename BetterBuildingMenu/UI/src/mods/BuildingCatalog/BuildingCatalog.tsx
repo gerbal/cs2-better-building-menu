@@ -331,7 +331,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
       {tableMode ? (
         <TableView
-          items={items}
+          items={pageItems}
+          drawCount={items.length}
           emptyState={emptyState}
           density={density}
           metrics={tableMetrics}

@@ -5,6 +5,7 @@ import { AssetMenuSlot, useKeptAssetMenuFailed } from "mods/BuildingMenu/KeptAss
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { ownedMenuName, ownsSelectedMenu } from "domain/menuOwnership";
 import { toolbarEntityIndex } from "domain/vanillaMenuWatch";
+import { currentMenuClaim } from "mods/menuClaim";
 import { FindItPanelShown$, OwnedAssetMenus$, OwnsCurrentMenu$, ReplaceVanillaBuildMenu$, SelectedAssetMenu$ } from "mods/bindings";
 
 export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component) => {
@@ -25,7 +26,7 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     // Decided here, in the frame the game opens the menu, from the menus C# lists as
     // ones it takes over: waiting for OwnsCurrentMenu would leave vanilla's grid up for
     // a frame and the asset menu a frame late. See domain/menuOwnership.
-    const ownsMenu = ownsSelectedMenu({ replaceEnabled, ownsCurrentMenu: OwnsCurrentMenu, selectedIndex, owned });
+    const ownsMenu = ownsSelectedMenu({ replaceEnabled, ownsCurrentMenu: OwnsCurrentMenu, selectedIndex, owned, claim: currentMenuClaim() });
 
     // When the toolbar's open menu is one we stand in for, we ARE the asset
     // menu rather than something drawn over the hole, so vanilla has no gap to

@@ -30,6 +30,31 @@ export function ownedMenuName(selectedIndex: number | null, owned: readonly Owne
   return null;
 }
 
+/**
+ * Whether the open menu may be taken over before C# says so: it was selected, after the
+ * UI first looked, while C# listed it. C# hears a selection only when it changes (see
+ * VanillaMenuWatcher, which ignores its first look), so a menu that joins the list while
+ * it is already open, or was open when the UI first looked, would be claimed with no page
+ * ever coming. Those keep waiting for OwnsCurrentMenu, as before.
+ */
+export interface MenuClaim {
+  index: number | null;
+  claimable: boolean;
+}
+
+/** The claim after this observation of the toolbar's open menu; `prev` null for the first. */
+export function nextClaim(prev: MenuClaim | null, selectedIndex: number | null, owned: readonly OwnedAssetMenu[]): MenuClaim {
+  if (prev === null) {
+    return { index: selectedIndex, claimable: false };
+  }
+
+  if (prev.index === selectedIndex) {
+    return prev;
+  }
+
+  return { index: selectedIndex, claimable: ownedMenuName(selectedIndex, owned) !== null };
+}
+
 export interface MenuOwnershipState {
   replaceEnabled: boolean;
   /** C#'s own answer, a frame after the selection. Still authoritative. */
@@ -37,15 +62,20 @@ export interface MenuOwnershipState {
   /** The toolbar's open menu, by entity index; null when none is open. */
   selectedIndex: number | null;
   owned: readonly OwnedAssetMenu[];
+  /** See MenuClaim. */
+  claim: MenuClaim;
 }
 
 /** Whether the asset menu stands in for the toolbar's open menu now. */
-export function ownsSelectedMenu({ replaceEnabled, ownsCurrentMenu, selectedIndex, owned }: MenuOwnershipState): boolean {
+export function ownsSelectedMenu({ replaceEnabled, ownsCurrentMenu, selectedIndex, owned, claim }: MenuOwnershipState): boolean {
   if (ownsCurrentMenu) {
     return true;
   }
 
-  return replaceEnabled && ownedMenuName(selectedIndex, owned) !== null;
+  return replaceEnabled
+    && claim.claimable
+    && claim.index === selectedIndex
+    && ownedMenuName(selectedIndex, owned) !== null;
 }
 
 export interface SlotJoinState {
@@ -53,10 +83,11 @@ export interface SlotJoinState {
   slotMenu: string | null;
   /** The menu the kept page answers; empty when its query was not scoped to one. */
   pageMenu: string;
-  /** Whether any page has arrived since the slot opened: C# has answered the open. */
-  pageSinceOpen: boolean;
-  /** Whether the wait for that answer has run out. */
-  waitedOut: boolean;
+  /**
+   * Whether C# has answered the open (a page arrived since the slot opened), the wait
+   * for that answer ran out, or the slot replaced a joined one (a switch with the menu up).
+   */
+  answered: boolean;
 }
 
 /**
@@ -64,8 +95,8 @@ export interface SlotJoinState {
  * the opened menu's (a reopen); otherwise when C#'s answer to the open arrives, so
  * no frame ever shows another menu's header and cards under this menu's button.
  */
-export function shouldJoinSlot({ slotMenu, pageMenu, pageSinceOpen, waitedOut }: SlotJoinState): boolean {
-  if (pageSinceOpen || waitedOut) {
+export function shouldJoinSlot({ slotMenu, pageMenu, answered }: SlotJoinState): boolean {
+  if (answered) {
     return true;
   }
 

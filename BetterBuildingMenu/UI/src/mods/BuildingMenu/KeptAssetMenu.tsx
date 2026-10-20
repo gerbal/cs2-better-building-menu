@@ -14,10 +14,10 @@ const slots = createAssetMenuSlotStore<HTMLElement>();
 
 /**
  * How long a slot waits for C#'s answer to the open before the menu joins it
- * anyway. The answer comes a frame later; this only keeps a page that never
- * comes from leaving the slot empty.
+ * anyway. The answer comes a frame later, a few frames on a slow one; this is
+ * only a safety net, so a page that never comes cannot leave the slot empty.
  */
-const JOIN_WAIT_MS = 250;
+const JOIN_WAIT_MS = 1000;
 
 /**
  * Whether the kept menu has failed to render. It draws outside the slot, so the
@@ -88,14 +88,6 @@ export const KeptAssetMenu = () => {
   const lastClose = useRef<(() => void) | undefined>(undefined);
   if (slot) lastClose.current = slot.onClose;
 
-  // Also read the store once mounted: a slot opened before this subscribed
-  // would otherwise be missed.
-  useEffect(() => {
-    const unsubscribe = slots.subscribe(setSlot);
-    setSlot(slots.current());
-    return unsubscribe;
-  }, []);
-
   // The menu the held page answers, and the slot C# has answered since it opened
   // (a page arrived, or the wait ran out). Read through a subscription that only
   // re-renders on a change of menu, not on every page.
@@ -103,6 +95,32 @@ export const KeptAssetMenu = () => {
   const [answered, setAnswered] = useState<Slot<HTMLElement> | null>(null);
   const currentSlot = useRef(slot);
   currentSlot.current = slot;
+  // Whether the menu is in a slot now; written once the join is committed.
+  const inSlot = useRef(false);
+
+  // Also read the store once mounted: a slot opened before this subscribed
+  // would otherwise be missed.
+  useEffect(() => {
+    // A joined slot replaced in one commit is the player switching menus with the
+    // menu up: the game swaps the slot (or ours re-opens for the new menu). The menu
+    // stays joined through that round trip, as it always has, rather than leaving
+    // the screen and taking the layout patches with it; only an open from closed waits.
+    let swapping = false;
+    const unsubscribe = slots.subscribe((next) => {
+      if (next === null) {
+        swapping = inSlot.current;
+        void Promise.resolve().then(() => {
+          swapping = false;
+        });
+      } else if (swapping || inSlot.current) {
+        setAnswered(next);
+      }
+
+      setSlot(next);
+    });
+    setSlot(slots.current());
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const subscription = BuildingCatalog$.subscribe((page) => {
@@ -124,8 +142,7 @@ export const KeptAssetMenu = () => {
   const joined = slot !== null && shouldJoinSlot({
     slotMenu: slot.menu ?? null,
     pageMenu,
-    pageSinceOpen: answered === slot,
-    waitedOut: false,
+    answered: answered === slot,
   });
 
   useLayoutEffect(() => {
@@ -133,9 +150,12 @@ export const KeptAssetMenu = () => {
       return;
     }
 
+    inSlot.current = true;
+
     slot.element.appendChild(container);
 
     return () => {
+      inSlot.current = false;
       container.parentNode?.removeChild(container);
     };
   }, [slot, joined, container]);

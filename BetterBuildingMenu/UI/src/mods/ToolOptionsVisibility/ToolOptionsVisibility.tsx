@@ -1,5 +1,6 @@
 import { ownsSelectedMenu } from "domain/menuOwnership";
 import { toolbarEntityIndex } from "domain/vanillaMenuWatch";
+import { currentMenuClaim } from "mods/menuClaim";
 import { OwnedAssetMenus$, OwnsCurrentMenu$, ReplaceVanillaBuildMenu$, SelectedAssetMenu$ } from "mods/bindings";
 
 /** The game's hook for whether the tool options bank shows. */
@@ -23,6 +24,7 @@ export const ToolOptionsVisibility = (vanillaHook: ToolOptionsVisibleHook): Tool
       ownsCurrentMenu: OwnsCurrentMenu$.value,
       selectedIndex: toolbarEntityIndex(SelectedAssetMenu$.value),
       owned: OwnedAssetMenus$.value,
+      claim: currentMenuClaim(),
     });
 
     return vanillaHook() || ownsMenu;

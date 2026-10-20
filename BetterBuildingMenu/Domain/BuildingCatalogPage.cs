@@ -40,11 +40,12 @@ namespace BetterBuildingMenu.Domain
 		/// holds until the two agree rather than arming the previous search's match.
 		/// </remarks>
 		string? SearchText = null,
-		/// <summary>The menu the query ran scoped to; empty when it was not.</summary>
+		/// <summary>The menu this page is the opening view of; empty when it is not one.</summary>
 		/// <remarks>
-		/// A close clears the scope but sends no page, so the page a kept asset menu holds
-		/// still names its menu when the next one opens. The UI shows the kept menu at once
-		/// when this names the menu being opened, and waits for the next page when it does not.
+		/// AssetMenuState.OpeningMenu: the menu with no category, tab or tier. A close sends no
+		/// page, so the page a kept asset menu holds still says this at the next open. The UI
+		/// shows the kept menu at once when this names the menu being opened, and waits for the
+		/// next page when it does not.
 		/// </remarks>
 		string? Menu = null) : IJsonWritable
 	{

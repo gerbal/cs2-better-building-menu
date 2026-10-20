@@ -29,8 +29,11 @@ cheaper by the rows it no longer builds; nothing that worked stops working.
 - **A.** When the player opens a toolbar menu that BBM stands in for, the slot replaces vanilla in
   the same frame, and vanilla's grid is never built.
 - **A.** When the kept panel already holds that menu's page (a reopen), it is shown in that frame.
-- **A.** When it holds another menu's page (a switch), nothing from the other menu is ever shown: the
-  panel appears when the new page arrives, as today, without vanilla's grid in between.
+- **A.** When it holds another menu's page (an open from closed), nothing from the other menu is
+  shown: the panel appears when the new page arrives, without vanilla's grid in between.
+- **A.** Switching from one menu to another with the menu up behaves as today: the panel stays up
+  with the old menu's page until the new one arrives, rather than leaving the screen for the round
+  trip and taking the layout patches with it.
 - **B.** The catalog renders the entries that fit its visible area plus a small margin, in every view,
   and renders more as the player scrolls, without waiting for C# while the page still has entries.
 
@@ -42,7 +45,8 @@ cheaper by the rows it no longer builds; nothing that worked stops working.
 
 ## Anti-goals (a failure even if it is faster)
 
-- Any frame showing one menu's header, strip or cards under another menu's button.
+- Any frame of an open from closed showing one menu's header, strip or cards under another menu's
+  button. (A switch with the menu up shows the old menu until C# answers, as it always has.)
 - The asset menu covering a menu C# gives back to vanilla (a mod's menu with nothing indexed, the
   replace setting off, Find It's panel, photo mode) for more than the one frame it takes C# to say so.
 - A blank UI after the mod is subscribed mid-session (see the extension rules in
@@ -62,13 +66,25 @@ recomputed and republished when any of its inputs changes: an index generation i
 toolbar's theme/pack/vanilla-mods selection changes, the setting changes. Computing it is pure
 domain code with tests.
 
-**The page states its menu.** `BuildingCatalogPage` gains `Menu`, the menu the query ran scoped to
-(empty when unscoped), written as `menu`, the way `SearchText` already is. A close clears C#'s scope
-but sends no page, so the page the kept panel holds keeps naming the menu it shows.
+**The page states its menu.** `BuildingCatalogPage` gains `Menu`, written as `menu` the way
+`SearchText` is: the menu the page is the *opening view* of (`AssetMenuState.OpeningMenu`: the menu
+with no category, strip tab or school tier, which is what `SelectMenu` shows), and empty otherwise. A
+close sends no page, so the page the kept panel holds keeps saying this. Search, sort and grouping
+survive a reopen, so they need no mention.
 
-**The UI owns the selected menu when** the setting is on and the selected toolbar menu's index is in
-`OwnedAssetMenus`, or `OwnsCurrentMenu` is true (C# stays authoritative; the set only lets the UI act
-a frame earlier). One pure function decides it, used by:
+**A close keeps the scope bindings.** C# still forgets the scope on close, but no longer publishes
+the cleared scope (`ReleaseMenuScope(publish: false)` on both close paths): only the kept panel's
+strip and chip row read those bindings, and every open publishes its own scope. So a reopen shows
+the strip in the click frame, not a frame later.
+
+**The UI owns the selected menu when** `OwnsCurrentMenu` is true (C# stays authoritative), or the
+setting is on, the selected menu is in `OwnedAssetMenus`, and it was *claimed*: selected, after the
+UI first observed the selection, while C# listed it. C# hears a selection only when it changes (the
+watcher ignores its first observation), so a menu that joins the list while already open on
+vanilla's grid (the index came ready, a toolbar filter changed, a mid-session subscribe) is never
+claimed, and keeps today's path. The claim is tracked from the bindings themselves
+(`mods/menuClaim.ts`), because the extension point renders only while a menu is open. One pure
+function decides ownership, used by:
 
 - `RemoveVanillaAssetMenu`, which renders the slot instead of vanilla's menu, passing the selected
   menu's name to the slot;
@@ -83,7 +99,9 @@ menu it was opened for. `KeptAssetMenu` moves its element into the slot, and cou
 1. the page it holds names the slot's menu (a reopen: this frame), or
 2. any page has arrived since the slot opened (a switch, an unscoped query, a first open: when C#
    answers), or
-3. a short timeout passes with neither (a fallback, so a missed page can never leave an empty slot).
+3. the slot replaced a joined one within one commit (a switch with the menu up: stays joined), or
+4. one second passes with none of these: a safety net only, so a page that never comes cannot leave
+   the slot empty. It breaks the first anti-goal in that failure case, deliberately.
 
 Until then the slot is in the document but empty, so neither vanilla's grid nor the other menu's
 page is drawn. Once joined, later pages do not detach it.
@@ -94,13 +112,14 @@ If C# yields a menu the UI claimed, it republishes `OwnedAssetMenus` without it 
 ## B. Render what fits
 
 `useCatalogWindow` keeps the page as C# sends it and adds a render count: how many of the page's
-entries the views draw. It starts from an estimate, rows that fit the catalog's height in the current
-view plus a margin of two rows, and the existing fill loop raises it while the last drawn row ends
+entries the table draws. It starts from an estimate, rows that fit the catalog's height (the
+`AssetMenuHeight` binding) over the density's row height, plus two, and the existing fill loop raises it while the last drawn row ends
 inside the visible area. Scrolling near the bottom raises it by a step; only when it has reached the
 end of the page does the loop send Load more to C#, as today. So:
 
-- `items` handed to the views is the drawn prefix; the full page stays available for Enter's best
-  match;
+- the table is handed the whole page and the count: its group headings and their counts are built
+  from the whole page as before (`takeRows` cuts the flattened lines after the last drawn row), so a
+  heading never appears mid-scroll; the full page also stays available for Enter's best match;
 - "has more" means more in the page or more in C#;
 - the end-of-list label and Load more count what is drawn against the total, as they do now;
 - a pending scroll anchor raises the count to cover the anchored entry before it is measured;
@@ -129,7 +148,10 @@ correctness.
   (setting off, a menu with nothing indexed, Find It panel, photo mode); scroll anchor after placing;
   Enter to place; Load more to the end of Roads; mid-session subscribe.
 
-## Left to the builder
+## Builder's calls (made while building; check these)
 
-Names, file layout, the timeout length, the margin and step sizes, and how the render count reaches
-the anchor.
+- Part B applies to the table only. Grid, list and cards show 29–35 of a page's 40 entries at the
+  default height, and their card geometry depends on width and tile size; they draw the whole page.
+- The fallback wait is one second; the margin is two rows; a step is one screen.
+- The claim tracker is module state subscribed at import, like the game's own binding readers.
+- The test stub for `cs2/api` gained `subscribe`, which the game's bindings have.

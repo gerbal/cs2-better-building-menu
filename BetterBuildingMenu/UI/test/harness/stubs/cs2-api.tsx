@@ -6,7 +6,16 @@ const values = new Map<string, unknown>();
 const readers = new Map<string, Set<() => void>>();
 export const triggers: Array<{ group: string; name: string; args: unknown[] }> = [];
 
-export interface StubBinding<T> { key: string; fallback: T | undefined; readonly value: T }
+// Listeners from binding.subscribe, which the game's bindings also offer outside React:
+// told the new value on every setBinding.
+const subscribers = new Map<string, Set<(value: unknown) => void>>();
+
+export interface StubBinding<T> {
+  key: string;
+  fallback: T | undefined;
+  readonly value: T;
+  subscribe(listener?: (value: T) => void): { readonly value: T; dispose(): void };
+}
 
 const read = <T,>(binding: { key: string; fallback: T | undefined }): T =>
   (values.has(binding.key) ? values.get(binding.key) : binding.fallback) as T;
@@ -14,6 +23,13 @@ const read = <T,>(binding: { key: string; fallback: T | undefined }): T =>
 export function bindValue<T>(group: string, name: string, fallback?: T): StubBinding<T> {
   const binding = { key: `${group}.${name}`, fallback } as StubBinding<T>;
   Object.defineProperty(binding, "value", { get: () => read(binding) });
+  binding.subscribe = (listener) => {
+    const set = subscribers.get(binding.key) ?? new Set<(value: unknown) => void>();
+    subscribers.set(binding.key, set);
+    const entry = (value: unknown) => listener?.(value as T);
+    set.add(entry);
+    return { get value() { return read(binding); }, dispose: () => { set.delete(entry); } };
+  };
   return binding;
 }
 // A real hook, like the game's useValue, so a wrapper that calls it changes a
@@ -57,6 +73,7 @@ export function setMapBinding(group: string, name: string, key: unknown, value: 
 export function setBinding(group: string, name: string, value: unknown): void {
   const key = `${group}.${name}`;
   values.set(key, value);
+  for (const listener of [...(subscribers.get(key) ?? [])]) listener(value);
   for (const listener of [...(readers.get(key) ?? [])]) listener();
 }
 export function resetBindings(): void { values.clear(); triggers.length = 0; }
