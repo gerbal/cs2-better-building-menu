@@ -412,7 +412,11 @@ the cards built, and most of a long menu sits below the fold.
 - **The window starts at one step.** `BuildingCatalogQuery.DefaultLimit` and `WindowStep` (40,
   generated into the UI as `CATALOG_WINDOW_STEP`). A menu taller than the first step, or a denser
   view, fills itself a step at a time while its last row ends inside the visible area
-  (`shouldFillViewport`); below that, scrolling loads the rest as before.
+  (`shouldFillViewport`); below that, scrolling loads the rest as before. It grows only once the
+  same short rows are seen again two frames later (`confirmFill`): the first frame's layout is not
+  the real one. A grouped view's rows end about 100 px higher on that frame than on the next, before
+  the room for their headings shows, so list view used to fetch a second page on every open of
+  Transportation (40 → 59) and Landscaping (40 → 80) that the menu had no room for.
 - **A step draws only the new cards.** Each page arrives as fresh objects, so `useCatalogWindow`
   hands back the previous object for every row whose content is unchanged (`stableEntries`), and the
   list cards, grid tiles and table rows are memoised on it. Without that, every step redrew every card

@@ -45,6 +45,38 @@ export function shouldFillViewport({
   return lastRowBottom <= viewportBottom;
 }
 
+/** One look at a window that did not fill the menu. See confirmFill. */
+export interface FillLook {
+  lastRowBottom: number;
+  viewportBottom: number;
+  /** The poll's frame count when it looked. */
+  frame: number;
+}
+
+/** Frames a short window must hold still before it grows. */
+const FILL_SETTLE_FRAMES = 2;
+
+/**
+ * Whether a window that does not fill the menu should grow now, and the look to
+ * keep: only once the same rows end in the same place two frames after they were
+ * first seen short. The first frame's layout is not the real one: a grouped view's
+ * rows end about 100 px higher than on the next, before the room GroupRow makes
+ * for each line's heading shows, and the menu is still moving as it opens. Growing
+ * on that frame fetched a page the menu had no room for. A look at moved rows
+ * starts the wait over.
+ */
+export function confirmFill(seen: FillLook | null, now: FillLook): { fill: boolean; seen: FillLook } {
+  const unmoved = seen !== null
+    && Math.abs(now.lastRowBottom - seen.lastRowBottom) < 1
+    && Math.abs(now.viewportBottom - seen.viewportBottom) < 1;
+
+  if (!unmoved) {
+    return { fill: false, seen: now };
+  }
+
+  return { fill: now.frame - seen.frame >= FILL_SETTLE_FRAMES, seen };
+}
+
 /** Whether the viewport bottom has come within `threshold` px of the content bottom. */
 export function shouldLoadMore({ scrollTop, clientHeight, scrollHeight, threshold }: CatalogScrollMetrics): boolean {
   if (!Number.isFinite(scrollTop) || !Number.isFinite(clientHeight) || !Number.isFinite(scrollHeight)) {

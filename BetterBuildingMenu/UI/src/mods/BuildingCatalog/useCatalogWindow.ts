@@ -2,7 +2,7 @@ import { useValue } from "cs2/api";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
-import { CATALOG_WINDOW_STEP, drawnCount, isScrollContainer, nextGrowth, nextWindowLimit, shouldFillViewport, shouldLoadMore } from "domain/catalogWindow";
+import { CATALOG_WINDOW_STEP, confirmFill, drawnCount, isScrollContainer, nextGrowth, nextWindowLimit, shouldFillViewport, shouldLoadMore, type FillLook } from "domain/catalogWindow";
 import { reuseUnchanged } from "domain/stableEntries";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
@@ -151,12 +151,17 @@ export function useCatalogWindow(
     // Found once per layout, which is what this effect re-runs on: the walk up
     // from the last row reads every ancestor's scrollHeight.
     let scroller: HTMLElement | null = null;
+    // Counted so a short window is grown only on a layout that has settled; see
+    // confirmFill.
+    let frame = 0;
+    let short: FillLook | null = null;
 
     const step = () => {
       if (cancelled) {
         return;
       }
 
+      frame++;
       const now = Date.now();
 
       if (now - lastCheck >= LOAD_MORE_POLL_MS) {
@@ -173,15 +178,23 @@ export function useCatalogWindow(
           // Nothing scrolls yet: the window may not fill a tall menu or a dense view.
           if (!scroller && row) {
             const rowBox = row.getBoundingClientRect();
+            const viewportBottom = root.getBoundingClientRect().bottom;
 
             if (shouldFillViewport({
               hasMore,
               lastRowBottom: rowBox.bottom,
               lastRowHeight: rowBox.height,
-              viewportBottom: root.getBoundingClientRect().bottom,
+              viewportBottom,
             })) {
-              latestLoadMore.current();
-              return;
+              const look = confirmFill(short, { lastRowBottom: rowBox.bottom, viewportBottom, frame });
+              short = look.seen;
+
+              if (look.fill) {
+                latestLoadMore.current();
+                return;
+              }
+            } else {
+              short = null;
             }
           }
         }
