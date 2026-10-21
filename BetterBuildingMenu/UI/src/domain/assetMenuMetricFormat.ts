@@ -393,39 +393,68 @@ function measure(format: (value: number, separators: NumberSeparators) => string
     value === null || value === undefined || !Number.isFinite(value) || value <= 0 ? "" : format(value, separators);
 }
 
+/** One unit on a ladder, used for values below `below`; the top unit has no bound. */
+interface Tier<Unit extends string> {
+  below?: number;
+  unit: Unit;
+  /** The value converted to this unit, with any rounding of its own; unchanged when absent. */
+  scale?: (value: number) => number;
+  /** At most this many places, trailing zeros dropped; whole units when absent. */
+  decimals?: number;
+}
+
+/**
+ * A formatter that states a value in the first unit of the player's system it
+ * fits below. The tiers are vanilla's own, so a figure agrees with the same
+ * quantity anywhere else in the game.
+ */
+function ladder<Unit extends string>(
+  templatesOf: (separators: NumberSeparators) => Readonly<Record<Unit, string>>,
+  metric: readonly Tier<Unit>[],
+  freedom: readonly Tier<Unit>[] = metric,
+): Measure {
+  return measure((value, separators) => {
+    const tier = tierFor(separators.unitSystem === UnitSystem.Freedom ? freedom : metric, value);
+    const scaled = tier.scale ? tier.scale(value) : value;
+    const digits = tier.decimals === undefined
+      ? groupDigits(Math.round(scaled), separators)
+      : roundedDigits(scaled, tier.decimals, separators);
+
+    return applyMoneyTemplate(templatesOf(separators)[tier.unit], digits);
+  });
+}
+
+/** The first tier the value is below; the top tier takes everything above. */
+function tierFor<Unit extends string>(tiers: readonly Tier<Unit>[], value: number): Tier<Unit> {
+  for (let i = 0; i < tiers.length - 1; i++) {
+    const below = tiers[i].below;
+    if (below === undefined || value < below) return tiers[i];
+  }
+  return tiers[tiers.length - 1];
+}
+
+const lengthOf = (separators: NumberSeparators): LengthTemplates => separators.length ?? FALLBACK_LENGTH;
+const weightOf = (separators: NumberSeparators): WeightTemplates => separators.weight ?? FALLBACK_WEIGHT;
+const powerOf = (separators: NumberSeparators): PowerTemplates => separators.power ?? FALLBACK_POWER;
+
 /**
  * A service radius, e.g. "480 m". Metres because that is what the simulation
  * works in; rounded because a tower's reach is not read to the centimetre.
  */
-export const formatServiceRange = measure((value, separators) => {
-  const length = separators.length ?? FALLBACK_LENGTH;
-
+export const formatServiceRange = ladder(
+  lengthOf,
   // Vanilla's own Length rule, thresholds and divisors included, so a range
-  // agrees with the same distance stated anywhere else in the game. Yards, not
-  // feet: feet are vanilla's Height unit, and a service radius is a Length.
-  const imperial = separators.unitSystem === UnitSystem.Freedom;
-
-  if (imperial) {
-    if (value < FREEDOM_LONG) {
-      return applyMoneyTemplate(
-        length.yard,
-        formatBuildingMetric(Math.round(value / METRES_PER_YARD), "capacity", separators),
-      );
-    }
-
-    const miles = Math.round(value / 1000 / KILOMETRES_PER_MILE * 10) / 10;
-
-    return applyMoneyTemplate(length.mile, roundedDigits(miles, 1, separators));
-  }
-
-  if (value >= METRIC_LONG) {
-    const km = Math.round(value / 100) / 10;
-
-    return applyMoneyTemplate(length.kilometre, roundedDigits(km, 1, separators));
-  }
-
-  return applyMoneyTemplate(length.metre, formatBuildingMetric(Math.round(value), "capacity", separators));
-});
+  // agrees with the same distance stated anywhere else in the game.
+  [
+    { below: METRIC_LONG, unit: "metre" },
+    { unit: "kilometre", scale: (metres) => Math.round(metres / 100) / 10, decimals: 1 },
+  ],
+  // Yards, not feet: feet are vanilla's Height unit, and a service radius is a Length.
+  [
+    { below: FREEDOM_LONG, unit: "yard", scale: (metres) => metres / METRES_PER_YARD },
+    { unit: "mile", scale: (metres) => Math.round(metres / 1000 / KILOMETRES_PER_MILE * 10) / 10, decimals: 1 },
+  ],
+);
 
 /**
  * A network's speed limit, e.g. "100 km/h". The game keeps this per network
@@ -652,44 +681,30 @@ export function formatLotDimensions(
  * rather than yards because that is the split the game makes — Length is yards
  * and miles, Height and NetElevation are feet.
  */
-export const formatHeight = measure((value, separators) => {
-  const length = separators.length ?? FALLBACK_LENGTH;
+export const formatHeight = ladder(
+  lengthOf,
+  [{ unit: "metre" }],
+  [{ unit: "foot", scale: (metres) => metres * FEET_PER_METRE }],
+);
 
-  return separators.unitSystem === UnitSystem.Freedom
-    ? applyMoneyTemplate(length.foot, groupDigits(Math.round(value * FEET_PER_METRE), separators))
-    : applyMoneyTemplate(length.metre, groupDigits(Math.round(value), separators));
-});
+const toGallons = (cubicMetres: number): number => cubicMetres * GALLONS_PER_CUBIC_METRE;
 
 /**
  * A volume, by vanilla's Volume rule: cubic metres, and US gallons under
  * Freedom at the game's own 264.172.
  */
-export const formatVolume = measure((value, separators) => {
-  const length = separators.length ?? FALLBACK_LENGTH;
-
-  return separators.unitSystem === UnitSystem.Freedom
-    ? applyMoneyTemplate(
-      length.gallon,
-      groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
-    )
-    : applyMoneyTemplate(length.cubicMetre, groupDigits(Math.round(value), separators));
-});
+export const formatVolume = ladder(lengthOf, [{ unit: "cubicMetre" }], [{ unit: "gallon", scale: toGallons }]);
 
 /**
  * A volume a month, by vanilla's VolumePerMonth rule — the unit it binds
  * WATER_CAPACITY and SEWAGE_CAPACITY with: cubic metres a month, and US gallons
  * a month under Freedom.
  */
-export const formatVolumePerMonth = measure((value, separators) => {
-  const length = separators.length ?? FALLBACK_LENGTH;
-
-  return separators.unitSystem === UnitSystem.Freedom
-    ? applyMoneyTemplate(
-      length.gallonPerMonth,
-      groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
-    )
-    : applyMoneyTemplate(length.cubicMetrePerMonth, groupDigits(Math.round(value), separators));
-});
+export const formatVolumePerMonth = ladder(
+  lengthOf,
+  [{ unit: "cubicMetrePerMonth" }],
+  [{ unit: "gallonPerMonth", scale: toGallons }],
+);
 
 // Vanilla's own constants and thresholds, read off the shipped bundle, so a
 // weight here reads as the same weight anywhere else in the game.
@@ -698,6 +713,9 @@ const KILOGRAMS_PER_SHORT_TON = 907.18474;
 const WEIGHT_SMALL_KG = 100;
 const METRIC_KILOTON_KG = 1_000_000;
 const FREEDOM_SHORT_KILOTON_KG = 9_071_847.4;
+const toTonnes = (kilograms: number): number => kilograms / 1000;
+const toPounds = (kilograms: number): number => kilograms / KILOGRAMS_PER_POUND;
+const toShortTons = (kilograms: number): number => kilograms / KILOGRAMS_PER_SHORT_TON;
 
 /** At most `decimals` places, trailing zeros dropped, digits grouped. */
 function roundedDigits(value: number, decimals: number, separators: NumberSeparators): string {
@@ -714,78 +732,58 @@ function roundedDigits(value: number, decimals: number, separators: NumberSepara
  * Weight formatter picks kilograms, tonnes or kilotonnes by size, with the
  * imperial ladder alongside. The thresholds below are its own.
  */
-export const formatWeight = measure((value, separators) => {
-  const weight = separators.weight ?? FALLBACK_WEIGHT;
-
-  if (separators.unitSystem === UnitSystem.Freedom) {
-    if (value < WEIGHT_SMALL_KG) {
-      return applyMoneyTemplate(weight.pound, roundedDigits(value / KILOGRAMS_PER_POUND, 1, separators));
-    }
-    if (value < FREEDOM_SHORT_KILOTON_KG) {
-      return applyMoneyTemplate(weight.shortTon, roundedDigits(value / KILOGRAMS_PER_SHORT_TON, 2, separators));
-    }
-    return applyMoneyTemplate(weight.shortKiloton, roundedDigits(value / KILOGRAMS_PER_SHORT_TON / 1000, 2, separators));
-  }
-
-  if (value < WEIGHT_SMALL_KG) {
-    return applyMoneyTemplate(weight.kilogram, roundedDigits(value, 1, separators));
-  }
-  if (value < METRIC_KILOTON_KG) {
-    return applyMoneyTemplate(weight.ton, roundedDigits(value / 1000, 2, separators));
-  }
-  return applyMoneyTemplate(weight.kiloton, roundedDigits(value / METRIC_KILOTON_KG, 2, separators));
-});
+export const formatWeight = ladder(
+  weightOf,
+  [
+    { below: WEIGHT_SMALL_KG, unit: "kilogram", decimals: 1 },
+    { below: METRIC_KILOTON_KG, unit: "ton", scale: toTonnes, decimals: 2 },
+    { unit: "kiloton", scale: (kilograms) => kilograms / METRIC_KILOTON_KG, decimals: 2 },
+  ],
+  [
+    { below: WEIGHT_SMALL_KG, unit: "pound", scale: toPounds, decimals: 1 },
+    { below: FREEDOM_SHORT_KILOTON_KG, unit: "shortTon", scale: toShortTons, decimals: 2 },
+    { unit: "shortKiloton", scale: (kilograms) => kilograms / KILOGRAMS_PER_SHORT_TON / 1000, decimals: 2 },
+  ],
+);
 
 /**
  * Kilograms per month, as the game shows them: kg/mo. below 100 (one decimal),
  * t/mo. above (two); imperial lb/mo. and tn/mo. with the Weight constants.
  * There is no kiloton tier in vanilla's per-month rule.
  */
-export const formatWeightPerMonth = measure((value, separators) => {
-  const weight = separators.weight ?? FALLBACK_WEIGHT;
-
-  if (separators.unitSystem === UnitSystem.Freedom) {
-    return value < WEIGHT_SMALL_KG
-      ? applyMoneyTemplate(weight.poundPerMonth, roundedDigits(value / KILOGRAMS_PER_POUND, 1, separators))
-      : applyMoneyTemplate(weight.shortTonPerMonth, roundedDigits(value / KILOGRAMS_PER_SHORT_TON, 2, separators));
-  }
-
-  return value < WEIGHT_SMALL_KG
-    ? applyMoneyTemplate(weight.kilogramPerMonth, roundedDigits(value, 1, separators))
-    : applyMoneyTemplate(weight.tonPerMonth, roundedDigits(value / 1000, 2, separators));
-});
+export const formatWeightPerMonth = ladder(
+  weightOf,
+  [
+    { below: WEIGHT_SMALL_KG, unit: "kilogramPerMonth", decimals: 1 },
+    { unit: "tonPerMonth", scale: toTonnes, decimals: 2 },
+  ],
+  [
+    { below: WEIGHT_SMALL_KG, unit: "poundPerMonth", scale: toPounds, decimals: 1 },
+    { unit: "shortTonPerMonth", scale: toShortTons, decimals: 2 },
+  ],
+);
 
 /** A plain count per month, through vanilla's own template ("{VALUE} /mo."). */
-export const formatPerMonth = measure((value, separators) => {
-  return applyMoneyTemplate(separators.perMonth ?? FALLBACK_PER_MONTH, groupDigits(Math.round(value), separators));
-});
+export const formatPerMonth = measure((value, separators) =>
+  applyMoneyTemplate(separators.perMonth ?? FALLBACK_PER_MONTH, groupDigits(Math.round(value), separators)));
 
 // Vanilla's Power rule: the raw figure is in hundreds of watts. Below 10,000
 // it shows raw / 10 as kilowatts (one decimal); above, raw / 10,000 as
 // megawatts (two). Energy is raw / 10,000 megawatt-hours (one decimal).
 const POWER_KILOWATT_LIMIT = 10_000;
 
-export const formatPower = measure((value, separators) => {
-  const power = separators.power ?? FALLBACK_POWER;
+export const formatPower = ladder(powerOf, [
+  { below: POWER_KILOWATT_LIMIT, unit: "kilowatt", scale: (raw) => raw / 10, decimals: 1 },
+  { unit: "megawatt", scale: (raw) => raw / 10_000, decimals: 2 },
+]);
 
-  return value < POWER_KILOWATT_LIMIT
-    ? applyMoneyTemplate(power.kilowatt, roundedDigits(value / 10, 1, separators))
-    : applyMoneyTemplate(power.megawatt, roundedDigits(value / 10_000, 2, separators));
-});
-
-export const formatEnergy = measure((value, separators) => {
-  const power = separators.power ?? FALLBACK_POWER;
-
-  return applyMoneyTemplate(power.megawattHours, roundedDigits(value / 10_000, 1, separators));
-});
+export const formatEnergy = measure((value, separators) =>
+  applyMoneyTemplate(powerOf(separators).megawattHours, roundedDigits(value / 10_000, 1, separators)));
 
 /**
  * A data rate, by vanilla's DataRate rule: gigabits a second to one decimal,
  * the same in both unit systems — the unit it binds TelecomFacilityData's
  * NETWORK_CAPACITY with.
  */
-export const formatDataRate = measure((value, separators) => {
-  const power = separators.power ?? FALLBACK_POWER;
-
-  return applyMoneyTemplate(power.gigabitPerSecond, roundedDigits(value, 1, separators));
-});
+export const formatDataRate = measure((value, separators) =>
+  applyMoneyTemplate(powerOf(separators).gigabitPerSecond, roundedDigits(value, 1, separators)));
