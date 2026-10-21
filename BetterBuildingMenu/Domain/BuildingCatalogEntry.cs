@@ -200,6 +200,28 @@ namespace BetterBuildingMenu.Domain
 		string[]? GroupPath = null,
 		string? GroupLabelId = null) : IJsonWritable
 	{
+		// Search compares these three folded (SearchFold). Folding each once, when the entry is
+		// built, is what keeps a keystroke from refolding the whole menu, and the setters refold
+		// on a `with` copy that changes one. Equality is unchanged: each fold follows its field.
+		private readonly string _prefabName = PrefabName;
+		private readonly string _name = Name;
+		private readonly string _pdxModsId = PdxModsId;
+		private readonly string _searchPrefabName = SearchFold.Fold(PrefabName);
+		private readonly string _searchName = SearchFold.Fold(Name);
+		private readonly string _searchPdxModsId = SearchFold.Fold(PdxModsId);
+
+		public string PrefabName { get => _prefabName; init { _prefabName = value; _searchPrefabName = SearchFold.Fold(value); } }
+
+		public string Name { get => _name; init { _name = value; _searchName = SearchFold.Fold(value); } }
+
+		public string PdxModsId { get => _pdxModsId; init { _pdxModsId = value; _searchPdxModsId = SearchFold.Fold(value); } }
+
+		internal string SearchPrefabName => _searchPrefabName;
+
+		internal string SearchName => _searchName;
+
+		internal string SearchPdxModsId => _searchPdxModsId;
+
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);

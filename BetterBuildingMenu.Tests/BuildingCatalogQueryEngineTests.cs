@@ -149,6 +149,40 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
+    public void Query_SearchFindsEachWordInAnyOrder()
+    {
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(SearchText: "plant coal"));
+
+        Assert.Equal(1, Assert.Single(page.Items).Id);
+    }
+
+    [Fact]
+    public void Query_SearchIgnoresAccents()
+    {
+        var entries = new[] { SampleEntries[0] with { Id = 7, Name = "Café Terrace" } };
+
+        Assert.Equal(1, BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "cafe")).TotalCount);
+        Assert.Equal(1, BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "CAFÉ")).TotalCount);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("power")]
+    [InlineData("plant coal")]
+    [InlineData("12345")]
+    [InlineData("nothing-matches-this")]
+    public void Count_IsThePagesTotalWithoutBuildingIt(string search)
+    {
+        var query = new BuildingCatalogQuery(SearchText: search, Limit: 1);
+
+        Assert.Equal(
+            BuildingCatalogQueryEngine.Query(SampleEntries, query).TotalCount,
+            BuildingCatalogQueryEngine.Count(SampleEntries, query));
+    }
+
+    [Fact]
     public void Query_EverywhereQueryFindsMatchesOutsideTheSelectedCategory()
     {
         var entries = new[]

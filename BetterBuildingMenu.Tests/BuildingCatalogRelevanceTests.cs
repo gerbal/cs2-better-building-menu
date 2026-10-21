@@ -75,5 +75,32 @@ namespace BetterBuildingMenu.Tests
 		{
 			Assert.True(BuildingCatalogRelevance.Score(E(1, "Some Building", "ServiceBuildings", "Health"), "health") > 0);
 		}
+
+		[Fact]
+		public void RanksWordsInAnyOrderBelowThePhraseAndAboveAnotherField()
+		{
+			var phrase = BuildingCatalogRelevance.Score(E(1, "Police Station"), "police station");
+			var reordered = BuildingCatalogRelevance.Score(E(1, "Police Station"), "station police");
+			var spread = BuildingCatalogRelevance.Score(E(2, "Police Station") with { PdxModsId = "158589" }, "police 158589");
+
+			Assert.Equal(BuildingCatalogRelevance.Exact, phrase);
+			Assert.Equal(BuildingCatalogRelevance.AllWords, reordered);
+			Assert.Equal(BuildingCatalogRelevance.Field, spread);
+			Assert.True(BuildingCatalogRelevance.Substring > BuildingCatalogRelevance.AllWords);
+			Assert.True(BuildingCatalogRelevance.AllWords > BuildingCatalogRelevance.Field);
+		}
+
+		[Fact]
+		public void ScoresAnAccentedNameAsIfTypedWithItsAccents()
+		{
+			Assert.Equal(BuildingCatalogRelevance.Exact, BuildingCatalogRelevance.Score(E(1, "Café"), "cafe"));
+			Assert.Equal(BuildingCatalogRelevance.Prefix, BuildingCatalogRelevance.Score(E(1, "Straße 1"), "strasse"));
+		}
+
+		[Fact]
+		public void CollapsesTheSpacesInsideAQuery()
+		{
+			Assert.Equal(BuildingCatalogRelevance.Exact, BuildingCatalogRelevance.Score(E(1, "Big Park"), "big   park"));
+		}
 	}
 }

@@ -32,6 +32,20 @@ namespace BetterBuildingMenu.Tests
 		};
 
 		[Theory]
+		[InlineData("")]
+		[InlineData("plant")]
+		[InlineData("plant gas")]
+		[InlineData("nothing")]
+		public void TotalCountIsThePagesTotal(string search)
+		{
+			// The "matches elsewhere" notice reads TotalCount, which counts without ordering or
+			// labelling a page.
+			var query = new BuildingCatalogQuery(SearchText: search, Limit: 1);
+
+			Assert.Equal(new CatalogView(Fixture, query).Page.TotalCount, new CatalogView(Fixture, query).TotalCount);
+		}
+
+		[Theory]
 		[InlineData(false)]
 		[InlineData(true)]
 		public void TheContentFacetShowsTheGamesVanillaToggle(bool vanillaSelected)
