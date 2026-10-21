@@ -58,16 +58,21 @@ namespace BetterBuildingMenu.Utilities
             }
         }
 
-        public static string Translate(string id, string? fallback = null)
-        {
-            if (GameManager.instance.localizationManager.activeDictionary.TryGetValue(id, out var result)
-                && WordFormat.GameText(result) is { } text)
-            {
-                return text;
-            }
+        public static string Translate(string id, string? fallback = null) => TryTranslate(id) ?? fallback ?? id;
 
-            return fallback ?? id;
+        /// <summary>The game's words under the key, trimmed, or null when it has none or no game is running.</summary>
+        public static string? TryTranslate(string? key)
+        {
+            var dictionary = GameManager.instance?.localizationManager?.activeDictionary;
+
+            return key is not null && dictionary is not null && dictionary.TryGetValue(key, out var text)
+                ? WordFormat.GameText(text)
+                : null;
         }
+
+        /// <summary>The words under the first key the game has any for, else the fallback.</summary>
+        public static string FirstTranslated(string? first, string? second, string fallback) =>
+            TryTranslate(first) ?? TryTranslate(second) ?? fallback;
 
         /// <summary>
         /// One source per language, each translation with English under its Options keys,

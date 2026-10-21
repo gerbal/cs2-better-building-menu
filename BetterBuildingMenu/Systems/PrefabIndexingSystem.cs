@@ -970,11 +970,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			_prefabUISystem.GetTitleAndDescription(_prefabSystem.GetEntity(prefab), out var titleId, out var _);
 
-			var localized = GameManager.instance.localizationManager.activeDictionary.TryGetValue(titleId, out var name)
-				? name
-				: null;
-
-			return WordFormat.GameText(localized) ?? prefab.name.Replace('_', ' ').FormatWords();
+			return LocaleHelper.TryTranslate(titleId) ?? prefab.name.Replace('_', ' ').FormatWords();
 		}
 
 		/// <summary>

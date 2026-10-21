@@ -7,7 +7,6 @@ using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
 
-using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -682,17 +681,7 @@ namespace BetterBuildingMenu.Services
 				return string.Empty;
 			}
 
-			var dictionary = GameManager.instance.localizationManager.activeDictionary;
-
-			foreach (var key in new[] { $"SubServices.NAME[{id}]", $"Services.NAME[{id}]" })
-			{
-				if (dictionary.TryGetValue(key, out var name) && WordFormat.GameText(name) is { } label)
-				{
-					return label;
-				}
-			}
-
-			return id;
+			return LocaleHelper.FirstTranslated($"SubServices.NAME[{id}]", $"Services.NAME[{id}]", id);
 		}
 
 		/// <summary>
@@ -1033,9 +1022,10 @@ namespace BetterBuildingMenu.Services
 				string internalName = PlatformManager.instance.GetDlcName(new DlcId(numericId));
 				if (!string.IsNullOrWhiteSpace(internalName))
 				{
-					return LocaleHelper.Translate(
+					return LocaleHelper.FirstTranslated(
 						$"Common.DLC_TITLE[{internalName}]",
-						LocaleHelper.Translate($"Assets.NAME[{internalName}]", WordFormat.SplitIdentifier(internalName)));
+						$"Assets.NAME[{internalName}]",
+						WordFormat.SplitIdentifier(internalName));
 				}
 			}
 			catch

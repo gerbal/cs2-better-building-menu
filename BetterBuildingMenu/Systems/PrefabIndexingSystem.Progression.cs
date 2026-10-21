@@ -67,10 +67,7 @@ namespace BetterBuildingMenu.Systems
 		/// <remarks>The key is parameterised by index, so translate(id, fallback) cannot reach it, and
 		/// GetAssetName falls through to the prefab name — literally "Milestone7".</remarks>
 		private static string? GetMilestoneTitle(int index) =>
-			GameManager.instance.localizationManager.activeDictionary
-				.TryGetValue($"Progression.MILESTONE_NAME:{index}", out var name)
-					? WordFormat.GameText(name)
-					: null;
+			LocaleHelper.TryTranslate($"Progression.MILESTONE_NAME:{index}");
 
 		/// <summary>Dev-tree nodes drawn under another node's tab.</summary>
 		/// <remarks>A narrow exception to the rule that a node is its own branch, keyed on the prefab
@@ -219,10 +216,7 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>The node's name in the game's own words, as its dev tree shows it.</summary>
 		private string DevTreeBranchName(PrefabBase prefab) =>
-			DevTreeNodeName.Resolve(
-				GameManager.instance.localizationManager.activeDictionary
-					.TryGetValue(DevTreeNodeName.Key(prefab.name), out var name) ? name : null,
-				GetAssetName(prefab));
+			DevTreeNodeName.Resolve(LocaleHelper.TryTranslate(DevTreeNodeName.Key(prefab.name)), GetAssetName(prefab));
 
 		/// <summary>The branch an asset's unlock node belongs to, or its service's root.</summary>
 		/// <remarks>Only the asset's own service is read here; ProgressionIndex.BranchOf decides.</remarks>
@@ -385,7 +379,7 @@ namespace BetterBuildingMenu.Systems
 			// the formatters that compose better, before the count-only branch.
 			var authored = UnlockRequirementLabel.Resolve(
 				(prefab as UnlockRequirementPrefab)?.m_LabelID,
-				key => GameManager.instance.localizationManager.activeDictionary.TryGetValue(key, out var text) ? text : null);
+				LocaleHelper.TryTranslate);
 
 			if (authored.Length > 0)
 			{
