@@ -194,7 +194,7 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			return node.m_IconPrefab is not null
-				? ImageSystem.GetThumbnail(node.m_IconPrefab) ?? string.Empty
+				? GameIcons.Thumbnail(node.m_IconPrefab) ?? string.Empty
 				: string.Empty;
 		}
 

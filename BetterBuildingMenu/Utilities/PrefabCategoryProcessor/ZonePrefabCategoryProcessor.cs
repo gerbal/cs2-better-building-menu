@@ -81,15 +81,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 
 			var data = _entityManager.GetComponentData<ZoneData>(entity);
 
-			return ZoningCatalog.ResolveFamily(data.m_AreaType, data.m_ZoneFlags) switch
-			{
-				ZoningFamilies.Residential => Domain.Enums.PrefabSubCategory.Zones_Residential,
-				ZoningFamilies.Commercial => Domain.Enums.PrefabSubCategory.Zones_Commercial,
-				ZoningFamilies.Industrial => Domain.Enums.PrefabSubCategory.Zones_Industrial,
-				ZoningFamilies.Office => Domain.Enums.PrefabSubCategory.Zones_Office,
-				ZoningFamilies.Extractors => Domain.Enums.PrefabSubCategory.Zones_Extractors,
-				_ => Domain.Enums.PrefabSubCategory.Zones_Misc,
-			};
+			return ZoningCatalog.SubCategoryOf(ZoningCatalog.ResolveFamily(data.m_AreaType, data.m_ZoneFlags));
 		}
 	}
 }

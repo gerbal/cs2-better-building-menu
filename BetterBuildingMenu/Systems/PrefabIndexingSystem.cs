@@ -820,7 +820,7 @@ namespace BetterBuildingMenu.Systems
 			prefabIndex.PrefabName = prefab.name;
 			prefabIndex.AssetName = GetAssetName(prefab);
 			prefabIndex.Name = prefabIndex.AssetName;
-			prefabIndex.Thumbnail = prefabIndex.Thumbnail ?? ImageSystem.GetThumbnail(prefab);
+			prefabIndex.Thumbnail = prefabIndex.Thumbnail ?? GameIcons.Thumbnail(prefab);
 			prefabIndex.FallbackThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.CategoryThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.Theme ??= prefab.GetComponent<ThemeObject>()?.m_Theme;
@@ -901,7 +901,7 @@ namespace BetterBuildingMenu.Systems
 			}
 
 #if DEBUG
-			if (prefabIndex.SubCategory != PrefabSubCategory.Props_Branding && !prefabIndex.IsRandom && ImageSystem.GetIcon(prefab) is null or "" && !prefab.Has<ServiceUpgrade>())
+			if (prefabIndex.SubCategory != PrefabSubCategory.Props_Branding && !prefabIndex.IsRandom && GameIcons.Icon(prefab) is null or "" && !prefab.Has<ServiceUpgrade>())
 			{
 				if (uIObject is null
 					|| uIObject.m_Group is null
