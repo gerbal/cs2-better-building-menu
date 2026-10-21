@@ -5,21 +5,7 @@
  */
 
 import type { ToolbarEntity } from "./toolbarEntity";
-
-/**
- * The same decode as `toolbarEntityIndex` in vanillaMenuWatch, kept local: the
- * test runner wants a `.ts` specifier on a runtime sibling import and webpack
- * rejects one. If this rule changes, change it in both places.
- */
-function entityIndex(entity: ToolbarEntity | null | undefined): number | null {
-  if (entity === null || entity === undefined) {
-    return null;
-  }
-
-  const index = typeof entity === "object" ? entity.index : Number(entity);
-
-  return Number.isFinite(index) && index > 0 ? (index as number) : null;
-}
+import { toolbarEntityIndex } from "./vanillaMenuWatch";
 
 /** What the four bindings currently say. */
 export interface VanillaToolbarState {
@@ -42,7 +28,7 @@ export function joinEntityIndices(entities: readonly ToolbarEntity[] | null | un
   const indices: number[] = [];
 
   for (const entity of entities) {
-    const index = entityIndex(entity);
+    const index = toolbarEntityIndex(entity);
 
     if (index !== null) {
       indices.push(index);
