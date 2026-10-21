@@ -87,6 +87,17 @@ namespace BetterBuildingMenu.Systems
 		/// the catalog patches into its cached rows. The snapshot cache is emptied on it.</summary>
 		public int ContentGeneration { get; private set; } = 1;
 
+		/// <summary>An indexed fact changed in place: an unlock, or a unique built or bulldozed.</summary>
+		private void BumpState() => Generation++;
+
+		/// <summary>The index's contents changed. Moves both counters, so ContentGeneration never
+		/// advances without Generation.</summary>
+		private void BumpContent()
+		{
+			Generation++;
+			ContentGeneration++;
+		}
+
 		/// <summary>The index the asset menu reads. A load empties it at preload; a full pass builds its
 		/// replacement aside and publishes it only when the pass succeeds; a partial pass edits it in
 		/// place. See <see cref="RunIndex"/>.</summary>
@@ -186,8 +197,7 @@ namespace BetterBuildingMenu.Systems
 			// So the next city's placed-unique line is logged, whatever its count, once its
 			// index is ready.
 			_loggedUniqueCandidateCount = -1;
-			Generation++;
-			ContentGeneration++;
+			BumpContent();
 
 			Mod.Log.Debug($"Index emptied at preload (purpose={purpose}, mode={mode}); indexing waits for a city");
 		}
@@ -399,7 +409,7 @@ namespace BetterBuildingMenu.Systems
 			// The catalog is served from a cached search, so the rows keep their
 			// old lock state until it is rebuilt — and an Availability filter set
 			// to Unlocked would still be excluding them.
-			Generation++;
+			BumpState();
 		}
 
 		/// <summary>Resolves every asset's silhouette now, while the game is still loading.</summary>
@@ -553,8 +563,7 @@ namespace BetterBuildingMenu.Systems
 			// published one, so this assigns it to itself.
 			built.IsReady = true;
 			Index = built;
-			Generation++;
-			ContentGeneration++;
+			BumpContent();
 
 			// Rescan the placed uniques against the city that just loaded: the
 			// tracker's loaded-asset events may already have run this frame, and a
@@ -1012,7 +1021,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				// Same reason as the event path: the prefabs are untouched but the
 				// projections built from them are stale.
-				Generation++;
+				BumpState();
 			}
 
 			// On a change only, as the rescan runs on every catalog publish, and only once a
@@ -1054,7 +1063,7 @@ namespace BetterBuildingMenu.Systems
 		private void OnUniqueAssetStatusChanged(Entity prefab, bool placed)
 		{
 			PlacedUniques.Set(prefab.Index, placed);
-			Generation++;
+			BumpState();
 		}
 	}
 }
