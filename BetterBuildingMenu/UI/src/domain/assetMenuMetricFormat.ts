@@ -381,18 +381,23 @@ export function getCapacityUnitLabel(
   return "";
 }
 
+/** A formatter of a measured quantity, under the player's separators and units. */
+type Measure = (value: number | null | undefined, separators?: NumberSeparators) => string;
+
+/**
+ * A formatter that says nothing for a value that is absent, not finite, or not
+ * above zero: an empty string rather than a dash, so the line drops out.
+ */
+function measure(format: (value: number, separators: NumberSeparators) => string): Measure {
+  return (value, separators = FALLBACK_SEPARATORS) =>
+    value === null || value === undefined || !Number.isFinite(value) || value <= 0 ? "" : format(value, separators);
+}
+
 /**
  * A service radius, e.g. "480 m". Metres because that is what the simulation
  * works in; rounded because a tower's reach is not read to the centimetre.
  */
-export function formatServiceRange(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatServiceRange = measure((value, separators) => {
   const length = separators.length ?? FALLBACK_LENGTH;
 
   // Vanilla's own Length rule, thresholds and divisors included, so a range
@@ -420,20 +425,13 @@ export function formatServiceRange(
   }
 
   return applyMoneyTemplate(length.metre, formatBuildingMetric(Math.round(value), "capacity", separators));
-}
+});
 
 /**
  * A network's speed limit, e.g. "100 km/h". The game keeps this per network
  * type and states it in km/h, so the metric figure passes through unconverted.
  */
-export function formatSpeedLimit(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatSpeedLimit = measure((value, separators) => {
   // The game ships no speed template in either system — no VALUE_KMH and no
   // VALUE_MPH — so both suffixes are ours. The conversion reuses the mile
   // divisor above so the two never disagree.
@@ -444,7 +442,7 @@ export function formatSpeedLimit(
   }
 
   return `${formatBuildingMetric(Math.round(value), "capacity", separators)} km/h`;
-}
+});
 
 /**
  * How wide a network draws, e.g. "24 m" — whole metres, or yards under
@@ -654,33 +652,19 @@ export function formatLotDimensions(
  * rather than yards because that is the split the game makes — Length is yards
  * and miles, Height and NetElevation are feet.
  */
-export function formatHeight(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatHeight = measure((value, separators) => {
   const length = separators.length ?? FALLBACK_LENGTH;
 
   return separators.unitSystem === UnitSystem.Freedom
     ? applyMoneyTemplate(length.foot, groupDigits(Math.round(value * FEET_PER_METRE), separators))
     : applyMoneyTemplate(length.metre, groupDigits(Math.round(value), separators));
-}
+});
 
 /**
  * A volume, by vanilla's Volume rule: cubic metres, and US gallons under
  * Freedom at the game's own 264.172.
  */
-export function formatVolume(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatVolume = measure((value, separators) => {
   const length = separators.length ?? FALLBACK_LENGTH;
 
   return separators.unitSystem === UnitSystem.Freedom
@@ -689,21 +673,14 @@ export function formatVolume(
       groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
     )
     : applyMoneyTemplate(length.cubicMetre, groupDigits(Math.round(value), separators));
-}
+});
 
 /**
  * A volume a month, by vanilla's VolumePerMonth rule — the unit it binds
  * WATER_CAPACITY and SEWAGE_CAPACITY with: cubic metres a month, and US gallons
  * a month under Freedom.
  */
-export function formatVolumePerMonth(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatVolumePerMonth = measure((value, separators) => {
   const length = separators.length ?? FALLBACK_LENGTH;
 
   return separators.unitSystem === UnitSystem.Freedom
@@ -712,7 +689,7 @@ export function formatVolumePerMonth(
       groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
     )
     : applyMoneyTemplate(length.cubicMetrePerMonth, groupDigits(Math.round(value), separators));
-}
+});
 
 // Vanilla's own constants and thresholds, read off the shipped bundle, so a
 // weight here reads as the same weight anywhere else in the game.
@@ -737,14 +714,7 @@ function roundedDigits(value: number, decimals: number, separators: NumberSepara
  * Weight formatter picks kilograms, tonnes or kilotonnes by size, with the
  * imperial ladder alongside. The thresholds below are its own.
  */
-export function formatWeight(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatWeight = measure((value, separators) => {
   const weight = separators.weight ?? FALLBACK_WEIGHT;
 
   if (separators.unitSystem === UnitSystem.Freedom) {
@@ -764,21 +734,14 @@ export function formatWeight(
     return applyMoneyTemplate(weight.ton, roundedDigits(value / 1000, 2, separators));
   }
   return applyMoneyTemplate(weight.kiloton, roundedDigits(value / METRIC_KILOTON_KG, 2, separators));
-}
+});
 
 /**
  * Kilograms per month, as the game shows them: kg/mo. below 100 (one decimal),
  * t/mo. above (two); imperial lb/mo. and tn/mo. with the Weight constants.
  * There is no kiloton tier in vanilla's per-month rule.
  */
-export function formatWeightPerMonth(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatWeightPerMonth = measure((value, separators) => {
   const weight = separators.weight ?? FALLBACK_WEIGHT;
 
   if (separators.unitSystem === UnitSystem.Freedom) {
@@ -790,67 +753,39 @@ export function formatWeightPerMonth(
   return value < WEIGHT_SMALL_KG
     ? applyMoneyTemplate(weight.kilogramPerMonth, roundedDigits(value, 1, separators))
     : applyMoneyTemplate(weight.tonPerMonth, roundedDigits(value / 1000, 2, separators));
-}
+});
 
 /** A plain count per month, through vanilla's own template ("{VALUE} /mo."). */
-export function formatPerMonth(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatPerMonth = measure((value, separators) => {
   return applyMoneyTemplate(separators.perMonth ?? FALLBACK_PER_MONTH, groupDigits(Math.round(value), separators));
-}
+});
 
 // Vanilla's Power rule: the raw figure is in hundreds of watts. Below 10,000
 // it shows raw / 10 as kilowatts (one decimal); above, raw / 10,000 as
 // megawatts (two). Energy is raw / 10,000 megawatt-hours (one decimal).
 const POWER_KILOWATT_LIMIT = 10_000;
 
-export function formatPower(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatPower = measure((value, separators) => {
   const power = separators.power ?? FALLBACK_POWER;
 
   return value < POWER_KILOWATT_LIMIT
     ? applyMoneyTemplate(power.kilowatt, roundedDigits(value / 10, 1, separators))
     : applyMoneyTemplate(power.megawatt, roundedDigits(value / 10_000, 2, separators));
-}
+});
 
-export function formatEnergy(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatEnergy = measure((value, separators) => {
   const power = separators.power ?? FALLBACK_POWER;
 
   return applyMoneyTemplate(power.megawattHours, roundedDigits(value / 10_000, 1, separators));
-}
+});
 
 /**
  * A data rate, by vanilla's DataRate rule: gigabits a second to one decimal,
  * the same in both unit systems — the unit it binds TelecomFacilityData's
  * NETWORK_CAPACITY with.
  */
-export function formatDataRate(
-  value: number | null | undefined,
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
+export const formatDataRate = measure((value, separators) => {
   const power = separators.power ?? FALLBACK_POWER;
 
   return applyMoneyTemplate(power.gigabitPerSecond, roundedDigits(value, 1, separators));
-}
+});
