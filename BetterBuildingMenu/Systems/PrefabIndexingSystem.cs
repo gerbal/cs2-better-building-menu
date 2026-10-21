@@ -781,12 +781,7 @@ namespace BetterBuildingMenu.Systems
 
 								if (full)
 								{
-									if (!census.TryGetValue(processor.GetType().Name, out var ids))
-									{
-										census[processor.GetType().Name] = ids = new List<int>();
-									}
-
-									ids.Add(prefabIndex.Id);
+									census.GetOrAdd(processor.GetType().Name, static () => new List<int>()).Add(prefabIndex.Id);
 								}
 							}
 							else if (Mod.Log.isLevelEnabled(Level.Debug))

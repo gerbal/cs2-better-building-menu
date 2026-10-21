@@ -260,13 +260,7 @@ namespace BetterBuildingMenu.Systems
 					prefab.TryGet<UIObject>(out var uIObject);
 
 					// Two menus sharing a prefab name share one list.
-					if (!byMenu.TryGetValue(menuName, out var tabs))
-					{
-						tabs = new List<VanillaMenuCategory>();
-						byMenu[menuName] = tabs;
-					}
-
-					tabs.Add(new VanillaMenuCategory(
+					byMenu.GetOrAdd(menuName, static () => new List<VanillaMenuCategory>()).Add(new VanillaMenuCategory(
 						Id: prefab.name,
 						Name: prefab.name,
 						Icon: CategoryIcon.Resolve(uIObject?.m_Icon, GameIcons.IconOrGroupIcon(_imageSystem, entity, prefab)) ?? string.Empty,
