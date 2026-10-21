@@ -12,6 +12,7 @@ opened menu's own first card is on screen):
 |---|---|---|---|
 | main | 66–89 | 77–105 | 39–46 |
 | every menu kept (spike) | 41–47 | 42–49 | 40–47 |
+| every menu kept (as built) | 41–48 | 43–51 | 41–48 |
 
 A reopen shows a panel that is already built. A switch rebuilds the one kept panel's cards for
 another menu and waits a round trip for C#'s page; with the menu up it is the slowest open there is.
@@ -80,7 +81,7 @@ now also checks it: every panel listens on the document.
 ## Known costs
 
 - First visit of each menu: the whole panel is built rather than the cards swapped. Cold, right
-  after loading a city, in grid view: median 85 → 100 ms, 1.43 → 1.52 s over all 15 menus.
+  after loading a city, in grid view: median 85 → 92 ms, 1.43 → 1.54 s over all 15 menus.
 - A view or grouping change makes each other menu's next open wait for C#, as a switch did before:
   71–94 ms with the old menu up meanwhile, against main's 83–149 ms for the same sequence.
 - Any other setting changed while menus are hidden (units, text scale, tile size) reaches a hidden
