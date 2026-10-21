@@ -31,18 +31,13 @@ import type { AssetMenuMetricRangeState as BuildingCatalogMetricRangeState } fro
 import { BuildingCatalogMetricBounds$, BuildingCatalogMetricRanges$, send } from "mods/bindings";
 import { GameTextInput, gameClasses } from "mods/gameModules";
 
-const emptyMetricRangeState = BOUND_KEYS.reduce(
-  (state, key) => ({ ...state, [key]: null }),
-  { hasSelection: false } as BuildingCatalogMetricRangeState,
-);
-
 /**
  * A stable key for the twelve numbers, for hook deps: the bindings hand back a
  * fresh object on every emit, so depending on the object itself re-runs on
  * unrelated churn, including while the player is typing.
  */
-function boundsKeyOf(state: BuildingCatalogMetricRangeState): string {
-  return BOUND_KEYS.map((key) => state[key]).join("|");
+function boundsKeyOf(state: BuildingCatalogMetricRangeState | null): string {
+  return BOUND_KEYS.map((key) => state?.[key] ?? null).join("|");
 }
 
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
@@ -67,8 +62,8 @@ function formatBound(value: number | null, integer: boolean): string {
 }
 
 function draftsFromState(
-  state: BuildingCatalogMetricRangeState,
-  bounds: BuildingCatalogMetricRangeState = emptyMetricRangeState,
+  state: BuildingCatalogMetricRangeState | null,
+  bounds: BuildingCatalogMetricRangeState | null,
 ): MetricRangeDrafts {
   const ranges = metricRangesFromState(state);
   const limits = metricRangesFromState(bounds);
@@ -88,7 +83,7 @@ function draftsFromState(
 
 export const BuildingCatalogMetricFilters = () => {
   const { translate } = useLocalization();
-  const state = useValue(BuildingCatalogMetricRanges$) ?? emptyMetricRangeState;
+  const state = useValue(BuildingCatalogMetricRanges$) ?? null;
   // In the shared store, so this drawer outlives the remount and the metric
   // ranges the player set stay visible.
   const open = useAssetMenuView((view) => view.disclosures[ASSET_MENU_DISCLOSURE_KEYS.metricRanges] ?? false);
@@ -98,7 +93,7 @@ export const BuildingCatalogMetricFilters = () => {
   };
   // The spread each metric has here. A field with no selection shows its bound,
   // so the control states the scale before asking anyone to narrow it.
-  const bounds = useValue(BuildingCatalogMetricBounds$) ?? emptyMetricRangeState;
+  const bounds = useValue(BuildingCatalogMetricBounds$) ?? null;
   const boundsKey = boundsKeyOf(bounds);
   const stateKey = boundsKeyOf(state);
   const [drafts, setDrafts] = useState<MetricRangeDrafts>(() => draftsFromState(state, bounds));
@@ -155,7 +150,7 @@ export const BuildingCatalogMetricFilters = () => {
     metricRangeDebouncer.cancel();
     // Back to the full range of what is in view, not back to blank: clearing a
     // filter should say what is there again.
-    setDrafts(draftsFromState(emptyMetricRangeState, bounds));
+    setDrafts(draftsFromState(null, bounds));
     send(clearBuildingCatalogMetricRangesCommand());
   }
 
