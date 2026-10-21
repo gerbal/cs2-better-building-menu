@@ -57,7 +57,7 @@ result can predate later changes, which are in `BetterBuildingMenu/Changelog.jso
 | Toggle Overlays, I18n Everywhere | — | 0.1.6 | No interaction. |
 | Unified Icon Library | 1.0.14 | 0.2.2 | Required: the panel draws its icons from it. |
 | Asset Menu Tweaks (Luca) | 1.0.7 | 0.1.5 | No effect on our asset menu, in either load order and with every option on. |
-| Find It (TDW) | 1.5.8 | pre-release | Both install together. Its panel takes the asset-menu slot while open and ours returns when it closes; its picker is the only one. |
+| Find It (TDW) | 1.5.8, 2.0 | 0.2.5 | Both install together. Its panel takes the asset-menu slot while open, also when another mod opens it to pick an asset (2.0), and ours returns when it closes; its picker is the only one. With 2.0, Escape closes its panel and then ours, a press each, before the pause menu. 2.0 was built from its source (7d21cea) for the test. |
 | Platter (Luca), Extra Networks and Areas (Mimonsi), Recolor (yenyang) | — | — | Source read only. The first two add or regroup menu entries at load, before our index runs; Recolor's palettes are not toolbar assets. |
 | Traffic, Better Bulldozer, Move It, Plop the Growables, 529 Tiles, Historical Start, Skyve, Extended Tooltip, Detailed Descriptions, Region Flag Icons, First Person Camera, Time & Weather Anarchy, Realistic Parking, Traffic Lights Enhancement | — | — | Source read only: no asset-menu or menu-tree hooks. |
 

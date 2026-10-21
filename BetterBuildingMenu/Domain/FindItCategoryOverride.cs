@@ -27,8 +27,9 @@ namespace BetterBuildingMenu.Domain
 				|| tag.StartsWith("BetterBuildingMenu/", StringComparison.Ordinal));
 
 		/// <remarks>
-		/// An exclusion counts only beside an include, any mod's, as in Find It: a bare
-		/// exclude=FindIt opts out of Find It's prop generators, not the catalog. An unfiled
+		/// An exclusion counts only beside an include, any mod's, as in Find It 1.5.8: a bare
+		/// exclude=FindIt opts out of Find It's prop generators, not the catalog. Find It 2.0
+		/// hides an asset on a bare exclude too. An unfiled
 		/// category pair is ignored, since the index would throw on it. The last usable include wins.
 		/// </remarks>
 		public static FindItCategoryOverride Read(IReadOnlyList<string?>? includes, IReadOnlyList<string?>? excludes)
