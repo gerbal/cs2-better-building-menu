@@ -22,6 +22,7 @@ import { FALLBACK_SEPARATORS } from "../src/domain/assetMenuMetricFormat.ts";
 
 // A comma-decimal locale that groups with a full stop, as German does.
 const german = { ...FALLBACK_SEPARATORS, group: ".", decimal: "," };
+const english = { ...FALLBACK_SEPARATORS, group: ",", decimal: "." };
 
 describe("BetterBuildingMenu UI binding contracts", () => {
   it("names the window command after its trigger", () => {
@@ -102,6 +103,13 @@ describe("BetterBuildingMenu UI binding contracts", () => {
     assert.equal(describeRange(1234.5, 98765, german), "1.234,5–98.765");
     assert.equal(describeRange(1234.5, null, german), "≥ 1.234,5");
     assert.equal(describeRange(null, 0.25, german), "≤ 0,25");
+  });
+
+  it("describes a range in the marks English players get from the game", () => {
+    assert.equal(describeRange(1000, 5000, english), "1,000–5,000");
+    assert.equal(describeRange(1234.5, 98765, english), "1,234.5–98,765");
+    assert.equal(describeRange(1234.5, null, english), "≥ 1,234.5");
+    assert.equal(describeRange(null, 0.25, english), "≤ 0.25");
   });
 
   it("groups by hand with the fallback marks when the game has given none", () => {

@@ -64,6 +64,25 @@ describe("Asset menu active-filter summary", () => {
     assert.equal(message, "No buildings match Cost 1.234,5–98.765.");
   });
 
+  it("names a bound in the marks English players get from the game", () => {
+    const input = (minCost: number, maxCost: number) => ({
+      metricRanges: {
+        minCost, maxCost,
+        minUpkeep: null, maxUpkeep: null,
+        minWorkers: null, maxWorkers: null,
+        minCapacity: null, maxCapacity: null,
+        minLotWidth: null, maxLotWidth: null,
+        minLotDepth: null, maxLotDepth: null,
+        hasSelection: true,
+      },
+      separators: { ...FALLBACK_SEPARATORS, group: ",", decimal: "." },
+    });
+
+    assert.equal(getAssetMenuEmptyStateMessage(input(1000, 5000)), "No buildings match Cost 1,000–5,000.");
+    assert.equal(getAssetMenuEmptyStateMessage(input(1234.5, 98765)), "No buildings match Cost 1,234.5–98,765.");
+    assert.deepEqual(getAssetMenuFilterSummary(input(1234.5, 98765)).details, ["Cost 1,234.5–98,765"]);
+  });
+
   it("does not invent constraints when the category is simply empty", () => {
     assert.equal(
       getAssetMenuEmptyStateMessage({}),
