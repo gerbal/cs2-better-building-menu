@@ -12,11 +12,12 @@ import {
   hasFootprint,
   type NumberSeparators,
 } from "domain/assetMenuMetricFormat";
+import { sortedBadgeText } from "domain/buildingEntryView";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
+import { sortedMetricFor } from "domain/sortedMetric";
 import { useUnitSystem } from "mods/gameSettings";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
@@ -51,16 +52,10 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
   // handed to can skip a render.
   const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
   // The same card the grid and the table show, so which facts a building
-  // states does not depend on which view mode the player is in.
+  // states does not depend on which view mode the player is in. The rows take
+  // its state words too, which are the game's own where it has them.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
-  const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
-  // The game's own words first, so the row reads as vanilla's does; see the
-  // hover card, which asks for the same key.
-  const builtLabel =
-    translate("Toolbar.ASSET_ALREADY_BUILT", "")
-    || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
-    || "Already built";
   const cards = variant === "cards";
 
   // One callback for the list's lifetime, reading the newest onPlace through a ref,
@@ -85,8 +80,6 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
           selected={selectedId === entry.id}
           sortedMetric={sortedMetric}
           separators={separators}
-          lockedLabel={lockedLabel}
-          builtLabel={builtLabel}
           hoverCard={hoverCard}
           onPlace={place}
         />
@@ -101,8 +94,7 @@ interface BuildingListCardProps {
   selected: boolean;
   sortedMetric: ReturnType<typeof sortedMetricFor>;
   separators: NumberSeparators;
-  lockedLabel: string;
-  builtLabel: string;
+  /** The hover card's context, whose state words the row draws with too. */
   hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
@@ -117,31 +109,10 @@ const BuildingListCard = memo(function BuildingListCard({
   selected,
   sortedMetric,
   separators,
-  lockedLabel,
-  builtLabel,
   hoverCard,
   onPlace,
 }: BuildingListCardProps) {
-  /** The figure this list is ordered by. See sortedMetric.ts. */
-  const sortedBadge = () => {
-    if (sortedMetric === null) {
-      return null;
-    }
-
-    const text = sortedMetric === "lot"
-      ? (hasFootprint(entry.lotWidth, entry.lotDepth)
-        ? formatLotDimensions(entry.lotWidth, entry.lotDepth)
-        : null)
-      : (() => {
-        const value = sortedMetricValue(entry, sortedMetric);
-        return value === null
-          ? null
-          : formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance);
-      })();
-
-    return text === null ? null : <span className={styles.sortedMetric}>{text}</span>;
-  };
-
+  const sortedText = sortedBadgeText(entry, sortedMetric, separators);
   const fullName = entry.name || entry.prefabName;
   const label = listLabel(fullName);
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
@@ -169,7 +140,7 @@ const BuildingListCard = memo(function BuildingListCard({
         // the whole message.
         aria-label={
           (() => {
-            const word = entryStateWord(entry, lockedLabel, builtLabel);
+            const word = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
             return word ? `${fullName} — ${word}` : fullName;
           })()
         }
@@ -239,7 +210,7 @@ const BuildingListCard = memo(function BuildingListCard({
         </span>
         {/* Right-aligned, so the sorted figures line up as a column and
             the order can be read down the page. */}
-        {sortedBadge()}
+        {sortedText !== null && <span className={styles.sortedMetric}>{sortedText}</span>}
       </Button>
     </BuildingHoverCard>
   );

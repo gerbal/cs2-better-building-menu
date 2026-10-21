@@ -5,13 +5,14 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { canPlace, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
+import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
+import { sortedBadgeText } from "domain/buildingEntryView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
 import { lineBudgetFromDrawn } from "domain/measuredFit";
-import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
-import { formatBuildingMetric, getNumberSeparators, type NumberSeparators } from "domain/assetMenuMetricFormat";
+import { sortedMetricFor } from "domain/sortedMetric";
+import { getNumberSeparators, type NumberSeparators } from "domain/assetMenuMetricFormat";
 import { useTextScale, useUnitSystem } from "mods/gameSettings";
 import styles from "./buildingGrid.module.scss";
 import { ActivePrefabId$, BuildingCatalogSortColumn$, AssetMenuTileSize$ } from "mods/bindings";
@@ -97,7 +98,7 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
   const { translate } = useLocalization();
   // One card for every view mode, read once here rather than per tile: it is a
   // dozen live bindings, and a tile each would open hundreds of them to draw
-  // one hover at a time.
+  // one hover at a time. The tiles take its state words too.
   const hoverCard = useHoverCardContext();
   // The figure the result is ordered by, drawn on the tile so a re-sort says
   // why the tiles moved. Null for Name and Category, which the tile shows.
@@ -105,9 +106,6 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
   const unitSystem = useUnitSystem();
   // One object until the language or the unit system changes, so tiles skip a render.
   const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
-  const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
-  const builtLabel =
-    translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built") ?? "Already built";
   const tileSize = useValue(AssetMenuTileSize$);
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
@@ -136,8 +134,6 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
           armed={activePrefabId !== 0 && entry.id === activePrefabId}
           sortedMetric={sortedMetric}
           separators={separators}
-          lockedLabel={lockedLabel}
-          builtLabel={builtLabel}
           tileSize={tileSize}
           textScale={textScale}
           hoverCard={hoverCard}
@@ -171,10 +167,9 @@ interface BuildingTileProps {
   armed: boolean;
   sortedMetric: ReturnType<typeof sortedMetricFor>;
   separators: NumberSeparators;
-  lockedLabel: string;
-  builtLabel: string;
   tileSize: number;
   textScale: number;
+  /** The hover card's context, whose state words the tile draws with too. */
   hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
@@ -189,38 +184,14 @@ const BuildingTile = memo(function BuildingTile({
   armed,
   sortedMetric,
   separators,
-  lockedLabel,
-  builtLabel,
   tileSize,
   textScale,
   hoverCard,
   onPlace,
 }: BuildingTileProps) {
-  /**
-   * The sorted figure, or nothing. `lot` prints the pair, because a lone "6"
-   * reads as the whole lot; a metric the entry never carried draws nothing at
-   * all, since the badge exists to explain an order and a dash explains none.
-   */
-  const sortedBadge = () => {
-    if (sortedMetric === null) {
-      return null;
-    }
-
-    const text = sortedMetric === "lot"
-      ? (typeof entry.lotWidth === "number" && typeof entry.lotDepth === "number"
-        ? `${entry.lotWidth}×${entry.lotDepth}`
-        : null)
-      : (() => {
-        const value = sortedMetricValue(entry, sortedMetric);
-        return value === null
-          ? null
-          : formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance);
-      })();
-
-    return text === null ? null : <span className={styles.sortedMetric}>{text}</span>;
-  };
-
   const label = entry.name || entry.prefabName;
+  const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
+  const sortedText = sortedBadgeText(entry, sortedMetric, separators);
   const locked = isEntryLocked(entry);
   // Independent of locked, which is how vanilla arranges it: the padlock
   // answers "can I build it yet" and this answers "is there only one of
@@ -247,11 +218,7 @@ const BuildingTile = memo(function BuildingTile({
         // Locked is announced, not just drawn. The visual treatment is a
         // silhouette, which says nothing to a screen reader and little to
         // anyone whose thumbnail has not generated yet.
-        aria-label={
-          locked
-            ? `${label} — ${lockedLabel}`
-            : alreadyBuilt ? `${label} — ${builtLabel}` : label
-        }
+        aria-label={stateWord ? `${label} — ${stateWord}` : label}
         // Unplaceable either way, and announced as such rather than reading
         // as an ordinary tile that arms a placement the game refuses.
         aria-disabled={locked || alreadyBuilt ? "true" : undefined}
@@ -310,7 +277,7 @@ const BuildingTile = memo(function BuildingTile({
           })}
           budget={tileLabelLineBudget(tileSize, textScale)}
         />
-        {sortedBadge()}
+        {sortedText !== null && <span className={styles.sortedMetric}>{sortedText}</span>}
       </Button>
     </BuildingHoverCard>
   );

@@ -30,8 +30,6 @@ import styles from "./buildingCatalog.module.scss";
 export interface TableRowLabels {
   place: string;
   inspect: string;
-  locked: string;
-  built: string;
 }
 
 export interface TableRowProps {
@@ -41,7 +39,7 @@ export interface TableRowProps {
   nameBudget: number;
   separators: ReturnType<typeof getNumberSeparators>;
   labels: TableRowLabels;
-  /** What the hover card reads, the same card every view shows; read once by the table. */
+  /** What the hover card reads, the same card every view shows; read once by the table. Its state words are the row's too. */
   hoverCard: HoverCardContext;
   /** The metric columns to draw, the header's own: a narrow build menu drops some. All seven when absent. */
   metrics?: readonly AssetMenuMetric[];
@@ -79,7 +77,7 @@ export const TableRow = memo(function TableRow({
   const entryLabel = entry.name || entry.prefabName;
   const rowPlaceLabel = `${labels.place}: ${entryLabel}`;
   const rowInspectLabel = `${labels.inspect}: ${entryLabel}`;
-  const stateWord = entryStateWord(entry, labels.locked, labels.built);
+  const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
 
   return (
     <div

@@ -96,11 +96,6 @@ export const TableView = ({
   const labels: TableRowLabels = useMemo(() => ({
     place: translate("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place") ?? "Place",
     inspect: translate("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details") ?? "Details",
-    locked: translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked",
-    built:
-      translate("Toolbar.ASSET_ALREADY_BUILT", "")
-      || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
-      || "Already built",
   }), [translate]);
 
   return (

@@ -5,7 +5,7 @@ import { TableRow, type TableRowProps } from "../../src/mods/BuildingCatalog/Tab
 import { useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
 import { FALLBACK_SEPARATORS } from "../../src/domain/assetMenuMetricFormat";
 
-const labels = { place: "Place", inspect: "Details", locked: "Locked", built: "Already built" };
+const labels = { place: "Place", inspect: "Details" };
 
 // The table reads the hover card's context once and hands it to every row.
 const TableRowInTable = (props: Omit<TableRowProps, "hoverCard">) => (
