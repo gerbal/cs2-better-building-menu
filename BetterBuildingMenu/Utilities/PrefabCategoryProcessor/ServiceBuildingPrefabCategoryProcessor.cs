@@ -38,22 +38,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
                     && serviceUpgrade.m_Buildings.FirstOrDefault() is { } upgraded
                     && upgraded.TryGet<ServiceObject>(out serviceObject))
             {
-                subCategory = serviceObject.m_Service.name switch
-                {
-                    "Roads" => PrefabSubCategory.ServiceBuildings_Roads,
-                    "Electricity" => PrefabSubCategory.ServiceBuildings_Electricity,
-                    "Water & Sewage" => PrefabSubCategory.ServiceBuildings_Water,
-                    "Communications" => PrefabSubCategory.ServiceBuildings_Communications,
-                    "Health & Deathcare" => PrefabSubCategory.ServiceBuildings_Health,
-                    "Police & Administration" => PrefabSubCategory.ServiceBuildings_Police,
-                    "Fire & Rescue" => PrefabSubCategory.ServiceBuildings_Fire,
-                    "Education & Research" => PrefabSubCategory.ServiceBuildings_EducationResearch,
-                    "Garbage Management" => PrefabSubCategory.ServiceBuildings_Garbage,
-                    "Transportation" => PrefabSubCategory.ServiceBuildings_Transportation,
-                    "Landscaping" => PrefabSubCategory.ServiceBuildings_Landscaping,
-                    "Parks & Recreation" => PrefabSubCategory.ServiceBuildings_Parks,
-                    _ => PrefabSubCategory.ServiceBuildings_Misc
-                };
+                subCategory = ServiceMenus.SubCategoryOf(serviceObject.m_Service.name);
             }
 
             prefabIndex = new PrefabIndex(prefab)

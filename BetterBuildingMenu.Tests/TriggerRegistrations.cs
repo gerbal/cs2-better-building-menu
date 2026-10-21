@@ -25,13 +25,13 @@ namespace BetterBuildingMenu.Tests
 			RegexOptions.Singleline | RegexOptions.Compiled);
 
 		// The read/write overload, CreateBinding("Value", "SetValue", ...): its trigger takes the
-		// binding's own type, which the call states or the field it is assigned to declares.
+		// binding's own type, which the call states, the field it is assigned to declares, or its callback takes.
 		private static readonly Regex AnySetterBinding = new(
 			@"\bCreateBinding\s*(?:<[^()]*?>)?\s*\(\s*""\w+""\s*,\s*""",
 			RegexOptions.Singleline | RegexOptions.Compiled);
 
 		private static readonly Regex SetterBinding = new(
-			@"\b(?<field>\w+)\s*=\s*CreateBinding\s*(?:<(?<type>[^()]*?)>)?\s*\(\s*""\w+""\s*,\s*""(?<name>\w+)""",
+			@"(?:\b(?<field>\w+)\s*=\s*)?\bCreateBinding\s*(?:<(?<type>[^()]*?)>)?\s*\(\s*""\w+""\s*,\s*""(?<name>\w+)""(?:\s*,\s*[^,()]+?\s*,\s*(?<callback>\w+)\s*\))?",
 			RegexOptions.Singleline | RegexOptions.Compiled);
 
 		/// <summary>The triggers in BetterBuildingMenu/Systems, by name.</summary>
@@ -64,9 +64,9 @@ namespace BetterBuildingMenu.Tests
 
 			foreach (Match match in setters)
 			{
-				var type = match.Groups["type"].Success
-					? match.Groups["type"].Value
-					: FieldType(source, match.Groups["field"].Value);
+				var type = match.Groups["type"].Success ? match.Groups["type"].Value
+					: match.Groups["field"].Success ? FieldType(source, match.Groups["field"].Value)
+					: CallbackType(source, match.Groups["callback"]);
 
 				triggers.Add(new Trigger(match.Groups["name"].Value, new[] { TypeScriptType(type) }));
 			}
@@ -101,6 +101,17 @@ namespace BetterBuildingMenu.Tests
 			return declaration.Success
 				? declaration.Groups["type"].Value
 				: throw new InvalidOperationException($"no ValueBindingHelper<T> declaration for {field}, so its setter trigger has no type");
+		}
+
+		private static string CallbackType(string source, Group callback)
+		{
+			var declarations = callback.Success
+				? Regex.Matches(source, @"\bvoid\s+" + Regex.Escape(callback.Value) + @"\s*\(\s*(?<type>[\w.\[\]]+)\s+\w+\s*\)")
+				: null;
+
+			return declarations is { Count: 1 }
+				? declarations[0].Groups["type"].Value
+				: throw new InvalidOperationException("a read/write binding with no field and no one-argument callback, so its setter trigger has no type");
 		}
 
 		private static void RequireAllRead(string call, int written, int read)

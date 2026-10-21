@@ -53,6 +53,8 @@ namespace BetterBuildingMenu.Tests
 			// Read/write bindings: the setter takes the binding's type, from the field it is assigned to.
 			Assert.Equal("boolean", triggers["SetBuildingCatalogSortDescending"]);
 			Assert.Equal("number", triggers["SetAssetMenuSchoolTier"]);
+			// A setting binding makes its read/write binding in a lambda: the setter takes what its callback takes.
+			Assert.Equal("string", triggers["SetAssetMenuViewMode"]);
 		}
 
 		[Fact]
