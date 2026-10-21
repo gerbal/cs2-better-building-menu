@@ -4,12 +4,12 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { getNumberSeparators } from "domain/assetMenuMetricFormat";
+import { entryLabel } from "domain/buildingEntryView";
 import type { TileTooltipLine } from "domain/buildingTileTooltip";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "domain/hoverCardLines";
 import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "domain/assetMenuRowDetails";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
-import { useUnitSystem } from "mods/gameSettings";
+import { useNumberSeparators } from "mods/gameSettings";
 import { overflowsBox } from "domain/measuredFit";
 import styles from "./buildingHoverCard.module.scss";
 import { AssetMenuMilestones$ } from "mods/bindings";
@@ -34,7 +34,7 @@ export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
   // One subscription per grid, like the milestones below — the whole reason
   // this context exists rather than each card reading its own.
-  const unitSystem = useUnitSystem();
+  const separators = useNumberSeparators();
   const milestoneNames = useValue(AssetMenuMilestones$) ?? NO_MILESTONE_NAMES;
 
   // One object until one of these changes, so the rows it is handed to can skip
@@ -49,9 +49,9 @@ export const useHoverCardContext = (): HoverCardContext => {
     // the component that holds the localization hook, not to the card.
     leisureName: (leisureType: string | null | undefined) => leisureLabel(leisureType, translate),
     translateFact: translate,
-    separators: getNumberSeparators(translate, unitSystem),
+    separators,
     labels: hoverCardLabels(translate),
-  }), [translate, unitSystem, milestoneNames]);
+  }), [translate, separators, milestoneNames]);
 };
 
 /**
@@ -136,7 +136,7 @@ const HoverCardContent = ({
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
 }) => {
-  const label = entry.name || entry.prefabName;
+  const label = entryLabel(entry);
   // What the thing IS, before every line that is a number about it — the same
   // sentence vanilla shows on selection.
   const description = context.describe(entry.prefabName);
