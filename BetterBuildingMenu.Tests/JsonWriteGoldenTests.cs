@@ -23,6 +23,21 @@ public sealed class JsonWriteGoldenTests
         return writer.Tokens;
     }
 
+    // What a null string writes as: the recorder marks it apart from an empty string.
+    private const string NullString = "Write:String:<null>";
+
+    // The tokens one property of a flat object wrote, from after its name to the next property.
+    private static string[] Written(List<string> tokens, string property)
+    {
+        int start = tokens.IndexOf("PropertyName:" + property);
+        Assert.True(start >= 0, "no property named " + property);
+
+        return tokens
+            .Skip(start + 1)
+            .TakeWhile(token => !token.StartsWith("PropertyName:", StringComparison.Ordinal) && token != "TypeEnd")
+            .ToArray();
+    }
+
     private static string Begin(Type type) => "TypeBegin:" + type.FullName;
 
     private static string[] Join(params IEnumerable<string>[] parts) => parts.SelectMany(part => part).ToArray();
@@ -252,6 +267,63 @@ public sealed class JsonWriteGoldenTests
             Record(entry));
     }
 
+    [Fact]
+    public void Entry_WithNullStrings_WritesNullWhereThePropertyPassesThemThrough()
+    {
+        BuildingCatalogEntry entry = TestEntries.Make() with
+        {
+            PrefabName = null!,
+            Name = null!,
+            Category = null!,
+            SubCategory = null!,
+            Thumbnail = null!,
+            PdxModsId = null!,
+        };
+
+        List<string> tokens = Record(entry);
+
+        // The two labels fall back to the category, which is itself null here.
+        foreach (string property in new[] { "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "pdxModsId" })
+        {
+            Assert.Equal(new[] { NullString }, Written(tokens, property));
+        }
+
+        foreach (string property in new[] { "fallbackThumbnail", "silhouetteThumbnail", "devTreeBranch", "buildingType", "provenance", "dlcId", "theme", "leisureType", "groupLabelId" })
+        {
+            Assert.Equal(new[] { "Write:String:" }, Written(tokens, property));
+        }
+    }
+
+    [Fact]
+    public void Entry_WithBlankAndNullListMembers_FiltersSixListsAndKeepsGroupPathAsGiven()
+    {
+        string[] members = { "keep", null!, " ", string.Empty, "\t", "also" };
+        BuildingCatalogEntry entry = TestEntries.Make() with
+        {
+            UnlockRequirements = members,
+            Bonuses = members,
+            AssetPacks = members,
+            PlacementFlags = members,
+            Extensions = members,
+            SupportedUpgrades = members,
+            GroupPath = members,
+        };
+
+        List<string> tokens = Record(entry);
+
+        foreach (string property in new[] { "unlockRequirements", "bonuses", "assetPacks", "placementFlags", "extensions", "supportedUpgrades" })
+        {
+            Assert.Equal(new[] { "ArrayBegin:2", "Write:String:keep", "Write:String:also", "ArrayEnd" }, Written(tokens, property));
+        }
+
+        Assert.Equal(
+            new[]
+            {
+                "ArrayBegin:6", "Write:String:keep", NullString, "Write:String: ", "Write:String:", "Write:String:\t", "Write:String:also", "ArrayEnd",
+            },
+            Written(tokens, "groupPath"));
+    }
+
     // ---- BuildingCatalogPage ----
 
     [Fact]
@@ -316,6 +388,34 @@ public sealed class JsonWriteGoldenTests
             Record(page));
     }
 
+    [Fact]
+    public void Page_WithBlankAndNullSortColumns_WritesEveryMemberAsGiven()
+    {
+        BuildingCatalogPage page = new(
+            Array.Empty<BuildingCatalogEntry>(),
+            TotalCount: 0,
+            Offset: 0,
+            Limit: 40,
+            ReorderableSortColumns: new[] { "cost", null!, " ", string.Empty });
+
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(BuildingCatalogPage)),
+                "PropertyName:items", "ArrayBegin:0", "ArrayEnd",
+                "PropertyName:reorderableSortColumns", "ArrayBegin:4", "Write:String:cost", NullString, "Write:String: ", "Write:String:", "ArrayEnd",
+                "PropertyName:totalCount", "Write:Int32:0",
+                "PropertyName:offset", "Write:Int32:0",
+                "PropertyName:limit", "Write:Int32:40",
+                "PropertyName:hasMore", "Write:Boolean:False",
+                "PropertyName:bestMatchId", "WriteNull",
+                "PropertyName:searchText", "Write:String:",
+                "PropertyName:menu", "Write:String:",
+                "TypeEnd",
+            },
+            Record(page));
+    }
+
     // ---- BuildingExtensionMenu ----
 
     [Fact]
@@ -346,6 +446,20 @@ public sealed class JsonWriteGoldenTests
                 Record(second),
                 new[] { "ArrayEnd", "TypeEnd" }),
             Record(menu));
+    }
+
+    [Fact]
+    public void ExtensionMenu_WithANullName_WritesNull()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(BuildingExtensionMenu)),
+                "PropertyName:buildingName", NullString,
+                "PropertyName:entries", "ArrayBegin:0", "ArrayEnd",
+                "TypeEnd",
+            },
+            Record(new BuildingExtensionMenu(null!, Array.Empty<BuildingCatalogEntry>())));
     }
 
     // ---- BuildingCatalogMetricRangeState ----
@@ -464,6 +578,22 @@ public sealed class JsonWriteGoldenTests
     }
 
     [Fact]
+    public void MenuBranchCount_WithANullIdAndNoLabel_WritesNullIdAndLabel()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(MenuBranchCount)),
+                "PropertyName:id", NullString,
+                "PropertyName:count", "Write:Int32:3",
+                "PropertyName:icon", "Write:String:",
+                "PropertyName:label", NullString,
+                "TypeEnd",
+            },
+            Record(new MenuBranchCount(null!, 3, null!)));
+    }
+
+    [Fact]
     public void MenuCategoryCount_WritesTheIdAndCount()
     {
         Assert.Equal(
@@ -475,6 +605,20 @@ public sealed class JsonWriteGoldenTests
                 "TypeEnd",
             },
             Record(new MenuCategoryCount("Parks", 8)));
+    }
+
+    [Fact]
+    public void MenuCategoryCount_WithANullId_WritesNull()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(MenuCategoryCount)),
+                "PropertyName:id", NullString,
+                "PropertyName:count", "Write:Int32:8",
+                "TypeEnd",
+            },
+            Record(new MenuCategoryCount(null!, 8)));
     }
 
     [Fact]
@@ -524,6 +668,22 @@ public sealed class JsonWriteGoldenTests
     }
 
     [Fact]
+    public void VanillaMenuCategory_WithNullStrings_WritesNull()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(VanillaMenuCategory)),
+                "PropertyName:id", NullString,
+                "PropertyName:name", NullString,
+                "PropertyName:icon", NullString,
+                "PropertyName:priority", "Write:Int32:30",
+                "TypeEnd",
+            },
+            Record(new VanillaMenuCategory(null!, null!, null!, 30)));
+    }
+
+    [Fact]
     public void OwnedAssetMenu_WritesTheIndexAndName()
     {
         Assert.Equal(
@@ -535,6 +695,20 @@ public sealed class JsonWriteGoldenTests
                 "TypeEnd",
             },
             Record(new OwnedAssetMenu(17, "Roads")));
+    }
+
+    [Fact]
+    public void OwnedAssetMenu_WithANullName_WritesNull()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(OwnedAssetMenu)),
+                "PropertyName:index", "Write:Int32:17",
+                "PropertyName:name", NullString,
+                "TypeEnd",
+            },
+            Record(new OwnedAssetMenu(17, null!)));
     }
 
     // ---- Facets ----
@@ -552,6 +726,21 @@ public sealed class JsonWriteGoldenTests
                 "TypeEnd",
             },
             Record(new BuildingCatalogFacetOption("Vanilla", "Vanilla assets", true)));
+    }
+
+    [Fact]
+    public void FacetOption_WithNullStrings_WritesNull()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(BuildingCatalogFacetOption)),
+                "PropertyName:id", NullString,
+                "PropertyName:label", NullString,
+                "PropertyName:selected", "Write:Boolean:False",
+                "TypeEnd",
+            },
+            Record(new BuildingCatalogFacetOption(null!, null!, false)));
     }
 
     [Fact]
@@ -591,6 +780,22 @@ public sealed class JsonWriteGoldenTests
                 "TypeEnd",
             },
             Record(new BuildingCatalogFacetGroup("Theme", "Theme", Array.Empty<BuildingCatalogFacetOption>())));
+    }
+
+    [Fact]
+    public void FacetGroup_WithNullStrings_WritesNull()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(BuildingCatalogFacetGroup)),
+                "PropertyName:id", NullString,
+                "PropertyName:label", NullString,
+                "PropertyName:narrowing", "Write:Boolean:False",
+                "PropertyName:options", "ArrayBegin:0", "ArrayEnd",
+                "TypeEnd",
+            },
+            Record(new BuildingCatalogFacetGroup(null!, null!, Array.Empty<BuildingCatalogFacetOption>())));
     }
 
     [Fact]
@@ -799,6 +1004,37 @@ public sealed class JsonWriteGoldenTests
     }
 
     [Fact]
+    public void ZoneCatalogEntry_WithNullStrings_WritesNullWhereThePropertyPassesThemThrough()
+    {
+        ZoneCatalogEntry entry = new(7, 3, null!, null!, null!, ZoneTypeFilter.Low, null!);
+
+        List<string> tokens = Record(entry);
+
+        foreach (string property in new[] { "prefabName", "name", "family", "thumbnail" })
+        {
+            Assert.Equal(new[] { NullString }, Written(tokens, property));
+        }
+
+        foreach (string property in new[] { "allowedSold", "allowedManufactured", "allowedStored", "mapFeature" })
+        {
+            Assert.Equal(new[] { "Write:String:" }, Written(tokens, property));
+        }
+    }
+
+    [Fact]
+    public void ZoneCatalogEntry_WithBlankAndNullUnlockRequirements_WritesEveryMemberAsGiven()
+    {
+        ZoneCatalogEntry entry = new(7, 3, "ResLow", "Low Residential", "ZoneResidential", ZoneTypeFilter.Low, "zone.svg")
+        {
+            UnlockRequirements = new[] { "keep", null!, " ", string.Empty },
+        };
+
+        Assert.Equal(
+            new[] { "ArrayBegin:4", "Write:String:keep", NullString, "Write:String: ", "Write:String:", "ArrayEnd" },
+            Written(Record(entry), "unlockRequirements"));
+    }
+
+    [Fact]
     public void ZoningFamilyDescriptor_WritesTheTooltipUnderALowercaseName()
     {
         Assert.Equal(
@@ -811,5 +1047,19 @@ public sealed class JsonWriteGoldenTests
                 "TypeEnd",
             },
             Record(new ZoningFamilyDescriptor("ZoneOffice", "Media/Game/Icons/ZoneOffice.svg", "Zoning_Office")));
+    }
+    [Fact]
+    public void ZoningFamilyDescriptor_WithNullStrings_WritesNull()
+    {
+        Assert.Equal(
+            new[]
+            {
+                Begin(typeof(ZoningFamilyDescriptor)),
+                "PropertyName:id", NullString,
+                "PropertyName:icon", NullString,
+                "PropertyName:tooltip", NullString,
+                "TypeEnd",
+            },
+            Record(new ZoningFamilyDescriptor(null!, null!, null!)));
     }
 }
