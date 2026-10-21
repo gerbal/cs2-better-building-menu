@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { getAssetMenuFilterSummary } from "../src/domain/assetMenuFilterSummary.ts";
+import { METRIC_RANGE_DEFINITIONS } from "../src/domain/buildingCatalogRanges.ts";
 import { buildFilterChips, removableChipCount } from "../src/domain/filterChips.ts";
 
 const emptyRanges = {
@@ -146,6 +148,17 @@ describe("Filter chips", () => {
     assert.equal(labelFor({ minCost: 1000 }), "Cost ≥ 1,000");
     assert.equal(labelFor({ maxCost: 5000 }), "Cost ≤ 5,000");
     assert.equal(labelFor({}), undefined);
+  });
+
+  it("names each metric as the drawer does, and the summary agrees", () => {
+    // One word per metric: a chip reading "Lot width" under a field labelled
+    // "Lot Width" reads as two different filters.
+    for (const definition of METRIC_RANGE_DEFINITIONS) {
+      const metricRanges = { ...emptyRanges, [definition.minKey]: 2, hasSelection: true };
+
+      assert.equal(buildFilterChips({ metricRanges })[0]?.label, `${definition.label} ≥ 2`, definition.id);
+      assert.deepEqual(getAssetMenuFilterSummary({ metricRanges }).details, [`${definition.label} ≥ 2`], definition.id);
+    }
   });
 
   it("gives every chip an id unique across dimensions", () => {

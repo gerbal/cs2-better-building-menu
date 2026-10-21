@@ -8,7 +8,7 @@ import type { AssetMenuFacetState } from "./buildingCatalogFacets";
 import { setBuildingCatalogMetricRangeCommand, toggleAssetMenuFacetCommand, type Command } from "./commands";
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
 import { METRIC_RANGE_DEFINITIONS } from "./buildingCatalogRanges";
-import type { MetricBoundKey, MetricRangeId } from "./sharedContracts.generated";
+import type { MetricBoundKey } from "./sharedContracts.generated";
 
 export type ChipCommand = Command;
 
@@ -27,15 +27,6 @@ export interface FilterChipInput {
   facets?: AssetMenuFacetState | null;
   metricRanges?: AssetMenuMetricRangeState | null;
 }
-
-const METRIC_LABELS: Record<MetricRangeId, string> = {
-  cost: "Cost",
-  upkeep: "Upkeep",
-  workers: "Workers",
-  capacity: "Capacity",
-  lotWidth: "Lot width",
-  lotDepth: "Lot depth",
-};
 
 function formatBound(value: number): string {
   return Number.isInteger(value)
@@ -87,7 +78,7 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
   const ranges = input?.metricRanges;
   if (ranges) {
     // Definition order is display order within the metric block.
-    for (const { id, minKey, maxKey } of METRIC_RANGE_DEFINITIONS) {
+    for (const { id, label, minKey, maxKey } of METRIC_RANGE_DEFINITIONS) {
       const min = readBound(ranges, minKey);
       const max = readBound(ranges, maxKey);
 
@@ -98,7 +89,7 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
       chips.push({
         id: `metric:${id}`,
         dimension: `metric:${id}`,
-        label: `${METRIC_LABELS[id]} ${formatRange(min, max)}`,
+        label: `${label} ${formatRange(min, max)}`,
         removable: true,
         remove: setBuildingCatalogMetricRangeCommand(id, "", ""),
       });

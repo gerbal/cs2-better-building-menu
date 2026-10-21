@@ -24,14 +24,14 @@ export interface MetricRangeDefinition {
 export const METRIC_RANGE_MAX = 1_000_000_000;
 export const LOT_RANGE_MAX = 10_000;
 
-/** What the drawer calls each metric; the rest of a definition is C#'s. */
+/** What the drawer, the chips and the summary call each metric; the rest of a definition is C#'s. */
 const METRIC_LABELS: Record<MetricRangeId, Pick<MetricRangeDefinition, "label" | "localizationKey">> = {
   cost: { label: "Cost", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Cost]" },
   upkeep: { label: "Upkeep", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]" },
   workers: { label: "Workers", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Workers]" },
   capacity: { label: "Capacity", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Capacity]" },
-  lotWidth: { label: "Lot Width", localizationKey: "Options.LABEL[BetterBuildingMenu.LotWidth]" },
-  lotDepth: { label: "Lot Depth", localizationKey: "Options.LABEL[BetterBuildingMenu.LotDepth]" },
+  lotWidth: { label: "Lot width", localizationKey: "Options.LABEL[BetterBuildingMenu.LotWidth]" },
+  lotDepth: { label: "Lot depth", localizationKey: "Options.LABEL[BetterBuildingMenu.LotDepth]" },
 };
 
 export const METRIC_RANGE_DEFINITIONS: readonly MetricRangeDefinition[] = METRIC_RANGES.map((metric) => ({

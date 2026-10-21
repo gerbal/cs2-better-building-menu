@@ -91,7 +91,7 @@ describe("the metric-range drawer", () => {
     assert.deepEqual([value("Cost minimum"), value("Cost maximum")], ["1000", "90000"]);
     assert.deepEqual([value("Upkeep minimum"), value("Upkeep maximum")], ["0", "1200"]);
     assert.deepEqual([value("Workers minimum"), value("Workers maximum")], ["", ""], "no spread known");
-    assert.equal(value("Lot Width minimum"), "1", "a lot is whole cells");
+    assert.equal(value("Lot width minimum"), "1", "a lot is whole cells");
   });
 
   it("sends what was typed once the typing stops, and only the last of it", () => {

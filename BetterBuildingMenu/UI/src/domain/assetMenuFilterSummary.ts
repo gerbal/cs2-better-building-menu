@@ -27,15 +27,6 @@ export interface AssetMenuFilterSummary {
   resultCount: number;
 }
 
-const metricLabels: Record<MetricRangeId, string> = {
-  cost: "Cost",
-  upkeep: "Upkeep",
-  workers: "Workers",
-  capacity: "Capacity",
-  lotWidth: "Lot width",
-  lotDepth: "Lot depth",
-};
-
 
 function selectedFacetLabels(state: AssetMenuFacetState | null | undefined): string[] {
   return (state?.groups ?? [])
@@ -69,7 +60,7 @@ function formatRange(range: NormalizedMetricRange): string {
 function metricDetails(ranges: Record<MetricRangeId, NormalizedMetricRange>): string[] {
   return METRIC_RANGE_DEFINITIONS
     .filter(({ id }) => ranges[id].min !== null || ranges[id].max !== null)
-    .map(({ id }) => `${metricLabels[id]} ${formatRange(ranges[id])}`);
+    .map(({ id, label }) => `${label} ${formatRange(ranges[id])}`);
 }
 
 export function getAssetMenuFilterSummary(
