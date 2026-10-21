@@ -65,6 +65,37 @@ namespace BetterBuildingMenu.Tests
 			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateTrigger<Entity>(\"Pick\", Handler);"));
 			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateBinding(\"Value\", \"SetValue\", 0, SetValue);"));
 			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateTrigger(\"Twice\", A); CreateTrigger(\"Twice\", B);"));
+			// A read/write binding whose trigger is not named by a literal.
+			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateBinding<int>(\"X\", nameof(SetX), 0, SetX);"));
+			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateBinding<int>(\"X\", SetXTrigger, 0, SetX);"));
+		}
+
+		[Fact]
+		public void AValueBindingRegistersNoTrigger()
+		{
+			// Two arguments, a name and a first value, whatever that value is.
+			Assert.Empty(TriggerRegistrations.Parse("ValueBindingHelper<string> _ViewMode; _ViewMode = CreateBinding(\"ViewMode\", \"grid\");"));
+			Assert.Empty(TriggerRegistrations.Parse("_CurrentSearch = CreateBinding(\"CurrentSearch\", \"\");"));
+			Assert.Empty(TriggerRegistrations.Parse("_Counts = CreateBinding(\"Counts\", new Dictionary<string, int>());"));
+		}
+
+		[Fact]
+		public void AReadWriteBindingIsReadByItsTopLevelArguments()
+		{
+			var triggers = TriggerRegistrations.Parse("CreateBinding(\"Pick\", \"SetPick\", Math.Max(0, start), SetPick); void SetPick(int pick) { }");
+
+			Assert.Equal(new[] { "SetPick: number" }, triggers.Select(trigger => $"{trigger.Name}: {string.Join(", ", trigger.Arguments)}"));
+		}
+
+		[Fact]
+		public void TheReaderSkipsComments()
+		{
+			Assert.Equal(new[] { "Real" }, TriggerRegistrations.Parse("// CreateTrigger registers it\nCreateTrigger(\"Real\", A);").Select(trigger => trigger.Name));
+			Assert.Equal(
+				new[] { "Real" },
+				TriggerRegistrations.Parse("// CreateTrigger(\"Old\", A);\n/* CreateTrigger<int>(\"Older\", B); */\nCreateTrigger(\"Real\", A);").Select(trigger => trigger.Name));
+			// A comment marker inside a string is text, and hides nothing after it.
+			Assert.Equal(new[] { "Real" }, TriggerRegistrations.Parse("var url = \"a // b\"; CreateTrigger(\"Real\", A);").Select(trigger => trigger.Name));
 		}
 
 		[Fact]
