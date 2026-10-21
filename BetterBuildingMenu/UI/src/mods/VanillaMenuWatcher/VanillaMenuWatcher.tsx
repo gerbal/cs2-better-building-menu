@@ -23,11 +23,20 @@ import {
   SelectedAssetMenu$,
   send,
 } from "mods/bindings";
+import { useCaptureKeydown } from "mods/useCaptureKeydown";
 
 /** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
 const ESCAPE_KEY_CODE = 27;
 
 const BackActions = { Back: () => trigger(TOOLBAR_TRIGGER_GROUP, CLEAR_ASSET_SELECTION_TRIGGER) };
+
+const closeOnEscape = (event: KeyboardEvent): void => {
+  if (event.keyCode !== ESCAPE_KEY_CODE) {
+    return;
+  }
+
+  trigger(TOOLBAR_TRIGGER_GROUP, CLEAR_ASSET_SELECTION_TRIGGER);
+};
 
 /**
  * Routes vanilla toolbar menus into the asset menu; renders nothing. The entity index
@@ -63,23 +72,7 @@ export const VanillaMenuWatcher = () => {
    * control inside the asset menu cannot swallow it. Only where the game claims Back
    * itself; on the default tool the consumer below claims it. See escapeRoute.
    */
-  useEffect(() => {
-    if (!enabled || route !== "clear-on-keydown") {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.keyCode !== ESCAPE_KEY_CODE) {
-        return;
-      }
-
-      trigger(TOOLBAR_TRIGGER_GROUP, CLEAR_ASSET_SELECTION_TRIGGER);
-    };
-
-    document.addEventListener("keydown", onKeyDown, true);
-
-    return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [enabled, route]);
+  useCaptureKeydown(enabled && route === "clear-on-keydown" ? closeOnEscape : null);
 
   useEffect(() => {
     if (!enabled) {

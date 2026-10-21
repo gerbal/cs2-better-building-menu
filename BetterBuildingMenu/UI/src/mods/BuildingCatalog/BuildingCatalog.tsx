@@ -34,6 +34,7 @@ import { getAssetMenuAnchor, getAssetMenuAnchorKey, getAssetMenuView, setAssetMe
 // asset menu rather than a descendant, so it goes through the subscribing hook.
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
+import { useCaptureKeydown } from "mods/useCaptureKeydown";
 import { useAssetMenuShown } from "mods/BuildingMenu/assetMenuShown";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
@@ -244,11 +245,11 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   // Enter arms the backend's best match, so a search can be finished without
   // leaving the keyboard. One listener for every view, on the document because
-  // the search field is the header's; the ref keeps it reading this render.
-  // An Enter pressed before the page catches up with the box is held for it.
+  // the search field is the header's. An Enter pressed before the page catches
+  // up with the box is held for it.
   const pendingEnter = useRef<string | null>(null);
-  const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
-  onEnter.current = (event) => {
+  useCaptureKeydown((event) => {
+    if (!isPlainEnter(event)) return;
     // Every menu's panel is kept built and listens; only the one shown was typed in.
     if (!shown) return;
     if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
@@ -256,7 +257,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     const decision = enterDecision({ items: pageItems, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
     pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
     if (decision && "arm" in decision) activate(decision.arm);
-  };
+  });
   useEffect(() => {
     const waiting = pendingEnter.current;
     if (waiting === null) return;
@@ -273,18 +274,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     pendingEnter.current = null;
     if (decision) activate(decision.arm);
   }, [pageItems, bestMatchId, pageSearch, currentSearch, activate]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (isPlainEnter(event)) onEnter.current(event);
-    };
-
-    // Capture phase: the game's app container stops keydown propagation, so a
-    // bubble listener on the document never hears an Enter typed in the search
-    // box. VanillaMenuWatcher's Escape listens the same way.
-    document.addEventListener("keydown", onKey, true);
-
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, []);
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
