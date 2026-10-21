@@ -3,8 +3,7 @@
  * types come from sharedContracts.generated.ts, so a builder that no longer
  * matches its registration fails the typecheck.
  */
-import type { MetricRangeId } from "./buildingCatalogRanges";
-import type { GroupDimensionId, SortColumn, TriggerArgs } from "./sharedContracts.generated";
+import type { GroupDimensionId, MetricRangeId, SortColumn, TriggerArgs } from "./sharedContracts.generated";
 import { joinEntityIndices, type VanillaToolbarState } from "./vanillaToolbarSelection";
 
 type TriggerName = keyof TriggerArgs;

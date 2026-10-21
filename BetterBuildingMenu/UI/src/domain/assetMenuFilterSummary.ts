@@ -1,19 +1,14 @@
-import { countActiveMetricRanges, metricRangesFromState, type MetricRangeId, type NormalizedMetricRange } from "./buildingCatalogRanges";
+import {
+  countActiveMetricRanges,
+  metricRangesFromState,
+  METRIC_RANGE_DEFINITIONS,
+  type NormalizedMetricRange,
+} from "./buildingCatalogRanges";
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
+import type { MetricBoundKey, MetricRangeId } from "./sharedContracts.generated";
 
-export interface AssetMenuMetricRangeState {
-  minCost: number | null;
-  maxCost: number | null;
-  minUpkeep: number | null;
-  maxUpkeep: number | null;
-  minWorkers: number | null;
-  maxWorkers: number | null;
-  minCapacity: number | null;
-  maxCapacity: number | null;
-  minLotWidth: number | null;
-  maxLotWidth: number | null;
-  minLotDepth: number | null;
-  maxLotDepth: number | null;
+/** The published bounds, a minimum and a maximum per metric, null where unset. */
+export interface AssetMenuMetricRangeState extends Record<MetricBoundKey, number | null> {
   hasSelection: boolean;
 }
 
@@ -41,7 +36,6 @@ const metricLabels: Record<MetricRangeId, string> = {
   lotDepth: "Lot depth",
 };
 
-const metricRangeIds = Object.keys(metricLabels) as MetricRangeId[];
 
 function selectedFacetLabels(state: AssetMenuFacetState | null | undefined): string[] {
   return (state?.groups ?? [])
@@ -73,9 +67,9 @@ function formatRange(range: NormalizedMetricRange): string {
 }
 
 function metricDetails(ranges: Record<MetricRangeId, NormalizedMetricRange>): string[] {
-  return metricRangeIds
-    .filter((id) => ranges[id].min !== null || ranges[id].max !== null)
-    .map((id) => `${metricLabels[id]} ${formatRange(ranges[id])}`);
+  return METRIC_RANGE_DEFINITIONS
+    .filter(({ id }) => ranges[id].min !== null || ranges[id].max !== null)
+    .map(({ id }) => `${metricLabels[id]} ${formatRange(ranges[id])}`);
 }
 
 export function getAssetMenuFilterSummary(

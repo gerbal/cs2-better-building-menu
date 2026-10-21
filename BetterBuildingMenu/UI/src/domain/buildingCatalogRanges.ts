@@ -1,6 +1,5 @@
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
-
-export type MetricRangeId = "cost" | "upkeep" | "workers" | "capacity" | "lotWidth" | "lotDepth";
+import { METRIC_RANGES, type MetricBoundKey, type MetricRangeId } from "./sharedContracts.generated";
 
 export interface MetricRangeInput {
   minText: string;
@@ -14,6 +13,9 @@ export interface NormalizedMetricRange {
 
 export interface MetricRangeDefinition {
   id: MetricRangeId;
+  /** Where the published range state carries this metric's bounds. */
+  minKey: MetricBoundKey;
+  maxKey: MetricBoundKey;
   label: string;
   localizationKey: string;
   integer: boolean;
@@ -22,14 +24,23 @@ export interface MetricRangeDefinition {
 export const METRIC_RANGE_MAX = 1_000_000_000;
 export const LOT_RANGE_MAX = 10_000;
 
-export const METRIC_RANGE_DEFINITIONS: readonly MetricRangeDefinition[] = [
-  { id: "cost", label: "Cost", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Cost]", integer: false },
-  { id: "upkeep", label: "Upkeep", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]", integer: false },
-  { id: "workers", label: "Workers", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Workers]", integer: false },
-  { id: "capacity", label: "Capacity", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Capacity]", integer: false },
-  { id: "lotWidth", label: "Lot Width", localizationKey: "Options.LABEL[BetterBuildingMenu.LotWidth]", integer: true },
-  { id: "lotDepth", label: "Lot Depth", localizationKey: "Options.LABEL[BetterBuildingMenu.LotDepth]", integer: true },
-];
+/** What the drawer calls each metric; the rest of a definition is C#'s. */
+const METRIC_LABELS: Record<MetricRangeId, Pick<MetricRangeDefinition, "label" | "localizationKey">> = {
+  cost: { label: "Cost", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Cost]" },
+  upkeep: { label: "Upkeep", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]" },
+  workers: { label: "Workers", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Workers]" },
+  capacity: { label: "Capacity", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Capacity]" },
+  lotWidth: { label: "Lot Width", localizationKey: "Options.LABEL[BetterBuildingMenu.LotWidth]" },
+  lotDepth: { label: "Lot Depth", localizationKey: "Options.LABEL[BetterBuildingMenu.LotDepth]" },
+};
+
+export const METRIC_RANGE_DEFINITIONS: readonly MetricRangeDefinition[] = METRIC_RANGES.map((metric) => ({
+  ...metric,
+  ...METRIC_LABELS[metric.id],
+}));
+
+/** Every bound the range state carries, a minimum and a maximum per metric, in definition order. */
+export const BOUND_KEYS: readonly MetricBoundKey[] = METRIC_RANGES.flatMap((metric) => [metric.minKey, metric.maxKey]);
 
 function definitionFor(id: MetricRangeId | string): MetricRangeDefinition | undefined {
   return METRIC_RANGE_DEFINITIONS.find((definition) => definition.id === id);
@@ -100,16 +111,12 @@ export function hasMetricRange(range: NormalizedMetricRange | null | undefined):
 export function metricRangesFromState(
   state: AssetMenuMetricRangeState | null | undefined,
 ): Record<MetricRangeId, NormalizedMetricRange> {
-  const range = (min: number | null | undefined, max: number | null | undefined) => ({ min: min ?? null, max: max ?? null });
+  const ranges = {} as Record<MetricRangeId, NormalizedMetricRange>;
+  for (const definition of METRIC_RANGE_DEFINITIONS) {
+    ranges[definition.id] = { min: state?.[definition.minKey] ?? null, max: state?.[definition.maxKey] ?? null };
+  }
 
-  return {
-    cost: range(state?.minCost, state?.maxCost),
-    upkeep: range(state?.minUpkeep, state?.maxUpkeep),
-    workers: range(state?.minWorkers, state?.maxWorkers),
-    capacity: range(state?.minCapacity, state?.maxCapacity),
-    lotWidth: range(state?.minLotWidth, state?.maxLotWidth),
-    lotDepth: range(state?.minLotDepth, state?.maxLotDepth),
-  };
+  return ranges;
 }
 
 export function countActiveMetricRanges(

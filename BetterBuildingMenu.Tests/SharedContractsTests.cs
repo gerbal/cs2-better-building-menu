@@ -151,6 +151,18 @@ namespace BetterBuildingMenu.Tests
 			ts.Append("\n/** BuildingCatalogFacetSelection.Availability.All: the states every asset is in one of. */\n");
 			AppendUnion(ts, "AvailabilityOption", BuildingCatalogFacetSelection.Availability.All);
 
+			ts.Append("\n/** BuildingCatalogMetrics.All: every metric a range can bound, in the drawer's order, the keys its bounds are published under, and whether they are whole numbers. */\n");
+			ts.Append("export const METRIC_RANGES = [\n");
+
+			foreach (var metric in BuildingCatalogMetrics.All)
+			{
+				ts.Append($"  {{ id: {Quote(metric.Id)}, minKey: {Quote(metric.MinKey)}, maxKey: {Quote(metric.MaxKey)}, integer: {(metric.Integer ? "true" : "false")} }},\n");
+			}
+
+			ts.Append("] as const;\n");
+			ts.Append("\nexport type MetricRangeId = (typeof METRIC_RANGES)[number][\"id\"];\n");
+			ts.Append("\nexport type MetricBoundKey = (typeof METRIC_RANGES)[number][\"minKey\" | \"maxKey\"];\n");
+
 			ts.Append("\n/** BuildingCatalogQuery.WindowStep: how many rows one Load more adds. */\n");
 			ts.Append($"export const CATALOG_WINDOW_STEP = {BuildingCatalogQuery.WindowStep};\n");
 

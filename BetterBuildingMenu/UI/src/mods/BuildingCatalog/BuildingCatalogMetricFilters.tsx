@@ -9,14 +9,15 @@ import {
   setBuildingCatalogMetricRangeCommand,
 } from "domain/commands";
 import {
+  BOUND_KEYS,
   countActiveMetricRanges,
   metricRangesFromState,
   METRIC_RANGE_DEFINITIONS,
   didSwapMetricBounds,
   getInvalidMetricBounds,
-  type MetricRangeId,
   type MetricRangeInput,
 } from "domain/buildingCatalogRanges";
+import type { MetricRangeId } from "domain/sharedContracts.generated";
 import {
   createMetricRangeDebouncer,
   type MetricRangeDebouncerScheduler,
@@ -30,21 +31,19 @@ import type { AssetMenuMetricRangeState as BuildingCatalogMetricRangeState } fro
 import { BuildingCatalogMetricBounds$, BuildingCatalogMetricRanges$, send } from "mods/bindings";
 import { GameTextInput, gameClasses } from "mods/gameModules";
 
-const emptyMetricRangeState: BuildingCatalogMetricRangeState = {
-  minCost: null,
-  maxCost: null,
-  minUpkeep: null,
-  maxUpkeep: null,
-  minWorkers: null,
-  maxWorkers: null,
-  minCapacity: null,
-  maxCapacity: null,
-  minLotWidth: null,
-  maxLotWidth: null,
-  minLotDepth: null,
-  maxLotDepth: null,
-  hasSelection: false,
-};
+const emptyMetricRangeState = BOUND_KEYS.reduce(
+  (state, key) => ({ ...state, [key]: null }),
+  { hasSelection: false } as BuildingCatalogMetricRangeState,
+);
+
+/**
+ * A stable key for the twelve numbers, for hook deps: the bindings hand back a
+ * fresh object on every emit, so depending on the object itself re-runs on
+ * unrelated churn, including while the player is typing.
+ */
+function boundsKeyOf(state: BuildingCatalogMetricRangeState): string {
+  return BOUND_KEYS.map((key) => state[key]).join("|");
+}
 
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
@@ -100,17 +99,8 @@ export const BuildingCatalogMetricFilters = () => {
   // The spread each metric has here. A field with no selection shows its bound,
   // so the control states the scale before asking anyone to narrow it.
   const bounds = useValue(BuildingCatalogMetricBounds$) ?? emptyMetricRangeState;
-  // A stable key for the twelve numbers: the binding hands back a fresh object
-  // on every emit, so depending on `bounds` itself re-seeds the drafts on
-  // unrelated churn, including while the player is typing.
-  const boundsKey = [
-    bounds.minCost, bounds.maxCost,
-    bounds.minUpkeep, bounds.maxUpkeep,
-    bounds.minWorkers, bounds.maxWorkers,
-    bounds.minCapacity, bounds.maxCapacity,
-    bounds.minLotWidth, bounds.maxLotWidth,
-    bounds.minLotDepth, bounds.maxLotDepth,
-  ].join("|");
+  const boundsKey = boundsKeyOf(bounds);
+  const stateKey = boundsKeyOf(state);
   const [drafts, setDrafts] = useState<MetricRangeDrafts>(() => draftsFromState(state, bounds));
   const metricRangeDebouncer = useMemo(
     () =>
@@ -136,21 +126,10 @@ export const BuildingCatalogMetricFilters = () => {
 
       return next;
     });
-    // Keyed on the numbers, not on the fresh objects the bindings emit; see boundsKey.
+    // Keyed on the numbers, not on the fresh objects the bindings emit; see boundsKeyOf.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    state.minCost,
-    state.maxCost,
-    state.minUpkeep,
-    state.maxUpkeep,
-    state.minWorkers,
-    state.maxWorkers,
-    state.minCapacity,
-    state.maxCapacity,
-    state.minLotWidth,
-    state.maxLotWidth,
-    state.minLotDepth,
-    state.maxLotDepth,
+    stateKey,
     // Re-seed when the view changes: opening a different menu changes what
     // there is to ask about, so an empty field has to show the NEW range rather
     // than the last menu's.
@@ -159,20 +138,7 @@ export const BuildingCatalogMetricFilters = () => {
 
   // Keyed on the numbers, like the drafts above.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const ranges = useMemo(() => metricRangesFromState(state), [
-    state.minCost,
-    state.maxCost,
-    state.minUpkeep,
-    state.maxUpkeep,
-    state.minWorkers,
-    state.maxWorkers,
-    state.minCapacity,
-    state.maxCapacity,
-    state.minLotWidth,
-    state.maxLotWidth,
-    state.minLotDepth,
-    state.maxLotDepth,
-  ]);
+  const ranges = useMemo(() => metricRangesFromState(state), [stateKey]);
   const activeCount = countActiveMetricRanges(ranges);
 
   function updateBound(id: MetricRangeId, bound: "minText" | "maxText", value: Event): void {

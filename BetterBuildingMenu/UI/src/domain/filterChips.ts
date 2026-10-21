@@ -7,7 +7,8 @@
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
 import { setBuildingCatalogMetricRangeCommand, toggleAssetMenuFacetCommand, type Command } from "./commands";
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
-import type { MetricRangeId } from "./buildingCatalogRanges";
+import { METRIC_RANGE_DEFINITIONS } from "./buildingCatalogRanges";
+import type { MetricBoundKey, MetricRangeId } from "./sharedContracts.generated";
 
 export type ChipCommand = Command;
 
@@ -36,18 +37,6 @@ const METRIC_LABELS: Record<MetricRangeId, string> = {
   lotDepth: "Lot depth",
 };
 
-const METRIC_BOUNDS: Record<MetricRangeId, [keyof AssetMenuMetricRangeState, keyof AssetMenuMetricRangeState]> = {
-  cost: ["minCost", "maxCost"],
-  upkeep: ["minUpkeep", "maxUpkeep"],
-  workers: ["minWorkers", "maxWorkers"],
-  capacity: ["minCapacity", "maxCapacity"],
-  lotWidth: ["minLotWidth", "maxLotWidth"],
-  lotDepth: ["minLotDepth", "maxLotDepth"],
-};
-
-/** Declaration order is display order within the metric block. */
-const METRIC_IDS = Object.keys(METRIC_LABELS) as MetricRangeId[];
-
 function formatBound(value: number): string {
   return Number.isInteger(value)
     ? value.toLocaleString()
@@ -60,7 +49,7 @@ function formatRange(min: number | null, max: number | null): string {
   return `≤ ${formatBound(max as number)}`;
 }
 
-function readBound(state: AssetMenuMetricRangeState, key: keyof AssetMenuMetricRangeState): number | null {
+function readBound(state: AssetMenuMetricRangeState, key: MetricBoundKey): number | null {
   const value = state[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -97,8 +86,8 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
 
   const ranges = input?.metricRanges;
   if (ranges) {
-    for (const id of METRIC_IDS) {
-      const [minKey, maxKey] = METRIC_BOUNDS[id];
+    // Definition order is display order within the metric block.
+    for (const { id, minKey, maxKey } of METRIC_RANGE_DEFINITIONS) {
       const min = readBound(ranges, minKey);
       const max = readBound(ranges, maxKey);
 

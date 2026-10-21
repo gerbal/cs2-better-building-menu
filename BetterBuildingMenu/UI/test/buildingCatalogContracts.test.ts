@@ -10,6 +10,7 @@ import {
   setSortDescendingCommand,
 } from "../src/domain/commands.ts";
 import {
+  BOUND_KEYS,
   METRIC_RANGE_DEFINITIONS,
   countActiveMetricRanges,
   didSwapMetricBounds,
@@ -77,6 +78,19 @@ describe("BetterBuildingMenu UI binding contracts", () => {
       }),
       2,
     );
+  });
+
+  it("lists every bound the range state carries, a minimum then a maximum per metric", () => {
+    // The drawer keys its effects on these and builds its empty state from them:
+    // a key missing here is a bound the drawer would never re-seed from.
+    assert.deepEqual(BOUND_KEYS, [
+      "minCost", "maxCost",
+      "minUpkeep", "maxUpkeep",
+      "minWorkers", "maxWorkers",
+      "minCapacity", "maxCapacity",
+      "minLotWidth", "maxLotWidth",
+      "minLotDepth", "maxLotDepth",
+    ]);
   });
 
   it("builds metric range set and clear payloads", () => {

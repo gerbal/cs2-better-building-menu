@@ -45,6 +45,20 @@ export type FacetId = "buildingType" | "provenance" | "availability" | "content"
 /** BuildingCatalogFacetSelection.Availability.All: the states every asset is in one of. */
 export type AvailabilityOption = "Unlocked" | "Locked" | "AlreadyBuilt";
 
+/** BuildingCatalogMetrics.All: every metric a range can bound, in the drawer's order, the keys its bounds are published under, and whether they are whole numbers. */
+export const METRIC_RANGES = [
+  { id: "cost", minKey: "minCost", maxKey: "maxCost", integer: false },
+  { id: "upkeep", minKey: "minUpkeep", maxKey: "maxUpkeep", integer: false },
+  { id: "workers", minKey: "minWorkers", maxKey: "maxWorkers", integer: false },
+  { id: "capacity", minKey: "minCapacity", maxKey: "maxCapacity", integer: false },
+  { id: "lotWidth", minKey: "minLotWidth", maxKey: "maxLotWidth", integer: true },
+  { id: "lotDepth", minKey: "minLotDepth", maxKey: "maxLotDepth", integer: true },
+] as const;
+
+export type MetricRangeId = (typeof METRIC_RANGES)[number]["id"];
+
+export type MetricBoundKey = (typeof METRIC_RANGES)[number]["minKey" | "maxKey"];
+
 /** BuildingCatalogQuery.WindowStep: how many rows one Load more adds. */
 export const CATALOG_WINDOW_STEP = 40;
 
