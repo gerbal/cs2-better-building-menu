@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { beforeEach, describe, it } from "node:test";
+import { act, create } from "react-test-renderer";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { installFakeBrowser } from "../harness/fakeBrowser";
+import { mountEach } from "../harness/mount";
 import {
   ASSET_MENU_MAX_HEIGHT,
   ASSET_MENU_MIN_HEIGHT,
@@ -24,25 +25,18 @@ const heights = () => triggers.filter((call) => call.name === "SetAssetMenuHeigh
 const names = () => triggers.map((call) => call.name);
 
 describe("dragging the asset menu's height", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
     ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
-    act(() => {
-      root = create(<Probe />);
-    });
+    tree.mount(<Probe />);
     // The strip is drawn 14px tall, so a pixel is a rem here.
     act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
   });
 
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
-  });
-
-  const move = (clientY: number) => act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY }));
-  const release = () => act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+  const move = (clientY: number) => act(() => tree.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY }));
+  const release = () => act(() => tree.root.find((node) => node.props.onMouseUp).props.onMouseUp());
   const expected = (clientY: number) => draggedAssetMenuHeight(clampAssetMenuHeight(420), 500, clientY, 1);
 
   it("sends one height per frame, the latest", () => {
@@ -58,7 +52,7 @@ describe("dragging the asset menu's height", () => {
 
   it("ends the drag where the button was last held when a move says none is", () => {
     move(490);
-    act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 480, buttons: 0 }));
+    act(() => tree.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 480, buttons: 0 }));
 
     assert.deepEqual(heights(), [expected(490)]);
     assert.equal(names().at(-1), "CommitAssetMenuHeight");
@@ -84,21 +78,14 @@ describe("dragging the asset menu's height", () => {
 });
 
 describe("the asset menu's height between drags", () => {
-  let root: ReactTestRenderer | undefined;
-  const mount = () => act(() => {
-    root = create(<Probe />);
-  });
-  const blocker = () => root!.root.findAll((node) => node.props.onMouseUp !== undefined);
+  const tree = mountEach();
+  const mount = () => tree.mount(<Probe />);
+  const blocker = () => tree.root.findAll((node) => node.props.onMouseUp !== undefined);
   const begin = () => act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
 
   beforeEach(() => {
     resetBindings();
     ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
-  });
-
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
   });
 
   it("is the saved height, held inside what the layout can take", () => {
@@ -139,8 +126,7 @@ describe("the asset menu's height between drags", () => {
     mount();
     begin();
     act(() => blocker()[0].props.onMouseMove({ clientY: 480 }));
-    act(() => root!.unmount());
-    root = undefined;
+    act(() => tree.renderer.unmount());
 
     nextFrame();
     assert.deepEqual(names(), ["SetAssetMenuHeight", "CommitAssetMenuHeight"]);

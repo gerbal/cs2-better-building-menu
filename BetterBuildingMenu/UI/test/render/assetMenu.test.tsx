@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
 import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_CATALOG_FULL, ASSET_MENU_WIDTH_HANDLE_REACH, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
@@ -61,7 +62,7 @@ describe("the asset menu's row", () => {
 
 describe("the asset menu's width strip", () => {
   let browser: FakeBrowser;
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
@@ -71,50 +72,40 @@ describe("the asset menu's width strip", () => {
   });
 
   afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
     browser.restore();
   });
 
   it("starts the width drag on a press, which puts the blocker up", () => {
-    act(() => {
-      root = create(<AssetMenu onClose={() => {}} />);
-    });
-    const strip = root!.root.find((node) => node.props.className === "widthHandle");
-    assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 0);
+    tree.mount(<AssetMenu onClose={() => {}} />);
+    const strip = tree.root.find((node) => node.props.className === "widthHandle");
+    assert.equal(tree.root.findAll((node) => node.props.className === "widthBlocker").length, 0);
 
     act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: 10 }) } }));
 
-    assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
+    assert.equal(tree.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
   });
 
   it("reaches into the gap beside the pane while it is shown, and a press there starts the drag", () => {
-    act(() => {
-      root = create(<AssetMenu onClose={() => {}} />);
-    });
-    const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
-    const reach = root!.root.findAll((node) => node.props.className === "widthReach");
+    tree.mount(<AssetMenu onClose={() => {}} />);
+    const content = tree.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+    const reach = tree.root.findAll((node) => node.props.className === "widthReach");
 
     assert.equal(reach.length, 1);
     assert.equal(content.findAll((node) => node.props.className === "widthReach").length, 0, "outside the catalog's clipped box");
     act(() => reach[0].props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: 6 }) } }));
-    assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
+    assert.equal(tree.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
   });
 
   it("reaches nowhere past the menu while the pane is hidden", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    act(() => {
-      root = create(<AssetMenu onClose={() => {}} />);
-    });
+    tree.mount(<AssetMenu onClose={() => {}} />);
 
-    assert.equal(root!.root.findAll((node) => node.props.className === "widthReach").length, 0);
+    assert.equal(tree.root.findAll((node) => node.props.className === "widthReach").length, 0);
   });
 
   it("draws the strip down the catalog's side, below the header", () => {
-    act(() => {
-      root = create(<AssetMenu onClose={() => {}} />);
-    });
-    const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+    tree.mount(<AssetMenu onClose={() => {}} />);
+    const content = tree.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
 
     assert.equal(content.findAll((node) => node.props.className === "widthHandle").length, 1);
   });
@@ -122,6 +113,7 @@ describe("the asset menu's width strip", () => {
 
 describe("a press in the gap beside the pane", () => {
   let browser: FakeBrowser;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
@@ -135,18 +127,15 @@ describe("a press in the gap beside the pane", () => {
   });
 
   it("measures the pointer against the gap's own width", () => {
-    let root: ReactTestRenderer | undefined;
-    act(() => {
-      root = create(<AssetMenu onClose={() => {}} />);
-    });
-    const reach = root!.root.find((node) => String(node.props.className ?? "").startsWith("widthReach"));
+    tree.mount(<AssetMenu onClose={() => {}} />);
+    const reach = tree.root.find((node) => String(node.props.className ?? "").startsWith("widthReach"));
     // Drawn as many pixels wide as it is rem, so a pixel is a rem.
     act(() => reach.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_REACH }) } }));
-    const blocker = root!.root.find((node) => node.props.className === "widthBlocker");
+    const blocker = tree.root.find((node) => node.props.className === "widthBlocker");
     act(() => blocker.props.onMouseMove({ clientX: 480, buttons: 1 }));
     browser.nextFrame();
     const widths = triggers.filter((call) => call.name === "SetAssetMenuCatalogWidth").map((call) => call.args[0]);
-    act(() => root?.unmount());
+    act(() => tree.renderer.unmount());
 
     assert.deepEqual(widths, [draggedCatalogWidth(1091, 500, 480, 1476, true, 1)]);
   });

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { beforeEach, describe, it } from "node:test";
+import { act } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { installFakeBrowser } from "../harness/fakeBrowser";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { searchFieldClass } from "../../src/mods/BuildingMenu/searchField";
@@ -52,7 +53,7 @@ const groupedPage = (searchText: string, bestMatchId: number | null) => {
 const typed = (text: string) => setBinding("BetterBuildingMenu", "CurrentSearch", text);
 
 describe("Enter in the catalog", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
@@ -61,16 +62,9 @@ describe("Enter in the catalog", () => {
     setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
-  });
-
-  const mount = () => act(() => {
-    root = create(<BuildingCatalogComponent />);
-  });
+  const mount = () => tree.mount(<BuildingCatalogComponent />);
   const rerender = () => act(() => {
-    root!.update(<BuildingCatalogComponent />);
+    tree.renderer.update(<BuildingCatalogComponent />);
   });
 
   for (const mode of ["grid", "list", "cards", "table"]) {
@@ -170,8 +164,7 @@ describe("Enter in the catalog", () => {
     press({ key: "a" });
     assert.deepEqual(armed(), []);
 
-    act(() => root?.unmount());
-    root = undefined;
+    act(() => tree.renderer.unmount());
     assert.equal(keydown.length, 0);
   });
 });

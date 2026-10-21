@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { act } from "react-test-renderer";
 import { renderHtml, entry, catalogPage } from "../harness/render";
 import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
@@ -254,7 +255,7 @@ describe("the table's names follow the build menu's width", () => {
 
 describe("the table while the build menu's width is dragged", () => {
   let browser: FakeBrowser;
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
@@ -268,15 +269,13 @@ describe("the table while the build menu's width is dragged", () => {
 
   it("hands the rows the same columns while a new width changes none of them", () => {
     // Every row is memoised: new column props each frame would redraw them all.
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
-    const row = () => root!.root.find((node) => node.props.columnStyle !== undefined && node.props.entry !== undefined).props;
+    tree.mount(<BuildingCatalogComponent />);
+    const row = () => tree.root.find((node) => node.props.columnStyle !== undefined && node.props.entry !== undefined).props;
     const before = row();
 
     act(() => setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300));
     const after = row();
-    act(() => root?.unmount());
+    act(() => tree.renderer.unmount());
     browser.restore();
 
     assert.equal(after.metrics, before.metrics);

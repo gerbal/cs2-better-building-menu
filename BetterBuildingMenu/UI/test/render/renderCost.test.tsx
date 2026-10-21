@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { beforeEach, describe, it } from "node:test";
+import { act } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { installFakeBrowser } from "../harness/fakeBrowser";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
@@ -25,7 +26,7 @@ const counted = (id: number): BuildingCatalogEntry => {
 };
 
 describe("what a keystroke re-renders", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
@@ -36,14 +37,7 @@ describe("what a keystroke re-renders", () => {
     setAssetMenuView({ viewMode: "table" });
   });
 
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
-  });
-
-  const mount = () => act(() => {
-    root = create(<BuildingCatalogComponent />);
-  });
+  const mount = () => tree.mount(<BuildingCatalogComponent />);
 
   for (const mode of ["table", "grid", "list", "cards"]) {
     it(`leaves the rows alone in ${mode} mode when only the search box moves`, () => {

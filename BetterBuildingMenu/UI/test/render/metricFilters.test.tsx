@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
-import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
+import { act, type ReactTestInstance } from "react-test-renderer";
 import "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { getModule } from "../harness/stubs/cs2-modding";
 import { Button } from "../harness/stubs/cs2-ui";
+import { mountEach } from "../harness/mount";
 import type { AssetMenuMetricRangeState } from "../../src/domain/assetMenuFilterSummary";
 import { METRIC_RANGE_DEBOUNCE_MS } from "../../src/domain/metricRangeDebouncer";
 import { ASSET_MENU_DISCLOSURE_KEYS, resetAssetMenuView, setAssetMenuDisclosure } from "../../src/domain/assetMenuViewStore";
@@ -27,18 +28,16 @@ const bounds = { ...none, minCost: 500, maxCost: 90000, minUpkeep: 0, maxUpkeep:
 const ranges = (over: Partial<AssetMenuMetricRangeState>) => setBinding("BetterBuildingMenu", "BuildingCatalogMetricRanges", { ...none, ...over });
 
 describe("the metric-range drawer", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
-  const render = () => act(() => {
-    root = create(<BuildingCatalogMetricFilters />);
-  });
+  const render = () => tree.mount(<BuildingCatalogMetricFilters />);
   const text = (node: ReactTestInstance): string =>
     node.children.map((child) => (typeof child === "string" ? child : text(child))).join("");
-  const buttons = (): string[] => root!.root.findAllByType(Button).map(text);
-  const field = (label: string): ReactTestInstance => root!.root.findAllByType(TextInput).find((node) => node.props["aria-label"] === label)!;
+  const buttons = (): string[] => tree.root.findAllByType(Button).map(text);
+  const field = (label: string): ReactTestInstance => tree.root.findAllByType(TextInput).find((node) => node.props["aria-label"] === label)!;
   const value = (label: string): string => field(label).props.value;
   const type = (label: string, typed: string) => act(() => field(label).props.onChange({ target: { value: typed } }));
-  const notices = (): string[] => root!.root.findAll((node) => node.props.className === "metricRangeNotice").map(text);
+  const notices = (): string[] => tree.root.findAll((node) => node.props.className === "metricRangeNotice").map(text);
   const sent = () => triggers.map((call) => [call.name, ...call.args]);
   const wait = (ms: number) => act(() => mock.timers.tick(ms));
   const open = () => setAssetMenuDisclosure(ASSET_MENU_DISCLOSURE_KEYS.metricRanges, true);
@@ -51,8 +50,6 @@ describe("the metric-range drawer", () => {
   });
 
   afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
     mock.timers.reset();
   });
 
@@ -60,7 +57,7 @@ describe("the metric-range drawer", () => {
     render();
 
     assert.deepEqual(buttons(), ["Metric filters"]);
-    assert.equal(root!.root.findAllByType(TextInput).length, 0);
+    assert.equal(tree.root.findAllByType(TextInput).length, 0);
   });
 
   it("counts ranges, not bounds, and offers to clear them", () => {
@@ -68,20 +65,20 @@ describe("the metric-range drawer", () => {
     ranges({ minCost: 10, maxCost: 20, minWorkers: 5, hasSelection: true });
     render();
 
-    const badge = root!.root.findAll((node) => node.props.className === "metricRangeSelectionCount").map(text);
+    const badge = tree.root.findAll((node) => node.props.className === "metricRangeSelectionCount").map(text);
     assert.deepEqual(badge, ["2"]);
     assert.deepEqual(buttons(), ["Metric filters2", "Clear metric ranges"], "the badge sits in the toggle");
   });
 
   it("opens on a press, and is still open after the drawer is drawn again", () => {
     render();
-    act(() => root!.root.findAllByType(Button)[0].props.onSelect());
-    assert.equal(root!.root.findAllByType(TextInput).length, 12, "a min and a max for each of six metrics");
+    act(() => tree.root.findAllByType(Button)[0].props.onSelect());
+    assert.equal(tree.root.findAllByType(TextInput).length, 12, "a min and a max for each of six metrics");
     assert.deepEqual(buttons(), ["Hide metric filters"]);
 
-    act(() => root!.unmount());
+    act(() => tree.renderer.unmount());
     render();
-    assert.equal(root!.root.findAllByType(TextInput).length, 12);
+    assert.equal(tree.root.findAllByType(TextInput).length, 12);
   });
 
   it("shows the spread of what is in view where nothing is set, and the setting where something is", () => {
@@ -147,7 +144,7 @@ describe("the metric-range drawer", () => {
     render();
 
     type("Upkeep maximum", "30");
-    act(() => root!.root.findAllByType(Button).find((node) => text(node) === "Clear metric ranges")!.props.onSelect());
+    act(() => tree.root.findAllByType(Button).find((node) => text(node) === "Clear metric ranges")!.props.onSelect());
     wait(METRIC_RANGE_DEBOUNCE_MS);
 
     assert.deepEqual(sent(), [["ClearBuildingCatalogMetricRanges"]]);
