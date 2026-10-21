@@ -4,6 +4,7 @@ import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
 import { getNumberSeparators } from "../src/domain/assetMenuMetricFormat.ts";
 import { TILE_TOOLTIP_MAX_LINES } from "../src/domain/buildingTileTooltip.ts";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "../src/domain/hoverCardLines.ts";
+import { entry as catalogEntry } from "./harness/entries.ts";
 
 // Every key falls back to its English wording, as with no locale loaded.
 const english = (_key: string, fallback: string | null) => fallback;
@@ -16,8 +17,7 @@ const context: HoverCardLineContext = {
   labels: hoverCardLabels(english),
 };
 
-const building = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry => ({
-  id: 1,
+const building = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry => catalogEntry(1, {
   name: "Hospital",
   prefabName: "Hospital01",
   category: "ServiceBuildings",
@@ -33,7 +33,7 @@ const building = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntr
   unlockMilestone: 0,
   unlockRequirements: [],
   ...over,
-} as BuildingCatalogEntry);
+});
 
 const keys = (lines: { key: string }[]): string[] => lines.map((line) => line.key);
 const line = (entry: BuildingCatalogEntry, key: string) => {
