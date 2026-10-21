@@ -181,6 +181,17 @@ public static class ZoningCatalog
 		_ => null,
 	};
 
+	/// <summary>The sub-category a family's zones are filed under, Misc for none.</summary>
+	public static PrefabSubCategory SubCategoryOf(string? family) => family switch
+	{
+		ZoningFamilies.Residential => PrefabSubCategory.Zones_Residential,
+		ZoningFamilies.Commercial => PrefabSubCategory.Zones_Commercial,
+		ZoningFamilies.Industrial => PrefabSubCategory.Zones_Industrial,
+		ZoningFamilies.Office => PrefabSubCategory.Zones_Office,
+		ZoningFamilies.Extractors => PrefabSubCategory.Zones_Extractors,
+		_ => PrefabSubCategory.Zones_Misc,
+	};
+
 	public static ZoningFamilyDescriptor? Describe(string? family) =>
 		family is null
 			? null

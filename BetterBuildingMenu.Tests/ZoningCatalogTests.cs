@@ -162,5 +162,18 @@ namespace BetterBuildingMenu.Tests
 			// under their own subcategory rather than under Residential.
 			Assert.Contains("Buildings_Mixed", ZoningCatalog.SpawnedSubCategories(ZoningFamilies.Residential));
 		}
+
+		[Theory]
+		[InlineData(ZoningFamilies.Residential, PrefabSubCategory.Zones_Residential)]
+		[InlineData(ZoningFamilies.Commercial, PrefabSubCategory.Zones_Commercial)]
+		[InlineData(ZoningFamilies.Industrial, PrefabSubCategory.Zones_Industrial)]
+		[InlineData(ZoningFamilies.Office, PrefabSubCategory.Zones_Office)]
+		[InlineData(ZoningFamilies.Extractors, PrefabSubCategory.Zones_Extractors)]
+		[InlineData(null, PrefabSubCategory.Zones_Misc)]
+		[InlineData("NotAFamily", PrefabSubCategory.Zones_Misc)]
+		public void FilesEachFamilyUnderItsZoneSubCategory(string? family, PrefabSubCategory expected)
+		{
+			Assert.Equal(expected, ZoningCatalog.SubCategoryOf(family));
+		}
 	}
 }

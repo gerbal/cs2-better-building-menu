@@ -72,7 +72,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				BuildingLevel = level
 			};
 
-			prefabIndex.CategoryThumbnail = prefabIndex.FallbackThumbnail = _imageSystem.GetIconOrGroupIcon(zonePrefab);
+			prefabIndex.CategoryThumbnail = prefabIndex.FallbackThumbnail = GameIcons.IconOrGroupIcon(_imageSystem, zonePrefab, prefab);
 
 			if (_prefabSystem.TryGetPrefab<ZonePrefab>(zonePrefab, out var _zonePrefab))
 			{

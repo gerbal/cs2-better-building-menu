@@ -165,6 +165,12 @@ goes on. Anything that throws outside those catches, in the tables read before t
 the renumbering after them, fails the pass. `RunIndex` then logs the error and publishes nothing:
 the asset menu keeps the index it had, and nothing reaches the game's load or update loop.
 
+Icon lookups get a catch of their own (`GameIcons`). The game's thumbnail lookup throws when a
+prefab's icon names an asset-database file that is missing, and the zone tables call it outside any
+per-prefab catch, so one such zone used to fail the whole pass. Now a failed lookup is logged with
+the prefab's name and Paradox Mods id, and the prefab shows its category's icon: a building its
+sub-category's, a zone its family's, a menu or tab its own `m_Icon`.
+
 So a failed pass has nothing to put back. The published index keeps the tables and mod flags it
 was built with, and the partial passes after a failure read the same ones. Road Builder's discard
 component is the exception: once a pass has found it, it is kept whether or not that pass
