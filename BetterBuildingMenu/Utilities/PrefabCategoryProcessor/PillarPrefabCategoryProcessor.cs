@@ -22,7 +22,12 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
-            var netObjectData = _entityManager.GetComponentData<NetObjectData>(entity);
+            // A pillar must be a net object as well to be filed.
+            if (!_entityManager.HasComponent<NetObjectData>(entity))
+            {
+                prefabIndex = null;
+                return false;
+            }
 
             prefabIndex = new PrefabIndex(prefab)
             {
