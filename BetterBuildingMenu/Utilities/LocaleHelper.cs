@@ -58,8 +58,6 @@ namespace BetterBuildingMenu.Utilities
             }
         }
 
-        public static string Translate(string id, string? fallback = null) => TryTranslate(id) ?? fallback ?? id;
-
         /// <summary>The game's words under the key, trimmed, or null when it has none or no game is running.</summary>
         public static string? TryTranslate(string? key)
         {

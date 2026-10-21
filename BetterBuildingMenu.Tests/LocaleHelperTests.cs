@@ -25,11 +25,4 @@ public sealed class LocaleHelperTests
         Assert.Equal("Roads", LocaleHelper.FirstTranslated("Services.NAME[Roads]", null, "Roads"));
         Assert.Equal("Roads", LocaleHelper.FirstTranslated(null, null, "Roads"));
     }
-
-    [Fact]
-    public void Translate_FallsBackToTheFallbackThenToTheKey()
-    {
-        Assert.Equal("Roads", LocaleHelper.Translate("Services.NAME[Roads]", "Roads"));
-        Assert.Equal("Services.NAME[Roads]", LocaleHelper.Translate("Services.NAME[Roads]"));
-    }
 }
