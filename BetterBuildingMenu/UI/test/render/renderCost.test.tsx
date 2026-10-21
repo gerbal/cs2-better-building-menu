@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
+import { installFakeBrowser } from "../harness/fakeBrowser";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
@@ -10,7 +11,6 @@ import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/Buildin
 // Mounted, so bindings re-render their readers as they do in the game. Each row
 // reads its entry's prefabName once per render (the name is blank), so a
 // counting getter says how many times the rows drew.
-const globals = globalThis as unknown as Record<string, unknown>;
 let reads = 0;
 
 const counted = (id: number): BuildingCatalogEntry => {
@@ -31,9 +31,7 @@ describe("what a keystroke re-renders", () => {
     resetBindings();
     resetAssetMenuView();
     reads = 0;
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
-    globals.requestAnimationFrame = () => 0;
-    globals.cancelAnimationFrame = () => undefined;
+    installFakeBrowser({ frames: "none" });
     setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
     setAssetMenuView({ viewMode: "table" });
   });

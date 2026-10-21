@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
+import { installFakeBrowser } from "../harness/fakeBrowser";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
@@ -11,23 +12,23 @@ import { searchFieldClass } from "../../src/mods/BuildingMenu/searchField";
 // document, so the few globals the catalog's effects reach for are faked here.
 type KeyEvent = { key: string; keyCode?: number; target?: unknown };
 type Listener = (event: KeyEvent) => void;
-const globals = globalThis as unknown as Record<string, unknown>;
 let keydown: Listener[] = [];
 
 function installDocument(): void {
   keydown = [];
-  globals.document = {
-    // Only capture-phase listeners hear a key typed in the asset menu: the game's app
-    // container stops keydown propagation before it bubbles to the document.
-    addEventListener: (type: string, listener: Listener, capture?: boolean) => {
-      if (type === "keydown" && capture === true) keydown.push(listener);
+  installFakeBrowser({
+    frames: "none",
+    document: {
+      // Only capture-phase listeners hear a key typed in the asset menu: the game's app
+      // container stops keydown propagation before it bubbles to the document.
+      addEventListener: (type: string, listener: Listener, capture?: boolean) => {
+        if (type === "keydown" && capture === true) keydown.push(listener);
+      },
+      removeEventListener: (type: string, listener: Listener, capture?: boolean) => {
+        if (type === "keydown" && capture === true) keydown = keydown.filter((other) => other !== listener);
+      },
     },
-    removeEventListener: (type: string, listener: Listener, capture?: boolean) => {
-      if (type === "keydown" && capture === true) keydown = keydown.filter((other) => other !== listener);
-    },
-  };
-  globals.requestAnimationFrame = () => 0;
-  globals.cancelAnimationFrame = () => undefined;
+  });
 }
 
 const press = (event: KeyEvent) => act(() => {

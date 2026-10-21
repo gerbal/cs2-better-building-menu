@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { installFakeBrowser } from "../harness/fakeBrowser";
 import {
   ASSET_MENU_CATALOG_DEFAULT,
   ASSET_MENU_CATALOG_FULL,
@@ -19,13 +20,7 @@ import {
 
 // The band at the reference resolution; with the pane shown the room is 1,091.
 const BAND = 1476;
-const globals = globalThis as unknown as Record<string, unknown>;
-let frames: Array<(() => void) | null> = [];
-const nextFrame = () => act(() => {
-  const due = frames;
-  frames = [];
-  for (const callback of due) callback?.();
-});
+let nextFrame: () => void;
 let clock = 1000;
 
 let drag: AssetMenuWidthDrag;
@@ -51,12 +46,8 @@ describe("dragging the build menu's width", () => {
 
   beforeEach(() => {
     resetBindings();
-    frames = [];
     clock = 1000;
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = (handle: number) => {
-      if (handle > 0) frames[handle - 1] = null;
-    };
+    ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
   });
 
   afterEach(() => {

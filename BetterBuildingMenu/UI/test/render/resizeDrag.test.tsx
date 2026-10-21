@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { installFakeBrowser } from "../harness/fakeBrowser";
 import {
   ASSET_MENU_MAX_HEIGHT,
   ASSET_MENU_MIN_HEIGHT,
@@ -11,13 +12,7 @@ import {
 import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 
 // A frame clock the test advances by hand, so "one per frame" can be counted.
-const globals = globalThis as unknown as Record<string, unknown>;
-let frames: Array<(() => void) | null> = [];
-const nextFrame = () => act(() => {
-  const due = frames;
-  frames = [];
-  for (const callback of due) callback?.();
-});
+let nextFrame: () => void;
 
 let assetMenu: AssetMenuHeight;
 const Probe = () => {
@@ -33,11 +28,7 @@ describe("dragging the asset menu's height", () => {
 
   beforeEach(() => {
     resetBindings();
-    frames = [];
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = (handle: number) => {
-      if (handle > 0) frames[handle - 1] = null;
-    };
+    ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
     act(() => {
       root = create(<Probe />);
     });
@@ -102,11 +93,7 @@ describe("the asset menu's height between drags", () => {
 
   beforeEach(() => {
     resetBindings();
-    frames = [];
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = (handle: number) => {
-      if (handle > 0) frames[handle - 1] = null;
-    };
+    ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
   });
 
   afterEach(() => {

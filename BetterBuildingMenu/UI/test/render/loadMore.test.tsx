@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
+import { installFakeBrowser } from "../harness/fakeBrowser";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { getAssetMenuAnchorKey, resetAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
@@ -9,17 +10,13 @@ import { CATALOG_WINDOW_STEP } from "../../src/domain/catalogWindow";
 
 // Mounted, so the button's handler runs. The effects need a document and a
 // frame clock; neither does anything here.
-const globals = globalThis as unknown as Record<string, unknown>;
-
 describe("Load more", () => {
   let root: ReactTestRenderer | undefined;
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
-    globals.requestAnimationFrame = () => 0;
-    globals.cancelAnimationFrame = () => undefined;
+    installFakeBrowser({ frames: "none" });
     setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 

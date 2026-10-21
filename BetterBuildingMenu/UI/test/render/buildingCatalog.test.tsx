@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml, entry, catalogPage } from "../harness/render";
+import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
@@ -252,8 +253,7 @@ describe("the table's names follow the build menu's width", () => {
 });
 
 describe("the table while the build menu's width is dragged", () => {
-  const globals = globalThis as unknown as Record<string, unknown>;
-  let saved: unknown;
+  let browser: FakeBrowser;
   let root: ReactTestRenderer | undefined;
 
   beforeEach(() => {
@@ -263,10 +263,7 @@ describe("the table while the build menu's width is dragged", () => {
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
     setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    saved = globals.document;
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
-    globals.requestAnimationFrame = () => 0;
-    globals.cancelAnimationFrame = () => undefined;
+    browser = installFakeBrowser({ frames: "none" });
   });
 
   it("hands the rows the same columns while a new width changes none of them", () => {
@@ -280,7 +277,7 @@ describe("the table while the build menu's width is dragged", () => {
     act(() => setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300));
     const after = row();
     act(() => root?.unmount());
-    globals.document = saved;
+    browser.restore();
 
     assert.equal(after.metrics, before.metrics);
     assert.equal(after.columnStyle, before.columnStyle);

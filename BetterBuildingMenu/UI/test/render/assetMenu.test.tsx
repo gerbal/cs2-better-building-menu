@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
+import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_CATALOG_FULL, ASSET_MENU_WIDTH_HANDLE_REACH, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
@@ -59,24 +60,20 @@ describe("the asset menu's row", () => {
 });
 
 describe("the asset menu's width strip", () => {
-  const globals = globalThis as unknown as Record<string, unknown>;
-  let saved: unknown;
+  let browser: FakeBrowser;
   let root: ReactTestRenderer | undefined;
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
     setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
-    saved = globals.document;
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
-    globals.requestAnimationFrame = () => 0;
-    globals.cancelAnimationFrame = () => undefined;
+    browser = installFakeBrowser({ frames: "none" });
   });
 
   afterEach(() => {
     act(() => root?.unmount());
     root = undefined;
-    globals.document = saved;
+    browser.restore();
   });
 
   it("starts the width drag on a press, which puts the blocker up", () => {
@@ -124,23 +121,17 @@ describe("the asset menu's width strip", () => {
 });
 
 describe("a press in the gap beside the pane", () => {
-  const globals = globalThis as unknown as Record<string, unknown>;
-  let saved: unknown;
-  let frames: Array<() => void> = [];
+  let browser: FakeBrowser;
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
     setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
-    saved = globals.document;
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
-    frames = [];
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = () => undefined;
+    browser = installFakeBrowser({ frames: "manual" });
   });
 
   afterEach(() => {
-    globals.document = saved;
+    browser.restore();
   });
 
   it("measures the pointer against the gap's own width", () => {
@@ -153,7 +144,7 @@ describe("a press in the gap beside the pane", () => {
     act(() => reach.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_REACH }) } }));
     const blocker = root!.root.find((node) => node.props.className === "widthBlocker");
     act(() => blocker.props.onMouseMove({ clientX: 480, buttons: 1 }));
-    act(() => frames.splice(0).forEach((callback) => callback()));
+    browser.nextFrame();
     const widths = triggers.filter((call) => call.name === "SetAssetMenuCatalogWidth").map((call) => call.args[0]);
     act(() => root?.unmount());
 
