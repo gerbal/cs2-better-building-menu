@@ -10,6 +10,8 @@ import { describe, it } from "node:test";
  */
 const card = readFileSync(new URL("../src/mods/BuildingHoverCard/BuildingHoverCard.tsx", import.meta.url), "utf8");
 const cardLine = card.slice(card.indexOf("const CardLine"), card.indexOf("const HoverCardContent"));
+// The scheduler the line reads through, shared with the tile name.
+const settled = readFileSync(new URL("../src/mods/useSettledMeasure.ts", import.meta.url), "utf8");
 
 describe("a hover card line measures what Cohtml has laid out", () => {
   it("is its own component, measured from its own box", () => {
@@ -19,12 +21,15 @@ describe("a hover card line measures what Cohtml has laid out", () => {
   });
 
   it("never reads the line in the same tick as the render that changed it", () => {
-    assert.doesNotMatch(cardLine, /\n\s*measure\(\);/, "a bare measure() call reads the previous text's layout");
+    for (const source of [cardLine, settled]) {
+      assert.doesNotMatch(source, /\n\s*measure\([^)]*\);/, "a bare measure() call reads the previous text's layout");
+    }
   });
 
   it("defers every read a frame, observer callbacks included", () => {
-    assert.match(cardLine, /new ResizeObserver\((?!measure\))/);
-    assert.match(cardLine, /requestAnimationFrame/);
+    assert.match(cardLine, /useSettledMeasure\(lineRef,/);
+    assert.match(settled, /new ResizeObserver\((?!measure\))/);
+    assert.match(settled, /requestAnimationFrame/);
   });
 
   it("measures new words afresh", () => {

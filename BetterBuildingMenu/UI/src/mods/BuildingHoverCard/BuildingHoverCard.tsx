@@ -11,6 +11,7 @@ import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "do
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { useNumberSeparators } from "mods/gameSettings";
 import { overflowsBox } from "domain/measuredFit";
+import { useSettledMeasure } from "mods/useSettledMeasure";
 import styles from "./buildingHoverCard.module.scss";
 import { AssetMenuMilestones$ } from "mods/bindings";
 
@@ -71,33 +72,11 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
     setOverflowed(false);
   }, [line.label, line.value]);
 
-  useEffect(() => {
-    const element = lineRef.current;
-    if (!element || stacked || overflowed) return;
-    const measure = () => {
-      if (overflowsBox(element)) setOverflowed(true);
-    };
-    // Never in the tick of the render: Cohtml reports the PREVIOUS text's
-    // scrollWidth for a line whose text just changed, and 0 for one it has not
-    // laid out. Every read waits two frames, the observer's included.
-    let outer = 0;
-    let inner = 0;
-    const scheduleMeasure = () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-      outer = requestAnimationFrame(() => {
-        inner = requestAnimationFrame(measure);
-      });
-    };
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleMeasure) : null;
-    observer?.observe(element);
-    scheduleMeasure();
-    return () => {
-      observer?.disconnect();
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [line.label, line.value, stacked, overflowed]);
+  // A stacked line has its row already, and one found too long keeps it.
+  const measure = stacked || overflowed ? null : (element: HTMLDivElement) => {
+    if (overflowsBox(element)) setOverflowed(true);
+  };
+  useSettledMeasure(lineRef, measure, [line.label, line.value, stacked, overflowed]);
 
   return (
     <div
