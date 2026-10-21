@@ -20,14 +20,15 @@ const settled = readFileSync(new URL("../src/mods/useSettledMeasure.ts", import.
 describe("the tile name measures what Cohtml has laid out", () => {
   it("never reads the lines in the same tick as the render that changed them", () => {
     for (const source of [tileName, settled]) {
-      assert.doesNotMatch(source, /\n\s*measure\([^)]*\);/, "a bare measure() call reads the previous text's layout");
+      assert.doesNotMatch(source, /\n\s*(?:measure|read)\([^)]*\);/, "a read in the render's own tick sees the previous text's layout");
     }
   });
 
   it("defers every read a frame, observer callbacks included", () => {
     assert.match(tileName, /useSettledMeasure\(boxRef,/);
-    // The observer's callback is the deferral, not the measurement.
-    assert.match(settled, /new ResizeObserver\((?!measure\))/);
+    // The observer's callback and the effect's own first read both go through the scheduler.
+    assert.match(settled, /new ResizeObserver\(scheduleMeasure\)/);
+    assert.match(settled, /\n\s*scheduleMeasure\(\);/);
     assert.match(settled, /requestAnimationFrame/);
   });
 
