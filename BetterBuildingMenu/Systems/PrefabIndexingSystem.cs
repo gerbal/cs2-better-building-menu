@@ -88,11 +88,11 @@ namespace BetterBuildingMenu.Systems
 		public int ContentGeneration { get; private set; } = 1;
 
 		/// <summary>An indexed fact changed in place: an unlock, or a unique built or bulldozed.</summary>
-		private void BumpState() => Generation++;
+		internal void BumpState() => Generation++;
 
 		/// <summary>The index's contents changed. Moves both counters, so ContentGeneration never
 		/// advances without Generation.</summary>
-		private void BumpContent()
+		internal void BumpContent()
 		{
 			Generation++;
 			ContentGeneration++;

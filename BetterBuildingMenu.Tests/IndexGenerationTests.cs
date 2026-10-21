@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using BetterBuildingMenu.Systems;
@@ -14,7 +13,7 @@ public sealed class IndexGenerationTests
     {
         var indexer = Uninitialized();
 
-        Invoke(indexer, "BumpState");
+        indexer.BumpState();
 
         Assert.Equal(1, indexer.Generation);
         Assert.Equal(0, indexer.ContentGeneration);
@@ -25,9 +24,9 @@ public sealed class IndexGenerationTests
     {
         var indexer = Uninitialized();
 
-        Invoke(indexer, "BumpContent");
-        Invoke(indexer, "BumpState");
-        Invoke(indexer, "BumpContent");
+        indexer.BumpContent();
+        indexer.BumpState();
+        indexer.BumpContent();
 
         Assert.Equal(3, indexer.Generation);
         Assert.Equal(2, indexer.ContentGeneration);
@@ -35,9 +34,4 @@ public sealed class IndexGenerationTests
 
     private static PrefabIndexingSystem Uninitialized() =>
         (PrefabIndexingSystem)RuntimeHelpers.GetUninitializedObject(typeof(PrefabIndexingSystem));
-
-    private static void Invoke(PrefabIndexingSystem indexer, string name) =>
-        typeof(PrefabIndexingSystem)
-            .GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(indexer, null);
 }
