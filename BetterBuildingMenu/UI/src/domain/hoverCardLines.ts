@@ -279,7 +279,7 @@ function hoverCardLines(entry: BuildingCatalogEntry, context: HoverCardLineConte
     },
     // The variable tail. Everything above sits in the same place on every card;
     // what a building carries beyond that is listed in one declared order
-    // (FACT_ORDER), worded and numeric merged first so type does not decide it.
+    // (the service-fact table's), worded and numeric merged first so type does not decide it.
     ...orderFacts([
       ...renderServiceTextFacts(entry.serviceTextFacts, translateFact),
       ...serviceFacts,

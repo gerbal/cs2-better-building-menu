@@ -20,7 +20,7 @@ const TEST_SEAMS: Readonly<Record<string, string>> = {
   resetAssetMenuView: "clears the module's state between tests",
   getUnplumbedStrings: "the localizable-strings register's own contract",
   SERVICE_FACT_KEYS: "the fact-coverage test compares it with the indexer's keys",
-  SERVICE_FACT_LOCALIZATION_KEYS: "the service-facts test checks each key's wording",
+  SERVICE_FACT_LOCALIZATION_KEYS: "the locale audits read the keys the service-fact table builds",
   SERVICE_TEXT_FACT_KEYS: "the fact-coverage test compares it with the indexer's keys",
 };
 
