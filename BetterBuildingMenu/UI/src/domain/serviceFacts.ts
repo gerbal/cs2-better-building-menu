@@ -114,7 +114,7 @@ const POLLUTION_WORDS = {
  * order the indexer emitted in, so a reader learns where to look instead of
  * re-reading. Worded and numeric figures share it.
  */
-const SERVICE_FACTS: readonly (NumericFact | WordedFact)[] = [
+export const SERVICE_FACTS: readonly (NumericFact | WordedFact)[] = [
   // 1. What it does. The required resource first, as vanilla binds it:
   // RequiredResourceBinder's map feature, in the game's MAP_RESOURCE words.
   worded("requiredResource", game("Properties.REQUIRED_RESOURCE", "Requires"), {

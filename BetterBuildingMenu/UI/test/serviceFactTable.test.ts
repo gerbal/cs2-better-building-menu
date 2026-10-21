@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, isVanillaFact, orderFacts } from "../src/domain/serviceFacts.ts";
+import { SERVICE_FACTS, SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, isVanillaFact, orderFacts } from "../src/domain/serviceFacts.ts";
 
 // Display order with each fact's tier: the facts the game's tooltip shows sit among ours,
 // and an unplaced key falls to the end. A new fact is placed and given its tier here on purpose.
@@ -89,5 +89,11 @@ describe("the service-fact table", () => {
     const lines = orderFacts(keys.map((key) => ({ key }))).map(({ key }) => `${key} ${isVanillaFact(key) ? "game" : "ours"}`);
 
     assert.deepEqual(lines, PINNED);
+  });
+
+  it("names each fact once, numeric and worded together", () => {
+    const keys = SERVICE_FACTS.map((fact) => fact.key);
+
+    assert.deepEqual(keys.filter((key, index) => keys.indexOf(key) !== index), []);
   });
 });
