@@ -561,20 +561,80 @@ namespace BetterBuildingMenu.Services
 			bool ignorePacks = false)
 		{
 			var key = SnapshotKey.For(menu, contentDlcs, ignorePacks, selection);
+			var content = source.ContentGeneration ?? source.Generation;
 
-			if (_snapshots.TryGet(key, source.Generation, out var cached))
+			if (_snapshots.TryGet(key, content, out var cached, out var stamped))
 			{
-				return cached;
+				if (stamped == source.Generation)
+				{
+					return cached;
+				}
+
+				var patchTimer = System.Diagnostics.Stopwatch.StartNew();
+				var current = WithCurrentState(cached, source);
+				_snapshots.Put(key, content, source.Generation, current);
+				LastProjectionMs += (int)patchTimer.ElapsedMilliseconds;
+
+				return current;
 			}
 
 			var timer = System.Diagnostics.Stopwatch.StartNew();
 			var built = ProjectForMenuUncached(source, menu, selection, contentDlcs, ignorePacks).ToArray();
-			_snapshots.Put(key, source.Generation, built);
+			_snapshots.Put(key, content, source.Generation, built);
 			LastProjectionMs += (int)timer.ElapsedMilliseconds;
 			LastProjectionWasHit = false;
 
 			return built;
 		}
+
+		/// <summary>
+		/// The rows with their lock and already-built state read again from the source, and every
+		/// other row the same instance.
+		/// </summary>
+		/// <remarks>
+		/// What an unlock or a placed unique changes, and all it changes: the projection's
+		/// membership reads neither. A city builds and unlocks all the time, and projecting each
+		/// menu again for it cost 7 to 59 ms per menu on its next open (2026-10-19).
+		/// </remarks>
+		private static BuildingCatalogEntry[] WithCurrentState(BuildingCatalogEntry[] rows, CatalogSource source)
+		{
+			BuildingCatalogEntry[]? current = null;
+
+			for (var i = 0; i < rows.Length; i++)
+			{
+				var row = rows[i];
+
+				if (source.Index.Get(row.Id) is not { } prefab)
+				{
+					continue;
+				}
+
+				var built = source.Placed.IsAlreadyBuilt(row.Id);
+
+				if (row.IsLocked == prefab.IsLocked
+					&& row.IsAlreadyBuilt == built
+					&& row.UnlockMilestone == prefab.UnlockMilestone
+					&& SameRequirements(row.UnlockRequirements, prefab.UnlockRequirements))
+				{
+					continue;
+				}
+
+				current ??= (BuildingCatalogEntry[])rows.Clone();
+				current[i] = row with
+				{
+					IsLocked = prefab.IsLocked,
+					UnlockMilestone = prefab.UnlockMilestone,
+					UnlockRequirements = prefab.UnlockRequirements,
+					IsAlreadyBuilt = built,
+				};
+			}
+
+			return current ?? rows;
+		}
+
+		private static bool SameRequirements(string[]? row, string[]? prefab) =>
+			ReferenceEquals(row, prefab)
+			|| (row ?? Array.Empty<string>()).SequenceEqual(prefab ?? Array.Empty<string>());
 
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenuUncached(
 			CatalogSource source,

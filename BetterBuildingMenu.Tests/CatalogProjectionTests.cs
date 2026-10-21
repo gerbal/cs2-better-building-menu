@@ -136,5 +136,93 @@ namespace BetterBuildingMenu.Tests
 			Assert.Single(adapter.Build(source, new BuildingCatalogQuery(), VanillaToolbarSelection.None).Page.Items);
 			Assert.NotNull(adapter.EntryForPrefabName(source, "Hospital01"));
 		}
+	
+		private static PrefabIndex Clinic()
+		{
+			var entry = TestPrefabs.Entry(12, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
+			entry.PrefabName = "Clinic01";
+			entry.Name = "Clinic";
+			return entry;
+		}
+
+		private static BuildingCatalogEntry[] Rows(BuildingCatalogAdapter adapter, CatalogSource source)
+		{
+			adapter.BeginRefresh();
+			return adapter.Build(source, new BuildingCatalogQuery(), VanillaToolbarSelection.None).MenuSet;
+		}
+
+		[Fact]
+		public void AnUnlockUpdatesTheCachedRowsWithoutProjectingAgain()
+		{
+			var hospital = Hospital();
+			hospital.IsLocked = true;
+			hospital.UnlockMilestone = 3;
+			hospital.UnlockRequirements = new[] { "Reach milestone 3" };
+			var source = new CatalogSource(TestPrefabs.ReadyIndex(hospital, Clinic()), new PlacedUniques(), 1) { ContentGeneration = 1 };
+			var adapter = new BuildingCatalogAdapter();
+			var before = Rows(adapter, source);
+
+			// As the unlock path does: the index's own entry changes, and only the generation moves.
+			hospital.IsLocked = false;
+			hospital.UnlockRequirements = System.Array.Empty<string>();
+			var after = Rows(adapter, source with { Generation = 2 });
+
+			Assert.True(adapter.LastProjectionWasHit);
+			var unlocked = after.Single(row => row.Id == 11);
+			Assert.False(unlocked.IsLocked);
+			Assert.Equal(3, unlocked.UnlockMilestone);
+			Assert.Empty(unlocked.UnlockRequirements ?? System.Array.Empty<string>());
+			Assert.Same(before.Single(row => row.Id == 12), after.Single(row => row.Id == 12));
+		}
+
+		[Fact]
+		public void APlacedUniqueUpdatesTheCachedRowsWithoutProjectingAgain()
+		{
+			var placed = new PlacedUniques();
+			var source = new CatalogSource(TestPrefabs.ReadyIndex(Hospital(), Clinic()), placed, 1) { ContentGeneration = 1 };
+			var adapter = new BuildingCatalogAdapter();
+			var before = Rows(adapter, source);
+			Assert.False(before.Single(row => row.Id == 11).IsAlreadyBuilt);
+
+			placed.Set(11, placed: true);
+			var built = Rows(adapter, source with { Generation = 2 });
+
+			Assert.True(adapter.LastProjectionWasHit);
+			Assert.True(built.Single(row => row.Id == 11).IsAlreadyBuilt);
+			Assert.Same(before.Single(row => row.Id == 12), built.Single(row => row.Id == 12));
+
+			placed.Set(11, placed: false);
+			Assert.False(Rows(adapter, source with { Generation = 3 }).Single(row => row.Id == 11).IsAlreadyBuilt);
+		}
+
+		[Fact]
+		public void ANewContentGenerationProjectsAgain()
+		{
+			var hospital = Hospital();
+			var source = new CatalogSource(TestPrefabs.ReadyIndex(hospital), new PlacedUniques(), 1) { ContentGeneration = 1 };
+			var adapter = new BuildingCatalogAdapter();
+			_ = Rows(adapter, source);
+
+			hospital.Name = "General Hospital";
+			var renamed = Rows(adapter, source with { Generation = 2, ContentGeneration = 2 });
+
+			Assert.False(adapter.LastProjectionWasHit);
+			Assert.Equal("General Hospital", Assert.Single(renamed).Name);
+		}
+
+		[Fact]
+		public void WithoutAContentGenerationEveryGenerationProjectsAgain()
+		{
+			// What a source that does not tell the two apart gets: the old rule, any change rebuilds.
+			var hospital = Hospital();
+			var source = new CatalogSource(TestPrefabs.ReadyIndex(hospital), new PlacedUniques(), 1);
+			var adapter = new BuildingCatalogAdapter();
+			_ = Rows(adapter, source);
+
+			hospital.Name = "General Hospital";
+
+			Assert.Equal("General Hospital", Assert.Single(Rows(adapter, source with { Generation = 2 })).Name);
+			Assert.False(adapter.LastProjectionWasHit);
+		}
 	}
 }

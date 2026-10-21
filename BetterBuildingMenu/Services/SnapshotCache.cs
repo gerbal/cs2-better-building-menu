@@ -9,8 +9,8 @@ namespace BetterBuildingMenu.Services
 	/// </summary>
 	/// <remarks>
 	/// The toolbar selection is spelled out as strings because <see cref="VanillaToolbarSelection"/>
-	/// is a struct holding lists, and struct equality compares those by reference. The index
-	/// generation is NOT part of the key: it is the cache's own clock, and a new one empties it.
+	/// is a struct holding lists, and struct equality compares those by reference. The index's
+	/// content generation is NOT part of the key: it is the cache's own clock, and a new one empties it.
 	/// </remarks>
 	public readonly record struct SnapshotKey(
 		string Menu,
@@ -40,36 +40,47 @@ namespace BetterBuildingMenu.Services
 	/// Projected snapshots that survive from one refresh to the next.
 	/// </summary>
 	/// <remarks>
-	/// Each scope's projection is held until the index itself changes
-	/// (PrefabIndexingSystem.Generation), the only event that can make a projected entry wrong.
+	/// Each scope's projection is held until the index's contents change
+	/// (PrefabIndexingSystem.ContentGeneration). A lock or a placed unique only moves the
+	/// generation each snapshot is stamped with, and the adapter brings that snapshot's rows up to
+	/// date in place rather than projecting the menu again.
 	/// </remarks>
 	public sealed class SnapshotCache
 	{
-		private readonly Dictionary<SnapshotKey, BuildingCatalogEntry[]> _entries = new();
-		private int _generation = -1;
+		private readonly Dictionary<SnapshotKey, (BuildingCatalogEntry[] Entries, int Generation)> _entries = new();
+		private int _content = -1;
 
 		public int Count => _entries.Count;
 
-		public bool TryGet(SnapshotKey key, int generation, [NotNullWhen(true)] out BuildingCatalogEntry[]? entries)
+		/// <param name="generation">The generation the snapshot's rows were last brought up to.</param>
+		public bool TryGet(SnapshotKey key, int content, [NotNullWhen(true)] out BuildingCatalogEntry[]? entries, out int generation)
 		{
-			if (generation != _generation)
+			Expire(content);
+
+			if (_entries.TryGetValue(key, out var held))
 			{
-				_entries.Clear();
-				_generation = generation;
+				(entries, generation) = held;
+				return true;
 			}
 
-			return _entries.TryGetValue(key, out entries);
+			entries = null;
+			generation = -1;
+			return false;
 		}
 
-		public void Put(SnapshotKey key, int generation, BuildingCatalogEntry[] entries)
+		public void Put(SnapshotKey key, int content, int generation, BuildingCatalogEntry[] entries)
 		{
-			if (generation != _generation)
+			Expire(content);
+			_entries[key] = (entries, generation);
+		}
+
+		private void Expire(int content)
+		{
+			if (content != _content)
 			{
 				_entries.Clear();
-				_generation = generation;
+				_content = content;
 			}
-
-			_entries[key] = entries;
 		}
 	}
 }
