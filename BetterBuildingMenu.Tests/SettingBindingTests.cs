@@ -47,10 +47,8 @@ namespace BetterBuildingMenu.Tests
 			}
 		}
 
-		private static bool SameSize(float stored, float size) => Math.Abs(stored - size) < 0.1f;
-
 		private static SettingBinding<float> Height(Stored<float> stored, Published<float> published) =>
-			new(published.Seed, () => stored.Value, value => stored.Value = value, stored.Save, AssetMenuHeight.Clamp, SameSize);
+			new(published.Seed, () => stored.Value, value => stored.Value = value, stored.Save, AssetMenuHeight.Clamp, AssetMenuSize.Same);
 
 		[Fact]
 		public void SeedsTheBindingWithTheStoredSettingSanitized()
@@ -147,6 +145,20 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(420f, stored.Value);
 			Assert.Equal(0, stored.Saves);
+		}
+
+		[Fact]
+		public void CommitSavesASizeJustPastTheTolerance()
+		{
+			var stored = new Stored<float>(420f);
+			var published = new Published<float>();
+			var height = Height(stored, published);
+
+			height.Set(420.2f);
+			height.Commit();
+
+			Assert.Equal(420.2f, stored.Value);
+			Assert.Equal(1, stored.Saves);
 		}
 
 		[Fact]

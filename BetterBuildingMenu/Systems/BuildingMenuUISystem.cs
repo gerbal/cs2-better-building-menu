@@ -187,7 +187,7 @@ namespace BetterBuildingMenu.Systems
 				height => Mod.Settings.AssetMenuHeight = height,
 				SaveSettings,
 				AssetMenuHeight.Clamp,
-				SameSize);
+				AssetMenuSize.Same);
 			// Seeded from the settings like the height, so the first frame draws the
 			// player's width and pane rather than flashing the defaults.
 			_AssetMenuCatalogWidth = new SettingBinding<float>(
@@ -196,7 +196,7 @@ namespace BetterBuildingMenu.Systems
 				width => Mod.Settings.AssetMenuCatalogWidth = width,
 				SaveSettings,
 				AssetMenuCatalogWidth.Sanitize,
-				SameSize);
+				AssetMenuSize.Same);
 			_ControlPaneShown = new SettingBinding<bool>(
 				seed => CreateBinding("ControlPaneShown", seed),
 				() => Mod.Settings.ControlPaneShown,

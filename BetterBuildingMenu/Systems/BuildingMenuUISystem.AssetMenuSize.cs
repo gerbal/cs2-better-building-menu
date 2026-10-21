@@ -1,7 +1,5 @@
 ﻿using BetterBuildingMenu.Utilities;
 
-using System;
-
 namespace BetterBuildingMenu.Systems
 {
     internal partial class BuildingMenuUISystem : ExtendedUISystemBase
@@ -23,9 +21,6 @@ namespace BetterBuildingMenu.Systems
 		// The binding helper has already published what the UI sent: publish the kept
 		// value over it, then save only a pick that changes the file.
 		private void SetAssetMenuViewMode(string picked) => _AssetMenuViewMode.SetAndCommit(picked);
-
-		// A size within a tenth of the stored one leaves the settings file alone.
-		private static bool SameSize(float stored, float size) => Math.Abs(stored - size) < 0.1f;
 
 		private static void SaveSettings() => Mod.Settings.ApplyAndSave();
 	}
