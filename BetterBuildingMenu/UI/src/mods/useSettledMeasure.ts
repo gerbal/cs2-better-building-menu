@@ -2,13 +2,13 @@ import { useEffect, type DependencyList, type RefObject } from "react";
 
 /**
  * Reads what was drawn once Cohtml has laid it out: two frames after each render
- * that changes `deps`, and two frames after each resize of the element. A null
- * `measure` reads nothing.
+ * that changes `deps`, and two frames after each resize of the element. `measure`
+ * is handed those deps, so a component drawn per row passes a module-level one; null reads nothing.
  */
-export function useSettledMeasure<E extends Element>(
+export function useSettledMeasure<E extends Element, D extends DependencyList>(
   ref: RefObject<E>,
-  measure: ((element: E) => void) | null,
-  deps: DependencyList
+  measure: ((element: E, deps: D) => void) | null,
+  deps: D
 ): void {
   useEffect(() => {
     const element = ref.current;
@@ -17,7 +17,7 @@ export function useSettledMeasure<E extends Element>(
     // Never in the tick of the render: Cohtml reports the PREVIOUS text's
     // scrollWidth for a line whose text just changed, and 0 for one it has not
     // laid out. Every read waits two frames, the observer's included.
-    const read = () => measure(element);
+    const read = () => measure(element, deps);
     let outer = 0;
     let inner = 0;
     const scheduleMeasure = () => {
@@ -37,7 +37,7 @@ export function useSettledMeasure<E extends Element>(
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-    // The caller's deps say when to read afresh; measure is the one from that render.
+    // The caller's deps say when to read afresh; measure and deps are that render's.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

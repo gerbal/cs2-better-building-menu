@@ -30,10 +30,18 @@ class FakeObserver {
 /** The element the probe's ref holds, as the renderer's node mock. */
 const drawn = { drawn: true };
 let reads: unknown[] = [];
+/** The deps each read was handed. */
+let handed: unknown[] = [];
+
+/** One reader for every probe, as a component drawn per row passes one. */
+const recordRead = (element: unknown, deps: readonly unknown[]) => {
+  reads.push(element);
+  handed.push(deps);
+};
 
 const Probe = ({ text, measured = true }: { text: string; measured?: boolean }) => {
   const ref = useRef<HTMLSpanElement>(null);
-  useSettledMeasure(ref, measured ? (element) => reads.push(element) : null, [text, measured]);
+  useSettledMeasure(ref, measured ? recordRead : null, [text, measured]);
   return <span ref={ref}>{text}</span>;
 };
 
@@ -45,6 +53,7 @@ describe("a measurement of what was drawn", () => {
 
   beforeEach(() => {
     reads = [];
+    handed = [];
     FakeObserver.made = [];
     ({ nextFrame, restore } = installFakeBrowser({ frames: "manual" }));
     globals.ResizeObserver = FakeObserver;
@@ -98,6 +107,22 @@ describe("a measurement of what was drawn", () => {
     assert.equal(reads.length, 2);
     assert.equal(FakeObserver.made[0].disconnected, true);
     assert.equal(FakeObserver.made.length, 2);
+  });
+
+  it("hands the reader the deps of the render it reads for, a resize's read included", () => {
+    mount(<Probe text="Clinic" />);
+    nextFrame();
+    nextFrame();
+    act(() => {
+      tree.renderer.update(<Probe text="Hospital" />);
+    });
+    nextFrame();
+    nextFrame();
+    act(() => FakeObserver.made[1].resized());
+    nextFrame();
+    nextFrame();
+
+    assert.deepEqual(handed, [["Clinic", true], ["Hospital", true], ["Hospital", true]]);
   });
 
   it("reads nothing once the element has gone", () => {

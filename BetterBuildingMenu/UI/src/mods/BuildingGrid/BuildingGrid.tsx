@@ -32,6 +32,12 @@ interface BuildingGridProps {
   standalone?: boolean;
 }
 
+/** Tightens a tile name's budget to what its drawn lines show fits; one for every tile. */
+const fitTileName = (box: HTMLSpanElement, [effective, setFit]: readonly [number, (fit: number) => void, ...unknown[]]) => {
+  const next = lineBudgetFromDrawn(effective, Array.from(box.children) as HTMLElement[]);
+  if (next < effective) setFit(next);
+};
+
 /**
  * The name on a tile, shortened for drawing only — the tooltip and aria-label
  * carry the whole of it. The character budget is an estimate corrected from
@@ -46,10 +52,7 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
   }, [label, budget]);
   const effective = fit === null ? budget : Math.min(budget, fit);
 
-  useSettledMeasure(boxRef, (box) => {
-    const next = lineBudgetFromDrawn(effective, Array.from(box.children) as HTMLElement[]);
-    if (next < effective) setFit(next);
-  }, [label, effective]);
+  useSettledMeasure(boxRef, fitTileName, [effective, setFit, label]);
 
   return (
     <span ref={boxRef} className={styles.tileName}>

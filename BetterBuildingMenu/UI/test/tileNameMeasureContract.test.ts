@@ -12,6 +12,8 @@ import { describe, it } from "node:test";
  */
 const grid = readFileSync(new URL("../src/mods/BuildingGrid/BuildingGrid.tsx", import.meta.url), "utf8");
 const tileName = grid.slice(grid.indexOf("const TileName"), grid.indexOf("export const BuildingGrid"));
+// The reader TileName hands the scheduler, made once for every tile.
+const fitTileName = grid.slice(grid.indexOf("\nconst fitTileName = "), grid.indexOf("const TileName"));
 // The scheduler the tile name reads through, shared with the hover card's line.
 const settled = readFileSync(new URL("../src/mods/useSettledMeasure.ts", import.meta.url), "utf8");
 
@@ -29,7 +31,13 @@ describe("the tile name measures what Cohtml has laid out", () => {
     assert.match(settled, /requestAnimationFrame/);
   });
 
+  it("hands the scheduler one reader for every tile, not one built per render", () => {
+    // A tile name renders per tile on every open and keystroke.
+    assert.ok(fitTileName.length > 0, "fitTileName is a module-level const ahead of TileName");
+    assert.match(tileName, /useSettledMeasure\(boxRef, fitTileName, \[/);
+  });
+
   it("takes the budget from the shared reader", () => {
-    assert.match(tileName, /lineBudgetFromDrawn\(/);
+    assert.match(fitTileName, /lineBudgetFromDrawn\(/);
   });
 });

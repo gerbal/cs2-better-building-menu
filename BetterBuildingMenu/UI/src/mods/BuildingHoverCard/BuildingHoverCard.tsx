@@ -55,6 +55,11 @@ export const useHoverCardContext = (): HoverCardContext => {
   }), [translate, separators, milestoneNames]);
 };
 
+/** Gives a card line the whole row once it is drawn too long for its half; one for every line. */
+const flagOverflow = (element: HTMLDivElement, [setOverflowed]: readonly [(overflowed: boolean) => void, ...unknown[]]) => {
+  if (overflowsBox(element)) setOverflowed(true);
+};
+
 /**
  * One label/value pair. Half the card, unless it needs the whole row: a list of
  * values is a stack, and pairing it with a neighbour would put a one-line
@@ -73,10 +78,7 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
   }, [line.label, line.value]);
 
   // A stacked line has its row already, and one found too long keeps it.
-  const measure = stacked || overflowed ? null : (element: HTMLDivElement) => {
-    if (overflowsBox(element)) setOverflowed(true);
-  };
-  useSettledMeasure(lineRef, measure, [line.label, line.value, stacked, overflowed]);
+  useSettledMeasure(lineRef, stacked || overflowed ? null : flagOverflow, [setOverflowed, line.label, line.value, stacked, overflowed]);
 
   return (
     <div

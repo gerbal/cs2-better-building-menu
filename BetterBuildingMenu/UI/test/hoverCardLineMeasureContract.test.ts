@@ -10,13 +10,15 @@ import { describe, it } from "node:test";
  */
 const card = readFileSync(new URL("../src/mods/BuildingHoverCard/BuildingHoverCard.tsx", import.meta.url), "utf8");
 const cardLine = card.slice(card.indexOf("const CardLine"), card.indexOf("const HoverCardContent"));
+// The reader CardLine hands the scheduler, made once for every line.
+const flagOverflow = card.slice(card.indexOf("\nconst flagOverflow = "), card.indexOf("const CardLine"));
 // The scheduler the line reads through, shared with the tile name.
 const settled = readFileSync(new URL("../src/mods/useSettledMeasure.ts", import.meta.url), "utf8");
 
 describe("a hover card line measures what Cohtml has laid out", () => {
   it("is its own component, measured from its own box", () => {
     assert.ok(cardLine.length > 0, "CardLine should come before HoverCardContent");
-    assert.match(cardLine, /overflowsBox\(/);
+    assert.match(flagOverflow, /overflowsBox\(/);
     assert.match(cardLine, /styles\.cardLineWide/);
   });
 
@@ -30,6 +32,12 @@ describe("a hover card line measures what Cohtml has laid out", () => {
     assert.match(cardLine, /useSettledMeasure\(lineRef,/);
     assert.match(settled, /new ResizeObserver\((?!measure\))/);
     assert.match(settled, /requestAnimationFrame/);
+  });
+
+  it("hands the scheduler one reader for every line, not one built per render", () => {
+    // A card line renders per line of every card shown; stacked or overflowed, it reads nothing.
+    assert.ok(flagOverflow.length > 0, "flagOverflow is a module-level const ahead of CardLine");
+    assert.match(cardLine, /useSettledMeasure\(lineRef, stacked \|\| overflowed \? null : flagOverflow, \[/);
   });
 
   it("measures new words afresh", () => {
