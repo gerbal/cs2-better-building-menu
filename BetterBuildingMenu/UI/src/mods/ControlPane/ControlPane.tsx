@@ -15,6 +15,9 @@ import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
 import {
+  SET_SELECTED_ASSET_PACKS_TRIGGER,
+  SET_VANILLA_SELECTED_TRIGGER,
+  TOOLBAR_TRIGGER_GROUP,
   clearAssetMenuFiltersCommand,
   resetAssetMenuCommand,
   setAssetMenuViewModeCommand,
@@ -23,10 +26,7 @@ import {
   type Command,
 } from "domain/commands";
 import {
-  ASSET_PACK_TRIGGER_GROUP,
-  ASSET_PACK_TRIGGER_NAME,
   CONTENT_FACET_ID,
-  VANILLA_TRIGGER_NAME,
   contentOptionKind,
   isContentFacetCommand,
   toggleAssetPack,
@@ -120,13 +120,13 @@ export const ControlPane = memo(function ControlPane() {
     switch (contentOptionKind(optionId)) {
       case "pack":
         trigger(
-          ASSET_PACK_TRIGGER_GROUP,
-          ASSET_PACK_TRIGGER_NAME,
+          TOOLBAR_TRIGGER_GROUP,
+          SET_SELECTED_ASSET_PACKS_TRIGGER,
           toggleAssetPack(selectedAssetPacks, optionId)
         );
         return;
       case "vanilla":
-        trigger(ASSET_PACK_TRIGGER_GROUP, VANILLA_TRIGGER_NAME, !vanillaSelected);
+        trigger(TOOLBAR_TRIGGER_GROUP, SET_VANILLA_SELECTED_TRIGGER, !vanillaSelected);
         return;
       default:
         fire(toggleAssetMenuFacetCommand(groupId, optionId));

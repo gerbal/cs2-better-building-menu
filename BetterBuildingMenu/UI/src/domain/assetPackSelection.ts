@@ -16,12 +16,6 @@ export const CONTENT_PACK_PREFIX = "pack:";
 /** A DLC shipping no pack, then its numeric id. Ours to filter. */
 export const CONTENT_DLC_PREFIX = "dlc:";
 
-export const VANILLA_TRIGGER_NAME = "setVanillaSelected";
-
-/** The vanilla trigger that owns the pack selection. */
-export const ASSET_PACK_TRIGGER_GROUP = "toolbar";
-export const ASSET_PACK_TRIGGER_NAME = "setSelectedAssetPacks";
-
 export function parseAssetPackId(id: string | null | undefined): ToolbarEntityRef | null {
   const raw = (id ?? "").startsWith(CONTENT_PACK_PREFIX)
     ? (id ?? "").slice(CONTENT_PACK_PREFIX.length)

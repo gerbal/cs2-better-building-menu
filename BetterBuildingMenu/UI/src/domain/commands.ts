@@ -90,3 +90,15 @@ export const setVanillaToolbarSelectionCommand = (state: VanillaToolbarState): C
     state.vanillaSelected,
     state.modsSelected,
   );
+
+// --- The game's own triggers ------------------------------------------------
+// The game registers these, not this mod's C#, so they are named here rather than generated.
+
+/** The binding group of the game's toolbar. */
+export const TOOLBAR_TRIGGER_GROUP = "toolbar";
+/** Drops the toolbar's open menu and the asset selected in it. */
+export const CLEAR_ASSET_SELECTION_TRIGGER = "clearAssetSelection";
+/** The filter row's Vanilla toggle; takes its new state. */
+export const SET_VANILLA_SELECTED_TRIGGER = "setVanillaSelected";
+/** The filter row's pack selection; takes the selected packs' entities. */
+export const SET_SELECTED_ASSET_PACKS_TRIGGER = "setSelectedAssetPacks";
