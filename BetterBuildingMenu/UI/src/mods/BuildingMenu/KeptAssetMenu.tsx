@@ -3,10 +3,13 @@ import { createPortal } from "react-dom";
 
 import { AssetMenu } from "mods/BuildingMenu/AssetMenu";
 import { AssetMenuShownContext } from "mods/BuildingMenu/assetMenuShown";
-import { BuildingCatalog$ } from "mods/bindings";
+import { AssetMenuViewMode$, BuildingCatalog$, BuildingCatalogGroupBy$ } from "mods/bindings";
 import { ExtensionBoundary } from "mods/ExtensionBoundary";
 import { createAssetMenuSlotStore, type AssetMenuSlot as Slot } from "domain/assetMenuSlot";
+import { getAssetMenuView } from "domain/assetMenuViewStore";
 import { shownMenu } from "domain/keptMenus";
+import { chooseViewMode } from "domain/viewModeChoice";
+import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
 import { createPanelFreeze, PanelFreezeContext, setPanelFrozen, type PanelFreeze } from "mods/panelValue";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
@@ -59,11 +62,21 @@ export const AssetMenuSlot = ({ onClose, menu = null }: { onClose?: () => void; 
   return <div ref={ref} className={styles.slot} />;
 };
 
-/** A built menu: its readers' freeze, and the menu of the page it last drew live ("" for a narrower query). */
+/** A built menu: its readers' freeze, and what it last drew live. */
 interface KeptPanel {
   freeze: PanelFreeze;
+  /** The menu of its page; "" for a narrower query. */
   pageMenu: string;
+  /** Its catalog's view and grouping (catalogShape). */
+  shape: string;
 }
+
+/**
+ * What a catalog is drawn as: the view (as BuildingCatalog chooses it) and the
+ * grouping. A panel frozen in another shape would rebuild its catalog on screen.
+ */
+const catalogShape = (): string =>
+  `${chooseViewMode(getAssetMenuView().viewMode, AssetMenuViewMode$.value, DEFAULT_VIEW_MODE)}/${BuildingCatalogGroupBy$.value || "category"}`;
 
 const menuOf = (slot: Slot<HTMLElement> | null): string | null => (slot ? slot.menu ?? "" : null);
 
@@ -82,8 +95,9 @@ const menuOf = (slot: Slot<HTMLElement> | null): string | null => (slot ? slot.m
  * menu can arrive (mods/panelValue): a hidden panel keeps the page it last drew and
  * does no work. The opened menu's panel thaws when C# answers the open. Which one
  * the slot shows meanwhile is domain/keptMenus, shownMenu: the opened menu's own
- * when its last page was that menu's opening view, the one already up through a
- * switch with the menu up, or none; never another menu's under this menu's button.
+ * when its last page was that menu's opening view, drawn in the current view and
+ * grouping; the one already up through a switch with the menu up; or none; never
+ * another menu's under this menu's button.
  * A menu's panel is built the first time C# answers an open of it, since until
  * then the bindings hold another menu's page.
  */
@@ -113,7 +127,14 @@ export const KeptAssetMenu = () => {
     let swapping = false;
     let from: string | null = null;
     const unsubscribe = slots.subscribe((next) => {
+      const shape = catalogShape();
+
       for (const panel of panels.current.values()) {
+        // A live panel was drawn as the catalog is now.
+        if (!panel.freeze.frozen) {
+          panel.shape = shape;
+        }
+
         setPanelFrozen(panel.freeze, true);
       }
 
@@ -174,14 +195,16 @@ export const KeptAssetMenu = () => {
   const isAnswered = slot !== null && answered === slot;
 
   if (opened !== null && isAnswered && !panels.current.has(opened)) {
-    panels.current.set(opened, { freeze: createPanelFreeze(false), pageMenu: BuildingCatalog$.value?.menu ?? "" });
+    panels.current.set(opened, { freeze: createPanelFreeze(false), pageMenu: BuildingCatalog$.value?.menu ?? "", shape: catalogShape() });
     built.current = [...built.current, opened];
   }
 
+  const shape = catalogShape();
   const shown = shownMenu({
     opened,
     answered: isAnswered,
     built: new Map([...panels.current].map(([menu, panel]) => [menu, panel.pageMenu])),
+    stale: new Set([...panels.current].filter(([, panel]) => panel.freeze.frozen && panel.shape !== shape).map(([menu]) => menu)),
     held: held.current,
   });
 

@@ -11,22 +11,29 @@ export interface KeptMenus {
   answered: boolean;
   /** Each built panel, by menu, with the menu of the page it last drew live ("" for a narrower query). */
   built: ReadonlyMap<string, string>;
+  /**
+   * Panels last drawn in another view or grouping than the current one. Shown at
+   * once, their catalog would be rebuilt on screen; they wait for C# instead.
+   */
+  stale: ReadonlySet<string>;
   /** The panel a switch with the menu up keeps in the slot until the opened menu's can show. */
   held: string | null;
 }
 
 /**
  * The opened menu's panel once C# has answered, or before then when its last page
- * was that menu's opening view; otherwise the panel held through a switch, or none.
+ * was that menu's opening view in the current view and grouping; otherwise the
+ * panel held through a switch, or none.
  */
-export function shownMenu({ opened, answered, built, held }: KeptMenus): string | null {
+export function shownMenu({ opened, answered, built, stale, held }: KeptMenus): string | null {
   if (opened === null) {
     return null;
   }
 
   const pageMenu = built.get(opened);
+  const current = pageMenu !== undefined && !stale.has(opened);
 
-  if (answered || (pageMenu !== undefined && shouldJoinSlot({ slotMenu: opened || null, pageMenu, answered: false }))) {
+  if (answered || (current && shouldJoinSlot({ slotMenu: opened || null, pageMenu, answered: false }))) {
     return opened;
   }
 

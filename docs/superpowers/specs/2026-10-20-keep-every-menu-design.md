@@ -68,7 +68,9 @@ kept menu.
 
 1. the opened menu's panel, when C# has answered this open;
 2. otherwise the opened menu's panel when its last page was the menu's opening view
-   (`shouldJoinSlot`, as the click-frame open does for the one kept panel);
+   (`shouldJoinSlot`, as the click-frame open does for the one kept panel), drawn in the current
+   view and grouping: a panel frozen in another shape would rebuild its catalog on screen, which
+   measured as a blank frame on a switch right after a view change (6 of 8);
 3. otherwise, on a switch with the menu up, the panel that was shown, frozen, until 1 or 2;
 4. otherwise nothing, until C# answers.
 
@@ -77,10 +79,12 @@ now also checks it: every panel listens on the document.
 
 ## Known costs
 
-- First visit of each menu: the whole panel is built rather than the cards swapped, median +14 ms
-  (62 → 76 ms in grid view, spike).
-- A setting changed while menus are hidden (units, text scale, tile size) reaches a hidden panel when
-  it thaws, a frame after it is shown.
+- First visit of each menu: the whole panel is built rather than the cards swapped. Cold, right
+  after loading a city, in grid view: median 85 → 100 ms, 1.43 → 1.52 s over all 15 menus.
+- A view or grouping change makes each other menu's next open wait for C#, as a switch did before:
+  71–94 ms with the old menu up meanwhile, against main's 83–149 ms for the same sequence.
+- Any other setting changed while menus are hidden (units, text scale, tile size) reaches a hidden
+  panel when it thaws, a frame after it is shown.
 
 ## Testing
 

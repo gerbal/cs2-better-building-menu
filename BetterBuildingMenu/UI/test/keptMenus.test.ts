@@ -7,7 +7,7 @@ import { shownMenu, type KeptMenus } from "../src/domain/keptMenus.ts";
 // may stand in for its own menu, never for another's.
 
 const built = (entries: Record<string, string>) => new Map(Object.entries(entries));
-const state = (over: Partial<KeptMenus>): KeptMenus => ({ opened: "Roads", answered: false, built: built({}), held: null, ...over });
+const state = (over: Partial<KeptMenus>): KeptMenus => ({ opened: "Roads", answered: false, built: built({}), stale: new Set(), held: null, ...over });
 
 describe("which kept menu the slot shows", () => {
   it("shows nothing with no menu open", () => {
@@ -23,6 +23,17 @@ describe("which kept menu the slot shows", () => {
     // Its page answered a narrower query; the menu opens on its opening view.
     assert.equal(shownMenu(state({ built: built({ Roads: "" }) })), null);
     assert.equal(shownMenu(state({ built: built({ Roads: "" }), answered: true })), "Roads");
+  });
+
+  it("waits for C# when the menu's panel was drawn in another view or grouping", () => {
+    // The player changed the view while this menu was hidden: shown now, its catalog
+    // would be rebuilt in the new view on screen, a blank frame. The menu already up
+    // stays meanwhile, as on a switch to a menu not yet built.
+    const drawnInGrid = state({ built: built({ Roads: "Roads", Zones: "Zones" }), stale: new Set(["Roads"]) });
+
+    assert.equal(shownMenu(drawnInGrid), null);
+    assert.equal(shownMenu({ ...drawnInGrid, held: "Zones" }), "Zones");
+    assert.equal(shownMenu({ ...drawnInGrid, answered: true }), "Roads");
   });
 
   it("waits for C# when the menu has no panel yet", () => {

@@ -440,10 +440,11 @@ the cards built, and most of a long menu sits below the fold.
   JS heap at a menu's first window, about 4,000 elements and 9 MB for Roads scrolled to its end.
 - **Every menu is kept built.** One kept panel per toolbar menu, built the first time C# answers an
   open of it, so a switch shows a built panel as a reopen does: switches went from 66–105 ms to
-  41–49 ms (spike, 2026-10-20), first visits about 14 ms slower, the UI's JS heap 16 → 46 MB with all
+  41–49 ms (2026-10-20), cold first visits 85 → 100 ms median, the UI's JS heap 16 → 46 MB with all
   15 built (flat over 480 opens; the owner judged the memory worth it). Every panel freezes when a
   menu opens or closes, and the opened menu's thaws when C# answers; which one the slot shows
-  meanwhile is `domain/keptMenus` (never another menu's panel under this menu's button). A frozen
+  meanwhile is `domain/keptMenus` (never another menu's panel under this menu's button; a panel
+  frozen in another view or grouping waits for C#, or it would rebuild its catalog on screen). A frozen
   panel does no work because everything inside the menu reads bindings through `mods/panelValue`'s
   `useValue` and the view store through `usePanelStore`, which hold still while frozen. That
   `useValue` copies cs2/api's (`domain/bindingValue`, read from the game's bundle): a version built
