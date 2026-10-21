@@ -718,7 +718,7 @@ const toPounds = (kilograms: number): number => kilograms / KILOGRAMS_PER_POUND;
 const toShortTons = (kilograms: number): number => kilograms / KILOGRAMS_PER_SHORT_TON;
 
 /** At most `decimals` places, trailing zeros dropped, digits grouped. */
-function roundedDigits(value: number, decimals: number, separators: NumberSeparators): string {
+export function roundedDigits(value: number, decimals: number, separators: NumberSeparators): string {
   const fixed = value.toFixed(decimals);
   const trimmed = fixed.includes(".") ? fixed.replace(/0+$/, "").replace(/\.$/, "") : fixed;
   const [whole, fraction] = trimmed.split(".");

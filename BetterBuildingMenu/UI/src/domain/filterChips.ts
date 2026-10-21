@@ -7,7 +7,8 @@
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
 import { setBuildingCatalogMetricRangeCommand, toggleAssetMenuFacetCommand, type Command } from "./commands";
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
-import { METRIC_RANGE_DEFINITIONS } from "./buildingCatalogRanges";
+import type { NumberSeparators } from "./assetMenuMetricFormat";
+import { describeRange, METRIC_RANGE_DEFINITIONS } from "./buildingCatalogRanges";
 import type { MetricBoundKey } from "./sharedContracts.generated";
 
 export type ChipCommand = Command;
@@ -26,18 +27,8 @@ export interface FilterChip {
 export interface FilterChipInput {
   facets?: AssetMenuFacetState | null;
   metricRanges?: AssetMenuMetricRangeState | null;
-}
-
-function formatBound(value: number): string {
-  return Number.isInteger(value)
-    ? value.toLocaleString()
-    : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function formatRange(min: number | null, max: number | null): string {
-  if (min !== null && max !== null) return `${formatBound(min)}–${formatBound(max)}`;
-  if (min !== null) return `≥ ${formatBound(min)}`;
-  return `≤ ${formatBound(max as number)}`;
+  /** The player's number marks for a range's bounds; the fallback marks when absent. */
+  separators?: NumberSeparators | null;
 }
 
 function readBound(state: AssetMenuMetricRangeState, key: MetricBoundKey): number | null {
@@ -89,7 +80,7 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
       chips.push({
         id: `metric:${id}`,
         dimension: `metric:${id}`,
-        label: `${label} ${formatRange(min, max)}`,
+        label: `${label} ${describeRange(min, max, input?.separators ?? undefined)}`,
         removable: true,
         remove: setBuildingCatalogMetricRangeCommand(id, "", ""),
       });

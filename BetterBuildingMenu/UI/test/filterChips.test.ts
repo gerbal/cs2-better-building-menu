@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { getAssetMenuFilterSummary } from "../src/domain/assetMenuFilterSummary.ts";
 import { METRIC_RANGE_DEFINITIONS } from "../src/domain/buildingCatalogRanges.ts";
 import { buildFilterChips, removableChipCount } from "../src/domain/filterChips.ts";
+import { FALLBACK_SEPARATORS } from "../src/domain/assetMenuMetricFormat.ts";
 
 const emptyRanges = {
   minCost: null, maxCost: null,
@@ -144,10 +145,19 @@ describe("Filter chips", () => {
     const labelFor = (ranges: object) =>
       buildFilterChips({ metricRanges: { ...emptyRanges, ...ranges, hasSelection: true } })[0]?.label;
 
-    assert.equal(labelFor({ minCost: 1000, maxCost: 5000 }), "Cost 1,000–5,000");
-    assert.equal(labelFor({ minCost: 1000 }), "Cost ≥ 1,000");
-    assert.equal(labelFor({ maxCost: 5000 }), "Cost ≤ 5,000");
+    assert.equal(labelFor({ minCost: 1000, maxCost: 5000 }), "Cost 1\u00a0000–5\u00a0000");
+    assert.equal(labelFor({ minCost: 1000 }), "Cost ≥ 1\u00a0000");
+    assert.equal(labelFor({ maxCost: 5000 }), "Cost ≤ 5\u00a0000");
     assert.equal(labelFor({}), undefined);
+  });
+
+  it("writes a bound in the player's own number marks", () => {
+    const chips = buildFilterChips({
+      metricRanges: { ...emptyRanges, minCost: 1234.5, maxCost: 98765, hasSelection: true },
+      separators: { ...FALLBACK_SEPARATORS, group: ".", decimal: "," },
+    });
+
+    assert.equal(chips[0]?.label, "Cost 1.234,5–98.765");
   });
 
   it("names each metric as the drawer does, and the summary agrees", () => {

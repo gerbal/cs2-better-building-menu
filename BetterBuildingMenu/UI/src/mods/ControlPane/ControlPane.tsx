@@ -37,6 +37,7 @@ import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setAssetMenuView } from "domain/assetMenuViewStore";
 import { chooseViewMode } from "domain/viewModeChoice";
 import { useAssetMenuView } from "mods/useAssetMenuView";
+import { useNumberSeparators } from "mods/gameSettings";
 import { memo, useState } from "react";
 import {
   BuildingCatalog$,
@@ -75,6 +76,7 @@ export const ControlPane = memo(function ControlPane() {
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
+  const separators = useNumberSeparators();
   const selectedAssetPacks = useValue(SelectedAssetPacks$) ?? [];
   const vanillaSelected = useValue(VanillaSelected$) ?? false;
 
@@ -148,6 +150,7 @@ export const ControlPane = memo(function ControlPane() {
   const chips = buildFilterChips({
     facets,
     metricRanges,
+    separators,
   });
 
   const clearLabel = label("Tooltip.LABEL[BetterBuildingMenu.ClearFilters]", "Clear filters");

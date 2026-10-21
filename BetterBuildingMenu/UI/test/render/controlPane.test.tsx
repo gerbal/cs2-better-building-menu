@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import { act } from "react-test-renderer";
 import { renderHtml, entry, catalogPage, count } from "../harness/render";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { mountEach } from "../harness/mount";
 import { seed as seedBinding } from "../harness/seed";
+import { loadLocale, resetLocale } from "../harness/stubs/cs2-l10n";
 import { getAssetMenuView, resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { GROUP_DIMENSIONS } from "../../src/domain/buildingGroups";
 import { ControlPane } from "../../src/mods/ControlPane/ControlPane";
@@ -51,6 +52,8 @@ describe("the control pane", () => {
     seed();
   });
 
+  afterEach(() => resetLocale());
+
   it("carries grouping, sorting and view mode", () => {
     // A band inside the asset menu would be gated on `expanded`, so every control
     // it carried would be missing exactly when the asset menu is smallest and the
@@ -71,6 +74,21 @@ describe("the control pane", () => {
 
     assert.match(html, /class="rail"/);
     assert.match(html, /aria-label="Remove Hospital"/);
+  });
+
+  it("writes a range chip in the player's own number marks", () => {
+    loadLocale({ "Common.THOUSANDS_SEPARATOR": ".", "Common.DECIMAL_SEPARATOR": "," });
+    seedBinding(BuildingCatalogMetricRanges$, {
+      minCost: 1234.5, maxCost: 98765,
+      minUpkeep: null, maxUpkeep: null,
+      minWorkers: null, maxWorkers: null,
+      minCapacity: null, maxCapacity: null,
+      minLotWidth: null, maxLotWidth: null,
+      minLotDepth: null, maxLotDepth: null,
+      hasSelection: true,
+    });
+
+    assert.match(render(), /class="chipText">Cost 1\.234,5–98\.765</);
   });
 
   it("draws no facet chip while nothing narrows the set", () => {

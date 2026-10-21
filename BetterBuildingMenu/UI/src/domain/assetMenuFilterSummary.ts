@@ -1,5 +1,7 @@
+import type { NumberSeparators } from "./assetMenuMetricFormat";
 import {
   countActiveMetricRanges,
+  describeRange,
   metricRangesFromState,
   METRIC_RANGE_DEFINITIONS,
   type NormalizedMetricRange,
@@ -15,6 +17,8 @@ export interface AssetMenuMetricRangeState extends Record<MetricBoundKey, number
 export interface AssetMenuFilterSummaryInput {
   facets?: AssetMenuFacetState | null;
   metricRanges?: AssetMenuMetricRangeState | null;
+  /** The player's number marks for a range's bounds; the fallback marks when absent. */
+  separators?: NumberSeparators | null;
 }
 
 export interface AssetMenuFilterSummary {
@@ -41,26 +45,13 @@ function selectedFacetLabels(state: AssetMenuFacetState | null | undefined): str
     );
 }
 
-function formatBound(value: number): string {
-  return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function formatRange(range: NormalizedMetricRange): string {
-  if (range.min !== null && range.max !== null) {
-    return `${formatBound(range.min)}–${formatBound(range.max)}`;
-  }
-
-  if (range.min !== null) {
-    return `≥ ${formatBound(range.min)}`;
-  }
-
-  return `≤ ${formatBound(range.max as number)}`;
-}
-
-function metricDetails(ranges: Record<MetricRangeId, NormalizedMetricRange>): string[] {
+function metricDetails(
+  ranges: Record<MetricRangeId, NormalizedMetricRange>,
+  separators: NumberSeparators | undefined,
+): string[] {
   return METRIC_RANGE_DEFINITIONS
     .filter(({ id }) => ranges[id].min !== null || ranges[id].max !== null)
-    .map(({ id, label }) => `${label} ${formatRange(ranges[id])}`);
+    .map(({ id, label }) => `${label} ${describeRange(ranges[id].min, ranges[id].max, separators)}`);
 }
 
 export function getAssetMenuFilterSummary(
@@ -76,7 +67,7 @@ export function getAssetMenuFilterSummary(
     // Named, not counted: with filters composing freely an empty intersection
     // is easy to reach, so the message has to say which constraint to drop.
     ...facetLabels,
-    ...metricDetails(ranges),
+    ...metricDetails(ranges, input?.separators ?? undefined),
   ];
 
   const resultCount = count;

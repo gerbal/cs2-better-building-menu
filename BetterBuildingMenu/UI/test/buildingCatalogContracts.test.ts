@@ -13,10 +13,15 @@ import {
   BOUND_KEYS,
   METRIC_RANGE_DEFINITIONS,
   countActiveMetricRanges,
+  describeRange,
   didSwapMetricBounds,
   getInvalidMetricBounds,
   hasMetricRange,
 } from "../src/domain/buildingCatalogRanges.ts";
+import { FALLBACK_SEPARATORS } from "../src/domain/assetMenuMetricFormat.ts";
+
+// A comma-decimal locale that groups with a full stop, as German does.
+const german = { ...FALLBACK_SEPARATORS, group: ".", decimal: "," };
 
 describe("BetterBuildingMenu UI binding contracts", () => {
   it("names the window command after its trigger", () => {
@@ -91,6 +96,22 @@ describe("BetterBuildingMenu UI binding contracts", () => {
       "minLotWidth", "maxLotWidth",
       "minLotDepth", "maxLotDepth",
     ]);
+  });
+
+  it("describes a range in the player's own number marks", () => {
+    assert.equal(describeRange(1234.5, 98765, german), "1.234,5–98.765");
+    assert.equal(describeRange(1234.5, null, german), "≥ 1.234,5");
+    assert.equal(describeRange(null, 0.25, german), "≤ 0,25");
+  });
+
+  it("groups by hand with the fallback marks when the game has given none", () => {
+    // A no-break space, as every figure the menu draws without the game's dictionary.
+    assert.equal(describeRange(1000, 5000), "1\u00a0000–5\u00a0000");
+    assert.equal(describeRange(3.8, null), "≥ 3.8");
+  });
+
+  it("describes nothing when neither bound is set", () => {
+    assert.equal(describeRange(null, null), "");
   });
 
   it("builds metric range set and clear payloads", () => {

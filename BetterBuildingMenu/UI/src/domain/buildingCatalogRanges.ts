@@ -1,4 +1,5 @@
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
+import { FALLBACK_SEPARATORS, roundedDigits, type NumberSeparators } from "./assetMenuMetricFormat";
 import { METRIC_RANGES, type MetricBoundKey, type MetricRangeId } from "./sharedContracts.generated";
 
 export interface MetricRangeInput {
@@ -117,6 +118,21 @@ export function metricRangesFromState(
   }
 
   return ranges;
+}
+
+/**
+ * A range as the chips and the filter summary write it: both bounds, or the one
+ * set. Two places at most, as C# rounds them, in the player's own number marks.
+ */
+export function describeRange(
+  min: number | null,
+  max: number | null,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (min !== null && max !== null) return `${roundedDigits(min, 2, separators)}–${roundedDigits(max, 2, separators)}`;
+  if (min !== null) return `≥ ${roundedDigits(min, 2, separators)}`;
+  if (max !== null) return `≤ ${roundedDigits(max, 2, separators)}`;
+  return "";
 }
 
 export function countActiveMetricRanges(
