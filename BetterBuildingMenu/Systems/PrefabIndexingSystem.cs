@@ -354,7 +354,7 @@ namespace BetterBuildingMenu.Systems
 		/// lock state feeds only the three fields AddPrefab sets together, on instances every list shares.</remarks>
 		private void ApplyUnlocks()
 		{
-			var events = _unlockEventQuery.ToComponentDataArray<Unlock>(Allocator.Temp);
+			using var events = _unlockEventQuery.ToComponentDataArray<Unlock>(Allocator.Temp);
 			var changed = 0;
 
 			for (var i = 0; i < events.Length; i++)
@@ -388,8 +388,6 @@ namespace BetterBuildingMenu.Systems
 
 				changed++;
 			}
-
-			events.Dispose();
 
 			if (changed == 0)
 			{
@@ -505,14 +503,12 @@ namespace BetterBuildingMenu.Systems
 		/// a new one, so without this the old row stays listed until the next full pass.</remarks>
 		private void RemoveDeletedPrefabs(CatalogIndex target)
 		{
-			var deleted = _deletedPrefabQuery.ToEntityArray(Allocator.Temp);
+			using var deleted = _deletedPrefabQuery.ToEntityArray(Allocator.Temp);
 
 			for (var i = 0; i < deleted.Length; i++)
 			{
 				target.Remove(deleted[i].Index);
 			}
-
-			deleted.Dispose();
 		}
 
 		/// <summary>A processor's query, narrowed to prefabs created or changed this frame.</summary>
@@ -689,7 +685,7 @@ namespace BetterBuildingMenu.Systems
 						continue;
 					}
 
-					var entities = query.ToEntityArray(Allocator.Temp);
+					using var entities = query.ToEntityArray(Allocator.Temp);
 
 					if (full)
 					{

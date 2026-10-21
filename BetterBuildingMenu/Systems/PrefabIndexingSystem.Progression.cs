@@ -46,7 +46,7 @@ namespace BetterBuildingMenu.Systems
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<MilestoneData>(),
 				ComponentType.ReadOnly<PrefabData>());
-			var milestones = query.ToEntityArray(Allocator.Temp);
+			using var milestones = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
 
 			for (var i = 0; i < milestones.Length; i++)
@@ -90,7 +90,7 @@ namespace BetterBuildingMenu.Systems
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<DevTreeNodeData>(),
 				ComponentType.ReadOnly<PrefabData>());
-			var nodes = query.ToEntityArray(Allocator.Temp);
+			using var nodes = query.ToEntityArray(Allocator.Temp);
 			var branches = new Dictionary<int, (string Label, string Icon, int Depth, string Service)>();
 			var roots = new Dictionary<string, (string Label, string Icon, int Depth)>();
 			// Prefab name to node, so FoldedDevTreeNodes can be resolved once the
