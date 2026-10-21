@@ -53,17 +53,8 @@ namespace BetterBuildingMenu.Domain
 		{
 			writer.TypeBegin(GetType().FullName);
 
-			writer.PropertyName("buildingName");
-			writer.Write(BuildingName);
-
-			writer.PropertyName("entries");
-			writer.ArrayBegin((uint)Entries.Length);
-			foreach (var entry in Entries)
-			{
-				entry.Write(writer);
-			}
-			writer.ArrayEnd();
-
+			writer.Prop("buildingName", BuildingName);
+			writer.Prop("entries", Entries);
 			writer.TypeEnd();
 		}
 	}

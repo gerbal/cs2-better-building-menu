@@ -60,64 +60,29 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("id");
-			writer.Write(Id);
-			writer.PropertyName("version");
-			writer.Write(Version);
-			writer.PropertyName("prefabName");
-			writer.Write(PrefabName);
-			writer.PropertyName("name");
-			writer.Write(Name);
-			writer.PropertyName("family");
-			writer.Write(Family);
-			writer.PropertyName("density");
-			writer.Write(Density.ToString());
-			writer.PropertyName("thumbnail");
-			writer.Write(Thumbnail);
-			writer.PropertyName("maxHeight");
-			writer.Write(MaxHeight);
-			writer.PropertyName("supportsNarrow");
-			writer.Write(SupportsNarrow);
-			writer.PropertyName("supportsCorners");
-			writer.Write(SupportsCorners);
-			writer.PropertyName("allowedSold");
-			writer.Write(AllowedSold ?? string.Empty);
-			writer.PropertyName("allowedManufactured");
-			writer.Write(AllowedManufactured ?? string.Empty);
-			writer.PropertyName("allowedStored");
-			writer.Write(AllowedStored ?? string.Empty);
-			writer.PropertyName("minLotWidth");
-			writer.Write(MinLotWidth);
-			writer.PropertyName("maxLotWidth");
-			writer.Write(MaxLotWidth);
-			writer.PropertyName("minLotDepth");
-			writer.Write(MinLotDepth);
-			writer.PropertyName("maxLotDepth");
-			writer.Write(MaxLotDepth);
-			writer.PropertyName("footprints");
-			var footprints = Footprints ?? System.Array.Empty<ZoneFootprint>();
-			writer.ArrayBegin((uint)footprints.Length);
-			foreach (ZoneFootprint footprint in footprints)
-			{
-				footprint.Write(writer);
-			}
-			writer.ArrayEnd();
-			writer.PropertyName("footprintOverflow");
-			writer.Write(FootprintOverflow);
-			writer.PropertyName("isLocked");
-			writer.Write(IsLocked);
-			writer.PropertyName("unlockMilestone");
-			writer.Write(UnlockMilestone);
-			writer.PropertyName("mapFeature");
-			writer.Write(MapFeature ?? string.Empty);
-			writer.PropertyName("unlockRequirements");
-			var requirements = UnlockRequirements ?? System.Array.Empty<string>();
-			writer.ArrayBegin((uint)requirements.Length);
-			foreach (string requirement in requirements)
-			{
-				writer.Write(requirement);
-			}
-			writer.ArrayEnd();
+			writer.Prop("id", Id);
+			writer.Prop("version", Version);
+			writer.Prop("prefabName", PrefabName);
+			writer.Prop("name", Name);
+			writer.Prop("family", Family);
+			writer.Prop("density", Density.ToString());
+			writer.Prop("thumbnail", Thumbnail);
+			writer.Prop("maxHeight", MaxHeight);
+			writer.Prop("supportsNarrow", SupportsNarrow);
+			writer.Prop("supportsCorners", SupportsCorners);
+			writer.Prop("allowedSold", AllowedSold ?? string.Empty);
+			writer.Prop("allowedManufactured", AllowedManufactured ?? string.Empty);
+			writer.Prop("allowedStored", AllowedStored ?? string.Empty);
+			writer.Prop("minLotWidth", MinLotWidth);
+			writer.Prop("maxLotWidth", MaxLotWidth);
+			writer.Prop("minLotDepth", MinLotDepth);
+			writer.Prop("maxLotDepth", MaxLotDepth);
+			writer.Prop("footprints", Footprints);
+			writer.Prop("footprintOverflow", FootprintOverflow);
+			writer.Prop("isLocked", IsLocked);
+			writer.Prop("unlockMilestone", UnlockMilestone);
+			writer.Prop("mapFeature", MapFeature ?? string.Empty);
+			writer.Prop("unlockRequirements", UnlockRequirements);
 			writer.TypeEnd();
 		}
 	}

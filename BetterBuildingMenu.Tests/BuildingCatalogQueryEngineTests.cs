@@ -1,5 +1,3 @@
-using Colossal.UI.Binding;
-
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Services;
@@ -962,33 +960,4 @@ public sealed class BuildingCatalogQueryEngineTests
         bool hasParking,
         string pdxModsId) =>
         TestEntries.Make(id, name, prefabName, category, subCategory, lotWidth, lotDepth, buildingLevel, hasParking: hasParking, pdxModsId: pdxModsId);
-
-    private sealed class RecordingJsonWriter : IJsonWriter
-    {
-        public List<string> Tokens { get; } = new();
-
-        public IReadOnlyList<string> PropertyNames => Tokens
-            .Where(token => token.StartsWith("PropertyName:", StringComparison.Ordinal))
-            .Select(token => token["PropertyName:".Length..])
-            .ToArray();
-
-        public string debugName => nameof(RecordingJsonWriter);
-
-        public void TypeBegin(string typeName) => Tokens.Add("TypeBegin:" + typeName);
-        public void TypeEnd() => Tokens.Add("TypeEnd");
-        public void MapBegin(uint size) => Tokens.Add("MapBegin:" + size);
-        public void MapEnd() => Tokens.Add("MapEnd");
-        public void ArrayBegin(uint size) => Tokens.Add("ArrayBegin:" + size);
-        public void ArrayEnd() => Tokens.Add("ArrayEnd");
-        public void PropertyName(string name) => Tokens.Add("PropertyName:" + name);
-        public void WriteNull() => Tokens.Add("WriteNull");
-        public void Write(bool value) => Tokens.Add("Write:Boolean:" + value);
-        public void Write(int value) => Tokens.Add("Write:Int32:" + value);
-        public void Write(uint value) => Tokens.Add("Write:UInt32:" + value);
-        public void Write(long value) => Tokens.Add("Write:Int64:" + value);
-        public void Write(ulong value) => Tokens.Add("Write:UInt64:" + value);
-        public void Write(float value) => Tokens.Add("Write:Single:" + value);
-        public void Write(double value) => Tokens.Add("Write:Double:" + value);
-        public void Write(string value) => Tokens.Add("Write:String:" + value);
-    }
 }

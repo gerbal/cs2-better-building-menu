@@ -12,10 +12,8 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("index");
-			writer.Write(Index);
-			writer.PropertyName("name");
-			writer.Write(Name);
+			writer.Prop("index", Index);
+			writer.Prop("name", Name);
 			writer.TypeEnd();
 		}
 	}
