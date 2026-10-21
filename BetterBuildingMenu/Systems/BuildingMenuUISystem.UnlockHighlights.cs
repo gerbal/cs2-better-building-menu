@@ -1,7 +1,7 @@
 ﻿using Colossal.Entities;
+using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Utilities;
 using System;
-using System.Collections.Generic;
 
 using Unity.Entities;
 
@@ -109,7 +109,7 @@ namespace BetterBuildingMenu.Systems
 				.GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
 				?.GetValue(_toolbarUISystem) as T;
 
-			if (value is null && _warnedToolbarFields.Add(name))
+			if (value is null && _toolbarFieldWarnings.IsFirst(name))
 			{
 				Mod.Log.Warn($"[UNLOCK-PIP] ToolbarUISystem.{name} is missing or not a {typeof(T).Name}; a cleared highlight stays drawn until the toolbar next redraws");
 			}
@@ -119,6 +119,6 @@ namespace BetterBuildingMenu.Systems
 
 		private Colossal.UI.Binding.RawValueBinding? _toolbarGroupsBinding;
 		private Colossal.UI.Binding.RawMapBinding<Entity>? _assetCategoriesBinding;
-		private readonly HashSet<string> _warnedToolbarFields = new();
+		private readonly LogOnce _toolbarFieldWarnings = new();
 	}
 }

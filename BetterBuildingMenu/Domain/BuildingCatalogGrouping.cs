@@ -124,7 +124,7 @@ namespace BetterBuildingMenu.Domain
 
 		public static bool IsDimension([NotNullWhen(true)] string? value) =>
 			value?.Trim() is { Length: > 0 } trimmed
-			&& Dimensions.Any(dimension => Is(trimmed, dimension));
+			&& Dimensions.ContainsIgnoreCase(trimmed);
 
 		/// <summary>
 		/// What a menu opens grouped by when the player has not chosen.

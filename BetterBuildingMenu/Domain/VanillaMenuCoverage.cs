@@ -101,16 +101,8 @@ namespace BetterBuildingMenu.Domain
 
 			return new VanillaMenuCoverageReport(lines, index.Menus.Placements.Count, totalMissing);
 
-			static void Add(Dictionary<string, List<string>> into, string where, string what)
-			{
-				if (!into.TryGetValue(where, out var list))
-				{
-					list = new List<string>();
-					into[where] = list;
-				}
-
-				list.Add(what);
-			}
+			static void Add(Dictionary<string, List<string>> into, string where, string what) =>
+				into.GetOrAdd(where, static () => new List<string>()).Add(what);
 		}
 	}
 }

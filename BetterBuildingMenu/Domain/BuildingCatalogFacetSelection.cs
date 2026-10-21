@@ -103,8 +103,7 @@ namespace BetterBuildingMenu.Domain
 			string option,
 			IReadOnlyList<string> all)
 		{
-			bool known = all.Any(value => string.Equals(value, option, StringComparison.OrdinalIgnoreCase));
-			if (!known)
+			if (!all.ContainsIgnoreCase(option))
 			{
 				return values;
 			}

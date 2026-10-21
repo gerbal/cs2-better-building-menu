@@ -47,13 +47,7 @@ namespace BetterBuildingMenu.Domain.Placement
 				return;
 			}
 
-			if (!_menus.TryGetValue(menu, out var history))
-			{
-				history = new MenuHistory();
-				_menus[menu] = history;
-			}
-
-			history.Record(prefab);
+			_menus.GetOrAdd(menu, static () => new MenuHistory()).Record(prefab);
 			IsDirty = true;
 		}
 

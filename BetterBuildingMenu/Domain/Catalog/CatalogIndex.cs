@@ -238,12 +238,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 			if (entry.PrefabName.Length > 0)
 			{
-				if (!_namesakes.TryGetValue(entry.PrefabName, out var namesakes))
-				{
-					_namesakes[entry.PrefabName] = namesakes = new List<PrefabIndex>(1);
-				}
-
-				namesakes.Add(entry);
+				_namesakes.GetOrAdd(entry.PrefabName, static () => new List<PrefabIndex>(1)).Add(entry);
 			}
 		}
 

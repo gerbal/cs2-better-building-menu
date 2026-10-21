@@ -55,7 +55,7 @@ namespace BetterBuildingMenu.Systems
 				var query = GetEntityQuery(
 					ComponentType.ReadOnly<UIAssetMenuData>(),
 					ComponentType.ReadOnly<PrefabData>());
-				var menus = query.ToEntityArray(Allocator.Temp);
+				using var menus = query.ToEntityArray(Allocator.Temp);
 
 				for (var i = 0; i < menus.Length; i++)
 				{
@@ -81,8 +81,6 @@ namespace BetterBuildingMenu.Systems
 						}
 					}
 				}
-
-				menus.Dispose();
 			}
 			catch (Exception ex)
 			{
@@ -112,7 +110,7 @@ namespace BetterBuildingMenu.Systems
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<UIAssetMenuData>(),
 				ComponentType.ReadOnly<PrefabData>());
-			var menus = query.ToEntityArray(Allocator.Temp);
+			using var menus = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
 			var entities = new Dictionary<string, Entity>(System.StringComparer.OrdinalIgnoreCase);
 			var found = new List<(Entity Menu, VanillaMenuCategory Record)>();
@@ -260,13 +258,7 @@ namespace BetterBuildingMenu.Systems
 					prefab.TryGet<UIObject>(out var uIObject);
 
 					// Two menus sharing a prefab name share one list.
-					if (!byMenu.TryGetValue(menuName, out var tabs))
-					{
-						tabs = new List<VanillaMenuCategory>();
-						byMenu[menuName] = tabs;
-					}
-
-					tabs.Add(new VanillaMenuCategory(
+					byMenu.GetOrAdd(menuName, static () => new List<VanillaMenuCategory>()).Add(new VanillaMenuCategory(
 						Id: prefab.name,
 						Name: prefab.name,
 						Icon: CategoryIcon.Resolve(uIObject?.m_Icon, GameIcons.IconOrGroupIcon(_imageSystem, entity, prefab)) ?? string.Empty,

@@ -44,7 +44,7 @@ namespace BetterBuildingMenu.Systems
 		private HashSet<string> _blackList = null!;
 		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
 		private ComponentType? _roadBuilderDiscarded;
-		private bool _warnedRoadBuilderDiscarded;
+		private readonly LogOnce _roadBuilderDiscardedWarning = new();
 		private EntityQuery _unlockEventQuery;
 		// Prefabs the game created or changed this frame — the incremental
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
@@ -86,6 +86,17 @@ namespace BetterBuildingMenu.Systems
 		/// load emptying it. Not for an unlock or a unique built or bulldozed, which change only state
 		/// the catalog patches into its cached rows. The snapshot cache is emptied on it.</summary>
 		public int ContentGeneration { get; private set; } = 1;
+
+		/// <summary>An indexed fact changed in place: an unlock, or a unique built or bulldozed.</summary>
+		internal void BumpState() => Generation++;
+
+		/// <summary>The index's contents changed. Moves both counters, so ContentGeneration never
+		/// advances without Generation.</summary>
+		internal void BumpContent()
+		{
+			Generation++;
+			ContentGeneration++;
+		}
 
 		/// <summary>The index the asset menu reads. A load empties it at preload; a full pass builds its
 		/// replacement aside and publishes it only when the pass succeeds; a partial pass edits it in
@@ -186,8 +197,7 @@ namespace BetterBuildingMenu.Systems
 			// So the next city's placed-unique line is logged, whatever its count, once its
 			// index is ready.
 			_loggedUniqueCandidateCount = -1;
-			Generation++;
-			ContentGeneration++;
+			BumpContent();
 
 			Mod.Log.Debug($"Index emptied at preload (purpose={purpose}, mode={mode}); indexing waits for a city");
 		}
@@ -354,7 +364,7 @@ namespace BetterBuildingMenu.Systems
 		/// lock state feeds only the three fields AddPrefab sets together, on instances every list shares.</remarks>
 		private void ApplyUnlocks()
 		{
-			var events = _unlockEventQuery.ToComponentDataArray<Unlock>(Allocator.Temp);
+			using var events = _unlockEventQuery.ToComponentDataArray<Unlock>(Allocator.Temp);
 			var changed = 0;
 
 			for (var i = 0; i < events.Length; i++)
@@ -389,8 +399,6 @@ namespace BetterBuildingMenu.Systems
 				changed++;
 			}
 
-			events.Dispose();
-
 			if (changed == 0)
 			{
 				return;
@@ -401,7 +409,7 @@ namespace BetterBuildingMenu.Systems
 			// The catalog is served from a cached search, so the rows keep their
 			// old lock state until it is rebuilt — and an Availability filter set
 			// to Unlocked would still be excluding them.
-			Generation++;
+			BumpState();
 		}
 
 		/// <summary>Resolves every asset's silhouette now, while the game is still loading.</summary>
@@ -480,12 +488,11 @@ namespace BetterBuildingMenu.Systems
 				failure = ex;
 			}
 
-			if (_warnedRoadBuilderDiscarded)
+			if (!_roadBuilderDiscardedWarning.IsFirst())
 			{
 				return mods;
 			}
 
-			_warnedRoadBuilderDiscarded = true;
 			const string message = "Road Builder is enabled, but its DiscardedRoadBuilderPrefab could not be read; roads it discards stay listed";
 
 			if (failure is null)
@@ -505,14 +512,12 @@ namespace BetterBuildingMenu.Systems
 		/// a new one, so without this the old row stays listed until the next full pass.</remarks>
 		private void RemoveDeletedPrefabs(CatalogIndex target)
 		{
-			var deleted = _deletedPrefabQuery.ToEntityArray(Allocator.Temp);
+			using var deleted = _deletedPrefabQuery.ToEntityArray(Allocator.Temp);
 
 			for (var i = 0; i < deleted.Length; i++)
 			{
 				target.Remove(deleted[i].Index);
 			}
-
-			deleted.Dispose();
 		}
 
 		/// <summary>A processor's query, narrowed to prefabs created or changed this frame.</summary>
@@ -557,8 +562,7 @@ namespace BetterBuildingMenu.Systems
 			// published one, so this assigns it to itself.
 			built.IsReady = true;
 			Index = built;
-			Generation++;
-			ContentGeneration++;
+			BumpContent();
 
 			// Rescan the placed uniques against the city that just loaded: the
 			// tracker's loaded-asset events may already have run this frame, and a
@@ -689,7 +693,7 @@ namespace BetterBuildingMenu.Systems
 						continue;
 					}
 
-					var entities = query.ToEntityArray(Allocator.Temp);
+					using var entities = query.ToEntityArray(Allocator.Temp);
 
 					if (full)
 					{
@@ -781,12 +785,7 @@ namespace BetterBuildingMenu.Systems
 
 								if (full)
 								{
-									if (!census.TryGetValue(processor.GetType().Name, out var ids))
-									{
-										census[processor.GetType().Name] = ids = new List<int>();
-									}
-
-									ids.Add(prefabIndex.Id);
+									census.GetOrAdd(processor.GetType().Name, static () => new List<int>()).Add(prefabIndex.Id);
 								}
 							}
 							else if (Mod.Log.isLevelEnabled(Level.Debug))
@@ -970,11 +969,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			_prefabUISystem.GetTitleAndDescription(_prefabSystem.GetEntity(prefab), out var titleId, out var _);
 
-			var localized = GameManager.instance.localizationManager.activeDictionary.TryGetValue(titleId, out var name)
-				? name
-				: null;
-
-			return WordFormat.GameText(localized) ?? prefab.name.Replace('_', ' ').FormatWords();
+			return LocaleHelper.TryTranslate(titleId) ?? prefab.name.Replace('_', ' ').FormatWords();
 		}
 
 		/// <summary>
@@ -1025,7 +1020,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				// Same reason as the event path: the prefabs are untouched but the
 				// projections built from them are stale.
-				Generation++;
+				BumpState();
 			}
 
 			// On a change only, as the rescan runs on every catalog publish, and only once a
@@ -1067,7 +1062,7 @@ namespace BetterBuildingMenu.Systems
 		private void OnUniqueAssetStatusChanged(Entity prefab, bool placed)
 		{
 			PlacedUniques.Set(prefab.Index, placed);
-			Generation++;
+			BumpState();
 		}
 	}
 }

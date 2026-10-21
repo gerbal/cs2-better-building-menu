@@ -28,53 +28,29 @@ namespace BetterBuildingMenu.Domain
 			_ => string.Empty,
 		};
 
-		public static string ForCategory(PrefabCategory category, string? rawValue = null)
+		public static string ForCategory(PrefabCategory category, string? rawValue = null) =>
+			ForEnum(category, rawValue, "Category");
+
+		public static string ForSubCategory(PrefabSubCategory subCategory, string? rawValue = null) =>
+			ForEnum(subCategory, rawValue, "Subcategory");
+
+		private static string ForEnum<TEnum>(TEnum value, string? rawValue, string unknownEnumPrefix)
+			where TEnum : struct, Enum
 		{
-			string enumIdentity = category.ToString();
-			string value = rawValue ?? enumIdentity;
-			bool isUnknownEnumIdentity = string.Equals(value, enumIdentity, StringComparison.Ordinal)
-				&& !Enum.IsDefined(typeof(PrefabCategory), category);
-			return For(value, isUnknownEnumIdentity ? "Category" : null);
+			string enumIdentity = value.ToString();
+			string raw = rawValue ?? enumIdentity;
+			bool isUnknownEnumIdentity = string.Equals(raw, enumIdentity, StringComparison.Ordinal)
+				&& !Enum.IsDefined(typeof(TEnum), value);
+			return For(raw, isUnknownEnumIdentity ? unknownEnumPrefix : null);
 		}
 
-		public static string ForSubCategory(PrefabSubCategory subCategory, string? rawValue = null)
-		{
-			string enumIdentity = subCategory.ToString();
-			string value = rawValue ?? enumIdentity;
-			bool isUnknownEnumIdentity = string.Equals(value, enumIdentity, StringComparison.Ordinal)
-				&& !Enum.IsDefined(typeof(PrefabSubCategory), subCategory);
-			return For(value, isUnknownEnumIdentity ? "Subcategory" : null);
-		}
-
-		private static string For(string rawValue, string? unknownEnumPrefix)
-		{
-			string fallback = Fallback(rawValue, unknownEnumPrefix);
-			try
-			{
-				// The game first, where it names the same concept: it ships these
-				// category labels in every language, while the mod's Locale.json is
-				// English only. A missing key falls through to the mod's own label.
-				string? gameKey = GameLocaleKeys.For(rawValue);
-				if (gameKey is not null)
-				{
-					string localized = LocaleHelper.Translate(gameKey, string.Empty);
-					if (!string.IsNullOrWhiteSpace(localized))
-					{
-						return localized;
-					}
-				}
-
-				return LocaleHelper.Translate(
-					$"Tooltip.LABEL[BetterBuildingMenu.{rawValue}]",
-					fallback);
-			}
-			catch
-			{
-				// Pure catalog tests and early startup can run without an active game
-				// localization manager. Keep the display deterministic in that case.
-				return fallback;
-			}
-		}
+		// The game first, where it names the same concept: it ships these category labels in
+		// every language, while the mod's Locale.json is English only. Each step runs only when
+		// the one before found nothing; with no game running the display stays the fallback.
+		private static string For(string rawValue, string? unknownEnumPrefix) =>
+			LocaleHelper.TryTranslate(GameLocaleKeys.For(rawValue))
+			?? LocaleHelper.TryTranslate($"Tooltip.LABEL[BetterBuildingMenu.{rawValue}]")
+			?? Fallback(rawValue, unknownEnumPrefix);
 
 		/// <summary>A theme's name in the player's language, or the split prefab name.</summary>
 		public static string ForTheme(string theme) => GameNameOr(GameLocaleKeys.ForTheme(theme), theme);
@@ -82,20 +58,8 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>A building role's name in the player's language, or the split role id.</summary>
 		public static string ForRole(string role) => GameNameOr(GameLocaleKeys.ForRole(role), role);
 
-		private static string GameNameOr(string? gameKey, string identifier)
-		{
-			string fallback = WordFormat.SplitIdentifier(identifier);
-			try
-			{
-				string localized = gameKey is null ? string.Empty : LocaleHelper.Translate(gameKey, string.Empty);
-				return string.IsNullOrWhiteSpace(localized) ? fallback : localized;
-			}
-			catch
-			{
-				// No localization manager in pure tests and early startup.
-				return fallback;
-			}
-		}
+		private static string GameNameOr(string? gameKey, string identifier) =>
+			LocaleHelper.TryTranslate(gameKey) ?? WordFormat.SplitIdentifier(identifier);
 
 		private static string Fallback(string rawValue, string? unknownEnumPrefix)
 		{

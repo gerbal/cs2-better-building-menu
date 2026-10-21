@@ -1,3 +1,4 @@
+using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Placement;
 
 using System.IO;
@@ -17,7 +18,7 @@ namespace BetterBuildingMenu.Utilities
 		private readonly string _folder;
 		private readonly Action<string> _debug;
 		private readonly Action<string> _warn;
-		private bool _warnedWrite;
+		private readonly LogOnce _writeFailure = new();
 
 		public PlacementHistoryFile(string folder, Action<string> debug, Action<string> warn)
 		{
@@ -119,9 +120,8 @@ namespace BetterBuildingMenu.Utilities
 			catch (Exception ex)
 			{
 				// Once a session: the timer tries again every two minutes, and the counts stay in memory.
-				if (!_warnedWrite)
+				if (_writeFailure.IsFirst())
 				{
-					_warnedWrite = true;
 					_warn($"Could not write {FileName} ({ex.Message}); it is tried again at the next flush");
 				}
 			}
