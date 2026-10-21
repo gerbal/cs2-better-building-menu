@@ -16,12 +16,14 @@ import {
   setAssetMenuViewModeCommand,
   setBuildingCatalogGroupByCommand,
   setControlPaneShownCommand,
+  setCurrentPrefabCommand,
 } from "../src/domain/commands.ts";
 
 describe("commands to C#", () => {
   it("names each command after the trigger C# registers", () => {
     assert.deepEqual(
       [
+        setCurrentPrefabCommand(17),
         searchEverythingCommand(),
         setAssetMenuCommand("Parks"),
         setAssetMenuCategoryCommand("SmallRoads"),
@@ -38,6 +40,7 @@ describe("commands to C#", () => {
         setControlPaneShownCommand(false),
       ],
       [
+        { method: "SetCurrentPrefab", args: [17] },
         { method: "SearchEverything", args: [] },
         { method: "SetAssetMenu", args: ["Parks"] },
         { method: "SetAssetMenuCategory", args: ["SmallRoads"] },

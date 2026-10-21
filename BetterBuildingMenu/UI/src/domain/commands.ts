@@ -18,6 +18,11 @@ function createTriggerCommand<K extends TriggerName>(method: K, ...args: Trigger
   return { method, args };
 }
 
+// --- Placing ----------------------------------------------------------------
+
+/** Arms the prefab tool with this prefab; C# resolves the id through its index. */
+export const setCurrentPrefabCommand = (prefabId: number): Command => createTriggerCommand("SetCurrentPrefab", prefabId);
+
 // --- Search and the catalog window -------------------------------------------
 
 export const searchChangedCommand = (value: string): Command => createTriggerCommand("SearchChanged", value);
