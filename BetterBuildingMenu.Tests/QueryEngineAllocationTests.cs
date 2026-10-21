@@ -6,12 +6,11 @@ namespace BetterBuildingMenu.Tests;
 
 public sealed class QueryEngineAllocationTests
 {
-    // Every refresh runs the match once per entry, so a closure built per call is a per-entry
-    // allocation however early the call returns. This runs on CoreCLR, where a foreach over an
-    // IReadOnlyList still allocates its enumerator per entry, so a selected zone type guards
-    // the indexed loops.
+    // Every refresh runs the match once per entry, so a closure built per call allocates per entry.
+    // This host is CoreCLR, where a foreach over an IReadOnlyList allocates too; the game runs Mono,
+    // which this test cannot observe, so the loops are indexed rather than enumerated.
     [Fact]
-    public void Count_AllocatesNothingPerEntry_WithEveryFilterSet()
+    public void Count_AllocatesNothingPerEntry_WithEveryFilterButTheMenuScope()
     {
         var query = new BuildingCatalogQuery(
             SearchText: "building",
@@ -22,7 +21,25 @@ public sealed class QueryEngineAllocationTests
             Provenance: new[] { "vanilla" },
             Themes: new[] { "european" },
             PlacementFlags: new[] { "RequireRoad" },
-            ZoneTypes: new[] { "low" });
+            ZoneTypes: new[] { "low" },
+            MinLotWidth: 1,
+            MaxLotWidth: 4,
+            MinLotDepth: 1,
+            MaxLotDepth: 5,
+            MinBuildingLevel: 1,
+            MaxBuildingLevel: 3,
+            MinConstructionCost: 100,
+            MaxConstructionCost: 900,
+            MinUpkeep: 1,
+            MaxUpkeep: 50,
+            MinWorkers: 5,
+            MaxWorkers: 60,
+            MinCapacity: 10,
+            MaxCapacity: 200,
+            MinElectricityConsumption: 1,
+            MaxElectricityConsumption: 100,
+            MinWaterConsumption: 1,
+            MaxWaterConsumption: 80);
 
         Assert.Equal(0, PerEntryBytes(query));
     }
@@ -68,7 +85,12 @@ public sealed class QueryEngineAllocationTests
 
         for (var i = 0; i < count; i++)
         {
-            entries[i] = TestEntries.Make(id: i + 1, name: "Building " + i) with
+            entries[i] = TestEntries.Make(
+                id: i + 1,
+                name: "Building " + i,
+                lotWidth: 2,
+                lotDepth: 3,
+                buildingLevel: 2) with
             {
                 BuildingType = "School",
                 Provenance = "Vanilla",
@@ -78,6 +100,12 @@ public sealed class QueryEngineAllocationTests
                 UiCategory = "Schools",
                 ZoneType = ZoneTypeFilter.Low,
                 EducationLevel = 1,
+                ConstructionCost = 500,
+                Upkeep = 10,
+                Workers = 20,
+                Capacity = 100,
+                ElectricityConsumption = 50,
+                WaterConsumption = 40,
             };
         }
 
