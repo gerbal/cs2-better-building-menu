@@ -1,22 +1,28 @@
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 
 namespace BetterBuildingMenu.Tests;
 
 public sealed class QueryEngineAllocationTests
 {
-    // Every refresh runs the match once per entry, so a closure built per call is a
-    // per-entry allocation however early the call returns.
+    // Every refresh runs the match once per entry, so a closure built per call is a per-entry
+    // allocation however early the call returns. This runs on CoreCLR, where a foreach over an
+    // IReadOnlyList still allocates its enumerator per entry, so a selected zone type guards
+    // the indexed loops.
     [Fact]
-    public void Count_AllocatesNothingPerEntry_WhenEveryFacetIsSelected()
+    public void Count_AllocatesNothingPerEntry_WithEveryFilterSet()
     {
         var query = new BuildingCatalogQuery(
+            SearchText: "building",
             StripTabs: new[] { StripAxes.BuildingValue },
+            SchoolTier: 1,
             Availability: new[] { BuildingCatalogFacetSelection.Availability.Unlocked },
             BuildingTypes: new[] { "school" },
             Provenance: new[] { "vanilla" },
             Themes: new[] { "european" },
-            PlacementFlags: new[] { "RequireRoad" });
+            PlacementFlags: new[] { "RequireRoad" },
+            ZoneTypes: new[] { "low" });
 
         Assert.Equal(0, PerEntryBytes(query));
     }
@@ -70,6 +76,8 @@ public sealed class QueryEngineAllocationTests
                 PlacementFlags = new[] { "RequireRoad", "Water" },
                 UiMenu = "Education",
                 UiCategory = "Schools",
+                ZoneType = ZoneTypeFilter.Low,
+                EducationLevel = 1,
             };
         }
 

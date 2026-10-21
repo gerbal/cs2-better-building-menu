@@ -375,9 +375,9 @@ namespace BetterBuildingMenu.Services
 				return true;
 			}
 
-			foreach (var name in selected)
+			for (var i = 0; i < selected.Count; i++)
 			{
-				if (Enum.TryParse<ZoneTypeFilter>(name, ignoreCase: true, out var parsed) && parsed == value)
+				if (Enum.TryParse<ZoneTypeFilter>(selected[i], ignoreCase: true, out var parsed) && parsed == value)
 				{
 					return true;
 				}
