@@ -33,6 +33,7 @@ import { getAssetMenuAnchor, getAssetMenuAnchorKey, getAssetMenuView, setAssetMe
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useCaptureKeydown } from "mods/useCaptureKeydown";
+import { useLabel } from "mods/useLabel";
 import { useAssetMenuShown } from "mods/BuildingMenu/assetMenuShown";
 import { GroupedResults } from "mods/GroupedResults/GroupedResults";
 import { useViewShape } from "mods/viewShape";
@@ -65,6 +66,7 @@ const densityClassNames: Record<AssetMenuDensityTier, string> = {
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();
+  const label = useLabel();
   // The build menu as drawn, plus the pane: the row the table arithmetic was tuned
   // against, which subtracts the pane itself.
   const layoutWidth = catalogLayoutWidth(useAssetMenuLayout().menuWidth);
@@ -162,14 +164,10 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     elsewhere: matchesElsewhere ?? 0,
   });
   const scopeNoticeText = scopeNotice
-    ? (translate(
-        "Tooltip.LABEL[BetterBuildingMenu.MatchesElsewhere]",
-        "No matches here — {0} elsewhere"
-      ) ?? "No matches here — {0} elsewhere").replace("{0}", `${scopeNotice.elsewhere}`)
+    ? label("Tooltip.LABEL[BetterBuildingMenu.MatchesElsewhere]", "No matches here — {0} elsewhere")
+      .replace("{0}", `${scopeNotice.elsewhere}`)
     : "";
-  const searchEverywhereLabel =
-    translate("Tooltip.LABEL[BetterBuildingMenu.SearchEverything]", "Search everything")
-    ?? "Search everything";
+  const searchEverywhereLabel = label("Tooltip.LABEL[BetterBuildingMenu.SearchEverything]", "Search everything");
   /**
    * "Nothing here, {n} elsewhere" and the button that goes there. Built once
    * and rendered by every view mode: widening is the whole answer to a scoped
@@ -269,19 +267,18 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const catalogFooter = useMemo(() => hasMore ? (
     <div className={styles.loadMoreRow}>
       <span className={styles.windowState}>
-        {(translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
-          ?? "Showing {0} of {1}")
+        {label("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
           .replace("{0}", groupDigits(items.length, separators))
           .replace("{1}", groupDigits(totalCount, separators))}
       </span>
       <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
         {remaining === null
-          ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
-          : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining, nextCount)}`)}
+          ? label("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more")
+          : label("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
+            .replace("{0}", `${loadMoreCount(remaining, nextCount)}`)}
       </Button>
     </div>
-  ) : null, [hasMore, items.length, totalCount, remaining, nextCount, translate, separators, loadMore]);
+  ) : null, [hasMore, items.length, totalCount, remaining, nextCount, label, separators, loadMore]);
 
   return (
     <div

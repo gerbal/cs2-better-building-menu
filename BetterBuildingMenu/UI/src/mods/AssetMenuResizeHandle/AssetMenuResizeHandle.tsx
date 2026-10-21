@@ -1,6 +1,5 @@
 import { useValue } from "mods/panelValue";
 import { Tooltip } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useRef } from "react";
 
@@ -15,6 +14,7 @@ import { commitAssetMenuHeightCommand, setAssetMenuHeightCommand } from "domain/
 
 import styles from "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 import { AssetMenuHeight$, send } from "mods/bindings";
+import { useLabel } from "mods/useLabel";
 import { useRafDrag } from "mods/useRafDrag";
 
 export interface AssetMenuHeight {
@@ -81,8 +81,8 @@ export interface AssetMenuResizeHandleProps {
  * Its hint is the game's Tooltip: the game draws no title attribute.
  */
 export const AssetMenuResizeHandle = ({ active, onBeginResize }: AssetMenuResizeHandleProps) => {
-  const { translate } = useLocalization();
-  const hint = translate("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize";
+  const label = useLabel();
+  const hint = label("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize");
 
   return (
     <Tooltip tooltip={hint}>

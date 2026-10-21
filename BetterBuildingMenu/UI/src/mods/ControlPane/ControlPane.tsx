@@ -31,6 +31,7 @@ import { countActiveMetricRanges, metricRangesFromState } from "domain/buildingC
 import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setAssetMenuView } from "domain/assetMenuViewStore";
+import { useLabel } from "mods/useLabel";
 import { useViewShape } from "mods/viewShape";
 import { memo, useState } from "react";
 import {
@@ -55,6 +56,7 @@ import styles from "./controlPane.module.scss";
  */
 export const ControlPane = memo(function ControlPane() {
   const { translate } = useLocalization();
+  const label = useLabel();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   // Only for which sort fields can act on these results; see BuildingCatalogPage.
@@ -86,11 +88,7 @@ export const ControlPane = memo(function ControlPane() {
     { column: sortColumn, descending },
     reorderableSortColumns
   );
-  const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
-
-  const groupByLabel =
-    translate(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy))
-    ?? groupDimensionLabel(groupBy);
+  const groupByLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy));
 
   const fire = send;
 
@@ -240,10 +238,7 @@ export const ControlPane = memo(function ControlPane() {
                 {groupPickerOpen && (
                   <div className={styles.pickerOptions}>
                     {groupDimensionsFor(offeredDimensions).map((dimension) => {
-                      const optionLabel = translate(
-                        `Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`,
-                        dimension.label
-                      ) ?? dimension.label;
+                      const optionLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`, dimension.label);
 
                       return (
                         <Button

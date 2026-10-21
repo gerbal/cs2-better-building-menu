@@ -12,6 +12,7 @@ import {
   vanillaMenuNameKeys,
 } from "domain/vanillaServiceLabels";
 import { clearAssetMenuScopeCommand, setAssetMenuCategoryCommand, setAssetMenuCommand } from "domain/commands";
+import { useLabel } from "mods/useLabel";
 import styles from "./chipRow.module.scss";
 import {
   AssetMenu$,
@@ -39,6 +40,7 @@ type PickerId = "menuCategory" | "menu" | null;
 
 export const ChipRow = () => {
   const { translate } = useLocalization();
+  const label = useLabel();
   const [picker, setPicker] = useState<PickerId>(null);
 
   const menu = useValue(AssetMenu$) ?? "";
@@ -56,8 +58,6 @@ export const ChipRow = () => {
     menuCategory,
     menuCategoryCount: menuCategories.length,
   });
-
-  const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
 
   // The game's own word for a menu or a category. Two key families, not one —
   // see vanillaServiceLabels.ts.

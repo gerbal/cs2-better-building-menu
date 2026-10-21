@@ -1,5 +1,4 @@
 import { Tooltip } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useRef, useState } from "react";
 
@@ -13,6 +12,7 @@ import {
 } from "domain/assetMenuLayout";
 import { commitAssetMenuCatalogWidthCommand, setAssetMenuCatalogWidthCommand } from "domain/commands";
 import { send } from "mods/bindings";
+import { useLabel } from "mods/useLabel";
 import { useRafDrag } from "mods/useRafDrag";
 import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
 
@@ -143,9 +143,8 @@ export function useAssetMenuWidthDrag(
 
 /** The strip's hint, the one place the double press is told. */
 function useWidthHint(): string {
-  const { translate } = useLocalization();
-  const fallback = "Drag to resize, double-click to fill the space";
-  return translate("Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]", fallback) ?? fallback;
+  const label = useLabel();
+  return label("Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]", "Drag to resize, double-click to fill the space");
 }
 
 export interface AssetMenuWidthHandleProps {
