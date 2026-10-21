@@ -19,20 +19,7 @@ namespace BetterBuildingMenu.Tests
 	/// </remarks>
 	public class MenuCategoryExpansionTests
 	{
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "Zones",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
+		private static readonly BuildingCatalogEntry Base = TestEntries.Make(0, "Base", category: "Zones");
 
 		private static BuildingCatalogEntry Zone(int id, string category, ZoneTypeFilter density) =>
 			Base with

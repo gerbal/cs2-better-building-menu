@@ -1,6 +1,5 @@
 using System.Linq;
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using Xunit;
 
@@ -17,10 +16,7 @@ namespace BetterBuildingMenu.Tests
 	public sealed class DefaultSortOrderTests
 	{
 		private static BuildingCatalogEntry Asset(int id, string name, int uiOrder) =>
-			new BuildingCatalogEntry(
-				Id: id, PrefabName: name, Name: name, Category: "Networks", SubCategory: "Networks_Roads",
-				Thumbnail: "", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "")
+			TestEntries.Make(id, name, category: "Networks", subCategory: "Networks_Roads", lotWidth: 2, lotDepth: 2)
 				with { UiMenu = "Roads", UiCategory = "RoadsSmallRoads", UIOrder = uiOrder };
 
 		[Fact]

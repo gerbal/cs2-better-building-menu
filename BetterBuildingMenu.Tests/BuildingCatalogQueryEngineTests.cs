@@ -2,7 +2,6 @@ using Colossal.UI.Binding;
 
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 
 using Game.Prefabs;
@@ -961,23 +960,8 @@ public sealed class BuildingCatalogQueryEngineTests
         int lotDepth,
         int buildingLevel,
         bool hasParking,
-        string pdxModsId)
-    {
-        return new BuildingCatalogEntry(
-            Id: id,
-            PrefabName: prefabName,
-            Name: name,
-            Category: category,
-            SubCategory: subCategory,
-            Thumbnail: string.Empty,
-            LotWidth: lotWidth,
-            LotDepth: lotDepth,
-            BuildingLevel: buildingLevel,
-            ZoneType: ZoneTypeFilter.Any,
-            HasParking: hasParking,
-            IsVanilla: true,
-            PdxModsId: pdxModsId);
-    }
+        string pdxModsId) =>
+        TestEntries.Make(id, name, prefabName, category, subCategory, lotWidth, lotDepth, buildingLevel, hasParking: hasParking, pdxModsId: pdxModsId);
 
     private sealed class RecordingJsonWriter : IJsonWriter
     {

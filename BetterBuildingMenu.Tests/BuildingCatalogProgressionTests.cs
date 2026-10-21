@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using Xunit;
 
@@ -13,22 +12,8 @@ namespace BetterBuildingMenu.Tests
 	public sealed class BuildingCatalogProgressionTests
 	{
 		private static BuildingCatalogEntry Entry(int id, string name, int milestone, bool locked = false) =>
-			new(
-				Id: id,
-				PrefabName: name,
-				Name: name,
-				Category: "Buildings",
-				SubCategory: "Buildings_Residential",
-				Thumbnail: "",
-				LotWidth: 4,
-				LotDepth: 4,
-				BuildingLevel: 1,
-				ZoneType: ZoneTypeFilter.Any,
-				HasParking: false,
-				IsVanilla: true,
-				PdxModsId: "",
-				IsLocked: locked,
-				UnlockMilestone: milestone);
+			TestEntries.Make(id, name, category: "Buildings", subCategory: "Buildings_Residential", lotWidth: 4, lotDepth: 4)
+				with { IsLocked = locked, UnlockMilestone = milestone };
 
 		private static readonly List<BuildingCatalogEntry> Source = new()
 		{

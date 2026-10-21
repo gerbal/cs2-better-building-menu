@@ -1,5 +1,4 @@
 using System.Linq;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Services;
 using Xunit;
@@ -17,23 +16,8 @@ namespace BetterBuildingMenu.Tests
 			string? menu,
 			string? uiCategory,
 			int priority = 0) =>
-			new(
-				Id: name.GetHashCode(),
-				Name: name,
-				PrefabName: name,
-				Category: "Networks",
-				SubCategory: subCategory,
-				Thumbnail: "",
-				LotWidth: 0,
-				LotDepth: 0,
-				BuildingLevel: 0,
-				ZoneType: ZoneTypeFilter.Any,
-				HasParking: false,
-				IsVanilla: true,
-				PdxModsId: "",
-				UiMenu: menu,
-				UiCategory: uiCategory,
-				UiCategoryPriority: priority);
+			TestEntries.Make(name.GetHashCode(), name, category: "Networks", subCategory: subCategory, lotWidth: 0, lotDepth: 0, buildingLevel: 0)
+				with { UiMenu = menu, UiCategory = uiCategory, UiCategoryPriority = priority };
 
 		private static BuildingCatalogEntry Road(string name, string uiCategory, int priority) =>
 			Network(name, "Networks_Roads", NetworkMenuExtension.RoadsMenu, uiCategory, priority);

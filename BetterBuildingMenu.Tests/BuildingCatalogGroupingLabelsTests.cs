@@ -12,11 +12,7 @@ namespace BetterBuildingMenu.Tests
 	public sealed class BuildingCatalogGroupingLabelsTests
 	{
 		private static BuildingCatalogEntry Entry() =>
-			new BuildingCatalogEntry(
-				Id: 1, PrefabName: "Thing", Name: "Thing", Category: "ServiceBuildings", SubCategory: "ServiceBuildings_Health",
-				Thumbnail: "", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "")
-				with
+			TestEntries.Make(1, "Thing", subCategory: "ServiceBuildings_Health", lotWidth: 4, lotDepth: 4) with
 			{
 				CategoryLabel = "Service Buildings",
 				SubCategoryLabel = "Health & Deathcare",

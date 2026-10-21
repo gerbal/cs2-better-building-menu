@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 
 using Xunit;
 
@@ -19,20 +18,8 @@ namespace BetterBuildingMenu.Tests
 	/// </remarks>
 	public sealed class BuildingExtensionMenuTests
 	{
-		private static BuildingCatalogEntry Entry(string prefabName) => new(
-			Id: prefabName.Length,
-			PrefabName: prefabName,
-			Name: $"The {prefabName}",
-			Category: "ServiceBuildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
+		private static BuildingCatalogEntry Entry(string prefabName) =>
+			TestEntries.Make(prefabName.Length, $"The {prefabName}", prefabName);
 
 		private static Func<string, BuildingCatalogEntry?> Catalog(params string[] known)
 		{

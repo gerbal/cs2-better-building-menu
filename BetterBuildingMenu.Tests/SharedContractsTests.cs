@@ -26,7 +26,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheUiCopyIsGeneratedFromTheCSharp()
 		{
-			var path = Path.Combine(RepoRoot(), GeneratedPath);
+			var path = Path.Combine(TestPaths.RepoRoot(), GeneratedPath);
 			var expected = RenderTypeScript();
 
 			if (Environment.GetEnvironmentVariable("CS2_WRITE_CONTRACTS") == "1")
@@ -124,19 +124,5 @@ namespace BetterBuildingMenu.Tests
 
 		private static string Quote(string value) =>
 			"\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
-
-		private static string RepoRoot()
-		{
-			var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-
-			while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "BetterBuildingMenu")))
-			{
-				dir = dir.Parent;
-			}
-
-			Assert.NotNull(dir);
-
-			return dir!.FullName;
-		}
 	}
 }

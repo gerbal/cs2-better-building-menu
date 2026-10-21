@@ -19,20 +19,7 @@ namespace BetterBuildingMenu.Tests
 	/// </remarks>
 	public class ContentFacetTests
 	{
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "ServiceBuildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: Domain.Enums.ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
+		private static readonly BuildingCatalogEntry Base = TestEntries.Make(0, "Base");
 
 		private static BuildingCatalogEntry Entry(int id, params int[] packs) =>
 			Base with { Id = id, PrefabName = $"Entry{id}", AssetPackIndices = packs };

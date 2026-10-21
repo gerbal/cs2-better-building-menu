@@ -15,22 +15,8 @@ namespace BetterBuildingMenu.Tests
 	public class MetricBoundsTests
 	{
 		private static BuildingCatalogEntry Entry(int id, double? cost, double? workers, int lotWidth) =>
-			new BuildingCatalogEntry(
-				Id: id,
-				PrefabName: $"P{id}",
-				Name: $"P{id}",
-				Category: "ServiceBuildings",
-				SubCategory: "Police",
-				Thumbnail: "",
-				LotWidth: lotWidth,
-				LotDepth: 4,
-				BuildingLevel: 1,
-				ZoneType: 0,
-				HasParking: false,
-				IsVanilla: true,
-				PdxModsId: "",
-				ConstructionCost: cost,
-				Workers: workers);
+			TestEntries.Make(id, $"P{id}", subCategory: "Police", lotWidth: lotWidth, lotDepth: 4)
+				with { ConstructionCost = cost, Workers = workers };
 
 		private static readonly BuildingCatalogEntry[] Source =
 		{

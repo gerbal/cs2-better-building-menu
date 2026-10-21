@@ -21,25 +21,14 @@ namespace BetterBuildingMenu.Tests
 			string theme = "European",
 			string provenance = "BaseGame",
 			string dlcId = "") =>
-			new BuildingCatalogEntry(
-				Id: id,
-				PrefabName: name,
-				Name: name,
-				Category: category,
-				SubCategory: subCategory,
-				Thumbnail: "",
-				LotWidth: width,
-				LotDepth: depth,
-				BuildingLevel: 1,
-				ZoneType: 0,
-				HasParking: false,
-				IsVanilla: true,
-				PdxModsId: "",
-				BuildingType: buildingType,
-				Provenance: provenance,
-				DlcId: dlcId,
-				Theme: theme,
-				ConstructionCost: cost);
+			TestEntries.Make(id, name, category: category, subCategory: subCategory, lotWidth: width, lotDepth: depth) with
+			{
+				BuildingType = buildingType,
+				Provenance = provenance,
+				DlcId = dlcId,
+				Theme = theme,
+				ConstructionCost = cost,
+			};
 
 		[Fact]
 		public void GroupsAreContiguousAcrossTheWholeResult()

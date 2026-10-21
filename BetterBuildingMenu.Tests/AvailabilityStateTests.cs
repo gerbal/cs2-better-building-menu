@@ -11,20 +11,7 @@ namespace BetterBuildingMenu.Tests
 	/// </summary>
 	public class AvailabilityStateTests
 	{
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "ServiceBuildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: Domain.Enums.ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
+		private static readonly BuildingCatalogEntry Base = TestEntries.Make(0, "Base");
 
 		[Fact]
 		public void AlreadyBuiltSupersedesUnlocked()

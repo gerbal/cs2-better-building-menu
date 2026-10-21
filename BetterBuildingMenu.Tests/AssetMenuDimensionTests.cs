@@ -25,7 +25,7 @@ namespace BetterBuildingMenu.Tests
 			// _assetMenuGeometry.scss: its stylesheet draws them, and assetMenuLayout.ts
 			// reads their sum to budget the table's name width.
 			var source = File.ReadAllText(Path.Combine(
-				RepoRoot(), "BetterBuildingMenu", "UI", "src", "_assetMenuGeometry.scss"));
+				TestPaths.RepoRoot(), "BetterBuildingMenu", "UI", "src", "_assetMenuGeometry.scss"));
 
 			var width = Regex.Match(source, @"^\$pane-width:\s*(\d+)rem;", RegexOptions.Multiline);
 			var gap = Regex.Match(source, @"^\$pane-gap:\s*(\d+)rem;", RegexOptions.Multiline);
@@ -35,20 +35,6 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(
 				AssetMenuWidth.ControlPane,
 				float.Parse(width.Groups[1].Value) + float.Parse(gap.Groups[1].Value));
-		}
-
-		private static string RepoRoot()
-		{
-			var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-
-			while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "BetterBuildingMenu")))
-			{
-				dir = dir.Parent;
-			}
-
-			Assert.NotNull(dir);
-
-			return dir!.FullName;
 		}
 	}
 }

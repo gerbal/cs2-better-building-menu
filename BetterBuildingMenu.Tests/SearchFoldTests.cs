@@ -3,7 +3,6 @@ using System.Linq;
 using System.Text;
 
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
@@ -80,10 +79,7 @@ namespace BetterBuildingMenu.Tests
 	public sealed class SearchTermsTests
 	{
 		private static BuildingCatalogEntry E(string name, string prefab = "", string pdx = "") =>
-			new BuildingCatalogEntry(
-				Id: 1, PrefabName: prefab, Name: name, Category: "", SubCategory: "", Thumbnail: "",
-				LotWidth: 1, LotDepth: 1, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: pdx);
+			TestEntries.Make(name: name, prefabName: prefab, category: "", subCategory: "", pdxModsId: pdx);
 
 		[Fact]
 		public void SplitsAtAnyRunOfWhitespace()

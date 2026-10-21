@@ -92,9 +92,7 @@ public sealed class BuildingCatalogMetricRangeTests
     [Fact]
     public void AppliedRange_ComposesWithCatalogFacetsAndMissingValues()
     {
-        BuildingCatalogEntry school = new BuildingCatalogEntry(
-            1, "School", "School", "ServiceBuildings", "Education", "", 4, 4, 2,
-            BetterBuildingMenu.Domain.Enums.ZoneTypeFilter.Any, false, true, "") with
+        BuildingCatalogEntry school = TestEntries.Make(1, "School", subCategory: "Education", lotWidth: 4, lotDepth: 4, buildingLevel: 2) with
         {
             Capacity = 500,
             BuildingType = "School",

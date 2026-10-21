@@ -141,10 +141,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		private static BuildingCatalogEntry Row(int id, int? level) =>
-			new BuildingCatalogEntry(
-				Id: id, PrefabName: "School" + id, Name: "School " + id, Category: "ServiceBuildings", SubCategory: "ServiceBuildings_EducationResearch",
-				Thumbnail: "", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "")
+			TestEntries.Make(id, "School " + id, "School" + id, subCategory: "ServiceBuildings_EducationResearch", lotWidth: 4, lotDepth: 4)
 				with { UiMenu = "Education & Research", UiCategory = "Education", EducationLevel = level };
 
 		private static readonly BuildingCatalogEntry[] Rows = { Row(1, 1), Row(2, 2), Row(3, 3) };
