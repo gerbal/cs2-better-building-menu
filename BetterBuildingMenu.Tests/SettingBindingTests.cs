@@ -1,6 +1,9 @@
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Utilities;
 
+using System.IO;
+using System.Text.RegularExpressions;
+
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
@@ -217,6 +220,30 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(AssetMenuViewMode.None, published.Value);
 			Assert.Equal(AssetMenuViewMode.None, stored.Value);
 			Assert.Equal(1, stored.Saves);
+		}
+
+		[Fact]
+		public void TheUiSystemPushesEverySettingBindingWhenTheSettingsApply()
+		{
+			// Settings applied from anywhere but the menu (the options screen, SetDefaults) redraw
+			// the asset menu only through these pushes.
+			var source = File.ReadAllText(Path.Combine(TestPaths.RepoRoot(), "BetterBuildingMenu", "Systems", "BuildingMenuUISystem.cs"));
+			var fields = Regex.Matches(source, @"SettingBinding<\w+>\s+(?<field>_\w+)")
+				.Select(match => match.Groups["field"].Value)
+				.ToArray();
+			var start = source.IndexOf("private void OnSettingsApplied(", StringComparison.Ordinal);
+			Assert.True(start >= 0, "OnSettingsApplied is not in BuildingMenuUISystem.cs");
+			var body = source.Substring(start, source.IndexOf("\n\t\t}", start, StringComparison.Ordinal) - start);
+
+			foreach (var name in new[] { "_ReplaceVanillaBuildMenu", "_AssetMenuTileSize", "_AssetMenuHeight", "_AssetMenuCatalogWidth", "_ControlPaneShown", "_AssetMenuViewMode" })
+			{
+				Assert.Contains(name, fields);
+			}
+
+			foreach (var field in fields)
+			{
+				Assert.Contains(field + ".Push();", body);
+			}
 		}
 	}
 }

@@ -52,9 +52,9 @@ namespace BetterBuildingMenu.Systems
 		private bool _assetMenuOpen;
 		// Whether the index moved since the catalog was last published. See OnUpdate.
 		private readonly IndexWatch _indexWatch = new();
-		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
+		private SettingBinding<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
-		private ValueBindingHelper<int> _AssetMenuTileSize = null!;
+		private SettingBinding<int> _AssetMenuTileSize = null!;
 		// Set when a toolbar preset is applied, so the game's echo of the armed
 		// tool's menu can be told apart from a real click. See MenuEchoGuard.
 		private int? _appliedMenuFrame;
@@ -68,10 +68,10 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<bool> _OwnsCurrentMenu = null!;
 		private ValueBindingHelper<int> _ActivePrefabId = null!;
 		private ValueBindingHelper<float> _AssetMenuWidth = null!;
-		private ValueBindingHelper<float> _AssetMenuHeight = null!;
-		private ValueBindingHelper<float> _AssetMenuCatalogWidth = null!;
-		private ValueBindingHelper<bool> _ControlPaneShown = null!;
-		private ValueBindingHelper<string> _AssetMenuViewMode = null!;
+		private SettingBinding<float> _AssetMenuHeight = null!;
+		private SettingBinding<float> _AssetMenuCatalogWidth = null!;
+		private SettingBinding<bool> _ControlPaneShown = null!;
+		private SettingBinding<string> _AssetMenuViewMode = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -161,34 +161,56 @@ namespace BetterBuildingMenu.Systems
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
 			// Seeded here and re-pushed by OnSettingsApplied: the UI's menu watcher and
 			// the upgrades panel read it, and C# reads the setting live.
-			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
+			_ReplaceVanillaBuildMenu = new SettingBinding<bool>(
+				seed => CreateBinding("ReplaceVanillaBuildMenu", seed),
+				() => Mod.Settings.ReplaceVanillaBuildMenu,
+				replace => Mod.Settings.ReplaceVanillaBuildMenu = replace,
+				SaveSettings);
 			_OwnsCurrentMenu = CreateBinding("OwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
 			_BuildingExtensionMenu = CreateBinding("BuildingExtensionMenu", BuildingExtensionMenu.Empty);
 			// Seeded here and re-pushed by OnSettingsApplied, so the options screen's Tile
 			// size slider takes effect without a reload.
-			_AssetMenuTileSize = CreateBinding("AssetMenuTileSize", Mod.Settings.AssetMenuTileSize);
+			_AssetMenuTileSize = new SettingBinding<int>(
+				seed => CreateBinding("AssetMenuTileSize", seed),
+				() => Mod.Settings.AssetMenuTileSize,
+				size => Mod.Settings.AssetMenuTileSize = size,
+				SaveSettings);
 			CreateTrigger("SearchEverything", SearchEverything);
 			_AssetMenuWidth = CreateBinding("AssetMenuWidth", 0f);
 			// Seeded from the setting rather than 0: the asset menu draws from this
 			// on its first frame, and a zero height would flash a collapsed
 			// catalog before the first drag published anything.
-			_AssetMenuHeight = CreateBinding(
-				"AssetMenuHeight",
-				AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight));
+			_AssetMenuHeight = new SettingBinding<float>(
+				seed => CreateBinding("AssetMenuHeight", seed),
+				() => Mod.Settings.AssetMenuHeight,
+				height => Mod.Settings.AssetMenuHeight = height,
+				SaveSettings,
+				AssetMenuHeight.Clamp,
+				SameSize);
 			// Seeded from the settings like the height, so the first frame draws the
 			// player's width and pane rather than flashing the defaults.
-			_AssetMenuCatalogWidth = CreateBinding(
-				"AssetMenuCatalogWidth",
-				AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth));
-			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
+			_AssetMenuCatalogWidth = new SettingBinding<float>(
+				seed => CreateBinding("AssetMenuCatalogWidth", seed),
+				() => Mod.Settings.AssetMenuCatalogWidth,
+				width => Mod.Settings.AssetMenuCatalogWidth = width,
+				SaveSettings,
+				AssetMenuCatalogWidth.Sanitize,
+				SameSize);
+			_ControlPaneShown = new SettingBinding<bool>(
+				seed => CreateBinding("ControlPaneShown", seed),
+				() => Mod.Settings.ControlPaneShown,
+				shown => Mod.Settings.ControlPaneShown = shown,
+				SaveSettings);
 			// Read/write like the sort, so the UI can draw the stored view until the player
 			// picks one, and seeded here like the pane.
-			_AssetMenuViewMode = CreateBinding(
-				"AssetMenuViewMode",
-				"SetAssetMenuViewMode",
-				AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode),
-				SetAssetMenuViewMode);
+			_AssetMenuViewMode = new SettingBinding<string>(
+				seed => CreateBinding("AssetMenuViewMode", "SetAssetMenuViewMode", seed, SetAssetMenuViewMode),
+				() => Mod.Settings.AssetMenuViewMode,
+				view => Mod.Settings.AssetMenuViewMode = view,
+				SaveSettings,
+				AssetMenuViewMode.Sanitize,
+				(stored, view) => !AssetMenuViewMode.ShouldSave(stored, view));
 			// Only now, with every binding OnSettingsApplied re-pushes created.
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
@@ -309,14 +331,14 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{
-			_AssetMenuTileSize.Value = Mod.Settings.AssetMenuTileSize;
-			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
+			_AssetMenuTileSize.Push();
+			_ReplaceVanillaBuildMenu.Push();
 			// The sizes too, so settings applied from anywhere but a drag (the Options
 			// screen, a tool, SetDefaults) redraw the asset menu at once.
-			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
-			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth);
-			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
-			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
+			_AssetMenuHeight.Push();
+			_AssetMenuCatalogWidth.Push();
+			_ControlPaneShown.Push();
+			_AssetMenuViewMode.Push();
 
 			// Switched off with the asset menu up: the menu goes back to its vanilla grid now
 			// rather than at the next click.
