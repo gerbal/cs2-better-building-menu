@@ -488,6 +488,11 @@ export function formatNetworkWidth(
 }
 
 
+/** A unit's reading of a capacity, or the plain figure when the unit has nothing to say. */
+function orPlain(reading: string, plain: string): string {
+  return reading === "" ? plain : reading;
+}
+
 /** Capacity with its unit, e.g. "1 200 students". */
 export function formatCapacity(
   value: number | null | undefined,
@@ -505,25 +510,21 @@ export function formatCapacity(
   // like cargo, so it goes through the weight rule rather than being printed
   // raw under a "t" heading.
   if (typeof role === "string" && WEIGHT_ROLES.has(role) && typeof value === "number") {
-    const weighed = formatWeight(value, separators);
-    return weighed === "" ? formatted : weighed;
+    return orPlain(formatWeight(value, separators), formatted);
   }
 
   // A plant's output is power and a battery's storage is energy, both carried
   // as the game's hundreds-of-watts figure, which is not megawatts.
   if (role === "PowerPlant" && typeof value === "number") {
-    const powered = formatPower(value, separators);
-    return powered === "" ? formatted : powered;
+    return orPlain(formatPower(value, separators), formatted);
   }
   // A telecom facility's capacity is a data rate: gigabits a second, as the
   // game binds it, and a bare count says nothing about what it measures.
   if (role === "TelecomFacility" && typeof value === "number") {
-    const rate = formatDataRate(value, separators);
-    return rate === "" ? formatted : rate;
+    return orPlain(formatDataRate(value, separators), formatted);
   }
   if (role === "Battery" && typeof value === "number") {
-    const stored = formatEnergy(value, separators);
-    return stored === "" ? formatted : stored;
+    return orPlain(formatEnergy(value, separators), formatted);
   }
 
   const unit = getCapacityUnitLabel(category, subCategory, role);
@@ -531,8 +532,7 @@ export function formatCapacity(
   // player's setting, so the figure goes through the game's rule even though
   // the column header above still says m³.
   if (unit === "m³" && typeof value === "number") {
-    const volume = formatVolumePerMonth(value, separators);
-    return volume === "" ? formatted : volume;
+    return orPlain(formatVolumePerMonth(value, separators), formatted);
   }
   return unit === "" ? formatted : `${formatted} ${unit}`;
 }
