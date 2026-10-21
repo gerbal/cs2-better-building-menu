@@ -1,3 +1,5 @@
+import { isScopedToMenu } from "./assetMenuScopeChips";
+
 /**
  * Vanilla's second tier: the category tabs inside one build menu — Road, Train,
  * Subway and the rest under Transportation.
@@ -16,21 +18,13 @@ export const ALL_CATEGORIES_ID = "";
  * Whether the strip is worth drawing at all. Vanilla's rule and vanilla's
  * reason: a strip offering one choice is not a choice. Ours carries an extra
  * "All" tab, so two real categories still make three and are worth showing.
+ * Unscoped, it would carry every category of every menu, so it needs a menu.
  */
 export function shouldShowCategoryStrip(
   categories: readonly VanillaMenuCategory[] | null | undefined,
   menu: string | null | undefined
 ): boolean {
-  return isAssetMenuScoped(menu) && (categories?.length ?? 0) >= 2;
-}
-
-/**
- * Whether the asset menu stands in for one of the game's menus. Unscoped — Search
- * everything — the strip would carry every category of every menu across four
- * wrapped rows, and the group headings already say the same thing.
- */
-export function isAssetMenuScoped(menu: string | null | undefined): boolean {
-  return (menu ?? "").trim() !== "";
+  return isScopedToMenu(menu) && (categories?.length ?? 0) >= 2;
 }
 
 /**

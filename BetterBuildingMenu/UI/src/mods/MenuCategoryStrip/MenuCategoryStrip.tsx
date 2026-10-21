@@ -8,11 +8,11 @@ import {
   isCategorySelected,
   visibleCategories,
   shouldShowCategoryStrip,
-  isAssetMenuScoped,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
 import { expandedTabsFor, branchTabTooltip, schoolTierTabs, romanNumeral } from "domain/menuProgression";
-import { isEducationMenu, isSchoolCategory } from "domain/buildingGroups";
+import { isEducationMenu } from "domain/buildingGroups";
+import { isScopedToMenu } from "domain/assetMenuScopeChips";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
@@ -58,7 +58,7 @@ export const MenuCategoryStrip = () => {
   const showCategories = shouldShowCategoryStrip(categories, menu);
   // Every segment obeys the scope, not only the categories: the all-menus scope
   // has branches too, and the fallback below would otherwise draw them.
-  const scoped = isAssetMenuScoped(menu);
+  const scoped = isScopedToMenu(menu);
   // Education navigates by LEVEL, not by the milestone a school unlocked at:
   // with several region packs the level is what has dozens behind it, and the
   // milestone they share cuts nothing.
@@ -151,7 +151,7 @@ export const MenuCategoryStrip = () => {
           so the menu stays one row of choices. They partition that category
           exactly, so nothing is lost by drawing them instead of it. */}
       {visibleCategories(categories, counts).flatMap((category) =>
-        showSchoolTiers && isSchoolCategory(category.id)
+        showSchoolTiers && isEducationMenu(category.id)
           ? schoolTiers.map((tier) => (
               <ToolButton
                 key={`tier-${tier.level}`}
