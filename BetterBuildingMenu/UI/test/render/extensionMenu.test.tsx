@@ -119,7 +119,8 @@ describe("the extension picker", () => {
     const html = render();
 
     assert.match(html, /class="[^"]*resizeHandle/);
-    assert.match(html, /title="Drag to resize"/);
+    assert.match(html, /data-tooltip="true">Drag to resize</);
+    assert.doesNotMatch(html, /title="Drag to resize"/);
     assert.match(html, /class="[^"]*resizeGrip/);
   });
 

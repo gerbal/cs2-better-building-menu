@@ -1,4 +1,5 @@
 import { useValue } from "mods/panelValue";
+import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useRef, useState } from "react";
@@ -124,17 +125,19 @@ export interface AssetMenuResizeHandleProps {
   onBeginResize: (event: any) => void;
 }
 
-/** The strip on a panel's top edge that starts the drag. First child of the panel, never an overlay. */
+/**
+ * The strip on a panel's top edge that starts the drag. First child of the panel, never an overlay.
+ * Its hint is the game's Tooltip: the game draws no title attribute.
+ */
 export const AssetMenuResizeHandle = ({ active, onBeginResize }: AssetMenuResizeHandleProps) => {
   const { translate } = useLocalization();
+  const hint = translate("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize";
 
   return (
-    <div
-      className={classNames(styles.resizeHandle, active && styles.resizeHandleActive)}
-      onMouseDown={onBeginResize}
-      title={translate("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
-    >
-      <div className={classNames(styles.resizeGrip, active && styles.resizeGripActive)} />
-    </div>
+    <Tooltip tooltip={hint}>
+      <div className={classNames(styles.resizeHandle, active && styles.resizeHandleActive)} onMouseDown={onBeginResize}>
+        <div className={classNames(styles.resizeGrip, active && styles.resizeGripActive)} />
+      </div>
+    </Tooltip>
   );
 };
