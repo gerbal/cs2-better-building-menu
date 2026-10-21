@@ -85,15 +85,32 @@ export interface EscapeContext {
   assetMenuOpen: boolean;
   /** Upstream Find It's panel is up; Escape is theirs then. */
   findItPanelShown?: boolean;
+  /** The game's default tool is active: nothing is armed. */
+  defaultTool: boolean;
+  /** One of the game's panels is open (economy, progression, photo mode...). */
+  gamePanelOpen: boolean;
+  /** Something in the world is selected, with its info panel. */
+  hasSelection: boolean;
 }
 
 /**
- * Whether an Escape should clear the toolbar selection, taking the asset menu with it.
- * One condition, deliberately: see docs/design-notes.md, "Escape closes the
- * asset menu unconditionally".
+ * How an Escape takes the asset menu down, if at all:
+ * - `claim-back`: claim the game's Back action, and close the menu on it. Nothing else claims
+ *   Back on the default tool, and an unclaimed Back opens the pause menu on the same press.
+ * - `clear-on-keydown`: the game claims Back itself (dropping the tool, closing its panel or the
+ *   selection), and the keydown listener closes the menu on that press.
+ * - `none`: no menu of ours is open, or Find It's panel is up and the press is theirs.
+ *
+ * See docs/design-notes.md, "Escape closes the asset menu unconditionally".
  */
-export function shouldClearOnEscape({ assetMenuOpen, findItPanelShown = false }: EscapeContext): boolean {
+export type EscapeRoute = "claim-back" | "clear-on-keydown" | "none";
+
+export function escapeRoute({ assetMenuOpen, findItPanelShown = false, defaultTool, gamePanelOpen, hasSelection }: EscapeContext): EscapeRoute {
   // Escape belongs to Find It's panel while it is up; clearing the menu
   // selection underneath it would close our menu behind their back.
-  return assetMenuOpen && !findItPanelShown;
+  if (!assetMenuOpen || findItPanelShown) {
+    return "none";
+  }
+
+  return defaultTool && !gamePanelOpen && !hasSelection ? "claim-back" : "clear-on-keydown";
 }

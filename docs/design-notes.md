@@ -4,22 +4,39 @@ Rationale that is too long for a code comment. The code carries one-line pointer
 
 ## Escape closes the asset menu unconditionally
 
-`shouldClearOnEscape` in `domain/vanillaMenuWatch.ts` asks one question: is the
-asset menu open (and is Find It's own panel not up)? It clears the *game's* toolbar
-selection rather than hiding our asset menu, reusing the path the toolbar button
-takes — `VanillaMenuWatcher`'s close branch picks up the resulting null, so the
-asset menu has one way to close rather than two. `ClearAssetSelection` nulls menu,
-category and asset together, so no vanilla grid appears in the gap.
+Every Escape with the asset menu open (and Find It's own panel not up) closes it,
+by clearing the *game's* toolbar selection rather than hiding our asset menu, reusing
+the path the toolbar button takes — `VanillaMenuWatcher`'s close branch picks up the
+resulting null, so the asset menu has one way to close rather than two.
+`ClearAssetSelection` nulls menu, category and asset together, so no vanilla grid
+appears in the gap.
 
-The absence of a second condition is the point. Vanilla keeps its menu open when
-a tool is cancelled, and matching that would mean holding on the press that
-disarms the tool and closing on the next. Telling those two presses apart from a
-DOM listener is not possible: both available signals — elapsed time since the
-tool disarmed, and what the tool last reported as — depend on the game's disarm
-notification, which races the keypress. Closing on every Escape is
-deterministic, and the divergence is accepted: cancelling a tool with Escape
-also puts the menu away. The pause menu still works, because the game opens it
-when Escape finds nothing to close, and the asset menu is gone after the first press.
+Closing on every press is the point. Vanilla keeps its menu open when a tool is
+cancelled, and matching that would mean holding on the press that disarms the tool
+and closing on the next. Telling those two presses apart is not possible: both
+available signals — elapsed time since the tool disarmed, and what the tool last
+reported as — depend on the game's disarm notification, which races the keypress.
+Closing on every Escape is deterministic, and the divergence is accepted: cancelling
+a tool with Escape also puts the menu away.
+
+What a press must not do is also open the pause menu. Escape is the game's Back
+action, and the Pause Menu action when nothing claimed Back. Vanilla's asset menu
+claims Back while it is open; ours replaces it, and with nothing claiming Back on the
+default tool, one Escape closed the menu and opened the pause menu (measured
+2026-10-21). So `escapeRoute` in `domain/vanillaMenuWatch.ts` picks one of two ways
+to close:
+
+- On the default tool, with no game panel and nothing selected, the watcher claims
+  Back with an `InputActionConsumer` and closes the menu on it. The pause menu waits
+  for the next press, as in vanilla.
+- Otherwise the game claims Back itself (dropping the tool, closing its panel or the
+  selection), and a capture-phase keydown listener closes the menu on the same press.
+
+It reads the tool as it stands when the key goes down, before this press is acted
+on, so no disarm notification is awaited. If the game ever handles the press first,
+the tool already reads as default, the menu stays open with the tool dropped, and
+the next Escape closes it: vanilla's own order. Find It 2.0 claims Back for its panel
+on the same conditions (5cedb8a).
 
 ## Locked artwork for vector thumbnails
 
