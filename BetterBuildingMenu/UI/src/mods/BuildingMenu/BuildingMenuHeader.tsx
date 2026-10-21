@@ -6,7 +6,7 @@ import classNames from "classnames";
 import { memo, useRef } from "react";
 
 import find from "images/find.svg";
-import { searchChangedCommand } from "domain/commands";
+import { searchChangedCommand, setControlPaneShownCommand } from "domain/commands";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 
@@ -110,7 +110,7 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
         <ControlPaneToggle
           shown={paneShown}
           filterCount={filterCount}
-          onToggle={() => send({ method: "SetControlPaneShown", args: [!paneShown] })}
+          onToggle={() => send(setControlPaneShownCommand(!paneShown))}
         />
         {/* Vanilla closes its menus from an X here, so ours does too. Masked
             and tinted like .searchIcon because Close.svg carries no fill of its

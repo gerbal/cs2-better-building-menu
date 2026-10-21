@@ -14,7 +14,14 @@ import { ChipRow } from "mods/ChipRow/ChipRow";
 import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
-import { clearAssetMenuFiltersCommand, toggleAssetMenuFacetCommand, type Command } from "domain/commands";
+import {
+  clearAssetMenuFiltersCommand,
+  resetAssetMenuCommand,
+  setAssetMenuViewModeCommand,
+  setBuildingCatalogGroupByCommand,
+  toggleAssetMenuFacetCommand,
+  type Command,
+} from "domain/commands";
 import {
   ASSET_PACK_TRIGGER_GROUP,
   ASSET_PACK_TRIGGER_NAME,
@@ -84,7 +91,7 @@ export const ControlPane = memo(function ControlPane() {
   // would answer C#'s own echo.
   const pickViewMode = (next: CatalogViewMode): void => {
     setAssetMenuView({ viewMode: next });
-    send({ method: "SetAssetMenuViewMode", args: [next] });
+    send(setAssetMenuViewModeCommand(next));
   };
   // Resolved on the C# side: the player's choice, or the menu's default.
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
@@ -261,7 +268,7 @@ export const ControlPane = memo(function ControlPane() {
                           )}
                           variant="icon"
                           onSelect={() => {
-                            send({ method: "SetBuildingCatalogGroupBy", args: [dimension.id] });
+                            send(setBuildingCatalogGroupByCommand(dimension.id));
                             setGroupPickerOpen(false);
                           }}
                           aria-label={optionLabel}
@@ -355,9 +362,9 @@ export const ControlPane = memo(function ControlPane() {
               // cannot drift from it, and "" is "no pick" in the settings, so the next
               // session opens there too.
               setAssetMenuView({ viewMode: DEFAULT_VIEW_MODE });
-              send({ method: "SetAssetMenuViewMode", args: [""] });
+              send(setAssetMenuViewModeCommand(""));
               // The grouping is the query's; ResetAssetMenu clears it.
-              send({ method: "ResetAssetMenu", args: [] });
+              send(resetAssetMenuCommand());
             }}
           >
             {label("Tooltip.LABEL[BetterBuildingMenu.ResetMenu]", "Reset menu")}

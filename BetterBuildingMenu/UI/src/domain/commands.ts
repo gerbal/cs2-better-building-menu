@@ -4,7 +4,7 @@
  * matches its registration fails the typecheck.
  */
 import type { MetricRangeId } from "./buildingCatalogRanges";
-import type { SortColumn, TriggerArgs } from "./sharedContracts.generated";
+import type { GroupDimensionId, SortColumn, TriggerArgs } from "./sharedContracts.generated";
 import { joinEntityIndices, type VanillaToolbarState } from "./vanillaToolbarSelection";
 
 type TriggerName = keyof TriggerArgs;
@@ -21,17 +21,21 @@ function createTriggerCommand<K extends TriggerName>(method: K, ...args: Trigger
 // --- Search and the catalog window -------------------------------------------
 
 export const searchChangedCommand = (value: string): Command => createTriggerCommand("SearchChanged", value);
+/** Widens a search that found nothing here to the whole catalog. */
+export const searchEverythingCommand = (): Command => createTriggerCommand("SearchEverything");
 // Names the limit wanted, so a request sent twice (a double click, the scroll
 // poll firing again before the answer lands) grows the window once. The backend
 // still owns the step and the ceiling and clamps the request to both.
 export const loadMoreCatalogCommand = (requestedLimit: number): Command =>
   createTriggerCommand("LoadMoreBuildingCatalog", requestedLimit);
 
-// --- Order ------------------------------------------------------------------
+// --- Order and grouping -----------------------------------------------------
 
 export const setSortColumnCommand = (column: SortColumn): Command => createTriggerCommand("SetBuildingCatalogSortColumn", column);
 export const setSortDescendingCommand = (descending: boolean): Command =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
+export const setBuildingCatalogGroupByCommand = (dimension: GroupDimensionId): Command =>
+  createTriggerCommand("SetBuildingCatalogGroupBy", dimension);
 
 // --- Filters ----------------------------------------------------------------
 
@@ -41,6 +45,28 @@ export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText:
   createTriggerCommand("SetBuildingCatalogMetricRange", id, minText, maxText);
 export const clearBuildingCatalogMetricRangesCommand = (): Command => createTriggerCommand("ClearBuildingCatalogMetricRanges");
 export const clearAssetMenuFiltersCommand = (): Command => createTriggerCommand("ClearAssetMenuFilters");
+
+// --- The menu and its strip -------------------------------------------------
+
+export const setAssetMenuCommand = (menu: string): Command => createTriggerCommand("SetAssetMenu", menu);
+export const setAssetMenuCategoryCommand = (category: string): Command => createTriggerCommand("SetAssetMenuCategory", category);
+export const setAssetMenuStripTabCommand = (tab: string): Command => createTriggerCommand("SetAssetMenuStripTab", tab);
+export const setAssetMenuSchoolTierCommand = (tier: number): Command => createTriggerCommand("SetAssetMenuSchoolTier", tier);
+export const clearAssetMenuScopeCommand = (): Command => createTriggerCommand("ClearAssetMenuScope");
+/** Puts the menu back the way it opens. */
+export const resetAssetMenuCommand = (): Command => createTriggerCommand("ResetAssetMenu");
+
+// --- The asset menu's size and view -----------------------------------------
+
+/** A height to draw now; C# keeps it once the drag commits. */
+export const setAssetMenuHeightCommand = (height: number): Command => createTriggerCommand("SetAssetMenuHeight", height);
+export const commitAssetMenuHeightCommand = (): Command => createTriggerCommand("CommitAssetMenuHeight");
+/** A width to draw now; C# keeps it once the drag commits. */
+export const setAssetMenuCatalogWidthCommand = (width: number): Command => createTriggerCommand("SetAssetMenuCatalogWidth", width);
+export const commitAssetMenuCatalogWidthCommand = (): Command => createTriggerCommand("CommitAssetMenuCatalogWidth");
+export const setControlPaneShownCommand = (shown: boolean): Command => createTriggerCommand("SetControlPaneShown", shown);
+/** The view the player picked, or "" for none, which C# keeps for the next session. */
+export const setAssetMenuViewModeCommand = (viewMode: string): Command => createTriggerCommand("SetAssetMenuViewMode", viewMode);
 
 // --- The game's toolbar, forwarded ------------------------------------------
 

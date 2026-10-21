@@ -15,6 +15,7 @@ import { isEducationMenu } from "domain/buildingGroups";
 import { isScopedToMenu } from "domain/assetMenuScopeChips";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
+import { setAssetMenuCategoryCommand, setAssetMenuSchoolTierCommand, setAssetMenuStripTabCommand } from "domain/commands";
 import styles from "./menuCategoryStrip.module.scss";
 import {
   AssetMenuExpandedCategories$,
@@ -73,10 +74,9 @@ export const MenuCategoryStrip = () => {
     return null;
   }
 
-  const choose = (id: string) => send({ method: "SetAssetMenuCategory", args: [id] });
-  const chooseBranch = (id: string) => send({ method: "SetAssetMenuStripTab", args: [id] });
-  const chooseSchoolTier = (level: number) =>
-    send({ method: "SetAssetMenuSchoolTier", args: [level] });
+  const choose = (id: string) => send(setAssetMenuCategoryCommand(id));
+  const chooseBranch = (id: string) => send(setAssetMenuStripTabCommand(id));
+  const chooseSchoolTier = (level: number) => send(setAssetMenuSchoolTierCommand(level));
 
   // The category prefab's own name is the id, and the game ships a localized
   // string under exactly that id, so a tab reads as the game words it rather
