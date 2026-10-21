@@ -1,5 +1,5 @@
+using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace BetterBuildingMenu.Domain
 {
@@ -15,11 +15,41 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>"GarbageAccumulation" becomes "Garbage Accumulation", and "big park" "Big Park".</summary>
 		/// <remarks>Upper-cased invariantly. Mono's culture is the OS's, not the game's language, and a
-		/// Turkish one turns "industrial" into "İndustrial".</remarks>
-		public static string FormatWords(this string str) =>
-			Regex.Replace(
-				Regex.Replace(str, @"([a-z])([A-Z])", x => $"{x.Groups[1].Value} {x.Groups[2].Value}"),
-				@"(\b)(?<!')([a-z])", x => $"{x.Groups[1].Value}{x.Groups[2].Value.ToUpperInvariant()}");
+		/// Turkish one turns "industrial" into "İndustrial". Loops rather than Mono's slow Regex, since
+		/// every unlocalized name comes through here; LabelRegexParityTests holds the expressions it
+		/// replaced.</remarks>
+		public static string FormatWords(this string str)
+		{
+			var words = new StringBuilder(str.Length + 8);
+
+			for (var index = 0; index < str.Length; index++)
+			{
+				if (index > 0 && str[index] is >= 'A' and <= 'Z' && str[index - 1] is >= 'a' and <= 'z')
+				{
+					words.Append(' ');
+				}
+
+				words.Append(str[index]);
+			}
+
+			// A lower-case letter starting a word is capitalised, except after an apostrophe: "don't".
+			for (var index = 0; index < words.Length; index++)
+			{
+				if (words[index] is >= 'a' and <= 'z'
+					&& (index == 0 || (!IsWordChar(words[index - 1]) && words[index - 1] != '\'')))
+				{
+					words[index] = char.ToUpperInvariant(words[index]);
+				}
+			}
+
+			return words.ToString();
+		}
+
+		/// <summary>What Regex's \w matches: a letter, a decimal digit, a non-spacing mark or a connector
+		/// such as the underscore.</summary>
+		private static bool IsWordChar(char c) =>
+			char.IsLetterOrDigit(c)
+			|| CharUnicodeInfo.GetUnicodeCategory(c) is UnicodeCategory.NonSpacingMark or UnicodeCategory.ConnectorPunctuation;
 
 		/// <summary>"HospitalWing01" becomes "Hospital Wing 01", and "EU_Commercial" "EU Commercial".</summary>
 		/// <remarks>Splits at underscores, hyphens, case changes and digit boundaries, and keeps each
