@@ -1,12 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { AssetMenu } from "mods/BuildingMenu/AssetMenu";
 import { AssetMenuShownContext } from "mods/BuildingMenu/assetMenuShown";
-import { BuildingCatalog$ } from "mods/bindings";
+import { AssetMenuViewMode$, BuildingCatalog$, BuildingCatalogGroupBy$ } from "mods/bindings";
 import { ExtensionBoundary } from "mods/ExtensionBoundary";
 import { createAssetMenuSlotStore, type AssetMenuSlot as Slot } from "domain/assetMenuSlot";
-import { shouldJoinSlot } from "domain/menuOwnership";
+import { getAssetMenuView } from "domain/assetMenuViewStore";
+import { answersOpen, shownMenu } from "domain/keptMenus";
+import { chooseViewMode } from "domain/viewModeChoice";
+import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
+import { createPanelFreeze, PanelFreezeContext, setPanelFrozen, type PanelFreeze } from "mods/panelValue";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 
@@ -58,74 +62,119 @@ export const AssetMenuSlot = ({ onClose, menu = null }: { onClose?: () => void; 
   return <div ref={ref} className={styles.slot} />;
 };
 
+/** A built menu: its readers' freeze, and what it last drew live. */
+interface KeptPanel {
+  freeze: PanelFreeze;
+  /** The menu of its page; "" for a narrower query. */
+  pageMenu: string;
+  /** Its catalog's view and grouping (catalogShape). */
+  shape: string;
+}
+
 /**
- * The build menu, built on its first open and kept built after that.
+ * What a catalog is drawn as: the view (as BuildingCatalog chooses it) and the
+ * grouping. A panel frozen in another shape would rebuild its catalog on screen.
+ */
+const catalogShape = (): string =>
+  `${chooseViewMode(getAssetMenuView().viewMode, AssetMenuViewMode$.value, DEFAULT_VIEW_MODE)}/${BuildingCatalogGroupBy$.value || "category"}`;
+
+const menuOf = (slot: Slot<HTMLElement> | null): string | null => (slot ? slot.menu ?? "" : null);
+
+/**
+ * Every build menu, each built on its first open and kept built after that.
  *
  * The game unmounts its asset-menu slot whenever a menu closes, and every open
  * then rebuilt the whole panel — header, strip, pane, filters and catalog — and
  * resubscribed every binding: about 80 ms before any card was drawn. Appended to
- * Game, this outlives the slot. The menu renders into one element of its own,
- * which is moved into the slot while there is one and is out of the document
- * while there is none.
+ * Game, this outlives the slot. Each toolbar menu has a panel of its own, rendered
+ * into an element that is moved into the slot while it is the one shown and is out
+ * of the document otherwise, so switching menus shows a built panel as a reopen
+ * does (see docs/superpowers/specs/2026-10-20-keep-every-menu-design.md).
  *
- * It joins a slot at once when the page it holds is the opened menu's (a reopen,
- * shown in the frame the player clicked), and otherwise when C#'s answer to the
- * open arrives (a switch), so another menu's page is never shown. See
- * domain/menuOwnership, shouldJoinSlot.
+ * Every panel freezes when a menu opens or closes, before any update for the new
+ * menu can arrive (mods/panelValue): a hidden panel keeps the page it last drew and
+ * does no work. The opened menu's panel thaws when C# answers the open. Which one
+ * the slot shows meanwhile is domain/keptMenus, shownMenu: the opened menu's own
+ * when its last page was that menu's opening view, drawn in the current view and
+ * grouping; the one already up through a switch with the menu up; or none; never
+ * another menu's under this menu's button.
+ * A menu's panel is built the first time C# answers an open of it, since until
+ * then the bindings hold another menu's page.
  */
 export const KeptAssetMenu = () => {
   const [slot, setSlot] = useState<Slot<HTMLElement> | null>(slots.current);
-  const [container] = useState(() => {
-    const element = document.createElement("div");
-    element.className = styles.slot;
-    return element;
-  });
-  // Nothing is built until the first open: a city where the menu is never
+  // The slot C# has answered since it opened (a page arrived, or the wait ran out).
+  const [answered, setAnswered] = useState<Slot<HTMLElement> | null>(null);
+  const panels = useRef(new Map<string, KeptPanel>());
+  // Nothing is built until a menu's first open: a city where the menu is never
   // opened pays nothing for it.
-  const built = useRef(false);
-  built.current ||= slot !== null;
+  const built = useRef<string[]>([]);
+  const currentSlot = useRef(slot);
+  currentSlot.current = slot;
   // The last close the game gave us, for the renders while hidden.
   const lastClose = useRef<(() => void) | undefined>(undefined);
   if (slot) lastClose.current = slot.onClose;
-
-  // The menu the held page answers, and the slot C# has answered since it opened
-  // (a page arrived, or the wait ran out). Read through a subscription that only
-  // re-renders on a change of menu, not on every page.
-  const [pageMenu, setPageMenu] = useState(() => BuildingCatalog$.value?.menu ?? "");
-  const [answered, setAnswered] = useState<Slot<HTMLElement> | null>(null);
-  const currentSlot = useRef(slot);
-  currentSlot.current = slot;
-  // Whether the menu is in a slot now; written once the join is committed.
-  const inSlot = useRef(false);
+  // The panel in the slot after the last commit, and the one a switch with the
+  // menu up keeps there until the opened menu's can show.
+  const shownNow = useRef<string | null>(null);
+  const held = useRef<string | null>(null);
 
   // Also read the store once mounted: a slot opened before this subscribed
   // would otherwise be missed.
   useEffect(() => {
-    // A joined slot replaced in one commit is the player switching menus with the
-    // menu up: the game swaps the slot (or ours re-opens for the new menu). The menu
-    // stays joined through that round trip, as it always has, rather than leaving
-    // the screen and taking the layout patches with it; only an open from closed waits.
+    // A shown panel's slot replaced in one commit is the player switching menus with
+    // the menu up: the game swaps the slot (or ours re-opens for the new menu).
     let swapping = false;
+    let from: string | null = null;
     const unsubscribe = slots.subscribe((next) => {
+      const shape = catalogShape();
+
+      for (const panel of panels.current.values()) {
+        // A live panel was drawn as the catalog is now.
+        if (!panel.freeze.frozen) {
+          panel.shape = shape;
+        }
+
+        setPanelFrozen(panel.freeze, true);
+      }
+
       if (next === null) {
-        swapping = inSlot.current;
+        swapping = shownNow.current !== null;
+        from = shownNow.current;
         void Promise.resolve().then(() => {
           swapping = false;
         });
-      } else if (swapping || inSlot.current) {
-        setAnswered(next);
       }
 
+      held.current = next !== null && swapping ? from : null;
+      // Now, not at the next render: C#'s answer can arrive in between, and belongs
+      // to this slot, not the one before.
+      currentSlot.current = next;
       setSlot(next);
     });
     setSlot(slots.current());
     return unsubscribe;
   }, []);
 
+  // C#'s answer to an open: the opened menu's panel follows the bindings again.
   useEffect(() => {
     const subscription = BuildingCatalog$.subscribe((page) => {
-      setPageMenu(page?.menu ?? "");
-      setAnswered(currentSlot.current);
+      const open = currentSlot.current;
+      const opened = menuOf(open);
+      const pageMenu = page?.menu ?? "";
+
+      if (!open || opened === null || !answersOpen(pageMenu, opened)) {
+        return;
+      }
+
+      const panel = panels.current.get(opened);
+
+      if (panel) {
+        panel.pageMenu = pageMenu;
+        setPanelFrozen(panel.freeze, false);
+      }
+
+      setAnswered(open);
     });
     return () => subscription.dispose();
   }, []);
@@ -135,41 +184,93 @@ export const KeptAssetMenu = () => {
       return;
     }
 
-    const timer = setTimeout(() => setAnswered(slot), JOIN_WAIT_MS);
+    const timer = setTimeout(() => {
+      const panel = panels.current.get(menuOf(slot) ?? "");
+
+      if (panel) {
+        setPanelFrozen(panel.freeze, false);
+      }
+
+      setAnswered(slot);
+    }, JOIN_WAIT_MS);
     return () => clearTimeout(timer);
   }, [slot]);
 
-  const joined = slot !== null && shouldJoinSlot({
-    slotMenu: slot.menu ?? null,
-    pageMenu,
-    answered: answered === slot,
+  const opened = menuOf(slot);
+  const isAnswered = slot !== null && answered === slot;
+
+  if (opened !== null && isAnswered && !panels.current.has(opened)) {
+    panels.current.set(opened, { freeze: createPanelFreeze(false), pageMenu: BuildingCatalog$.value?.menu ?? "", shape: catalogShape() });
+    built.current = [...built.current, opened];
+  }
+
+  const shape = catalogShape();
+  const shown = shownMenu({
+    opened,
+    answered: isAnswered,
+    built: new Map([...panels.current].map(([menu, panel]) => [menu, panel.pageMenu])),
+    stale: new Set([...panels.current].filter(([, panel]) => panel.freeze.frozen && panel.shape !== shape).map(([menu]) => menu)),
+    held: held.current,
   });
 
   useLayoutEffect(() => {
-    if (!slot || !joined) {
+    shownNow.current = shown;
+
+    if (shown === opened) {
+      held.current = null;
+    }
+  });
+
+  // One close for every panel, so a hidden panel's props hold still across opens.
+  const close = useCallback(() => (currentSlot.current?.onClose ?? lastClose.current)?.(), []);
+
+  return (
+    <>
+      {built.current.map((menu) => (
+        <MenuPanel
+          key={menu}
+          freeze={panels.current.get(menu)!.freeze}
+          target={menu === shown && slot ? slot.element : null}
+          onClose={close}
+        />
+      ))}
+    </>
+  );
+};
+
+/** One menu's panel, in the slot while `target` is set and out of the document otherwise. */
+const MenuPanel = memo(function MenuPanel({ freeze, target, onClose }: {
+  freeze: PanelFreeze;
+  target: HTMLElement | null;
+  onClose: () => void;
+}) {
+  const [container] = useState(() => {
+    const element = document.createElement("div");
+    element.className = styles.slot;
+    return element;
+  });
+
+  // A layout effect, so the panel is in the slot before the slot first paints.
+  useLayoutEffect(() => {
+    if (!target) {
       return;
     }
 
-    inSlot.current = true;
-
-    slot.element.appendChild(container);
+    target.appendChild(container);
 
     return () => {
-      inSlot.current = false;
       container.parentNode?.removeChild(container);
     };
-  }, [slot, joined, container]);
-
-  if (!built.current) {
-    return null;
-  }
+  }, [target, container]);
 
   return createPortal(
     <ExtensionBoundary name="AssetMenu" fallback={() => <ReportFailure />}>
-      <AssetMenuShownContext.Provider value={joined}>
-        <AssetMenu onClose={slot?.onClose ?? lastClose.current} />
-      </AssetMenuShownContext.Provider>
+      <PanelFreezeContext.Provider value={freeze}>
+        <AssetMenuShownContext.Provider value={target !== null}>
+          <AssetMenu onClose={onClose} />
+        </AssetMenuShownContext.Provider>
+      </PanelFreezeContext.Provider>
     </ExtensionBoundary>,
     container
   );
-};
+});

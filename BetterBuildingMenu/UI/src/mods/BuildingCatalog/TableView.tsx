@@ -13,7 +13,7 @@ import {
 } from "domain/assetMenuSortPresentation";
 import { flattenGroupedRows, takeRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
-import { useUnitSystem } from "domain/unitSettings";
+import { useUnitSystem } from "mods/gameSettings";
 import { useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";

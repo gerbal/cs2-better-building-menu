@@ -1,4 +1,4 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { Button, Scrollable } from "cs2/ui";
 import { type ReactNode } from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -12,8 +12,7 @@ import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "do
 import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators, type NumberSeparators } from "domain/assetMenuMetricFormat";
-import { useUnitSystem } from "domain/unitSettings";
-import { useTextScale } from "domain/textScaleSetting";
+import { useTextScale, useUnitSystem } from "mods/gameSettings";
 import styles from "./buildingGrid.module.scss";
 import { ActivePrefabId$, BuildingCatalogSortColumn$, AssetMenuTileSize$ } from "mods/bindings";
 

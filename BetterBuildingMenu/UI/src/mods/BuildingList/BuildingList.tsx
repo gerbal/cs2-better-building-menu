@@ -1,4 +1,4 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
@@ -17,7 +17,7 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
-import { useUnitSystem } from "domain/unitSettings";
+import { useUnitSystem } from "mods/gameSettings";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
 

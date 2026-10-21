@@ -1,4 +1,4 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";

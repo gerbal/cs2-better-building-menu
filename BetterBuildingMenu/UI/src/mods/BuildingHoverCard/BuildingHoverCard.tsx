@@ -1,4 +1,4 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
@@ -9,7 +9,7 @@ import type { TileTooltipLine } from "domain/buildingTileTooltip";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "domain/hoverCardLines";
 import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "domain/assetMenuRowDetails";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
-import { useUnitSystem } from "domain/unitSettings";
+import { useUnitSystem } from "mods/gameSettings";
 import { overflowsBox } from "domain/measuredFit";
 import styles from "./buildingHoverCard.module.scss";
 import { AssetMenuMilestones$ } from "mods/bindings";

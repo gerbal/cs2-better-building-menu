@@ -1,4 +1,4 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { useLocalization } from "cs2/l10n";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";

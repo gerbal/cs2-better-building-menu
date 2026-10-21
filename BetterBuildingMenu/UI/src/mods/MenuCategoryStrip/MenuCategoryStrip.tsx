@@ -1,4 +1,4 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import {
