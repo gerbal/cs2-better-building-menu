@@ -298,6 +298,32 @@ namespace BetterBuildingMenu.Tests
 			Assert.Null(index.GetPrefab(0));
 		}
 
+		[Fact]
+		public void ASubcategoryIsLaidOutUnderTheOneCategoryItBelongsTo()
+		{
+			var index = new CatalogIndex();
+			var categories = System.Enum.GetValues(typeof(PrefabCategory)).Cast<PrefabCategory>().ToList();
+
+			foreach (PrefabSubCategory subCategory in System.Enum.GetValues(typeof(PrefabSubCategory)))
+			{
+				// The obsolete members that repeat a category's value open its block and are no subcategory.
+				if (subCategory is PrefabSubCategory.Any || System.Enum.IsDefined(typeof(PrefabCategory), (int)subCategory))
+				{
+					continue;
+				}
+
+				Assert.Equal(new[] { subCategory.CategoryOf() }, categories.Where(category => index.List(category, subCategory) is not null));
+				Assert.Equal(new[] { subCategory.CategoryOf() }, categories.Where(category => category.Contains(subCategory)));
+			}
+		}
+
+		[Fact]
+		public void AnyBelongsToNoOneCategory()
+		{
+			Assert.Throws<System.ArgumentOutOfRangeException>(() => PrefabSubCategory.Any.CategoryOf());
+			Assert.DoesNotContain(System.Enum.GetValues(typeof(PrefabCategory)).Cast<PrefabCategory>(), category => category.Contains(PrefabSubCategory.Any));
+		}
+
 		private static IndexedPrefabList ListOf(CatalogIndex index, PrefabCategory category, PrefabSubCategory subCategory)
 		{
 			var list = index.List(category, subCategory);

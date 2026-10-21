@@ -53,7 +53,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			{
 				prefabIndex = new PrefabIndex(prefab)
 				{
-					Category = (PrefabCategory)((int)subCategory - ((int)subCategory%100)),
+					Category = subCategory.CategoryOf(),
 					SubCategory = subCategory,
 				};
 

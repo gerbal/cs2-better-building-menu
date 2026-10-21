@@ -48,10 +48,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 					continue;
 				}
 
-				// A subcategory's value sits just above its category's, within the next hundred.
 				foreach (PrefabSubCategory subCategory in Enum.GetValues(typeof(PrefabSubCategory)))
 				{
-					if ((int)subCategory > (int)category && (int)subCategory < (int)category + 100)
+					if (category.Contains(subCategory))
 					{
 						_lists[category][subCategory] = new();
 					}
