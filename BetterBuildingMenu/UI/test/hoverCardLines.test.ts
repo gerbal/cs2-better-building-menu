@@ -5,9 +5,7 @@ import { getNumberSeparators } from "../src/domain/assetMenuMetricFormat.ts";
 import { TILE_TOOLTIP_MAX_LINES } from "../src/domain/buildingTileTooltip.ts";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "../src/domain/hoverCardLines.ts";
 import { entry as catalogEntry } from "./harness/entries.ts";
-
-// Every key falls back to its English wording, as with no locale loaded.
-const english = (_key: string, fallback: string | null) => fallback;
+import { english } from "./harness/locale.ts";
 
 const context: HoverCardLineContext = {
   milestoneNames: ["", "Tiny Village", "Small Village"],

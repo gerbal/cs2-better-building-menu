@@ -8,7 +8,6 @@ import {
   formatCapacity,
   applyMoneyTemplate,
   FALLBACK_MONEY,
-  FALLBACK_SEPARATORS,
   formatHeight,
   formatNetworkWidth,
   formatVolume,
@@ -25,6 +24,7 @@ import {
   groupDigits,
   hasFootprint,
 } from "../src/domain/assetMenuMetricFormat.ts";
+import { separators } from "./harness/locale.ts";
 
 describe("Asset menu metric formatting", () => {
   it("groups thousands without relying on Intl", () => {
@@ -434,8 +434,8 @@ describe("formatServiceRange under the player's unit system", () => {
   // The rules are vanilla's own, read out of its UI bundle: Length is metres
   // below 1000 and kilometres above with one decimal; under Freedom it is
   // YARDS below 1609 and miles above — not feet, which Height uses.
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
-  const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
+  const imperial = separators(UnitSystem.Freedom);
+  const metric = separators(UnitSystem.Metric);
 
   it("keeps the game's own metric thresholds", () => {
     assert.match(formatServiceRange(480, metric), /480 m$/);
@@ -464,7 +464,7 @@ describe("formatServiceRange under the player's unit system", () => {
 });
 
 describe("width and speed follow the same setting", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("states a network width by the game's Length rule", () => {
     // A width is a horizontal distance, so it takes the units vanilla gives a
@@ -481,7 +481,7 @@ describe("width and speed follow the same setting", () => {
 });
 
 describe("per-distance money under Freedom units", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("converts the rate as well as the unit, and keeps money whole", () => {
     // Changing the unit without converting the figure would understate a road
@@ -496,14 +496,14 @@ describe("per-distance money under Freedom units", () => {
   });
 
   it("leaves the metric rate exactly as it was", () => {
-    const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
+    const metric = separators(UnitSystem.Metric);
 
     assert.match(formatBuildingMetric(4000, "cost", metric, true), /4.000.*km/);
   });
 });
 
 describe("height and volume take the game's other two rules", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("states a height in feet, which is what vanilla's Height does", () => {
     // Height and NetElevation are the two places vanilla uses FEET rather than
@@ -524,7 +524,7 @@ describe("weight follows the game's own rule", () => {
   // Vanilla's Weight formatter, read off the shipped bundle: metric shows kg
   // below 100, tonnes below a million (two decimals) and kilotonnes above;
   // imperial shows lb, short tons and short kilotons on the same thresholds.
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("metric: kilograms, tonnes, kilotonnes at vanilla's thresholds", () => {
     assert.equal(formatWeight(50), "50 kg");
@@ -561,7 +561,7 @@ describe("rates follow the game's own per-month rules", () => {
   // Vanilla's WeightPerMonth: kg/mo. below 100 (one decimal) and t/mo. above
   // (two), imperial on Weight's constants. Garbage processing and garbage
   // accumulation are these; deathcare and mail sorting are integers per month.
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("weight per month", () => {
     assert.equal(formatWeightPerMonth(50), "50 kg/mo.");
@@ -610,7 +610,7 @@ describe("electricity follows the game's own units", () => {
 });
 
 describe("water volumes follow the game's own unit system", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   // Vanilla binds WATER_CAPACITY and SEWAGE_CAPACITY with the volumePerMonth
   // unit: cubic metres a month, and US gallons a month under Freedom at the
@@ -637,7 +637,7 @@ describe("a telecom facility's capacity is a data rate", () => {
   // with the dataRate unit: the figure as gigabits a second, one decimal,
   // through Common.VALUE_GIGABIT_PER_SECOND.
   it("states gigabits a second in both unit systems", () => {
-    const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+    const imperial = separators(UnitSystem.Freedom);
 
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility"), /^2[.,]5 Gbit\/s$/);
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility", imperial), /^2[.,]5 Gbit\/s$/);
