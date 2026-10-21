@@ -824,7 +824,6 @@ namespace BetterBuildingMenu.Systems
 			prefabIndex.FallbackThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.CategoryThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.Theme ??= prefab.GetComponent<ThemeObject>()?.m_Theme;
-			prefabIndex.AssetPacks ??= prefab.GetComponent<AssetPackItem>()?.m_Packs?.Where(x => x is not null).ToArray() ?? new AssetPackPrefab[0];
 			// Service upgrades are marked by ServiceUpgrade on the prefab and/or
 			// ServiceUpgradeData on the entity, and some game versions expose only
 			// one; vanilla's "Additional ..." entries are not BuildingExtensionPrefab.

@@ -78,7 +78,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			{
 				prefabIndex.ZoneType = GetZoneType(entity, zonePrefab, target.Zones);
 				prefabIndex.Theme = _zonePrefab.GetComponent<ThemeObject>()?.m_Theme;
-				prefabIndex.AssetPacks = _zonePrefab.GetComponent<AssetPackItem>()?.m_Packs ?? new AssetPackPrefab[0];
 			}
 
 			var zoneData = _entityManager.GetComponentData<ZoneData>(zonePrefab);
