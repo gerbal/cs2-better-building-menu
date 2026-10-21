@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import { act } from "react-test-renderer";
 import { renderHtml, entry, catalogPage } from "../harness/render";
 import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { mountEach } from "../harness/mount";
 import { seed } from "../harness/seed";
+import { loadLocale, resetLocale } from "../harness/stubs/cs2-l10n";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
@@ -23,6 +24,7 @@ import {
   AssetMenuWidth$,
   BuildingCatalog$,
   BuildingCatalogMatchesElsewhere$,
+  BuildingCatalogMetricRanges$,
   BuildingCatalogSortColumn$,
   ControlPaneShown$,
   CurrentSearch$,
@@ -38,6 +40,8 @@ describe("the catalog container", () => {
     resetAssetMenuView();
     seed(AssetMenuWidth$, 700);
   });
+
+  afterEach(() => resetLocale());
 
   for (const mode of ["table", "grid", "list", "cards"]) {
     it(`ends the feed with a load-more inside the scroll in ${mode} mode`, () => {
@@ -111,6 +115,23 @@ describe("the catalog container", () => {
     page({ items: [], totalCount: 0 });
 
     assert.match(render(), /class="empty"/);
+  });
+
+  it("names a range that emptied the table in the player's own number marks", () => {
+    loadLocale({ "Common.THOUSANDS_SEPARATOR": ".", "Common.DECIMAL_SEPARATOR": "," });
+    setAssetMenuView({ viewMode: "table" });
+    page({ items: [], totalCount: 0 });
+    seed(BuildingCatalogMetricRanges$, {
+      minCost: 1234.5, maxCost: null,
+      minUpkeep: null, maxUpkeep: null,
+      minWorkers: null, maxWorkers: null,
+      minCapacity: null, maxCapacity: null,
+      minLotWidth: null, maxLotWidth: null,
+      minLotDepth: null, maxLotDepth: null,
+      hasSelection: true,
+    });
+
+    assert.match(render(), /No buildings match Cost ≥ 1\.234,5\./);
   });
 
   it("draws the view C# kept while nothing was picked this session", () => {

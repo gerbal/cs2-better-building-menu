@@ -26,8 +26,6 @@ public sealed class QueryEngineAllocationTests
             MaxLotWidth: 4,
             MinLotDepth: 1,
             MaxLotDepth: 5,
-            MinBuildingLevel: 1,
-            MaxBuildingLevel: 3,
             MinConstructionCost: 100,
             MaxConstructionCost: 900,
             MinUpkeep: 1,
@@ -35,11 +33,7 @@ public sealed class QueryEngineAllocationTests
             MinWorkers: 5,
             MaxWorkers: 60,
             MinCapacity: 10,
-            MaxCapacity: 200,
-            MinElectricityConsumption: 1,
-            MaxElectricityConsumption: 100,
-            MinWaterConsumption: 1,
-            MaxWaterConsumption: 80);
+            MaxCapacity: 200);
 
         Assert.Equal(0, PerEntryBytes(query));
     }
@@ -104,8 +98,6 @@ public sealed class QueryEngineAllocationTests
                 Upkeep = 10,
                 Workers = 20,
                 Capacity = 100,
-                ElectricityConsumption = 50,
-                WaterConsumption = 40,
             };
         }
 

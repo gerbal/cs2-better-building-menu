@@ -1,4 +1,5 @@
-import type { MetricRangeId, MetricRangeInput } from "./buildingCatalogRanges";
+import type { MetricRangeInput } from "./buildingCatalogRanges";
+import type { MetricRangeId } from "./sharedContracts.generated";
 
 export type MetricRangeBound = "minText" | "maxText";
 

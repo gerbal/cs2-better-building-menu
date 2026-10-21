@@ -7,7 +7,9 @@
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
 import { setBuildingCatalogMetricRangeCommand, toggleAssetMenuFacetCommand, type Command } from "./commands";
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
-import type { MetricRangeId } from "./buildingCatalogRanges";
+import type { NumberSeparators } from "./assetMenuMetricFormat";
+import { describeRange, METRIC_RANGE_DEFINITIONS } from "./buildingCatalogRanges";
+import type { MetricBoundKey } from "./sharedContracts.generated";
 
 export type ChipCommand = Command;
 
@@ -25,42 +27,11 @@ export interface FilterChip {
 export interface FilterChipInput {
   facets?: AssetMenuFacetState | null;
   metricRanges?: AssetMenuMetricRangeState | null;
+  /** The player's number marks for a range's bounds; the fallback marks when absent. */
+  separators?: NumberSeparators | null;
 }
 
-const METRIC_LABELS: Record<MetricRangeId, string> = {
-  cost: "Cost",
-  upkeep: "Upkeep",
-  workers: "Workers",
-  capacity: "Capacity",
-  lotWidth: "Lot width",
-  lotDepth: "Lot depth",
-};
-
-const METRIC_BOUNDS: Record<MetricRangeId, [keyof AssetMenuMetricRangeState, keyof AssetMenuMetricRangeState]> = {
-  cost: ["minCost", "maxCost"],
-  upkeep: ["minUpkeep", "maxUpkeep"],
-  workers: ["minWorkers", "maxWorkers"],
-  capacity: ["minCapacity", "maxCapacity"],
-  lotWidth: ["minLotWidth", "maxLotWidth"],
-  lotDepth: ["minLotDepth", "maxLotDepth"],
-};
-
-/** Declaration order is display order within the metric block. */
-const METRIC_IDS = Object.keys(METRIC_LABELS) as MetricRangeId[];
-
-function formatBound(value: number): string {
-  return Number.isInteger(value)
-    ? value.toLocaleString()
-    : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function formatRange(min: number | null, max: number | null): string {
-  if (min !== null && max !== null) return `${formatBound(min)}–${formatBound(max)}`;
-  if (min !== null) return `≥ ${formatBound(min)}`;
-  return `≤ ${formatBound(max as number)}`;
-}
-
-function readBound(state: AssetMenuMetricRangeState, key: keyof AssetMenuMetricRangeState): number | null {
+function readBound(state: AssetMenuMetricRangeState, key: MetricBoundKey): number | null {
   const value = state[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -97,8 +68,8 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
 
   const ranges = input?.metricRanges;
   if (ranges) {
-    for (const id of METRIC_IDS) {
-      const [minKey, maxKey] = METRIC_BOUNDS[id];
+    // Definition order is display order within the metric block.
+    for (const { id, label, minKey, maxKey } of METRIC_RANGE_DEFINITIONS) {
       const min = readBound(ranges, minKey);
       const max = readBound(ranges, maxKey);
 
@@ -109,7 +80,7 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
       chips.push({
         id: `metric:${id}`,
         dimension: `metric:${id}`,
-        label: `${METRIC_LABELS[id]} ${formatRange(min, max)}`,
+        label: `${label} ${describeRange(min, max, input?.separators ?? undefined)}`,
         removable: true,
         remove: setBuildingCatalogMetricRangeCommand(id, "", ""),
       });

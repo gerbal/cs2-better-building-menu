@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace BetterBuildingMenu.Domain
@@ -17,27 +18,13 @@ namespace BetterBuildingMenu.Domain
 			string? maxText,
 			out BuildingCatalogMetricRange range)
 		{
-			string id = metricId?.Trim().ToLowerInvariant() ?? string.Empty;
-			if (!IsSupported(id))
+			if (!TryParse(metricId, minText, maxText, out BuildingCatalogMetric? metric, out double? min, out double? max))
 			{
-				range = new BuildingCatalogMetricRange(string.Empty, null, null);
+				range = new BuildingCatalogMetricRange(metric?.Id ?? string.Empty, null, null);
 				return false;
 			}
 
-			bool integer = id is "lotwidth" or "lotdepth";
-			if (!TryParseBound(minText, integer, out double? min)
-				|| !TryParseBound(maxText, integer, out double? max))
-			{
-				range = new BuildingCatalogMetricRange(id, null, null);
-				return false;
-			}
-
-			if (min.HasValue && max.HasValue && min.Value > max.Value)
-			{
-				(min, max) = (max, min);
-			}
-
-			range = new BuildingCatalogMetricRange(id, min, max);
+			range = new BuildingCatalogMetricRange(metric.Id, min, max);
 			return true;
 		}
 
@@ -47,46 +34,44 @@ namespace BetterBuildingMenu.Domain
 			string? minText,
 			string? maxText)
 		{
-			if (!TryParse(metricId, minText, maxText, out BuildingCatalogMetricRange range))
-			{
-				return query;
-			}
-
-			return range.MetricId switch
-			{
-				"cost" => query with { MinConstructionCost = range.Min, MaxConstructionCost = range.Max, Offset = 0 },
-				"upkeep" => query with { MinUpkeep = range.Min, MaxUpkeep = range.Max, Offset = 0 },
-				"workers" => query with { MinWorkers = range.Min, MaxWorkers = range.Max, Offset = 0 },
-				"capacity" => query with { MinCapacity = range.Min, MaxCapacity = range.Max, Offset = 0 },
-				"lotwidth" => query with { MinLotWidth = ToInt(range.Min), MaxLotWidth = ToInt(range.Max), Offset = 0 },
-				"lotdepth" => query with { MinLotDepth = ToInt(range.Min), MaxLotDepth = ToInt(range.Max), Offset = 0 },
-				_ => query,
-			};
+			return TryParse(metricId, minText, maxText, out BuildingCatalogMetric? metric, out double? min, out double? max)
+				? metric.QueryWith(query, min, max) with { Offset = 0 }
+				: query;
 		}
 
 		public static BuildingCatalogQuery Clear(BuildingCatalogQuery query)
 		{
-			return query with
+			for (int i = 0; i < BuildingCatalogMetrics.All.Count; i++)
 			{
-				MinConstructionCost = null,
-				MaxConstructionCost = null,
-				MinUpkeep = null,
-				MaxUpkeep = null,
-				MinWorkers = null,
-				MaxWorkers = null,
-				MinCapacity = null,
-				MaxCapacity = null,
-				MinLotWidth = null,
-				MaxLotWidth = null,
-				MinLotDepth = null,
-				MaxLotDepth = null,
-				Offset = 0,
-			};
+				query = BuildingCatalogMetrics.All[i].QueryWith(query, null, null);
+			}
+
+			return query with { Offset = 0 };
 		}
 
-		private static bool IsSupported(string metricId)
+		private static bool TryParse(
+			string? metricId,
+			string? minText,
+			string? maxText,
+			[NotNullWhen(true)] out BuildingCatalogMetric? metric,
+			out double? min,
+			out double? max)
 		{
-			return metricId is "cost" or "upkeep" or "workers" or "capacity" or "lotwidth" or "lotdepth";
+			min = null;
+			max = null;
+			if (!BuildingCatalogMetrics.TryFind(metricId, out metric)
+				|| !TryParseBound(minText, metric.Integer, out min)
+				|| !TryParseBound(maxText, metric.Integer, out max))
+			{
+				return false;
+			}
+
+			if (min.HasValue && max.HasValue && min.Value > max.Value)
+			{
+				(min, max) = (max, min);
+			}
+
+			return true;
 		}
 
 		private static bool TryParseBound(string? text, bool integer, out double? value)
@@ -111,11 +96,6 @@ namespace BetterBuildingMenu.Domain
 				? Math.Round(parsed, MidpointRounding.AwayFromZero)
 				: Math.Round(parsed, 2, MidpointRounding.AwayFromZero);
 			return true;
-		}
-
-		private static int? ToInt(double? value)
-		{
-			return value.HasValue ? (int)value.Value : null;
 		}
 	}
 }

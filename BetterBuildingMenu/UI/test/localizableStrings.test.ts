@@ -6,6 +6,7 @@ import {
   getUnplumbedStrings,
 } from "../src/domain/localizableStrings.ts";
 import { GROUP_DIMENSIONS, UNGROUPED_LABEL } from "../src/domain/buildingGroups.ts";
+import { METRIC_RANGE_DEFINITIONS } from "../src/domain/buildingCatalogRanges.ts";
 import { SERVICE_FACT_LOCALIZATION_KEYS } from "../src/domain/serviceFacts.ts";
 
 const locale = JSON.parse(readFileSync(new URL("../../Locale.json", import.meta.url), "utf8"));
@@ -41,6 +42,14 @@ describe("Localizable strings register", () => {
     for (const entry of LOCALIZABLE_STRINGS.filter((candidate) => candidate.plumbed)) {
       if (!Object.prototype.hasOwnProperty.call(locale, entry.key)) continue;
       assert.equal(locale[entry.key], entry.english, entry.key);
+    }
+  });
+
+  it("ships each range metric's label as the English the drawer translates", () => {
+    // The chips and the summary draw the label itself; the drawer draws it
+    // through Locale.json, and the two have to say the same word.
+    for (const definition of METRIC_RANGE_DEFINITIONS) {
+      assert.equal(locale[definition.localizationKey], definition.label, definition.id);
     }
   });
 

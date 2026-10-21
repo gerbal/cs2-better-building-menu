@@ -121,12 +121,15 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
 
+  const separators = useMemo(() => getNumberSeparators(translate), [translate]);
+
   // Names the constraints that actually emptied the table, rather than always
   // blaming search and category.
   const emptyStateMessage = getAssetMenuEmptyStateMessage({
     searchText: currentSearch,
     facets,
     metricRanges,
+    separators,
   });
 
   const density = getAssetMenuDensity(layoutWidth);
@@ -292,7 +295,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
    * names both ends, so a truncated list reads as one rather than as the whole.
    */
   const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
-  const separators = useMemo(() => getNumberSeparators(translate), [translate]);
   // Memoised with what it shows, so the views it is handed to can skip a render.
   const catalogFooter = useMemo(() => hasMore ? (
     <div className={styles.loadMoreRow}>
