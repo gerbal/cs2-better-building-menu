@@ -20,28 +20,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     /// </remarks>
     public class UtilityNetworksPrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<PowerLineData>(),
-                        ComponentType.ReadOnly<NetData>(),
-                    },
-                },
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<PipelineData>(),
-                        ComponentType.ReadOnly<NetData>(),
-                    },
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery
+            .All(typeof(PowerLineData), typeof(NetData))
+            .Or(ProcessorQuery.All(typeof(PipelineData), typeof(NetData)));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

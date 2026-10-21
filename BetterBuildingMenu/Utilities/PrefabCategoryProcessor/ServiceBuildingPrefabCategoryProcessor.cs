@@ -13,61 +13,11 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
     public class ServiceBuildingPrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        private readonly EntityManager _entityManager;
-
-        public ServiceBuildingPrefabCategoryProcessor(EntityManager entityManager)
-        {
-            _entityManager = entityManager;
-        }
-
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<BuildingData>(),
-                        ComponentType.ReadOnly<ServiceObjectData>()
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<TrafficSpawnerData>(),
-                        ComponentType.ReadOnly<SpawnableBuildingData>(),
-                        ComponentType.ReadOnly<PlaceholderBuildingData>()
-                    }
-                },
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<ServiceUpgradeBuilding>(),
-                        ComponentType.ReadOnly<BuildingData>(),
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<TrafficSpawnerData>(),
-                        ComponentType.ReadOnly<SpawnableBuildingData>(),
-                        ComponentType.ReadOnly<PlaceholderBuildingData>()
-                    }
-                },
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<ServiceUpgradeBuilding>(),
-                        ComponentType.ReadOnly<BuildingExtensionData>()
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<TrafficSpawnerData>(),
-                        ComponentType.ReadOnly<SpawnableBuildingData>(),
-                        ComponentType.ReadOnly<PlaceholderBuildingData>()
-                    }
-                }
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery
+            .All(typeof(BuildingData), typeof(ServiceObjectData))
+            .Or(ProcessorQuery.All(typeof(ServiceUpgradeBuilding), typeof(BuildingData)))
+            .Or(ProcessorQuery.All(typeof(ServiceUpgradeBuilding), typeof(BuildingExtensionData)))
+            .None(typeof(TrafficSpawnerData), typeof(SpawnableBuildingData), typeof(PlaceholderBuildingData));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

@@ -22,30 +22,17 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             _entityManager = entityManager;
         }
 
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<StaticObjectData>(),
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<BuildingData>(),
-                        ComponentType.ReadOnly<NetObjectData>(),
-                        ComponentType.ReadOnly<BuildingExtensionData>(),
-                        ComponentType.ReadOnly<PillarData>(),
-                        ComponentType.ReadOnly<PlantData>(),
-						ComponentType.ReadOnly<TrafficSignData>(),
-						ComponentType.ReadOnly<LaneDirectionData>(),
-						ComponentType.ReadOnly<TrafficLightData>(),
-					},
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery
+            .All(typeof(StaticObjectData))
+            .None(
+                typeof(BuildingData),
+                typeof(NetObjectData),
+                typeof(BuildingExtensionData),
+                typeof(PillarData),
+                typeof(PlantData),
+                typeof(TrafficSignData),
+                typeof(LaneDirectionData),
+                typeof(TrafficLightData));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
@@ -53,7 +40,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			{
 				prefabIndex = new PrefabIndex(prefab)
 				{
-					Category = (PrefabCategory)((int)subCategory - ((int)subCategory%100)),
+					Category = subCategory.CategoryOf(),
 					SubCategory = subCategory,
 				};
 

@@ -154,4 +154,20 @@ namespace BetterBuildingMenu.Domain.Enums
 		[CategoryIcon("coui://uil/Standard/StarAll.svg")]
 		Zones_Misc,
 	}
+
+	/// <summary>Where a subcategory sits: each category's subcategories take the hundred values above it.</summary>
+	/// <remarks>Any is -1 and lies in no hundred, so a caller for whom Any is legal keeps the
+	/// (category, subcategory) pair rather than deriving one from the other.</remarks>
+	public static class PrefabSubCategories
+	{
+		/// <summary>The category whose hundred this subcategory lies in.</summary>
+		public static PrefabCategory CategoryOf(this PrefabSubCategory subCategory) =>
+			subCategory is PrefabSubCategory.Any
+				? throw new ArgumentOutOfRangeException(nameof(subCategory), "Any belongs to every category.")
+				: (PrefabCategory)((int)subCategory - (int)subCategory % 100);
+
+		/// <summary>Whether this subcategory is one of the category's own.</summary>
+		public static bool Contains(this PrefabCategory category, PrefabSubCategory subCategory) =>
+			(int)subCategory > (int)category && (int)subCategory < (int)category + 100;
+	}
 }

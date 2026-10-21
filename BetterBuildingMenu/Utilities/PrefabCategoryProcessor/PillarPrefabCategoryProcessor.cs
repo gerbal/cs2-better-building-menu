@@ -1,15 +1,11 @@
-﻿using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Interfaces;
+﻿using BetterBuildingMenu.Domain.Enums;
 using Game.Prefabs;
-
-using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
-    public class PillarPrefabCategoryProcessor : IPrefabCategoryProcessor
+    public class PillarPrefabCategoryProcessor : TypedProcessor<PrefabBase>
     {
         private readonly EntityManager _entityManager;
 
@@ -18,32 +14,11 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             _entityManager = entityManager;
         }
 
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<PillarData>(),
-                        ComponentType.ReadOnly<SpawnableObjectData>(),
-                    }
-                },
-            };
-        }
+        public override ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(PillarData), typeof(SpawnableObjectData));
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
-        {
-            var netObjectData = _entityManager.GetComponentData<NetObjectData>(entity);
+        protected override PrefabSubCategory SubCategory => PrefabSubCategory.Networks_Pillars;
 
-            prefabIndex = new PrefabIndex(prefab)
-            {
-                Category = Domain.Enums.PrefabCategory.Networks,
-                SubCategory = Domain.Enums.PrefabSubCategory.Networks_Pillars
-            };
-
-            return true;
-        }
+        // A pillar must be a net object as well to be filed.
+        protected override bool Accepts(PrefabBase prefab, Entity entity) => _entityManager.HasComponent<NetObjectData>(entity);
     }
 }

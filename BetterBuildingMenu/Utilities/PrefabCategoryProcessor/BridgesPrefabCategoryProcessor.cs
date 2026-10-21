@@ -1,45 +1,16 @@
-﻿using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Interfaces;
+﻿using BetterBuildingMenu.Domain.Enums;
 using Game.Prefabs;
-
-using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
-    public class BridgesPrefabCategoryProcessor : IPrefabCategoryProcessor
+    public class BridgesPrefabCategoryProcessor : TypedProcessor<PrefabBase>
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<BridgeData>(),
-                    },
-                },
-            };
-        }
+        public override ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(BridgeData));
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
-        {
-            if (prefab is StaticObjectPrefab)
-            {
-                prefabIndex = null;
-                return false;
-            }
+        protected override PrefabSubCategory SubCategory => PrefabSubCategory.Networks_Bridges;
 
-            prefabIndex = new PrefabIndex(prefab)
-            {
-                Category = Domain.Enums.PrefabCategory.Networks,
-                SubCategory = Domain.Enums.PrefabSubCategory.Networks_Bridges
-            };
-
-            return true;
-        }
+        protected override bool Accepts(PrefabBase prefab, Entity entity) => prefab is not StaticObjectPrefab;
     }
 }
