@@ -6,7 +6,6 @@ using Game.Zones;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace BetterBuildingMenu.Domain;
 
@@ -31,6 +30,44 @@ public static class ZoningFamilies
 	/// in it. The family list is filtered to what the city has, so the chip never offers it.
 	/// </remarks>
 	public const string Extractors = "ZoneExtractors";
+}
+
+/// <summary>
+/// The game's icon for each zoning family. Constants, so the sub-category icon attributes
+/// that draw the same idea can name them.
+/// </summary>
+public static class ZoningIcons
+{
+	public const string Residential = "Media/Game/Icons/ZoneResidential.svg";
+	public const string Commercial = "Media/Game/Icons/ZoneCommercial.svg";
+	public const string Industrial = "Media/Game/Icons/ZoneIndustrial.svg";
+	public const string Office = "Media/Game/Icons/ZoneOffice.svg";
+	public const string Extractors = "Media/Game/Icons/ZoneExtractors.svg";
+}
+
+/// <summary>
+/// One zoning family and everything the catalog knows about it.
+/// </summary>
+/// <param name="Id">The stable identifier, one of <see cref="ZoningFamilies"/>.</param>
+/// <param name="Group">The UI category group the game files the family's zones under. The group
+/// names are plural ("ZonesOffice") and the ids singular, so the two cannot be compared directly.</param>
+/// <param name="Icon">The family's icon.</param>
+/// <param name="ToolTip">The family's tooltip key.</param>
+/// <param name="SubCategory">The sub-category the family's zones are filed under.</param>
+/// <param name="SpawnedBy">The sub-categories of the buildings that grow in the family's zones.</param>
+internal sealed record ZoningFamily(
+	string Id,
+	string Group,
+	string Icon,
+	string ToolTip,
+	PrefabSubCategory SubCategory,
+	PrefabSubCategory[] SpawnedBy)
+{
+	/// <summary>The family as the UI reads it.</summary>
+	public ZoningFamilyDescriptor Descriptor { get; } = new(Id, Icon, ToolTip);
+
+	/// <summary><see cref="SpawnedBy"/> by member name, the form <see cref="ZoningCatalog.SpawnedSubCategories"/> returns.</summary>
+	public IReadOnlyList<string> SpawnedByNames { get; } = Array.ConvertAll(SpawnedBy, spawned => spawned.ToString());
 }
 
 /// <summary>
@@ -62,23 +99,27 @@ public sealed record ZoningFamilyDescriptor(
 /// </remarks>
 public static class ZoningCatalog
 {
-	public static readonly string[] Families =
+	/// <summary>Every zoning family, one row each; the lookups below read it.</summary>
+	private static readonly ZoningFamily[] Table =
 	{
-		ZoningFamilies.Residential,
-		ZoningFamilies.Commercial,
-		ZoningFamilies.Industrial,
-		ZoningFamilies.Office,
-		ZoningFamilies.Extractors,
+		new(ZoningFamilies.Residential, "ZonesResidential", ZoningIcons.Residential, "Zoning_Residential",
+			PrefabSubCategory.Zones_Residential,
+			new[] { PrefabSubCategory.Buildings_Residential, PrefabSubCategory.Buildings_Mixed }),
+		new(ZoningFamilies.Commercial, "ZonesCommercial", ZoningIcons.Commercial, "Zoning_Commercial",
+			PrefabSubCategory.Zones_Commercial,
+			new[] { PrefabSubCategory.Buildings_Commercial, PrefabSubCategory.Buildings_Mixed }),
+		new(ZoningFamilies.Industrial, "ZonesIndustrial", ZoningIcons.Industrial, "Zoning_Industrial",
+			PrefabSubCategory.Zones_Industrial,
+			new[] { PrefabSubCategory.Buildings_Industrial }),
+		new(ZoningFamilies.Office, "ZonesOffice", ZoningIcons.Office, "Zoning_Office",
+			PrefabSubCategory.Zones_Office,
+			new[] { PrefabSubCategory.Buildings_Office }),
+		new(ZoningFamilies.Extractors, "ZonesExtractors", ZoningIcons.Extractors, "Zoning_Extractors",
+			PrefabSubCategory.Zones_Extractors,
+			new[] { PrefabSubCategory.Buildings_Industrial, PrefabSubCategory.Buildings_Specialized }),
 	};
 
-	private static readonly ZoningFamilyDescriptor[] Descriptors =
-	{
-		new(ZoningFamilies.Residential, "Media/Game/Icons/ZoneResidential.svg", "Zoning_Residential"),
-		new(ZoningFamilies.Commercial, "Media/Game/Icons/ZoneCommercial.svg", "Zoning_Commercial"),
-		new(ZoningFamilies.Industrial, "Media/Game/Icons/ZoneIndustrial.svg", "Zoning_Industrial"),
-		new(ZoningFamilies.Office, "Media/Game/Icons/ZoneOffice.svg", "Zoning_Office"),
-		new(ZoningFamilies.Extractors, "Media/Game/Icons/ZoneExtractors.svg", "Zoning_Extractors"),
-	};
+	public static readonly string[] Families = Array.ConvertAll(Table, family => family.Id);
 
 	/// <summary>Family stems, matched anywhere in a zone's name.</summary>
 	private static readonly (string Stem, string Family)[] FamilyStems =
@@ -90,28 +131,6 @@ public static class ZoningCatalog
 		// Mixed zones are residential zones that also carry commerce; the
 		// vanilla menu files them under Residential and so do we.
 		("Mixed", ZoningFamilies.Residential),
-	};
-
-	/// <summary>
-	/// UI category group name to family id. The group names are plural ("ZonesOffice") and the
-	/// family ids singular, so the two cannot be compared directly.
-	/// </summary>
-	private static readonly Dictionary<string, string> GroupFamilies = new(StringComparer.OrdinalIgnoreCase)
-	{
-		["ZonesResidential"] = ZoningFamilies.Residential,
-		["ZonesCommercial"] = ZoningFamilies.Commercial,
-		["ZonesIndustrial"] = ZoningFamilies.Industrial,
-		["ZonesOffice"] = ZoningFamilies.Office,
-		["ZonesExtractors"] = ZoningFamilies.Extractors,
-	};
-
-	private static readonly Dictionary<string, string[]> SpawnedBy = new(StringComparer.OrdinalIgnoreCase)
-	{
-		[ZoningFamilies.Residential] = new[] { "Buildings_Residential", "Buildings_Mixed" },
-		[ZoningFamilies.Commercial] = new[] { "Buildings_Commercial", "Buildings_Mixed" },
-		[ZoningFamilies.Industrial] = new[] { "Buildings_Industrial" },
-		[ZoningFamilies.Office] = new[] { "Buildings_Office" },
-		[ZoningFamilies.Extractors] = new[] { "Buildings_Industrial", "Buildings_Specialized" },
 	};
 
 	/// <summary>
@@ -130,7 +149,15 @@ public static class ZoningCatalog
 			return null;
 		}
 
-		return GroupFamilies.TryGetValue(trimmed, out var family) ? family : null;
+		foreach (var family in Table)
+		{
+			if (string.Equals(family.Group, trimmed, StringComparison.OrdinalIgnoreCase))
+			{
+				return family.Id;
+			}
+		}
+
+		return null;
 	}
 
 	/// <summary>
@@ -149,15 +176,7 @@ public static class ZoningCatalog
 			return null;
 		}
 
-		foreach (var pair in GroupFamilies)
-		{
-			if (string.Equals(pair.Value, trimmed, StringComparison.OrdinalIgnoreCase))
-			{
-				return pair.Key;
-			}
-		}
-
-		return null;
+		return Find(trimmed, StringComparison.OrdinalIgnoreCase)?.Group;
 	}
 
 	/// <summary>
@@ -179,21 +198,11 @@ public static class ZoningCatalog
 	};
 
 	/// <summary>The sub-category a family's zones are filed under, Misc for none.</summary>
-	public static PrefabSubCategory SubCategoryOf(string? family) => family switch
-	{
-		ZoningFamilies.Residential => PrefabSubCategory.Zones_Residential,
-		ZoningFamilies.Commercial => PrefabSubCategory.Zones_Commercial,
-		ZoningFamilies.Industrial => PrefabSubCategory.Zones_Industrial,
-		ZoningFamilies.Office => PrefabSubCategory.Zones_Office,
-		ZoningFamilies.Extractors => PrefabSubCategory.Zones_Extractors,
-		_ => PrefabSubCategory.Zones_Misc,
-	};
+	public static PrefabSubCategory SubCategoryOf(string? family) =>
+		Find(family, StringComparison.Ordinal)?.SubCategory ?? PrefabSubCategory.Zones_Misc;
 
 	public static ZoningFamilyDescriptor? Describe(string? family) =>
-		family is null
-			? null
-			: Descriptors.FirstOrDefault(descriptor =>
-				string.Equals(descriptor.Id, family, StringComparison.OrdinalIgnoreCase));
+		Find(family, StringComparison.OrdinalIgnoreCase)?.Descriptor;
 
 	/// <summary>
 	/// The family a zone prefab belongs to, inferred from its name.
@@ -233,7 +242,23 @@ public static class ZoningCatalog
 	/// the leaf of the hierarchy.
 	/// </summary>
 	public static IReadOnlyList<string> SpawnedSubCategories(string? family) =>
-		family is not null && SpawnedBy.TryGetValue(family, out var subCategories)
-			? subCategories
-			: Array.Empty<string>();
+		Find(family, StringComparison.OrdinalIgnoreCase)?.SpawnedByNames ?? Array.Empty<string>();
+
+	private static ZoningFamily? Find(string? id, StringComparison comparison)
+	{
+		if (id is null)
+		{
+			return null;
+		}
+
+		foreach (var family in Table)
+		{
+			if (string.Equals(family.Id, id, comparison))
+			{
+				return family;
+			}
+		}
+
+		return null;
+	}
 }
