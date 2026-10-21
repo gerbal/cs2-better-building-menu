@@ -44,7 +44,7 @@ namespace BetterBuildingMenu.Systems
 		/// A partial pass walks again, since the game moves a recreated prefab to a new entity.</remarks>
 		/// <returns>False when the walk threw; <paramref name="placements"/> then holds what it read
 		/// before that.</returns>
-		private bool TryIndexVanillaMenuPlacements(bool full, out Dictionary<int, VanillaMenuPlacement> placements)
+		private bool TryIndexVanillaMenuPlacements(out Dictionary<int, VanillaMenuPlacement> placements)
 		{
 			placements = new Dictionary<int, VanillaMenuPlacement>();
 			_flattenedAssets.Clear();
@@ -90,17 +90,7 @@ namespace BetterBuildingMenu.Systems
 				Mod.Log.Error(ex, "[MENU-COVERAGE] walk failed");
 			}
 
-			// A partial pass can run every frame a mod edits prefabs.
-			var message = $"Indexed Vanilla Menu Placements: {placements.Count}";
-
-			if (full)
-			{
-				Mod.Log.Debug(message);
-			}
-			else
-			{
-				Mod.Log.Debug(message);
-			}
+			Mod.Log.Debug($"Indexed Vanilla Menu Placements: {placements.Count}");
 
 			return complete;
 		}

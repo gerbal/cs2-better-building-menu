@@ -646,7 +646,7 @@ namespace BetterBuildingMenu.Systems
 				// consults the placements too.
 				// A walk that threw still hands over what it read: a full pass has no
 				// table of its own to keep, and the menus it did read are still right.
-				TryIndexVanillaMenuPlacements(full: true, out var placements);
+				TryIndexVanillaMenuPlacements(out var placements);
 				var zones = IndexZones(placements);
 				var (menuNames, menuEntities, menus) = IndexAssetMenus();
 				var categories = IndexAssetCategories();
@@ -668,7 +668,7 @@ namespace BetterBuildingMenu.Systems
 
 				// Before the processors, which read the placements back: a recreated prefab
 				// is placed under its new entity. A walk that threw keeps the old table.
-				if (TryIndexVanillaMenuPlacements(full: false, out var placements))
+				if (TryIndexVanillaMenuPlacements(out var placements))
 				{
 					target.RefreshPlacements(placements);
 				}
