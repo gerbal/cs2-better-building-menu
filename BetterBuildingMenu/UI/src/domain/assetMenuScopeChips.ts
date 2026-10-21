@@ -20,6 +20,7 @@ export interface AssetMenuScopeChips {
   menuCategory: boolean;
 }
 
+/** Whether the asset menu stands in for one of the game's menus, not the whole catalog. */
 export function isScopedToMenu(menu: string | null | undefined): boolean {
   return typeof menu === "string" && menu.trim() !== "";
 }

@@ -140,9 +140,11 @@ describe("the resize strip", () => {
   const strip = (active: boolean, onBeginResize: (event: unknown) => void = () => undefined) =>
     create(<AssetMenuResizeHandle active={active} onBeginResize={onBeginResize} />);
 
-  it("says what it is for, and shows the grip pressed while a drag is on", () => {
+  it("says what it is for in the game's own tooltip, and shows the grip pressed while a drag is on", () => {
     const idle = strip(false).root;
-    assert.equal(idle.findByProps({ className: "resizeHandle" }).props.title, "Drag to resize");
+    // The game draws no title attribute, so the hint goes through its Tooltip.
+    assert.equal(idle.findByProps({ className: "resizeHandle" }).props.title, undefined);
+    assert.deepEqual(idle.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize"]);
     assert.equal(idle.findAll((node) => node.props.className === "resizeGrip").length, 1);
 
     assert.equal(strip(true).root.findAll((node) => node.props.className === "resizeGrip resizeGripActive").length, 1);

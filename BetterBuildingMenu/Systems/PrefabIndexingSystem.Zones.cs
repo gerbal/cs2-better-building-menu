@@ -209,7 +209,7 @@ namespace BetterBuildingMenu.Systems
 
 			foreach (var placement in placements.Values)
 			{
-				if (!string.Equals(placement.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+				if (!VanillaMenus.IsZones(placement.Menu))
 				{
 					continue;
 				}
@@ -255,7 +255,7 @@ namespace BetterBuildingMenu.Systems
 
 			var placedInZones = new HashSet<int>(
 				placements.Values
-					.Where(p => string.Equals(p.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+					.Where(p => VanillaMenus.IsZones(p.Menu))
 					.Select(p => p.Entity.Index));
 
 			if (placedInZones.Count > 0)
