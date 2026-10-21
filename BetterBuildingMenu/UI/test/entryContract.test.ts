@@ -21,12 +21,15 @@ const ENTRY_TS = read("../src/domain/buildingCatalog.ts");
 /** The JSON names the C# writer emits, in the order it emits them. */
 function writtenNames(): string[] {
   const names: string[] = [];
-  // Every property goes through writer.Prop(name, value), the name first.
-  const pattern = /writer\.Prop\("([A-Za-z0-9_]+)"/g;
+  // Three spellings: the Prop extension the writer uses, the bare PropertyName
+  // call, and a Write* helper taking the name as its second argument. Accepting
+  // all three means a field written the raw way cannot slip past this test.
+  const pattern =
+    /writer\.Prop\("([A-Za-z0-9_]+)"|writer\.PropertyName\("([A-Za-z0-9_]+)"\)|Write[A-Za-z]*\(\s*writer,\s*"([A-Za-z0-9_]+)"/g;
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(ENTRY_CS)) !== null) {
-    names.push(match[1]);
+    names.push(match[1] ?? match[2] ?? match[3]);
   }
 
   return names;
