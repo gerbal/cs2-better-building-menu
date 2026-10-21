@@ -15,7 +15,10 @@ milestones and dev tree needed to file them.
   (`PrefabCategoryProcessors` lists them in order), and walks the game's own menus to learn where
   each asset sits ("The vanilla menu walk").
 - Anything that changes an indexed fact bumps the indexer's `Generation`, which is how the asset menu
-  knows to refresh (`IndexWatch`).
+  knows to refresh (`IndexWatch`). A pass, or a load emptying the index, also bumps
+  `ContentGeneration`, which empties the catalog's projection cache. An unlock or a unique built or
+  bulldozed does not: the adapter patches the lock and built state into the cached rows as each menu
+  is next read, instead of projecting every menu again.
 
 The system is one partial class across six files in `BetterBuildingMenu/Systems/`:
 

@@ -495,4 +495,5 @@ the cards built, and most of a long menu sits below the fold.
   a page and draw all of it.
 - **Projections are built during the load.** At `OnGameLoadingComplete` the UI system projects
   every menu into the adapter's snapshot cache (`BuildingCatalogAdapter.Prewarm`), so no menu's
-  first open pays for it. The cache is keyed on the toolbar's theme and pack selection.
+  first open pays for it. The cache is keyed on the toolbar's theme and pack selection, and survives
+  unlocks and uniques built or bulldozed, whose state is patched into the cached rows.

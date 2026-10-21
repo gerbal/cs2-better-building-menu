@@ -76,12 +76,16 @@ namespace BetterBuildingMenu.Systems
 		private readonly List<(IPrefabCategoryProcessor Processor, EntityQuery All, EntityQuery Changed)> _processors = new();
 
 		/// <summary>Bumped whenever an indexed fact changes: a re-index, an unlock, a unique built or
-		/// bulldozed, a load emptying the index. The catalog's snapshot cache is keyed on it, so
-		/// a stale projection cannot outlive the change that staled it, and the asset menu polls it to
-		/// know when to republish.</summary>
+		/// bulldozed, a load emptying the index. The asset menu polls it to know when to republish,
+		/// and the catalog's cached rows are brought up to it.</summary>
 		/// <remarks>Never reset: the caches compare it as a plain int, so a count that started again
 		/// could land on a number an older projection was stored under.</remarks>
 		public int Generation { get; private set; } = 1;
+
+		/// <summary>Bumped with <see cref="Generation"/> when the index's contents change: a pass, or a
+		/// load emptying it. Not for an unlock or a unique built or bulldozed, which change only state
+		/// the catalog patches into its cached rows. The snapshot cache is emptied on it.</summary>
+		public int ContentGeneration { get; private set; } = 1;
 
 		/// <summary>The index the asset menu reads. A load empties it at preload; a full pass builds its
 		/// replacement aside and publishes it only when the pass succeeds; a partial pass edits it in
@@ -93,7 +97,7 @@ namespace BetterBuildingMenu.Systems
 		public PlacedUniques PlacedUniques { get; private set; } = new();
 
 		/// <summary>What a catalog refresh reads, taken once, after <see cref="SyncPlacedUniques"/>.</summary>
-		public CatalogSource Source => new(Index, PlacedUniques, Generation);
+		public CatalogSource Source => new(Index, PlacedUniques, Generation) { ContentGeneration = ContentGeneration };
 
 		// Set when this system is created inside a running city: the game adds a
 		// newly subscribed mod to a session after the save is deserialised, so
@@ -183,6 +187,7 @@ namespace BetterBuildingMenu.Systems
 			// index is ready.
 			_loggedUniqueCandidateCount = -1;
 			Generation++;
+			ContentGeneration++;
 
 			Mod.Log.Debug($"Index emptied at preload (purpose={purpose}, mode={mode}); indexing waits for a city");
 		}
@@ -556,6 +561,7 @@ namespace BetterBuildingMenu.Systems
 			built.IsReady = true;
 			Index = built;
 			Generation++;
+			ContentGeneration++;
 
 			// Rescan the placed uniques against the city that just loaded: the
 			// tracker's loaded-asset events may already have run this frame, and a
