@@ -41,7 +41,7 @@ describe("the object picker is gone", () => {
   });
 
   it("offers no picker action on the asset menu", () => {
-    assert.doesNotMatch(src("domain/assetMenuContracts.ts"), /PickerOption/);
+    assert.doesNotMatch(src("domain/commands.ts"), /PickerOption/);
     assert.doesNotMatch(src("domain/buildingCatalogContracts.ts"), /pickerOption/);
   });
 });

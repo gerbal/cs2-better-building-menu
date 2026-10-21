@@ -4,7 +4,6 @@ import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import type { Command } from "domain/command";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
 import {
   groupDimensionsFor,
@@ -15,13 +14,19 @@ import { ChipRow } from "mods/ChipRow/ChipRow";
 import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
-import { clearAssetMenuFiltersCommand } from "domain/assetMenuFilterSummary";
-import { toggleAssetMenuFacetCommand } from "domain/buildingCatalogFacets";
 import {
-  ASSET_PACK_TRIGGER_GROUP,
-  ASSET_PACK_TRIGGER_NAME,
+  SET_SELECTED_ASSET_PACKS_TRIGGER,
+  SET_VANILLA_SELECTED_TRIGGER,
+  TOOLBAR_TRIGGER_GROUP,
+  clearAssetMenuFiltersCommand,
+  resetAssetMenuCommand,
+  setAssetMenuViewModeCommand,
+  setBuildingCatalogGroupByCommand,
+  toggleAssetMenuFacetCommand,
+  type Command,
+} from "domain/commands";
+import {
   CONTENT_FACET_ID,
-  VANILLA_TRIGGER_NAME,
   contentOptionKind,
   isContentFacetCommand,
   toggleAssetPack,
@@ -86,7 +91,7 @@ export const ControlPane = memo(function ControlPane() {
   // would answer C#'s own echo.
   const pickViewMode = (next: CatalogViewMode): void => {
     setAssetMenuView({ viewMode: next });
-    send({ method: "SetAssetMenuViewMode", args: [next] });
+    send(setAssetMenuViewModeCommand(next));
   };
   // Resolved on the C# side: the player's choice, or the menu's default.
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
@@ -115,13 +120,13 @@ export const ControlPane = memo(function ControlPane() {
     switch (contentOptionKind(optionId)) {
       case "pack":
         trigger(
-          ASSET_PACK_TRIGGER_GROUP,
-          ASSET_PACK_TRIGGER_NAME,
+          TOOLBAR_TRIGGER_GROUP,
+          SET_SELECTED_ASSET_PACKS_TRIGGER,
           toggleAssetPack(selectedAssetPacks, optionId)
         );
         return;
       case "vanilla":
-        trigger(ASSET_PACK_TRIGGER_GROUP, VANILLA_TRIGGER_NAME, !vanillaSelected);
+        trigger(TOOLBAR_TRIGGER_GROUP, SET_VANILLA_SELECTED_TRIGGER, !vanillaSelected);
         return;
       default:
         fire(toggleAssetMenuFacetCommand(groupId, optionId));
@@ -263,7 +268,7 @@ export const ControlPane = memo(function ControlPane() {
                           )}
                           variant="icon"
                           onSelect={() => {
-                            send({ method: "SetBuildingCatalogGroupBy", args: [dimension.id] });
+                            send(setBuildingCatalogGroupByCommand(dimension.id));
                             setGroupPickerOpen(false);
                           }}
                           aria-label={optionLabel}
@@ -357,9 +362,9 @@ export const ControlPane = memo(function ControlPane() {
               // cannot drift from it, and "" is "no pick" in the settings, so the next
               // session opens there too.
               setAssetMenuView({ viewMode: DEFAULT_VIEW_MODE });
-              send({ method: "SetAssetMenuViewMode", args: [""] });
+              send(setAssetMenuViewModeCommand(""));
               // The grouping is the query's; ResetAssetMenu clears it.
-              send({ method: "ResetAssetMenu", args: [] });
+              send(resetAssetMenuCommand());
             }}
           >
             {label("Tooltip.LABEL[BetterBuildingMenu.ResetMenu]", "Reset menu")}

@@ -78,7 +78,10 @@ A method that answers that question for its caller, such as
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
 availability options, the Load more step, the asset menu's height range and width)
 are C#'s, and the UI reads them from
-`UI/src/domain/sharedContracts.generated.ts`. Change the C#, then run
+`UI/src/domain/sharedContracts.generated.ts`. So are the triggers C# registers,
+with the argument types each reads: every command the UI sends is built in
+`UI/src/domain/commands.ts` from that table, so a builder that disagrees with
+the C# fails the typecheck. Change the C#, then run
 `CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it writes; the C#
 tests fail while the two disagree. Never edit the generated file by hand.
 

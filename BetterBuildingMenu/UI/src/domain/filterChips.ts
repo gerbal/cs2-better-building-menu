@@ -1,11 +1,11 @@
 /**
  * One visual form for every way the result set has been narrowed. Chips
  * compose, cost one wrapping row, and give a toolbar preset's filters a stated
- * cause. Model only and import-free, so the commands here are literals.
+ * cause. Model only, so Node runs it as the components do.
  */
 
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
-import type { Command } from "./command";
+import { setBuildingCatalogMetricRangeCommand, toggleAssetMenuFacetCommand, type Command } from "./commands";
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
 import type { MetricRangeId } from "./buildingCatalogRanges";
 
@@ -90,7 +90,7 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
         removable: true,
         // The same trigger that selected it: toggling is symmetric, so removal
         // needs no C# path of its own.
-        remove: { method: "ToggleAssetMenuFacet", args: [group.id, option.id] },
+        remove: toggleAssetMenuFacetCommand(group.id, option.id),
       });
     }
   }
@@ -111,7 +111,7 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
         dimension: `metric:${id}`,
         label: `${METRIC_LABELS[id]} ${formatRange(min, max)}`,
         removable: true,
-        remove: { method: "SetBuildingCatalogMetricRange", args: [id, "", ""] },
+        remove: setBuildingCatalogMetricRangeCommand(id, "", ""),
       });
     }
   }

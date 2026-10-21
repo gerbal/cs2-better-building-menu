@@ -51,16 +51,3 @@ export function toolbarSelectionKey(state: VanillaToolbarState): string {
     state.modsSelected ? "1" : "0",
   ].join("|");
 }
-
-/** Hands the row to the backend, which applies vanilla's own rule to it. */
-export function setVanillaToolbarSelectionCommand(state: VanillaToolbarState) {
-  return {
-    method: "SetVanillaToolbarSelection",
-    args: [
-      joinEntityIndices(state.themes),
-      joinEntityIndices(state.packs),
-      state.vanillaSelected,
-      state.modsSelected,
-    ] as const,
-  } as const;
-}

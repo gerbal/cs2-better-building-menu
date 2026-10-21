@@ -11,6 +11,7 @@ import {
   vanillaCategoryNameKeys,
   vanillaMenuNameKeys,
 } from "domain/vanillaServiceLabels";
+import { clearAssetMenuScopeCommand, setAssetMenuCategoryCommand, setAssetMenuCommand } from "domain/commands";
 import styles from "./chipRow.module.scss";
 import {
   AssetMenu$,
@@ -128,8 +129,8 @@ export const ChipRow = () => {
   const choose = (id: string) => {
     fire(
       picker === "menuCategory"
-        ? { method: "SetAssetMenuCategory", args: [id] }
-        : { method: "SetAssetMenu", args: [id] }
+        ? setAssetMenuCategoryCommand(id)
+        : setAssetMenuCommand(id)
     );
     setPicker(null);
   };
@@ -151,7 +152,7 @@ export const ChipRow = () => {
             "menu",
             scopedToMenu ? menuLabel(menu) : allMenusLabel,
             picker === "menu",
-            scopedToMenu ? () => fire({ method: "ClearAssetMenuScope", args: [] }) : null
+            scopedToMenu ? () => fire(clearAssetMenuScopeCommand()) : null
           )}
 
         {/* The category within it, which the strip also picks. Two ways to one
@@ -162,7 +163,7 @@ export const ChipRow = () => {
             "menuCategory",
             menuCategory === "" ? allCategoriesLabel : categoryLabel(menuCategory),
             picker === "menuCategory",
-            menuCategory === "" ? null : () => fire({ method: "SetAssetMenuCategory", args: [""] })
+            menuCategory === "" ? null : () => fire(setAssetMenuCategoryCommand(""))
           )}
 
       </div>

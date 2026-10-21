@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { toggleAssetMenuFacetCommand } from "../src/domain/buildingCatalogFacets.ts";
+import { toggleAssetMenuFacetCommand } from "../src/domain/commands.ts";
 
 describe("Asset menu filter controls", () => {
   it("builds the exact facet toggle payload, extensions included", () => {
@@ -38,7 +38,7 @@ describe("Vanilla menu interception", () => {
   });
 
   it("builds the trigger payload the backend expects", async () => {
-    const { vanillaMenuSelectedCommand } = await import("../src/domain/vanillaMenuWatch.ts");
+    const { vanillaMenuSelectedCommand } = await import("../src/domain/commands.ts");
 
     assert.deepEqual(vanillaMenuSelectedCommand(42), {
       method: "VanillaMenuSelected",
@@ -126,7 +126,7 @@ describe("Vanilla menu watcher lifecycle", () => {
   });
 
   it("names the close trigger the backend registers", async () => {
-    const { vanillaMenuDeselectedCommand } = await import("../src/domain/vanillaMenuWatch.ts");
+    const { vanillaMenuDeselectedCommand } = await import("../src/domain/commands.ts");
 
     assert.deepEqual(vanillaMenuDeselectedCommand(), {
       method: "VanillaMenuDeselected",

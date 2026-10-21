@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  clearAssetMenuFiltersCommand,
-  getAssetMenuEmptyStateMessage,
-  getAssetMenuFilterSummary,
-} from "../src/domain/assetMenuFilterSummary.ts";
+import { getAssetMenuEmptyStateMessage, getAssetMenuFilterSummary } from "../src/domain/assetMenuFilterSummary.ts";
+import { clearAssetMenuFiltersCommand } from "../src/domain/commands.ts";
 
 describe("Asset menu active-filter summary", () => {
   it("counts selected facets and metric ranges as one summary", () => {

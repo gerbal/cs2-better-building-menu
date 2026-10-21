@@ -6,12 +6,16 @@ import {
   escapeRoute,
   nextWatchState,
   toolbarEntityIndex,
-  vanillaMenuDeselectedCommand,
-  vanillaMenuSelectedCommand,
   watchAction,
   watchStateWhileOff,
   type WatchState,
 } from "domain/vanillaMenuWatch";
+import {
+  CLEAR_ASSET_SELECTION_TRIGGER,
+  TOOLBAR_TRIGGER_GROUP,
+  vanillaMenuDeselectedCommand,
+  vanillaMenuSelectedCommand,
+} from "domain/commands";
 import {
   FindItPanelShown$,
   OwnsCurrentMenu$,
@@ -23,7 +27,7 @@ import {
 /** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
 const ESCAPE_KEY_CODE = 27;
 
-const BackActions = { Back: () => trigger("toolbar", "clearAssetSelection") };
+const BackActions = { Back: () => trigger(TOOLBAR_TRIGGER_GROUP, CLEAR_ASSET_SELECTION_TRIGGER) };
 
 /**
  * Routes vanilla toolbar menus into the asset menu; renders nothing. The entity index
@@ -69,7 +73,7 @@ export const VanillaMenuWatcher = () => {
         return;
       }
 
-      trigger("toolbar", "clearAssetSelection");
+      trigger(TOOLBAR_TRIGGER_GROUP, CLEAR_ASSET_SELECTION_TRIGGER);
     };
 
     document.addEventListener("keydown", onKeyDown, true);

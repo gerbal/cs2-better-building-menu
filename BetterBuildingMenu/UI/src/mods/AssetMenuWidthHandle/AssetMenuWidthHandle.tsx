@@ -11,6 +11,7 @@ import {
   pxPerRemFrom,
   releasedCatalogWidth,
 } from "domain/assetMenuLayout";
+import { commitAssetMenuCatalogWidthCommand, setAssetMenuCatalogWidthCommand } from "domain/commands";
 import { send } from "mods/bindings";
 import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
 
@@ -85,7 +86,7 @@ export function useAssetMenuWidthDrag(
     pending.current = { frame: 0, width: null };
 
     if (next !== null) {
-      send({ method: "SetAssetMenuCatalogWidth", args: [next] });
+      send(setAssetMenuCatalogWidthCommand(next));
     }
   }
 
@@ -109,13 +110,13 @@ export function useAssetMenuWidthDrag(
     pending.current = { frame: 0, width: null };
     if (!state.moved) return;
 
-    send({ method: "SetAssetMenuCatalogWidth", args: [releasedCatalogWidth(state.last, room.current.bandWidth, room.current.paneShown)] });
-    send({ method: "CommitAssetMenuCatalogWidth", args: [] });
+    send(setAssetMenuCatalogWidthCommand(releasedCatalogWidth(state.last, room.current.bandWidth, room.current.paneShown)));
+    send(commitAssetMenuCatalogWidthCommand());
   }, [shown]);
 
   function fill(): void {
-    send({ method: "SetAssetMenuCatalogWidth", args: [filledCatalogWidth(paneShown)] });
-    send({ method: "CommitAssetMenuCatalogWidth", args: [] });
+    send(setAssetMenuCatalogWidthCommand(filledCatalogWidth(paneShown)));
+    send(commitAssetMenuCatalogWidthCommand());
   }
 
   function beginResize(event: any, widthRem: number = ASSET_MENU_WIDTH_HANDLE_WIDTH): void {
@@ -175,8 +176,8 @@ export function useAssetMenuWidthDrag(
     if (!state.moved) return;
     lastPress.current = 0;
 
-    send({ method: "SetAssetMenuCatalogWidth", args: [releasedCatalogWidth(state.last, bandWidth, paneShown)] });
-    send({ method: "CommitAssetMenuCatalogWidth", args: [] });
+    send(setAssetMenuCatalogWidthCommand(releasedCatalogWidth(state.last, bandWidth, paneShown)));
+    send(commitAssetMenuCatalogWidthCommand());
   }
 
   const blocker = isResizing

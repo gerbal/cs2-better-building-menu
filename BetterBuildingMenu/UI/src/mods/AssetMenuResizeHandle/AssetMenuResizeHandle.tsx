@@ -11,6 +11,7 @@ import {
   isPrimaryPress,
   pxPerRemFrom,
 } from "domain/assetMenuLayout";
+import { commitAssetMenuHeightCommand, setAssetMenuHeightCommand } from "domain/commands";
 
 import styles from "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 import { AssetMenuHeight$, send } from "mods/bindings";
@@ -52,7 +53,7 @@ export function useAssetMenuHeight(shown = true): AssetMenuHeight {
     pending.current = { frame: 0, height: null };
 
     if (next !== null) {
-      send({ method: "SetAssetMenuHeight", args: [next] });
+      send(setAssetMenuHeightCommand(next));
     }
   }
 
@@ -69,9 +70,9 @@ export function useAssetMenuHeight(shown = true): AssetMenuHeight {
     const next = pending.current.height;
     pending.current = { frame: 0, height: null };
     if (next !== null) {
-      send({ method: "SetAssetMenuHeight", args: [next] });
+      send(setAssetMenuHeightCommand(next));
     }
-    send({ method: "CommitAssetMenuHeight", args: [] });
+    send(commitAssetMenuHeightCommand());
   }, [shown]);
 
   function beginResize(event: any): void {
@@ -110,7 +111,7 @@ export function useAssetMenuHeight(shown = true): AssetMenuHeight {
     flushHeight();
     resizeState.current.active = false;
     setIsResizing(false);
-    send({ method: "CommitAssetMenuHeight", args: [] });
+    send(commitAssetMenuHeightCommand());
   }
 
   const blocker = isResizing

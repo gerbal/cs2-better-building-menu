@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { nextSortState } from "../src/domain/buildingCatalogContracts.ts";
 import {
   clearBuildingCatalogMetricRangesCommand,
-  nextSortState,
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
   loadMoreCatalogCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
-} from "../src/domain/buildingCatalogContracts.ts";
+} from "../src/domain/commands.ts";
 import {
   METRIC_RANGE_DEFINITIONS,
   countActiveMetricRanges,

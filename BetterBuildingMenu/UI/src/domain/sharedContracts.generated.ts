@@ -60,3 +60,33 @@ export const ASSET_MENU_MAX_WIDTH = 1441;
 export const ASSET_MENU_CATALOG_MIN_WIDTH = 735;
 export const ASSET_MENU_CATALOG_DEFAULT = 0;
 export const ASSET_MENU_CATALOG_FILL_SNAP = 2;
+
+/** Every trigger the mod's systems register, with the arguments C# reads; domain/commands builds from it. */
+export interface TriggerArgs {
+  ClearAssetMenuFilters: [];
+  ClearAssetMenuScope: [];
+  ClearBuildingCatalogMetricRanges: [];
+  CommitAssetMenuCatalogWidth: [];
+  CommitAssetMenuHeight: [];
+  LoadMoreBuildingCatalog: [number];
+  ResetAssetMenu: [];
+  SearchChanged: [string];
+  SearchEverything: [];
+  SetAssetMenu: [string];
+  SetAssetMenuCatalogWidth: [number];
+  SetAssetMenuCategory: [string];
+  SetAssetMenuHeight: [number];
+  SetAssetMenuSchoolTier: [number];
+  SetAssetMenuStripTab: [string];
+  SetAssetMenuViewMode: [string];
+  SetBuildingCatalogGroupBy: [string];
+  SetBuildingCatalogMetricRange: [string, string, string];
+  SetBuildingCatalogSortColumn: [string];
+  SetBuildingCatalogSortDescending: [boolean];
+  SetControlPaneShown: [boolean];
+  SetCurrentPrefab: [number];
+  SetVanillaToolbarSelection: [string, string, boolean, boolean];
+  ToggleAssetMenuFacet: [string, string];
+  VanillaMenuDeselected: [];
+  VanillaMenuSelected: [number];
+}

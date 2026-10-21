@@ -1,9 +1,7 @@
 import { useValue } from "cs2/api";
 import { useEffect, useRef } from "react";
-import {
-  setVanillaToolbarSelectionCommand,
-  toolbarSelectionKey,
-} from "domain/vanillaToolbarSelection";
+import { setVanillaToolbarSelectionCommand } from "domain/commands";
+import { toolbarSelectionKey } from "domain/vanillaToolbarSelection";
 import { ModsSelected$, SelectedAssetPacks$, SelectedThemes$, VanillaSelected$, send } from "mods/bindings";
 
 /**

@@ -25,7 +25,7 @@ import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
-import { assetMenuPort } from "domain/assetMenuPort";
+import { searchEverythingCommand, setCurrentPrefabCommand } from "domain/commands";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
 import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
@@ -197,7 +197,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       <Button
         className={styles.scopeNoticeAction}
         variant="icon"
-        onSelect={() => send({ method: "SearchEverything", args: [] })}
+        onSelect={() => send(searchEverythingCommand())}
         aria-label={searchEverywhereLabel}
         title={searchEverywhereLabel}
       >
@@ -231,7 +231,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
     // The backend resolves this id through its prefab index and activates the
     // normal prefab tool.
-    assetMenuPort.activatePrefab({ prefabId: entry.id });
+    send(setCurrentPrefabCommand(entry.id));
   }, [anchorKey]);
 
   const setSort = useCallback(
