@@ -55,10 +55,9 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = GROUP_DIMENSION_IDS.m
 }));
 
 /**
- * The menu whose assets carry a school tier, and the category the school levels
- * stand in for: both are named by their prefab, matched loosely on that name
- * (UIAssetMenuPrefab.name, never display text) so a rename or a variant still
- * resolves. C# makes the same test in VanillaMenus.IsEducation.
+ * Whether a menu or category prefab name (never display text) is the education
+ * one, matched loosely so a rename or a variant still resolves. C# makes the
+ * same test in VanillaMenus.IsEducation.
  */
 export function isEducationMenu(name: string | null | undefined): boolean {
   return /education/i.test(name ?? "");
