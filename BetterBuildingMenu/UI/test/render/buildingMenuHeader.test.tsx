@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { renderHtml, count } from "../harness/render";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings } from "../harness/stubs/cs2-api";
+import { seed } from "../harness/seed";
 import { BuildingMenuHeader } from "../../src/mods/BuildingMenu/BuildingMenuHeader";
+import { AssetMenu$, CurrentSearch$ } from "../../src/mods/bindings";
 
 describe("the menu header", () => {
   beforeEach(() => {
     resetBindings();
-    setBinding("BetterBuildingMenu", "CurrentSearch", "road");
-    setBinding("BetterBuildingMenu", "AssetMenu", "Roads");
+    seed(CurrentSearch$, "road");
+    seed(AssetMenu$, "Roads");
   });
 
   it("provides explicit labels for its icon actions", () => {

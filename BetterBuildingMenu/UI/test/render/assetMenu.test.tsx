@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
 import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_CATALOG_FULL, ASSET_MENU_WIDTH_HANDLE_REACH, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
+import { AssetMenuCatalogWidth$, AssetMenuWidth$, ControlPaneShown$ } from "../../src/mods/bindings";
 
 // The widths AssetMenu writes inline, read off the markup by class.
 const widthOf = (html: string, className: string): number =>
@@ -18,7 +20,7 @@ describe("the asset menu's row", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    seed(AssetMenuWidth$, 1441);
   });
 
   it("draws today's layout by default: the menu filling the room, the pane beside it, the strip on its edge", () => {
@@ -31,7 +33,7 @@ describe("the asset menu's row", () => {
   });
 
   it("leaves the pane out when it is hidden, and keeps the menu's width", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    seed(ControlPaneShown$, false);
     const html = render();
 
     assert.equal(widthOf(html, "assetMenuRow"), 1091);
@@ -40,8 +42,8 @@ describe("the asset menu's row", () => {
   });
 
   it("gives a filled menu the whole band when the pane is hidden", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FULL);
+    seed(ControlPaneShown$, false);
+    seed(AssetMenuCatalogWidth$, ASSET_MENU_CATALOG_FULL);
     const html = render();
 
     assert.equal(widthOf(html, "assetMenuRow"), 1476);
@@ -49,13 +51,13 @@ describe("the asset menu's row", () => {
   });
 
   it("is no wider than the menu and the pane, so nothing beside a narrow menu takes the mouse", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 900);
+    seed(AssetMenuCatalogWidth$, 900);
     const html = render();
 
     assert.equal(widthOf(html, "toolContainer"), 900);
     assert.equal(widthOf(html, "assetMenuRow"), 1285);
 
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    seed(ControlPaneShown$, false);
     assert.equal(widthOf(render(), "assetMenuRow"), 900);
   });
 });
@@ -67,7 +69,7 @@ describe("the asset menu's width strip", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    seed(AssetMenuWidth$, 1441);
     browser = installFakeBrowser({ frames: "none" });
   });
 
@@ -97,7 +99,7 @@ describe("the asset menu's width strip", () => {
   });
 
   it("reaches nowhere past the menu while the pane is hidden", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    seed(ControlPaneShown$, false);
     tree.mount(<AssetMenu onClose={() => {}} />);
 
     assert.equal(tree.root.findAll((node) => node.props.className === "widthReach").length, 0);
@@ -118,7 +120,7 @@ describe("a press in the gap beside the pane", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    seed(AssetMenuWidth$, 1441);
     browser = installFakeBrowser({ frames: "manual" });
   });
 

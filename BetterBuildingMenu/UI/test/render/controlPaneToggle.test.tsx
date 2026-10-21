@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { create } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { seed } from "../harness/seed";
 import { ControlPaneToggle } from "../../src/mods/ControlPaneToggle/ControlPaneToggle";
 import { BuildingMenuHeader } from "../../src/mods/BuildingMenu/BuildingMenuHeader";
 import { buildFilterChips, removableChipCount } from "../../src/domain/filterChips";
+import { AssetMenuFacets$, BuildingCatalogMetricRanges$, ControlPaneShown$ } from "../../src/mods/bindings";
 
 const toggle = (shown: boolean, filterCount: number) =>
   renderHtml(<ControlPaneToggle shown={shown} filterCount={filterCount} onToggle={() => {}} />);
@@ -95,8 +97,8 @@ describe("the options toggle in the menu header", () => {
       minLotDepth: null, maxLotDepth: null,
       hasSelection: true,
     };
-    setBinding("BetterBuildingMenu", "AssetMenuFacets", facets);
-    setBinding("BetterBuildingMenu", "BuildingCatalogMetricRanges", metricRanges);
+    seed(AssetMenuFacets$, facets);
+    seed(BuildingCatalogMetricRanges$, metricRanges);
     const expected = removableChipCount(buildFilterChips({ facets, metricRanges } as Parameters<typeof buildFilterChips>[0]));
 
     assert.equal(expected, 3);
@@ -104,7 +106,7 @@ describe("the options toggle in the menu header", () => {
   });
 
   it("asks C# for the other state", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    seed(ControlPaneShown$, false);
     const root = create(<BuildingMenuHeader />).root;
     root.find((node) => node.props["aria-label"] === "Show options" && typeof node.props.onSelect === "function").props.onSelect();
 

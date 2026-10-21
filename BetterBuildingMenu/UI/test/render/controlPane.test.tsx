@@ -2,11 +2,24 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { act } from "react-test-renderer";
 import { renderHtml, entry, catalogPage, count } from "../harness/render";
-import { setBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { mountEach } from "../harness/mount";
+import { seed as seedBinding } from "../harness/seed";
 import { getAssetMenuView, resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { GROUP_DIMENSIONS } from "../../src/domain/buildingGroups";
 import { ControlPane } from "../../src/mods/ControlPane/ControlPane";
+import {
+  AssetMenu$,
+  AssetMenuFacets$,
+  AssetMenuGroupDimensions$,
+  AssetMenuViewMode$,
+  BuildingCatalog$,
+  BuildingCatalogGroupBy$,
+  BuildingCatalogMetricRanges$,
+  BuildingCatalogSortColumn$,
+  BuildingCatalogSortDescending$,
+  CurrentSearch$,
+} from "../../src/mods/bindings";
 
 const facets = (selected: boolean) => ({
   groups: [{ id: "role", label: "Role", options: [{ id: "Hospital", label: "Hospital", selected }] }],
@@ -14,15 +27,15 @@ const facets = (selected: boolean) => ({
 });
 
 const seed = (menu = "Roads") => {
-  setBinding("BetterBuildingMenu", "AssetMenu", menu);
-  setBinding("BetterBuildingMenu", "BuildingCatalogGroupBy", "menuCategory");
-  setBinding("BetterBuildingMenu", "AssetMenuGroupDimensions", GROUP_DIMENSIONS.map((d) => d.id));
-  setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Name");
-  setBinding("BetterBuildingMenu", "BuildingCatalogSortDescending", false);
-  setBinding("BetterBuildingMenu", "CurrentSearch", "");
-  setBinding("BetterBuildingMenu", "AssetMenuFacets", facets(false));
-  setBinding("BetterBuildingMenu", "BuildingCatalogMetricRanges", null);
-  setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], { reorderableSortColumns: ["Name", "ConstructionCost"] }));
+  seedBinding(AssetMenu$, menu);
+  seedBinding(BuildingCatalogGroupBy$, "menuCategory");
+  seedBinding(AssetMenuGroupDimensions$, GROUP_DIMENSIONS.map((d) => d.id));
+  seedBinding(BuildingCatalogSortColumn$, "Name");
+  seedBinding(BuildingCatalogSortDescending$, false);
+  seedBinding(CurrentSearch$, "");
+  seedBinding(AssetMenuFacets$, facets(false));
+  seedBinding(BuildingCatalogMetricRanges$, null);
+  seedBinding(BuildingCatalog$, catalogPage([entry(1)], { reorderableSortColumns: ["Name", "ConstructionCost"] }));
 };
 
 const render = () => renderHtml(<ControlPane />);
@@ -53,7 +66,7 @@ describe("the control pane", () => {
   });
 
   it("carries the filters and their chips", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuFacets", facets(true));
+    seedBinding(AssetMenuFacets$, facets(true));
     const html = render();
 
     assert.match(html, /class="rail"/);
@@ -70,10 +83,10 @@ describe("the control pane", () => {
   });
 
   it("still says what a search is for, where the search box is not", () => {
-    setBinding("BetterBuildingMenu", "CurrentSearch", "road");
+    seedBinding(CurrentSearch$, "road");
 
     assert.match(render(), /class="searchContext" title="road">Results for road</);
-    setBinding("BetterBuildingMenu", "CurrentSearch", "   ");
+    seedBinding(CurrentSearch$, "   ");
     assert.doesNotMatch(render(), /class="searchContext"/);
   });
 
@@ -111,7 +124,7 @@ describe("the control pane's view", () => {
   });
 
   it("opens on the view C# kept while nothing was picked this session", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    seedBinding(AssetMenuViewMode$, "list");
     tree.mount(<ControlPane />);
 
     assert.equal(selected(), "List");
@@ -119,7 +132,7 @@ describe("the control pane's view", () => {
   });
 
   it("draws a pick at once and sends it to C# once", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    seedBinding(AssetMenuViewMode$, "list");
     tree.mount(<ControlPane />);
     press("Table");
 
@@ -127,7 +140,7 @@ describe("the control pane's view", () => {
     assert.deepEqual(sent(), [["table"]]);
 
     // C#'s echo of the same value redraws nothing and sends nothing.
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "table"));
+    act(() => seedBinding(AssetMenuViewMode$, "table"));
     assert.equal(selected(), "Table");
     assert.deepEqual(sent(), [["table"]]);
   });
@@ -135,13 +148,13 @@ describe("the control pane's view", () => {
   it("keeps the session's pick over a stale value C# pushes later", () => {
     tree.mount(<ControlPane />);
     press("Grid");
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list"));
+    act(() => seedBinding(AssetMenuViewMode$, "list"));
 
     assert.equal(selected(), "Grid");
   });
 
   it("goes back to Cards on Reset menu and keeps no view for the next session", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    seedBinding(AssetMenuViewMode$, "list");
     tree.mount(<ControlPane />);
     act(() => tree.root.find((node) => node.type === "button" && node.props.className === "resetButton").props.onClick());
 

@@ -3,13 +3,15 @@ import { beforeEach, describe, it } from "node:test";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { consumers, resetConsumers } from "../harness/stubs/cs2-input";
+import { seed } from "../harness/seed";
 import { VanillaMenuWatcher } from "../../src/mods/VanillaMenuWatcher/VanillaMenuWatcher";
+import { OwnsCurrentMenu$, ReplaceVanillaBuildMenu$ } from "../../src/mods/bindings";
 
 // Escape with our menu open: claimed as the game's Back on the default tool, so one press
 // closes the menu without opening the pause menu. See domain/vanillaMenuWatch, escapeRoute.
 const open = (toolId: string) => {
-  setBinding("BetterBuildingMenu", "ReplaceVanillaBuildMenu", true);
-  setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
+  seed(ReplaceVanillaBuildMenu$, true);
+  seed(OwnsCurrentMenu$, true);
   setBinding("tool", "activeTool", { id: toolId });
 };
 
@@ -46,7 +48,7 @@ describe("VanillaMenuWatcher and Escape", () => {
 
   it("claims nothing while our menu is closed, Find It's panel is up, or the setting is off", () => {
     open("Default Tool");
-    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", false);
+    seed(OwnsCurrentMenu$, false);
     assert.doesNotMatch(renderHtml(<VanillaMenuWatcher />), /data-input-actions/);
 
     open("Default Tool");
@@ -54,7 +56,7 @@ describe("VanillaMenuWatcher and Escape", () => {
     assert.doesNotMatch(renderHtml(<VanillaMenuWatcher />), /data-input-actions/);
 
     setBinding("FindIt", "ShowFindItPanel", false);
-    setBinding("BetterBuildingMenu", "ReplaceVanillaBuildMenu", false);
+    seed(ReplaceVanillaBuildMenu$, false);
     assert.doesNotMatch(renderHtml(<VanillaMenuWatcher />), /data-input-actions/);
   });
 });

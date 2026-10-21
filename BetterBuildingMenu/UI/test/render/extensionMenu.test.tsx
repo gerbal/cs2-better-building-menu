@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
 import { setBinding, setMapBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { seed } from "../harness/seed";
 import { ExtensionMenuComponent } from "../../src/mods/ExtensionMenu/ExtensionMenu";
+import { AssetMenuHeight$, BuildingExtensionMenu$, ReplaceVanillaBuildMenu$ } from "../../src/mods/bindings";
 
 // The game's own UpgradesMenu, as the extension point hands it to us. What it
 // renders is what the player sees whenever we decline.
@@ -27,24 +29,24 @@ const render = (props: Record<string, unknown> = {}) =>
 describe("the extension picker", () => {
   beforeEach(() => {
     resetBindings();
-    setBinding("BetterBuildingMenu", "ReplaceVanillaBuildMenu", true);
+    seed(ReplaceVanillaBuildMenu$, true);
     setBinding("selectedInfo", "selectedEntity", crematorium);
     setMapBinding("upgradeMenu", "upgrades", crematorium, [listed("HearseGarage", 7), listed("Columbarium", 8)]);
-    setBinding("BetterBuildingMenu", "BuildingExtensionMenu", {
+    seed(BuildingExtensionMenu$, {
       buildingName: "Crematorium",
       entries: [entry(8, { prefabName: "Columbarium", name: "Columbarium" }), entry(7, { prefabName: "HearseGarage", name: "Hearse Garage" })],
     });
   });
 
   it("leaves the panel to vanilla when the mod is not replacing menus", () => {
-    setBinding("BetterBuildingMenu", "ReplaceVanillaBuildMenu", false);
+    seed(ReplaceVanillaBuildMenu$, false);
 
     assert.match(render(), /data-vanilla-upgrades="true"/);
   });
 
   it("leaves the panel to vanilla when a listed upgrade has no entry behind it", () => {
     // The cold index after a save loads, or a mod's upgrade we never indexed.
-    setBinding("BetterBuildingMenu", "BuildingExtensionMenu", { buildingName: "Crematorium", entries: [entry(7, { prefabName: "HearseGarage" })] });
+    seed(BuildingExtensionMenu$, { buildingName: "Crematorium", entries: [entry(7, { prefabName: "HearseGarage" })] });
 
     const html = render();
     assert.match(html, /data-vanilla-upgrades="true"/);
@@ -91,7 +93,7 @@ describe("the extension picker", () => {
   it("does not state a capacity of zero as a fact", () => {
     // A clinic adds no students. "0 students" beside the ones that do is
     // noise dressed as a figure; the wing's 500 is the only capacity here.
-    setBinding("BetterBuildingMenu", "BuildingExtensionMenu", {
+    seed(BuildingExtensionMenu$, {
       buildingName: "Elementary School",
       entries: [
         entry(7, { prefabName: "HearseGarage", name: "Clinic", category: "ServiceBuildings", subCategory: "ServiceBuildings_EducationResearch", capacity: 0 }),
@@ -124,7 +126,7 @@ describe("the extension picker", () => {
   it("caps its body at the asset menu's height rather than sizing it to it", () => {
     // The same setting the build menu's drag writes. A cap, not a height: a
     // two-row picker stays two rows, a long one scrolls at the dragged height.
-    setBinding("BetterBuildingMenu", "AssetMenuHeight", 500);
+    seed(AssetMenuHeight$, 500);
 
     const html = render();
     const body = html.match(/<div class="[^"]*content[^"]*"[^>]*>/)?.[0] ?? "";

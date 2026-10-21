@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { forwardRef, useState } from "react";
 import { act, create, type ReactTestRendererJSON } from "react-test-renderer";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings } from "../harness/stubs/cs2-api";
+import { seed } from "../harness/seed";
 import { ToolOptionsVisibility } from "../../src/mods/ToolOptionsVisibility/ToolOptionsVisibility";
 import { ToolOptionsPanelRefresh } from "../../src/mods/ToolOptionsVisibility/ToolOptionsPanelRefresh";
+import { OwnsCurrentMenu$ } from "../../src/mods/bindings";
 
 // The visibility wrapper reads the binding without a hook, so something else
 // has to re-render the panel when ownership changes. That is this wrapper.
@@ -23,7 +25,7 @@ describe("ToolOptionsPanelRefresh", () => {
     act(() => { root = create(<Panel className="bank" />); });
     assert.equal((root.toJSON() as { children: string[] }).children[0], "hidden");
 
-    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
+    seed(OwnsCurrentMenu$, true);
     act(() => { root.update(<Panel className="bank" />); });
     const json = root.toJSON() as ReactTestRendererJSON;
     assert.equal(json.children?.[0], "shown");

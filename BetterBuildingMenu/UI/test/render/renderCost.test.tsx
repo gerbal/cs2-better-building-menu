@@ -3,11 +3,13 @@ import { beforeEach, describe, it } from "node:test";
 import { act } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { installFakeBrowser } from "../harness/fakeBrowser";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings } from "../harness/stubs/cs2-api";
 import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
+import { AssetMenuWidth$, BuildingCatalog$, CurrentSearch$ } from "../../src/mods/bindings";
 
 // Mounted, so bindings re-render their readers as they do in the game. Each row
 // reads its entry's prefabName once per render (the name is blank), so a
@@ -33,7 +35,7 @@ describe("what a keystroke re-renders", () => {
     resetAssetMenuView();
     reads = 0;
     installFakeBrowser({ frames: "none" });
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
+    seed(AssetMenuWidth$, 700);
     setAssetMenuView({ viewMode: "table" });
   });
 
@@ -44,12 +46,12 @@ describe("what a keystroke re-renders", () => {
       // The box echoes every keystroke, and the catalog reads it; the rows'
       // props do not change until the page does.
       setAssetMenuView({ viewMode: mode });
-      setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([counted(1), counted(2), counted(3)]));
+      seed(BuildingCatalog$, catalogPage([counted(1), counted(2), counted(3)]));
       mount();
       const afterMount = reads;
 
-      act(() => setBinding("BetterBuildingMenu", "CurrentSearch", "cli"));
-      act(() => setBinding("BetterBuildingMenu", "CurrentSearch", "clin"));
+      act(() => seed(CurrentSearch$, "cli"));
+      act(() => seed(CurrentSearch$, "clin"));
 
       assert.ok(afterMount > 0, `${mode}: the rows drew once`);
       assert.equal(reads, afterMount, mode);
@@ -57,11 +59,11 @@ describe("what a keystroke re-renders", () => {
   }
 
   it("redraws the rows when the page changes", () => {
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([counted(1), counted(2)]));
+    seed(BuildingCatalog$, catalogPage([counted(1), counted(2)]));
     mount();
     const afterMount = reads;
 
-    act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([counted(1), counted(2)])));
+    act(() => seed(BuildingCatalog$, catalogPage([counted(1), counted(2)])));
 
     assert.ok(reads > afterMount);
   });

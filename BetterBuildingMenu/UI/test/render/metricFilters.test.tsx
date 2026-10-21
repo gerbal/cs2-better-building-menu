@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import { act, type ReactTestInstance } from "react-test-renderer";
 import "../harness/render";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { getModule } from "../harness/stubs/cs2-modding";
 import { Button } from "../harness/stubs/cs2-ui";
 import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
 import type { AssetMenuMetricRangeState } from "../../src/domain/assetMenuFilterSummary";
 import { METRIC_RANGE_DEBOUNCE_MS } from "../../src/domain/metricRangeDebouncer";
 import { ASSET_MENU_DISCLOSURE_KEYS, resetAssetMenuView, setAssetMenuDisclosure } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogMetricFilters } from "../../src/mods/BuildingCatalog/BuildingCatalogMetricFilters";
+import { BuildingCatalogMetricBounds$, BuildingCatalogMetricRanges$ } from "../../src/mods/bindings";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput") as () => JSX.Element;
 
@@ -25,7 +27,7 @@ const none: AssetMenuMetricRangeState = {
 // The spread of what is in view, which an empty field shows.
 const bounds = { ...none, minCost: 500, maxCost: 90000, minUpkeep: 0, maxUpkeep: 1200, minLotWidth: 1.4, maxLotWidth: 6 };
 
-const ranges = (over: Partial<AssetMenuMetricRangeState>) => setBinding("BetterBuildingMenu", "BuildingCatalogMetricRanges", { ...none, ...over });
+const ranges = (over: Partial<AssetMenuMetricRangeState>) => seed(BuildingCatalogMetricRanges$, { ...none, ...over });
 
 describe("the metric-range drawer", () => {
   const tree = mountEach();
@@ -46,7 +48,7 @@ describe("the metric-range drawer", () => {
     mock.timers.enable({ apis: ["setTimeout"] });
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "BuildingCatalogMetricBounds", bounds);
+    seed(BuildingCatalogMetricBounds$, bounds);
   });
 
   afterEach(() => {
@@ -133,7 +135,7 @@ describe("the metric-range drawer", () => {
     open();
     render();
 
-    act(() => setBinding("BetterBuildingMenu", "BuildingCatalogMetricBounds", { ...bounds, minCost: 2000, maxCost: 4000 }));
+    act(() => seed(BuildingCatalogMetricBounds$, { ...bounds, minCost: 2000, maxCost: 4000 }));
 
     assert.deepEqual([value("Cost minimum"), value("Cost maximum")], ["2000", "4000"]);
   });

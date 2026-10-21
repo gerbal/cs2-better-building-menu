@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { act, create } from "react-test-renderer";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { installFakeBrowser } from "../harness/fakeBrowser";
 import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
 import {
   ASSET_MENU_MAX_HEIGHT,
   ASSET_MENU_MIN_HEIGHT,
@@ -11,6 +12,7 @@ import {
   draggedAssetMenuHeight,
 } from "../../src/domain/assetMenuLayout";
 import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
+import { AssetMenuHeight$ } from "../../src/mods/bindings";
 
 // A frame clock the test advances by hand, so "one per frame" can be counted.
 let nextFrame: () => void;
@@ -89,11 +91,11 @@ describe("the asset menu's height between drags", () => {
   });
 
   it("is the saved height, held inside what the layout can take", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuHeight", 5000);
+    seed(AssetMenuHeight$, 5000);
     mount();
     assert.equal(assetMenu.height, ASSET_MENU_MAX_HEIGHT);
 
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuHeight", 10));
+    act(() => seed(AssetMenuHeight$, 10));
     assert.equal(assetMenu.height, ASSET_MENU_MIN_HEIGHT);
   });
 

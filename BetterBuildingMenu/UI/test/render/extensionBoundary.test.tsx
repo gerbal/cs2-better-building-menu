@@ -3,13 +3,15 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { createRef, forwardRef } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import "../harness/render";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings } from "../harness/stubs/cs2-api";
 import { ExtensionBoundary, safeAppend, safeExtension } from "../../src/mods/ExtensionBoundary";
 import { gameClasses, gameModule, PlainTextInput } from "../../src/mods/gameModules";
 import { AssetMenuToolOptions } from "../../src/mods/AssetMenuToolOptions/AssetMenuToolOptions";
 import register from "../../src/index";
 import { installVanillaRegistry } from "../harness/vanillaRegistry";
 import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
+import { AssetMenuFacets$, OwnsCurrentMenu$ } from "../../src/mods/bindings";
 
 // React and the boundary both log a caught render error; the tests count ours.
 const originalError = console.error;
@@ -130,8 +132,8 @@ describe("a game UI module a game update has moved", () => {
 describe("the tool-options bank", () => {
   beforeEach(() => {
     resetBindings();
-    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
-    setBinding("BetterBuildingMenu", "AssetMenuFacets", {
+    seed(OwnsCurrentMenu$, true);
+    seed(AssetMenuFacets$, {
       groups: [{ id: "availability", label: "Availability", options: [{ id: "Locked", label: "Locked", selected: false }] }],
       hasSelection: false,
     });
@@ -180,7 +182,7 @@ describe("the tool-options bank", () => {
   });
 
   it("drops only our section when it throws, keeping vanilla's bank", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuFacets", {
+    seed(AssetMenuFacets$, {
       get groups(): never { throw new Error("our section broke"); },
       hasSelection: false,
     });

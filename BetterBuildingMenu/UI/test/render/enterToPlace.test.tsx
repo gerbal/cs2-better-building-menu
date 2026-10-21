@@ -3,11 +3,13 @@ import { beforeEach, describe, it } from "node:test";
 import { act } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { installFakeBrowser } from "../harness/fakeBrowser";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { searchFieldClass } from "../../src/mods/BuildingMenu/searchField";
+import { AssetMenuWidth$, BuildingCatalog$, BuildingCatalogGroupBy$, CurrentSearch$ } from "../../src/mods/bindings";
 
 // Mounted, not rendered to markup: the Enter listener is an effect. Node has no
 // document, so the few globals the catalog's effects reach for are faked here.
@@ -41,16 +43,16 @@ const armed = () => triggers.filter((call) => call.name === "SetCurrentPrefab").
 // Two groups, the weaker match first: grouping orders the page by group before
 // relevance, which is exactly when the first row is not the one to arm.
 const groupedPage = (searchText: string, bestMatchId: number | null) => {
-  setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(
+  seed(BuildingCatalog$, catalogPage(
     [
       entry(2, { name: "Old Clinic", groupPath: ["Buildings"] }),
       entry(1, { name: "Clinic", groupPath: ["ServiceBuildings"] }),
     ],
     { bestMatchId, searchText }
   ));
-  setBinding("BetterBuildingMenu", "BuildingCatalogGroupBy", "category");
+  seed(BuildingCatalogGroupBy$, "category");
 };
-const typed = (text: string) => setBinding("BetterBuildingMenu", "CurrentSearch", text);
+const typed = (text: string) => seed(CurrentSearch$, text);
 
 describe("Enter in the catalog", () => {
   const tree = mountEach();
@@ -59,7 +61,7 @@ describe("Enter in the catalog", () => {
     resetBindings();
     resetAssetMenuView();
     installDocument();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
+    seed(AssetMenuWidth$, 700);
   });
 
   const mount = () => tree.mount(<BuildingCatalogComponent />);
