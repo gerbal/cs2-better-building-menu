@@ -9,15 +9,19 @@ import {
   formatLotDimensions,
   hasFootprint,
 } from "domain/assetMenuMetricFormat";
-import { sortedBadgeText } from "domain/buildingEntryView";
-import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { thumbnailErrorHandler } from "domain/thumbnailFallback";
+import { entryLabel, entryStateAttributes, sortedBadgeText } from "domain/buildingEntryView";
+import { canPlace, entryStateWord } from "domain/buildingLockState";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
 import { useGuardedPlace } from "mods/useGuardedPlace";
 import { sortedMetricFor } from "domain/sortedMetric";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
+
+const UNIQUE_BADGE: UniqueBadgeClasses = { badge: styles.uniqueAsset, unique: styles.uniqueMark, alreadyBuilt: styles.alreadyBuilt };
+// A card's larger picture takes a larger badge, at the same ratio.
+const UNIQUE_BADGE_LARGE: UniqueBadgeClasses = { ...UNIQUE_BADGE, badge: classNames(styles.uniqueAsset, styles.uniqueAssetLarge) };
 
 /**
  * compact — icon and name only.
@@ -95,8 +99,9 @@ const BuildingListCard = memo(function BuildingListCard({
 }: BuildingListCardProps) {
   const { separators } = hoverCard;
   const sortedText = sortedBadgeText(entry, sortedMetric, separators);
-  const fullName = entry.name || entry.prefabName;
+  const fullName = entryLabel(entry);
   const label = listLabel(fullName);
+  const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
   // A road's lot is 0x0 and a zone has none: "0 × 0" measures something
@@ -120,43 +125,17 @@ const BuildingListCard = memo(function BuildingListCard({
         // Both unplaceable states, not just locked: a row has no
         // thumbnail to silhouette, so the ground and this suffix carry
         // the whole message.
-        aria-label={
-          (() => {
-            const word = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
-            return word ? `${fullName} — ${word}` : fullName;
-          })()
-        }
+        aria-label={stateWord ? `${fullName} — ${stateWord}` : fullName}
         aria-disabled={!canPlace(entry) ? "true" : undefined}
-        data-locked={isEntryLocked(entry) ? "true" : undefined}
-        data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
-        data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
+        {...entryStateAttributes(entry)}
       >
         {/* The picture and its badge share a box, as the tile's do, so
             the mark sits ON the building. Sized from base.scss's ratio,
             so it reads the same against a row icon and a grid tile. */}
         {entry.thumbnail
           ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
-              <img
-                className={classNames(styles.icon, cards && styles.iconLarge)}
-                src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
-                onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-                alt=""
-                aria-hidden="true"
-              />
-              {entry.isUnique === true && (
-                <img
-                  className={classNames(
-                    styles.uniqueAsset,
-                    cards && styles.uniqueAssetLarge,
-                    isEntryAlreadyBuilt(entry) ? styles.alreadyBuilt : styles.uniqueMark
-                  )}
-                  src={isEntryAlreadyBuilt(entry)
-                    ? "Media/Game/Icons/AlreadyBuilt.svg"
-                    : "Media/Game/Icons/Unique.svg"}
-                  alt=""
-                  aria-hidden="true"
-                />
-              )}
+              {entryThumbnail(entry, classNames(styles.icon, cards && styles.iconLarge))}
+              {uniqueBadge(entry, cards ? UNIQUE_BADGE_LARGE : UNIQUE_BADGE)}
             </span>
           : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
         <span className={styles.text}>

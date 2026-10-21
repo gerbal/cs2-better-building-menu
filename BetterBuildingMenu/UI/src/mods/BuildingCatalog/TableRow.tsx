@@ -12,18 +12,14 @@ import {
   hasFootprint, METRIC_NO_DATA,
 } from "domain/assetMenuMetricFormat";
 import { shortenTileLabel } from "domain/tileLabel";
-import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import {
-  canPlace,
-  entryStateWord,
-  hasVectorThumbnail,
-  isEntryAlreadyBuilt,
-  isEntryLocked,
-  lockedThumbnail,
-} from "domain/buildingLockState";
+import { canPlace, entryStateWord } from "domain/buildingLockState";
+import { entryLabel, entryStateAttributes } from "domain/buildingEntryView";
 import { BuildingHoverCard, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
 import { BuildingResultDetails } from "./BuildingResultDetails";
 import styles from "./buildingCatalog.module.scss";
+
+const UNIQUE_BADGE: UniqueBadgeClasses = { badge: styles.uniqueAsset, unique: styles.uniqueMark, alreadyBuilt: styles.alreadyBuilt };
 
 /** The translated words a row needs; translated once by the view, not per row. */
 export interface TableRowLabels {
@@ -72,9 +68,9 @@ export const TableRow = memo(function TableRow({
   const rawCategoryIdentity = entry.subCategory
     ? `${entry.category} · ${entry.subCategory}`
     : entry.category;
-  const entryLabel = entry.name || entry.prefabName;
-  const rowPlaceLabel = `${labels.place}: ${entryLabel}`;
-  const rowInspectLabel = `${labels.inspect}: ${entryLabel}`;
+  const name = entryLabel(entry);
+  const rowPlaceLabel = `${labels.place}: ${name}`;
+  const rowInspectLabel = `${labels.inspect}: ${name}`;
   const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
 
   return (
@@ -85,11 +81,9 @@ export const TableRow = memo(function TableRow({
       // length, and an expanded row is height: auto.
       data-catalog-entry={entry.id}
       data-expanded={expanded ? "true" : undefined}
-      data-locked={isEntryLocked(entry) ? "true" : undefined}
-      data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
-      // Same pair as the grid and the list: the ground says unplaceable, the
-      // reason is said in the Place button below.
-      data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
+      // Same markers as the grid and the list: the ground says unplaceable,
+      // the reason is said in the Place button below.
+      {...entryStateAttributes(entry)}
     >
       {/* Wrapping .rowSelect rather than the row: the row also holds the
           details control, which is not this building's description. cs2/ui's
@@ -112,28 +106,10 @@ export const TableRow = memo(function TableRow({
             {/* The badge sits ON the picture here too, at the same ratio the
                 grid and the rows use. */}
             <div className={styles.thumbnail}>
-              {entry.thumbnail && (
-                <img
-                  // Named, so the silhouette filter can reach the building
-                  // without also reaching the badge on top of it.
-                  className={styles.picture}
-                  src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
-                  onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-                />
-              )}
-              {entry.isUnique === true && (
-                <img
-                  className={classNames(
-                    styles.uniqueAsset,
-                    isEntryAlreadyBuilt(entry) ? styles.alreadyBuilt : styles.uniqueMark
-                  )}
-                  src={isEntryAlreadyBuilt(entry)
-                    ? "Media/Game/Icons/AlreadyBuilt.svg"
-                    : "Media/Game/Icons/Unique.svg"}
-                  alt=""
-                  aria-hidden="true"
-                />
-              )}
+              {/* Named, so the silhouette filter can reach the building
+                  without also reaching the badge on top of it. */}
+              {entryThumbnail(entry, styles.picture)}
+              {uniqueBadge(entry, UNIQUE_BADGE)}
             </div>
             <div className={styles.identity}>
               <div className={styles.nameLine}>
@@ -141,8 +117,8 @@ export const TableRow = memo(function TableRow({
                     name from its neighbours; and not the tiles' prefix strip,
                     because this table is flat and multi-theme, so dropping the
                     theme token collides two names. title has the full name. */}
-                <div className={styles.name} title={entryLabel}>
-                  {shortenTileLabel(entryLabel, nameBudget)}
+                <div className={styles.name} title={name}>
+                  {shortenTileLabel(name, nameBudget)}
                 </div>
                 {/* The row's own verb, which is Place — or the reason it will
                     not, so a locked row says so where the eye already is

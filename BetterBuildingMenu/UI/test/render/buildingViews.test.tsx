@@ -34,6 +34,8 @@ const list = (entries: BuildingCatalogEntry[]) => renderHtml(<BuildingList entri
 const table = (entries: BuildingCatalogEntry[]) =>
   renderHtml(<>{entries.map((rowEntry) => <TableRowInTable key={rowEntry.id} entry={rowEntry} />)}</>);
 
+const cards = (entries: BuildingCatalogEntry[]) => renderHtml(<BuildingList entries={entries} variant="cards" onPlace={() => {}} />);
+
 /** The sorted figure each view draws, in page order. */
 const sortedFigures = (html: string): string[] =>
   [...html.matchAll(/<span class="sortedMetric">([^<]*)<\/span>/g)].map(([, text]) => text);
@@ -83,6 +85,65 @@ describe("the words for an unplaceable tile and row", () => {
     assert.match(list(locked), /aria-label="Clinic — Locked"/);
     assert.match(table(locked), /aria-label="Place: Clinic — Locked"/);
   });
+});
+
+// Each view's own class for the picture, and for the badge over it.
+const VIEWS = [
+  { name: "grid", render: grid, picture: "thumb", badge: "uniqueAsset" },
+  { name: "list", render: list, picture: "icon", badge: "uniqueAsset" },
+  { name: "cards", render: cards, picture: "icon iconLarge", badge: "uniqueAsset uniqueAssetLarge" },
+  { name: "table", render: table, picture: "picture", badge: "uniqueAsset" },
+] as const;
+
+/** The opening tag of the element the scroll anchor finds the entry by. */
+const markedTag = (html: string): string => /<[a-z]+ [^>]*data-catalog-entry="1"[^>]*>/.exec(html)?.[0] ?? "";
+
+describe("the picture, the badge and the markers in every view", () => {
+  beforeEach(() => resetBindings());
+
+  for (const view of VIEWS) {
+    it(`${view.name}: draws the silhouette for an entry that cannot be placed`, () => {
+      const html = view.render([entry(1, { thumbnail: "a.png", silhouetteThumbnail: "a-black.png", isLocked: true })]);
+
+      assert.match(html, new RegExp(`<img class="${view.picture}" src="a-black.png"`));
+    });
+
+    it(`${view.name}: draws the picture itself for one that can`, () => {
+      const html = view.render([entry(1, { thumbnail: "a.png", silhouetteThumbnail: "a-black.png" })]);
+
+      assert.match(html, new RegExp(`<img class="${view.picture}" src="a.png"`));
+    });
+
+    it(`${view.name}: draws the picture as decoration, named by its control`, () => {
+      const html = view.render([entry(1, { thumbnail: "a.png" })]);
+
+      assert.match(html, new RegExp(`<img class="${view.picture}"[^>]* alt="" aria-hidden="true"`));
+    });
+
+    it(`${view.name}: badges a unique, with vanilla's other symbol once the city has one`, () => {
+      const unique = view.render([entry(1, { thumbnail: "a.png", isUnique: true })]);
+      const built = view.render([entry(1, { thumbnail: "a.png", isUnique: true, isAlreadyBuilt: true })]);
+      const ordinary = view.render([entry(1, { thumbnail: "a.png" })]);
+
+      assert.match(unique, new RegExp(`<img class="${view.badge} uniqueMark" src="Media/Game/Icons/Unique.svg" alt="" aria-hidden="true"/>`));
+      assert.match(built, new RegExp(`<img class="${view.badge} alreadyBuilt" src="Media/Game/Icons/AlreadyBuilt.svg" alt="" aria-hidden="true"/>`));
+      assert.doesNotMatch(ordinary, /Media\/Game\/Icons\/(Unique|AlreadyBuilt)\.svg/);
+    });
+
+    it(`${view.name}: marks the state the stylesheet keys off`, () => {
+      const placeable = markedTag(view.render([entry(1, { thumbnail: "a.png" })]));
+      const locked = markedTag(view.render([entry(1, { thumbnail: "Media/a.svg", isLocked: true })]));
+      const built = markedTag(view.render([entry(1, { thumbnail: "a.png", isUnique: true, isAlreadyBuilt: true })]));
+
+      assert.match(placeable, /data-vector-thumb="false"/);
+      assert.doesNotMatch(placeable, /data-locked|data-already-built/);
+      assert.match(locked, /data-locked="true"/);
+      assert.match(locked, /data-vector-thumb="true"/);
+      assert.doesNotMatch(locked, /data-already-built/);
+      assert.match(built, /data-already-built="true"/);
+      assert.doesNotMatch(built, /data-locked/);
+    });
+  }
 });
 
 // Mounted, so a tile's handler runs. The tile name's effects need a frame clock;

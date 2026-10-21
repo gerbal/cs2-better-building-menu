@@ -4,6 +4,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
+import { entryLabel } from "domain/buildingEntryView";
 import type { TileTooltipLine } from "domain/buildingTileTooltip";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "domain/hoverCardLines";
 import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "domain/assetMenuRowDetails";
@@ -135,7 +136,7 @@ const HoverCardContent = ({
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
 }) => {
-  const label = entry.name || entry.prefabName;
+  const label = entryLabel(entry);
   // What the thing IS, before every line that is a number about it — the same
   // sentence vanilla shows on selection.
   const description = context.describe(entry.prefabName);

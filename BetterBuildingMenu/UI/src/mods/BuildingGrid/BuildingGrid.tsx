@@ -4,10 +4,10 @@ import { type ReactNode } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { sortedBadgeText } from "domain/buildingEntryView";
+import { canPlace, entryStateWord, isEntryLocked } from "domain/buildingLockState";
+import { entryLabel, entryStateAttributes, sortedBadgeText } from "domain/buildingEntryView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { thumbnailErrorHandler } from "domain/thumbnailFallback";
+import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
 import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor } from "domain/sortedMetric";
@@ -15,6 +15,8 @@ import { useTextScale } from "mods/gameSettings";
 import { useGuardedPlace } from "mods/useGuardedPlace";
 import styles from "./buildingGrid.module.scss";
 import { ActivePrefabId$, BuildingCatalogSortColumn$, AssetMenuTileSize$ } from "mods/bindings";
+
+const UNIQUE_BADGE: UniqueBadgeClasses = { badge: styles.uniqueAsset, unique: styles.uniqueMark, alreadyBuilt: styles.alreadyBuilt };
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
@@ -170,15 +172,9 @@ const BuildingTile = memo(function BuildingTile({
   hoverCard,
   onPlace,
 }: BuildingTileProps) {
-  const label = entry.name || entry.prefabName;
+  const label = entryLabel(entry);
   const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
   const sortedText = sortedBadgeText(entry, sortedMetric, hoverCard.separators);
-  const locked = isEntryLocked(entry);
-  // Independent of locked, which is how vanilla arranges it: the padlock
-  // answers "can I build it yet" and this answers "is there only one of
-  // these, and have I got it". A locked unique carries both marks.
-  const alreadyBuilt = isEntryAlreadyBuilt(entry);
-  const unique = entry.isUnique === true;
 
   return (
     <BuildingHoverCard entry={entry} context={hoverCard}>
@@ -202,31 +198,20 @@ const BuildingTile = memo(function BuildingTile({
         aria-label={stateWord ? `${label} — ${stateWord}` : label}
         // Unplaceable either way, and announced as such rather than reading
         // as an ordinary tile that arms a placement the game refuses.
-        aria-disabled={locked || alreadyBuilt ? "true" : undefined}
-        data-locked={locked ? "true" : undefined}
-        data-already-built={alreadyBuilt ? "true" : undefined}
-        /* Always written, both ways: the silhouette rule keys off "false"
-           rather than off :not(), which Cohtml's selector engine rejects. */
-        data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
+        aria-disabled={canPlace(entry) ? undefined : "true"}
+        {...entryStateAttributes(entry)}
       >
         {/* The artwork and everything drawn ON it, in one box. Vanilla's tile
             IS its artwork; ours carries a label below, so anchoring the marks
             here rather than to the tile lets vanilla's insets transfer
             unchanged whatever height the label takes. */}
         <span className={styles.artwork}>
-          {entry.thumbnail
-            ? <img
-                className={styles.thumb}
-                src={lockedThumbnail(entry, locked || alreadyBuilt)}
-                onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-                alt=""
-              />
-            : null}
+          {entryThumbnail(entry, styles.thumb)}
           {/* Always drawn, unlike vanilla: at this tile size a silhouette
               alone is not distinguishable from a thumbnail that has not
               rendered yet. A RASTER, because a masked vector is what this
               engine cannot draw — see hasVectorThumbnail. */}
-          {locked && (
+          {isEntryLocked(entry) && (
             <img
               className={styles.lockGlyph}
               src="coui://betterbuildingmenu/LockRaster.png"
@@ -234,18 +219,10 @@ const BuildingTile = memo(function BuildingTile({
               aria-hidden="true"
             />
           )}
-          {/* Vanilla's own icons, and its own two-state rule: every unique is
-              badged, with a different symbol once the city has one. An <img>
-              rather than a masked glyph because these are full-colour icons
-              the game ships for exactly this. */}
-          {unique && (
-            <img
-              className={classNames(styles.uniqueAsset, alreadyBuilt ? styles.alreadyBuilt : styles.uniqueMark)}
-              src={alreadyBuilt ? "Media/Game/Icons/AlreadyBuilt.svg" : "Media/Game/Icons/Unique.svg"}
-              alt=""
-              aria-hidden="true"
-            />
-          )}
+          {/* Independent of locked, which is how vanilla arranges it: the
+              padlock answers "can I build it yet" and this answers "is there
+              only one of these, and have I got it". A locked unique carries both. */}
+          {uniqueBadge(entry, UNIQUE_BADGE)}
         </span>
         {/* One element per line rather than one that wraps: tileLabel.ts
             decides the break, where it is testable and the last line can be
