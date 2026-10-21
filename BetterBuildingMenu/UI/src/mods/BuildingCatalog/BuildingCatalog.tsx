@@ -30,38 +30,27 @@ import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } f
 import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchor, getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
-// The view mode is shared with the control plane, which is a sibling of this
-// asset menu rather than a descendant, so it goes through the subscribing hook.
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useCaptureKeydown } from "mods/useCaptureKeydown";
 import { useAssetMenuShown } from "mods/BuildingMenu/assetMenuShown";
-import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
-import { chooseViewMode } from "domain/viewModeChoice";
-import {
-  type GroupDimensionId,
-} from "domain/buildingGroups";
+import { GroupedResults } from "mods/GroupedResults/GroupedResults";
+import { useViewShape } from "mods/viewShape";
 import { TableView } from "./TableView";
 import { useCatalogWindow } from "./useCatalogWindow";
 import { useRevealExpandedRow, useScrollAnchor, useScrollToTopOnShow } from "./useScrollAnchor";
 import {
   AssetMenuHeight$,
-  BuildingCatalogGroupBy$,
   BuildingCatalogMatchesElsewhere$,
   BuildingCatalogMetricRanges$,
   BuildingCatalogSortColumn$,
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
-  AssetMenuViewMode$,
   CurrentSearch$,
   send,
   sendSort,
 } from "mods/bindings";
 import styles from "./buildingCatalog.module.scss";
-
-/** Grid recognises, List scans, Table compares. */
-type ViewMode = CatalogViewMode;
 
 const densityClassNames: Record<AssetMenuDensityTier, string> = {
   compact: styles.densityCompact,
@@ -82,17 +71,11 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  // In the shared store, not useState: the control plane is a sibling of this
-  // asset menu rather than a descendant, and the choice has to survive the remount
-  // that placing a building causes.
-  const sessionViewMode = useAssetMenuView((view) => view.viewMode);
-  const storedViewMode = useValue(AssetMenuViewMode$);
   // Obeyed at every asset menu height. A control that lights up and changes nothing
   // is the same defect as a control that is missing, and the height is the
   // player's to set.
-  const viewMode: ViewMode = chooseViewMode(sessionViewMode, storedViewMode, DEFAULT_VIEW_MODE);
+  const { viewMode, groupBy } = useViewShape();
   const tableMode = viewMode === "table";
-  const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
   // In the store rather than useState so the open row survives the remount
   // that placing a building causes, the way the anchor does.
   const expandedId = useAssetMenuView((view) => view.expandedId);
