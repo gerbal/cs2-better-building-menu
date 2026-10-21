@@ -63,7 +63,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void FilesASubCategoryByTheExactFamilyId()
 		{
-			// The one lookup that is case-sensitive, as the switch it replaces was.
+			// The one lookup that is case-sensitive.
 			Assert.Equal(PrefabSubCategory.Zones_Misc, ZoningCatalog.SubCategoryOf("zoneoffice"));
 			Assert.Equal(PrefabSubCategory.Zones_Misc, ZoningCatalog.SubCategoryOf(" ZoneOffice "));
 		}
@@ -105,7 +105,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TakesTheFirstStemWhenANameCarriesTwo()
 		{
-			// Stems are tried in menu order, so a name with two answers to the first.
+			// Stems are tried in order, so a name carrying two takes the first.
 			Assert.Equal(ZoningFamilies.Residential, ZoningCatalog.ResolveFamily("ZoneResidentialOffice"));
 			Assert.Equal(ZoningFamilies.Commercial, ZoningCatalog.ResolveFamily("ZoneCommercialMixed"));
 		}
