@@ -88,13 +88,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>
 		/// Widens a search that found nothing here to the whole catalog.
 		/// </summary>
-		private void SearchEverything()
-		{
-			_assetMenu = _assetMenu.ClearMenuScope();
-			PublishScope();
-
-			RefreshAssetMenu();
-		}
+		private void SearchEverything() => ClearAssetMenuScope();
 
 		private void SetBuildingCatalogSortColumn(string column) => Apply(_assetMenu.SetSortColumn(column));
 
