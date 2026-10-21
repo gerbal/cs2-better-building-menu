@@ -206,7 +206,8 @@ namespace BetterBuildingMenu.Tests
 				return end > at ? shape.Substring(at + 1, end - at) : null;
 			}
 
-			// The '>' that closes the type-argument list opening at `open`, or -1 where '<' is a comparison.
+			// The '>' that closes the type-argument list opening at `open`, past any nested list (so `>>` too),
+			// or -1 where '<' is a comparison.
 			private static int ClosingAngle(string shape, int open)
 			{
 				var depth = 0;
@@ -215,13 +216,14 @@ namespace BetterBuildingMenu.Tests
 				{
 					var c = shape[i];
 
-					if (c == '<')
+					if (c is '<' or '>')
 					{
-						depth++;
-					}
-					else if (c == '>' && --depth == 0)
-					{
-						return i;
+						depth += c == '<' ? 1 : -1;
+
+						if (depth == 0)
+						{
+							return i;
+						}
 					}
 					else if (!(IsWordChar(c) || char.IsWhiteSpace(c) || c is ',' or '.' or '?' or '[' or ']'))
 					{

@@ -77,6 +77,10 @@ namespace BetterBuildingMenu.Tests
 			Assert.Empty(TriggerRegistrations.Parse("ValueBindingHelper<string> _ViewMode; _ViewMode = CreateBinding(\"ViewMode\", \"grid\");"));
 			Assert.Empty(TriggerRegistrations.Parse("_CurrentSearch = CreateBinding(\"CurrentSearch\", \"\");"));
 			Assert.Empty(TriggerRegistrations.Parse("_Counts = CreateBinding(\"Counts\", new Dictionary<string, int>());"));
+			// Nested type arguments, closed by `>>` or `>>>`, are part of one argument.
+			Assert.Empty(TriggerRegistrations.Parse("_Counts = CreateBinding(\"Counts\", new Dictionary<string, List<int>>());"));
+			Assert.Empty(TriggerRegistrations.Parse("_Counts = CreateBinding(\"Counts\", new Dictionary<List<int>, string>());"));
+			Assert.Empty(TriggerRegistrations.Parse("_Counts = CreateBinding<Dictionary<string, List<int>>>(\"Counts\", new());"));
 		}
 
 		[Fact]
@@ -85,6 +89,10 @@ namespace BetterBuildingMenu.Tests
 			var triggers = TriggerRegistrations.Parse("CreateBinding(\"Pick\", \"SetPick\", Math.Max(0, start), SetPick); void SetPick(int pick) { }");
 
 			Assert.Equal(new[] { "SetPick: number" }, triggers.Select(trigger => $"{trigger.Name}: {string.Join(", ", trigger.Arguments)}"));
+
+			var nested = TriggerRegistrations.Parse("CreateBinding(\"X\", \"SetX\", Lookup<string, List<int>>.Default, SetX); void SetX(int x) { }");
+
+			Assert.Equal(new[] { "SetX: number" }, nested.Select(trigger => $"{trigger.Name}: {string.Join(", ", trigger.Arguments)}"));
 		}
 
 		[Fact]
