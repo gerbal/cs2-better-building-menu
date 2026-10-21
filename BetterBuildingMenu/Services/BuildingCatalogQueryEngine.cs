@@ -220,14 +220,10 @@ namespace BetterBuildingMenu.Services
 				&& (!query.MaxLotWidth.HasValue || entry.LotWidth <= query.MaxLotWidth.Value)
 				&& (!query.MinLotDepth.HasValue || entry.LotDepth >= query.MinLotDepth.Value)
 				&& (!query.MaxLotDepth.HasValue || entry.LotDepth <= query.MaxLotDepth.Value)
-				&& (!query.MinBuildingLevel.HasValue || entry.BuildingLevel >= query.MinBuildingLevel.Value)
-				&& (!query.MaxBuildingLevel.HasValue || entry.BuildingLevel <= query.MaxBuildingLevel.Value)
 				&& InRange(entry.ConstructionCost, query.MinConstructionCost, query.MaxConstructionCost)
 				&& InRange(entry.Upkeep, query.MinUpkeep, query.MaxUpkeep)
 				&& InRange(entry.Workers, query.MinWorkers, query.MaxWorkers)
-				&& InRange(entry.Capacity, query.MinCapacity, query.MaxCapacity)
-				&& InRange(entry.ElectricityConsumption, query.MinElectricityConsumption, query.MaxElectricityConsumption)
-				&& InRange(entry.WaterConsumption, query.MinWaterConsumption, query.MaxWaterConsumption);
+				&& InRange(entry.Capacity, query.MinCapacity, query.MaxCapacity);
 		}
 
 		/// <summary>

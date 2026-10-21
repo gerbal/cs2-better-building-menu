@@ -205,9 +205,7 @@ public sealed class BuildingCatalogQueryEngineTests
                 MinLotWidth: 3,
                 MaxLotWidth: 3,
                 MinLotDepth: 2,
-                MaxLotDepth: 2,
-                MinBuildingLevel: 2,
-                MaxBuildingLevel: 2));
+                MaxLotDepth: 2));
 
         BuildingCatalogEntry entry = Assert.Single(page.Items);
         Assert.Equal(4, entry.Id);
