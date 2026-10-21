@@ -29,19 +29,15 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void MatchesASubsequenceSoAbbreviationsWork()
+		public void ScoresOnlyWhatTheSearchFilterLetsThrough()
 		{
-			Assert.True(BuildingCatalogRelevance.Score(E(1, "Disease Control Center"), "dcc") > 0);
-			Assert.True(BuildingCatalogRelevance.Score(E(2, "Elementary School"), "esc") > 0);
-		}
-
-		[Fact]
-		public void ScoresASubsequenceBelowAnyRealSubstringMatch()
-		{
-			var sub = BuildingCatalogRelevance.Score(E(1, "Disease Control Center"), "dcc");
-			var real = BuildingCatalogRelevance.Score(E(2, "DCC Depot"), "dcc");
-
-			Assert.True(real > sub);
+			// The filter keeps a row only when every word is in its name, prefab name or Paradox
+			// Mods id, so those are all a score reads. Abbreviations and category text are not
+			// searched: "dcc" finds no Disease Control Center, and "health" no Health building.
+			// Owner's call, 2026-10-21: in a menu already scoped by its tabs, category text would
+			// flood every search.
+			Assert.Equal(0, BuildingCatalogRelevance.Score(E(1, "Disease Control Center"), "dcc"));
+			Assert.Equal(0, BuildingCatalogRelevance.Score(E(2, "Some Building", "ServiceBuildings", "Health"), "health"));
 		}
 
 		[Fact]
@@ -68,12 +64,6 @@ namespace BetterBuildingMenu.Tests
 		public void MatchesThePdxModsIdWhichTheBackendAlreadySearchesBy()
 		{
 			Assert.True(BuildingCatalogRelevance.Score(E(1, "Some Building") with { PdxModsId = "12345" }, "12345") > 0);
-		}
-
-		[Fact]
-		public void FindsABuildingByItsCategory()
-		{
-			Assert.True(BuildingCatalogRelevance.Score(E(1, "Some Building", "ServiceBuildings", "Health"), "health") > 0);
 		}
 
 		[Fact]
