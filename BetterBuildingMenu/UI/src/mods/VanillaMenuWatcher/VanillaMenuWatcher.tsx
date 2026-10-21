@@ -1,8 +1,10 @@
 import { trigger, useValue } from "cs2/api";
+import { game, selectedInfo, tool } from "cs2/bindings";
+import { InputActionConsumer } from "cs2/input";
 import { useEffect, useRef } from "react";
 import {
+  escapeRoute,
   nextWatchState,
-  shouldClearOnEscape,
   toolbarEntityIndex,
   vanillaMenuDeselectedCommand,
   vanillaMenuSelectedCommand,
@@ -21,6 +23,8 @@ import {
 /** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
 const ESCAPE_KEY_CODE = 27;
 
+const BackActions = { Back: () => trigger("toolbar", "clearAssetSelection") };
+
 /**
  * Routes vanilla toolbar menus into the asset menu; renders nothing. The entity index
  * goes to the backend because naming a menu needs the prefab system, and a menu
@@ -38,23 +42,30 @@ export const VanillaMenuWatcher = () => {
 
   const assetMenuOpen = useValue(OwnsCurrentMenu$);
   const findItPanelShown = useValue(FindItPanelShown$) === true;
+  const activeTool = useValue(tool.activeTool$);
+  const gamePanel = useValue(game.activeGamePanel$);
+  const hasSelection = useValue(selectedInfo.activeSelection$);
+  const route = escapeRoute({
+    assetMenuOpen,
+    findItPanelShown,
+    defaultTool: activeTool?.id === tool.DEFAULT_TOOL,
+    gamePanelOpen: gamePanel !== null,
+    hasSelection,
+  });
 
   /**
    * Escape takes the asset menu down by clearing the GAME's selection, so the close
    * branch below does the work and there is one route out. Capture phase, so a
-   * control inside the asset menu cannot swallow it. See shouldClearOnEscape.
+   * control inside the asset menu cannot swallow it. Only where the game claims Back
+   * itself; on the default tool the consumer below claims it. See escapeRoute.
    */
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || route !== "clear-on-keydown") {
       return;
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.keyCode !== ESCAPE_KEY_CODE) {
-        return;
-      }
-
-      if (!shouldClearOnEscape({ assetMenuOpen, findItPanelShown })) {
         return;
       }
 
@@ -64,7 +75,7 @@ export const VanillaMenuWatcher = () => {
     document.addEventListener("keydown", onKeyDown, true);
 
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [enabled, assetMenuOpen, findItPanelShown]);
+  }, [enabled, route]);
 
   useEffect(() => {
     if (!enabled) {
@@ -100,5 +111,7 @@ export const VanillaMenuWatcher = () => {
     });
   }, [enabled, selected]);
 
-  return null;
+  // Mounted rather than given changing actions: the last consumer attached wins Escape, and one
+  // that changes its actions keeps its place (as Find It 2.0 found, 5cedb8a).
+  return enabled && route === "claim-back" ? <InputActionConsumer actions={BackActions} ignoreFocusState={true} /> : null;
 };
