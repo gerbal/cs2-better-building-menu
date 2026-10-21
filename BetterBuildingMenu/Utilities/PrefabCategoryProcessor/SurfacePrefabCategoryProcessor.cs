@@ -11,34 +11,10 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
     public class SurfacePrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<AreaData>(),
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<PlaceholderObjectElement>(),
-                    }
-                },
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<SurfaceData>(),
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<PlaceholderObjectElement>(),
-                    }
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery
+            .All(typeof(AreaData))
+            .Or(ProcessorQuery.All(typeof(SurfaceData)))
+            .None(typeof(PlaceholderObjectElement));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

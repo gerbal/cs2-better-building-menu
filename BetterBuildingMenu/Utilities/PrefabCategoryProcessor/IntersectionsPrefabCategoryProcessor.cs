@@ -11,20 +11,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
     public class IntersectionsPrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<AssetStampData>(),
-                        ComponentType.ReadOnly<SubNet>(),
-                    },
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(AssetStampData), typeof(SubNet));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

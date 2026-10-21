@@ -20,20 +20,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     /// </remarks>
     public class FencePrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<FenceData>(),
-                        ComponentType.ReadOnly<NetData>(),
-                    },
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(FenceData), typeof(NetData));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

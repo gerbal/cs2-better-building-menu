@@ -20,19 +20,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	/// </remarks>
 	public class TerraformingPrefabCategoryProcessor : IPrefabCategoryProcessor
 	{
-		public EntityQueryDesc[] GetEntityQuery()
-		{
-			return new[]
-			{
-				new EntityQueryDesc
-				{
-					All = new[]
-					{
-						ComponentType.ReadOnly<TerraformingData>(),
-					},
-				},
-			};
-		}
+		public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(TerraformingData));
 
 		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
 		{

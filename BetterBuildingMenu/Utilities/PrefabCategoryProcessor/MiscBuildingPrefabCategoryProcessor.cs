@@ -18,26 +18,13 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             _entityManager = entityManager;
         }
 
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<BuildingData>(),
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<ServiceObjectData>(),
-                        ComponentType.ReadOnly<SpawnableBuildingData>(),
-                        ComponentType.ReadOnly<SignatureBuildingData>(),
-                        ComponentType.ReadOnly<ServiceUpgradeBuilding>(),
-                    }
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery
+            .All(typeof(BuildingData))
+            .None(
+                typeof(ServiceObjectData),
+                typeof(SpawnableBuildingData),
+                typeof(SignatureBuildingData),
+                typeof(ServiceUpgradeBuilding));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

@@ -141,8 +141,8 @@ namespace BetterBuildingMenu.Systems
 			{
 				_processors.Add((
 					processor,
-					GetEntityQuery(processor.GetEntityQuery()),
-					GetEntityQuery(ChangedOnly(processor.GetEntityQuery()))));
+					GetEntityQuery(processor.Query.ToDescs()),
+					GetEntityQuery(ChangedOnly(processor.Query))));
 			}
 
 			// Unlock events are the second trigger: UnlockSystem.UnlockPrefab
@@ -515,18 +515,15 @@ namespace BetterBuildingMenu.Systems
 			deleted.Dispose();
 		}
 
-		/// <summary>Narrows a processor's query to prefabs created or changed this frame.</summary>
-		/// <remarks>Edits the descriptions in place, so it is handed a copy of its own: processors build
-		/// new ones on every call. A description with an Any of its own is left whole, since it cannot
-		/// take a second; that processor's partial passes read everything it matches.</remarks>
-		private static EntityQueryDesc[] ChangedOnly(EntityQueryDesc[] descs)
+		/// <summary>A processor's query, narrowed to prefabs created or changed this frame.</summary>
+		/// <remarks>A spec has no Any of its own, so the two tags take that slot in each description.</remarks>
+		private static EntityQueryDesc[] ChangedOnly(ProcessorQuery query)
 		{
+			var descs = query.ToDescs();
+
 			foreach (var desc in descs)
 			{
-				if (desc.Any is not { Length: > 0 })
-				{
-					desc.Any = new[] { ComponentType.ReadOnly<Created>(), ComponentType.ReadOnly<Updated>() };
-				}
+				desc.Any = new[] { ComponentType.ReadOnly<Created>(), ComponentType.ReadOnly<Updated>() };
 			}
 
 			return descs;

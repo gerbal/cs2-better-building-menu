@@ -11,19 +11,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
     public class BridgesPrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<BridgeData>(),
-                    },
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(BridgeData));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

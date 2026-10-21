@@ -11,20 +11,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
     public class TreePrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<TreeData>(),
-                        ComponentType.ReadOnly<GrowthScaleData>(),
-                    },
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(TreeData), typeof(GrowthScaleData));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {

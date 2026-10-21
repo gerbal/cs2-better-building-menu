@@ -11,24 +11,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
     public class PathsPrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        public EntityQueryDesc[] GetEntityQuery()
-        {
-            return new[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new[]
-                    {
-                        ComponentType.ReadOnly<PathwayData>(),
-                        ComponentType.ReadOnly<NetData>(),
-                    },
-                    None = new[]
-                    {
-                        ComponentType.ReadOnly<BridgeData>(),
-                    }
-                },
-            };
-        }
+        public ProcessorQuery Query { get; } = ProcessorQuery
+            .All(typeof(PathwayData), typeof(NetData))
+            .None(typeof(BridgeData));
 
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
