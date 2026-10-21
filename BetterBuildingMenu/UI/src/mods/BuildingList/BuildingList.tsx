@@ -1,7 +1,7 @@
 import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useCallback, useRef } from "react";
+import { memo } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   formatBuildingMetric,
@@ -14,6 +14,7 @@ import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEn
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { useGuardedPlace } from "mods/useGuardedPlace";
 import { sortedMetricFor } from "domain/sortedMetric";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
@@ -49,16 +50,8 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const cards = variant === "cards";
 
-  // One callback for the list's lifetime, reading the newest onPlace through a ref,
-  // so a card's props hold still between renders and the card skips its own.
-  const latestOnPlace = useRef(onPlace);
-  latestOnPlace.current = onPlace;
-  const place = useCallback((entry: BuildingCatalogEntry) => {
-    // See BuildingGrid: locked assets are shown and refused, not hidden.
-    if (!canPlace(entry)) return;
-
-    latestOnPlace.current(entry);
-  }, []);
+  // Locked assets are shown and refused, not hidden.
+  const place = useGuardedPlace(onPlace);
 
   return (
     <div className={styles.list}>

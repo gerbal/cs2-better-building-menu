@@ -1,10 +1,10 @@
 import { useValue } from "mods/panelValue";
 import { Button, Scrollable } from "cs2/ui";
 import { type ReactNode } from "react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
+import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { sortedBadgeText } from "domain/buildingEntryView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -12,6 +12,7 @@ import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "do
 import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "mods/gameSettings";
+import { useGuardedPlace } from "mods/useGuardedPlace";
 import styles from "./buildingGrid.module.scss";
 import { ActivePrefabId$, BuildingCatalogSortColumn$, AssetMenuTileSize$ } from "mods/bindings";
 
@@ -104,19 +105,8 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
   const activePrefabId = useValue(ActivePrefabId$);
-  // One callback for the grid's lifetime, reading the newest onPlace through a ref,
-  // so a tile's props hold still between renders and the tile skips its own.
-  const latestOnPlace = useRef(onPlace);
-  latestOnPlace.current = onPlace;
-  const place = useCallback((entry: BuildingCatalogEntry) => {
-    // Vanilla refuses the same selection rather than hiding the tile: its own
-    // grid routes a locked click to a disabled sound, not a placement.
-    if (!canPlace(entry)) return;
-
-    latestOnPlace.current(entry);
-  }, []);
-
-
+  // Vanilla's own grid routes a locked click to a disabled sound, not a placement.
+  const place = useGuardedPlace(onPlace);
 
   const tiles = (
     <div className={classNames(styles.tiles, styles.bodyTiles)}>

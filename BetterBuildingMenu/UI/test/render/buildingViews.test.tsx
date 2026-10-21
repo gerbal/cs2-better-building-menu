@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { act } from "react-test-renderer";
 import { renderHtml, entry } from "../harness/render";
+import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
+import { mountEach } from "../harness/mount";
 import { seed } from "../harness/seed";
 import { resetBindings } from "../harness/stubs/cs2-api";
 import { loadLocale, resetLocale } from "../harness/stubs/cs2-l10n";
@@ -80,4 +83,49 @@ describe("the words for an unplaceable tile and row", () => {
     assert.match(list(locked), /aria-label="Clinic — Locked"/);
     assert.match(table(locked), /aria-label="Place: Clinic — Locked"/);
   });
+});
+
+// Mounted, so a tile's handler runs. The tile name's effects need a frame clock;
+// none of its frames run here.
+describe("placing from the grid and the list", () => {
+  const tree = mountEach();
+  let browser: FakeBrowser;
+
+  beforeEach(() => {
+    resetBindings();
+    browser = installFakeBrowser({ frames: "none" });
+  });
+  afterEach(() => browser.restore());
+
+  const select = (id: number) =>
+    act(() => tree.root.find((node) => node.props["data-catalog-entry"] === id && typeof node.props.onSelect === "function").props.onSelect());
+  const entries = [entry(1), entry(2, { isLocked: true }), entry(3, { isUnique: true, isAlreadyBuilt: true })];
+
+  for (const [name, View] of [["grid", BuildingGrid], ["list", BuildingList]] as const) {
+    it(`${name}: places what the game would place, and refuses the rest`, () => {
+      const placed: number[] = [];
+      tree.mount(<View entries={entries} onPlace={(placedEntry) => placed.push(placedEntry.id)} />);
+
+      select(1);
+      select(2);
+      select(3);
+
+      assert.deepEqual(placed, [1]);
+    });
+
+    it(`${name}: hands every row one place callback, which calls the newest onPlace`, () => {
+      const first: number[] = [];
+      const second: number[] = [];
+      const placeProp = () => tree.root.find((node) => node.props.entry?.id === 1 && typeof node.props.onPlace === "function").props.onPlace;
+      tree.mount(<View entries={entries} onPlace={(placedEntry) => first.push(placedEntry.id)} />);
+      const before = placeProp();
+
+      act(() => tree.renderer.update(<View entries={entries} onPlace={(placedEntry) => second.push(placedEntry.id)} />));
+      select(1);
+
+      assert.equal(placeProp(), before);
+      assert.deepEqual(first, []);
+      assert.deepEqual(second, [1]);
+    });
+  }
 });
