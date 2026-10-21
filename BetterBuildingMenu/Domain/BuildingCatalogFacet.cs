@@ -13,12 +13,9 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("id");
-			writer.Write(Id);
-			writer.PropertyName("label");
-			writer.Write(Label);
-			writer.PropertyName("selected");
-			writer.Write(Selected);
+			writer.Prop("id", Id);
+			writer.Prop("label", Label);
+			writer.Prop("selected", Selected);
 			writer.TypeEnd();
 		}
 	}
@@ -43,19 +40,10 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("id");
-			writer.Write(Id);
-			writer.PropertyName("label");
-			writer.Write(Label);
-			writer.PropertyName("narrowing");
-			writer.Write(Narrowing);
-			writer.PropertyName("options");
-			writer.ArrayBegin((uint)Options.Length);
-			foreach (BuildingCatalogFacetOption option in Options)
-			{
-				option.Write(writer);
-			}
-			writer.ArrayEnd();
+			writer.Prop("id", Id);
+			writer.Prop("label", Label);
+			writer.Prop("narrowing", Narrowing);
+			writer.Prop("options", Options);
 			writer.TypeEnd();
 		}
 	}
@@ -70,15 +58,8 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("groups");
-			writer.ArrayBegin((uint)Groups.Length);
-			foreach (BuildingCatalogFacetGroup group in Groups)
-			{
-				group.Write(writer);
-			}
-			writer.ArrayEnd();
-			writer.PropertyName("hasSelection");
-			writer.Write(HasSelection);
+			writer.Prop("groups", Groups);
+			writer.Prop("hasSelection", HasSelection);
 			writer.TypeEnd();
 		}
 	}

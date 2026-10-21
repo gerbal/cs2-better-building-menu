@@ -44,12 +44,9 @@ public sealed record ZoningFamilyDescriptor(
 	public void Write(IJsonWriter writer)
 	{
 		writer.TypeBegin(GetType().FullName);
-		writer.PropertyName("id");
-		writer.Write(Id);
-		writer.PropertyName("icon");
-		writer.Write(Icon);
-		writer.PropertyName("tooltip");
-		writer.Write(ToolTip);
+		writer.Prop("id", Id);
+		writer.Prop("icon", Icon);
+		writer.Prop("tooltip", ToolTip);
 		writer.TypeEnd();
 	}
 }

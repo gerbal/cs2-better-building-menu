@@ -51,34 +51,20 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			WriteNullable(writer, "minCost", MinCost);
-			WriteNullable(writer, "maxCost", MaxCost);
-			WriteNullable(writer, "minUpkeep", MinUpkeep);
-			WriteNullable(writer, "maxUpkeep", MaxUpkeep);
-			WriteNullable(writer, "minWorkers", MinWorkers);
-			WriteNullable(writer, "maxWorkers", MaxWorkers);
-			WriteNullable(writer, "minCapacity", MinCapacity);
-			WriteNullable(writer, "maxCapacity", MaxCapacity);
-			WriteNullable(writer, "minLotWidth", MinLotWidth);
-			WriteNullable(writer, "maxLotWidth", MaxLotWidth);
-			WriteNullable(writer, "minLotDepth", MinLotDepth);
-			WriteNullable(writer, "maxLotDepth", MaxLotDepth);
-			writer.PropertyName("hasSelection");
-			writer.Write(HasSelection);
+			writer.Prop("minCost", MinCost);
+			writer.Prop("maxCost", MaxCost);
+			writer.Prop("minUpkeep", MinUpkeep);
+			writer.Prop("maxUpkeep", MaxUpkeep);
+			writer.Prop("minWorkers", MinWorkers);
+			writer.Prop("maxWorkers", MaxWorkers);
+			writer.Prop("minCapacity", MinCapacity);
+			writer.Prop("maxCapacity", MaxCapacity);
+			writer.Prop("minLotWidth", MinLotWidth);
+			writer.Prop("maxLotWidth", MaxLotWidth);
+			writer.Prop("minLotDepth", MinLotDepth);
+			writer.Prop("maxLotDepth", MaxLotDepth);
+			writer.Prop("hasSelection", HasSelection);
 			writer.TypeEnd();
-		}
-
-		private static void WriteNullable(IJsonWriter writer, string name, double? value)
-		{
-			writer.PropertyName(name);
-			if (value.HasValue)
-			{
-				writer.Write(value.Value);
-			}
-			else
-			{
-				writer.WriteNull();
-			}
 		}
 	}
 }

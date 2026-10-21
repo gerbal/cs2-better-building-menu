@@ -15,10 +15,8 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("key");
-			writer.Write(Key ?? string.Empty);
-			writer.PropertyName("value");
-			writer.Write(Value);
+			writer.Prop("key", Key ?? string.Empty);
+			writer.Prop("value", Value);
 			writer.TypeEnd();
 		}
 	}
@@ -36,10 +34,8 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("key");
-			writer.Write(Key ?? string.Empty);
-			writer.PropertyName("value");
-			writer.Write(Value ?? string.Empty);
+			writer.Prop("key", Key ?? string.Empty);
+			writer.Prop("value", Value ?? string.Empty);
 			writer.TypeEnd();
 		}
 	}
