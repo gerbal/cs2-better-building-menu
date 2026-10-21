@@ -99,7 +99,7 @@ namespace BetterBuildingMenu.Utilities
         }
     }
 
-    public class ValueBindingHelper<T>
+    public class ValueBindingHelper<T> : IBindingValue<T>
     {
         private readonly Action<T>? _updateCallBack;
         private T? valueToUpdate;
