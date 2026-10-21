@@ -237,6 +237,7 @@ namespace BetterBuildingMenu.Services
 		/// <remarks>
 		/// Deciding WHICH entries are in view belongs to the running game; only the min
 		/// and max of them belong here, which is what makes the rule directly testable.
+		/// A metric no entry carries stays null, not zero, so it states no range that does not exist.
 		/// </remarks>
 		public static BuildingCatalogMetricRangeState MetricBoundsOf(IEnumerable<BuildingCatalogEntry> entries)
 		{
@@ -245,59 +246,34 @@ namespace BetterBuildingMenu.Services
 				throw new ArgumentNullException(nameof(entries));
 			}
 
-			BuildingCatalogEntry[] inScope = entries.ToArray();
-
-			return new BuildingCatalogMetricRangeState(
-				Min(inScope, entry => entry.ConstructionCost), Max(inScope, entry => entry.ConstructionCost),
-				Min(inScope, entry => entry.Upkeep), Max(inScope, entry => entry.Upkeep),
-				Min(inScope, entry => entry.Workers), Max(inScope, entry => entry.Workers),
-				Min(inScope, entry => entry.Capacity), Max(inScope, entry => entry.Capacity),
-				Min(inScope, entry => entry.LotWidth), Max(inScope, entry => entry.LotWidth),
-				Min(inScope, entry => entry.LotDepth), Max(inScope, entry => entry.LotDepth));
-		}
-
-		/// <summary>
-		/// The smallest value present, or null when no entry carries the metric.
-		/// </summary>
-		/// <remarks>
-		/// Null rather than zero. Most assets carry no worker count, and a floor
-		/// of 0 on a menu where nothing employs anyone would state a range that
-		/// does not exist.
-		/// </remarks>
-		private static double? Min(
-			IReadOnlyCollection<BuildingCatalogEntry> entries,
-			Func<BuildingCatalogEntry, double?> metric)
-		{
-			double? lowest = null;
+			IReadOnlyList<BuildingCatalogMetric> metrics = BuildingCatalogMetrics.All;
+			double?[] bounds = new double?[metrics.Count * 2];
 
 			foreach (BuildingCatalogEntry entry in entries)
 			{
-				double? value = metric(entry);
-				if (value.HasValue && (!lowest.HasValue || value.Value < lowest.Value))
+				for (int i = 0; i < metrics.Count; i++)
 				{
-					lowest = value;
+					double? value = metrics[i].EntryValue(entry);
+					if (!value.HasValue)
+					{
+						continue;
+					}
+
+					double? lowest = bounds[2 * i];
+					if (!lowest.HasValue || value.Value < lowest.Value)
+					{
+						bounds[2 * i] = value;
+					}
+
+					double? highest = bounds[2 * i + 1];
+					if (!highest.HasValue || value.Value > highest.Value)
+					{
+						bounds[2 * i + 1] = value;
+					}
 				}
 			}
 
-			return lowest;
-		}
-
-		private static double? Max(
-			IReadOnlyCollection<BuildingCatalogEntry> entries,
-			Func<BuildingCatalogEntry, double?> metric)
-		{
-			double? highest = null;
-
-			foreach (BuildingCatalogEntry entry in entries)
-			{
-				double? value = metric(entry);
-				if (value.HasValue && (!highest.HasValue || value.Value > highest.Value))
-				{
-					highest = value;
-				}
-			}
-
-			return highest;
+			return BuildingCatalogMetricRangeState.FromBounds(bounds);
 		}
 
 		/// <param name="packScope">
