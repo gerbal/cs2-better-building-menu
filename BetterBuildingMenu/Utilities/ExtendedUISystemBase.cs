@@ -53,28 +53,6 @@ namespace BetterBuildingMenu.Utilities
             return helper;
         }
 
-        public ValueBindingHelper<T> CreateBinding<T>(string key, string setterKey, T initialValue, Action? updateCallBack = null)
-        {
-            var helper = new ValueBindingHelper<T>(new(Mod.Id, key, initialValue, new GenericUIWriter<T?>()), updateCallBack is null ? null : _ => updateCallBack());
-            var trigger = new TriggerBinding<T>(Mod.Id, setterKey, helper.UpdateCallback, GenericUIReader<T>.Create());
-
-            AddBinding(helper.Binding);
-            AddBinding(trigger);
-
-            _updateCallbacks.Add(helper.ForceUpdate);
-
-            return helper;
-        }
-
-        public GetterValueBinding<T> CreateBinding<T>(string key, Func<T> getterFunc)
-        {
-            var binding = new GetterValueBinding<T>(Mod.Id, key, getterFunc, new GenericUIWriter<T>());
-
-            AddUpdateBinding(binding);
-
-            return binding;
-        }
-
         public TriggerBinding CreateTrigger(string key, Action action)
         {
             var binding = new TriggerBinding(Mod.Id, key, action);
