@@ -26,22 +26,24 @@ namespace BetterBuildingMenu.Domain
 
 		private static string SubService(string name) => $"SubServices.NAME[{name}]";
 
-		private static readonly Dictionary<string, string> Keys = new(StringComparer.Ordinal)
+		// The service menus. Their category paths are the same leaf names the toolbar's
+		// own menu prefabs carry (PrefabIndex.UiMenuName).
+		private static Dictionary<string, string> ServiceKeys()
 		{
-			// The service menus. These paths are the same leaf names the toolbar's
-			// own menu prefabs carry (PrefabIndex.UiMenuName).
-			[nameof(PrefabSubCategory.ServiceBuildings_Health)] = Title("Buildings/Services/Health & Deathcare"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Water)] = Title("Buildings/Services/Water & Sewage"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Electricity)] = Title("Buildings/Services/Electricity"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Garbage)] = Title("Buildings/Services/Garbage Management"),
-			[nameof(PrefabSubCategory.ServiceBuildings_EducationResearch)] = Title("Buildings/Services/Education & Research"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Fire)] = Title("Buildings/Services/Fire & Rescue"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Police)] = Title("Buildings/Services/Police & Administration"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Parks)] = Title("Buildings/Services/Parks & Recreation"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Communications)] = Title("Buildings/Services/Communications"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Transportation)] = Title("Buildings/Services/Transportation"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Roads)] = Title("Buildings/Services/Roads"),
+			var keys = new Dictionary<string, string>();
 
+			foreach (var menu in ServiceMenus.All)
+			{
+				keys[menu.SubCategory.ToString()] = menu.TitledByCategoryPath
+					? Title("Buildings/Services/" + menu.Name)
+					: Service(menu.Name);
+			}
+
+			return keys;
+		}
+
+		private static readonly Dictionary<string, string> Keys = new(ServiceKeys(), StringComparer.Ordinal)
+		{
 			// Zoned building groups.
 			[nameof(PrefabSubCategory.Buildings_Residential)] = Title("Buildings/Residential"),
 			[nameof(PrefabSubCategory.Buildings_Commercial)] = Title("Buildings/Commercial"),
@@ -67,7 +69,6 @@ namespace BetterBuildingMenu.Domain
 			[nameof(PrefabSubCategory.Networks_Paths)] = SubService("Pathways"),
 
 			[nameof(PrefabCategory.Any)] = Title("All"),
-			[nameof(PrefabSubCategory.ServiceBuildings_Landscaping)] = Service("Landscaping"),
 
 			// Props. The zoned ones are Landscaping tabs VanillaCategoryMapping reads
 			// by the same ids. Park and Lights have a game name too, but "Park" and
