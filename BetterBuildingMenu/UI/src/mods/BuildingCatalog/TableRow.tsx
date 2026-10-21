@@ -9,7 +9,6 @@ import {
   METRIC_NOT_APPLICABLE,
   formatCapacity,
   formatLotDimensions,
-  getNumberSeparators,
   hasFootprint, METRIC_NO_DATA,
 } from "domain/assetMenuMetricFormat";
 import { shortenTileLabel } from "domain/tileLabel";
@@ -37,9 +36,8 @@ export interface TableRowProps {
   expanded: boolean;
   /** Characters the name cell can show before the middle is elided. */
   nameBudget: number;
-  separators: ReturnType<typeof getNumberSeparators>;
   labels: TableRowLabels;
-  /** What the hover card reads, the same card every view shows; read once by the table. Its state words are the row's too. */
+  /** What the hover card reads, the same card every view shows; read once by the table. Its separators and state words are the row's too. */
   hoverCard: HoverCardContext;
   /** The metric columns to draw, the header's own: a narrow build menu drops some. All seven when absent. */
   metrics?: readonly AssetMenuMetric[];
@@ -61,7 +59,6 @@ export const TableRow = memo(function TableRow({
   entry,
   expanded,
   nameBudget,
-  separators,
   labels,
   hoverCard,
   metrics = ASSET_MENU_TABLE_METRICS,
@@ -71,6 +68,7 @@ export const TableRow = memo(function TableRow({
   onToggleExpanded,
 }: TableRowProps) {
   const shows = (metric: AssetMenuMetric) => metrics.includes(metric);
+  const { separators } = hoverCard;
   const rawCategoryIdentity = entry.subCategory
     ? `${entry.category} · ${entry.subCategory}`
     : entry.category;

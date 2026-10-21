@@ -1,16 +1,13 @@
 import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo, useCallback, useRef } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   formatBuildingMetric,
   formatCapacity,
   formatLotDimensions,
-  getNumberSeparators,
   hasFootprint,
-  type NumberSeparators,
 } from "domain/assetMenuMetricFormat";
 import { sortedBadgeText } from "domain/buildingEntryView";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
@@ -18,7 +15,6 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { sortedMetricFor } from "domain/sortedMetric";
-import { useUnitSystem } from "mods/gameSettings";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
 
@@ -46,14 +42,9 @@ interface BuildingListProps {
  * (does it fit, can I afford it), never comparisons.
  */
 export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
-  const { translate } = useLocalization();
-  const unitSystem = useUnitSystem();
-  // One object until the language or the unit system changes, so the cards it is
-  // handed to can skip a render.
-  const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
   // The same card the grid and the table show, so which facts a building
   // states does not depend on which view mode the player is in. The rows take
-  // its state words too, which are the game's own where it has them.
+  // its separators and state words too, the game's own words where it has them.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const cards = variant === "cards";
@@ -79,7 +70,6 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
           cards={cards}
           selected={selectedId === entry.id}
           sortedMetric={sortedMetric}
-          separators={separators}
           hoverCard={hoverCard}
           onPlace={place}
         />
@@ -93,8 +83,7 @@ interface BuildingListCardProps {
   cards: boolean;
   selected: boolean;
   sortedMetric: ReturnType<typeof sortedMetricFor>;
-  separators: NumberSeparators;
-  /** The hover card's context, whose state words the row draws with too. */
+  /** The hover card's context, whose separators and state words the row draws with too. */
   hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
@@ -108,10 +97,10 @@ const BuildingListCard = memo(function BuildingListCard({
   cards,
   selected,
   sortedMetric,
-  separators,
   hoverCard,
   onPlace,
 }: BuildingListCardProps) {
+  const { separators } = hoverCard;
   const sortedText = sortedBadgeText(entry, sortedMetric, separators);
   const fullName = entry.name || entry.prefabName;
   const label = listLabel(fullName);

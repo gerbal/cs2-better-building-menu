@@ -5,7 +5,6 @@ import { seed } from "../harness/seed";
 import { resetBindings } from "../harness/stubs/cs2-api";
 import { loadLocale, resetLocale } from "../harness/stubs/cs2-l10n";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
-import { FALLBACK_SEPARATORS } from "../../src/domain/assetMenuMetricFormat";
 import { BuildingGrid } from "../../src/mods/BuildingGrid/BuildingGrid";
 import { BuildingList } from "../../src/mods/BuildingList/BuildingList";
 import { TableRow } from "../../src/mods/BuildingCatalog/TableRow";
@@ -18,7 +17,6 @@ const TableRowInTable = ({ entry: rowEntry }: { entry: BuildingCatalogEntry }) =
     entry={rowEntry}
     expanded={false}
     nameBudget={40}
-    separators={FALLBACK_SEPARATORS}
     labels={{ place: "Place", inspect: "Details" }}
     hoverCard={useHoverCardContext()}
     columnStyle={() => ({})}

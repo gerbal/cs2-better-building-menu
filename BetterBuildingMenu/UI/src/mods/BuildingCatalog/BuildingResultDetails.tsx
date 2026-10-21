@@ -1,11 +1,8 @@
 import { useLocalization } from "cs2/l10n";
 
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { useUnitSystem } from "mods/gameSettings";
-import {
-  getBuildingDetailMetrics,
-  getNumberSeparators,
-} from "domain/assetMenuMetricFormat";
+import { useNumberSeparators } from "mods/gameSettings";
+import { getBuildingDetailMetrics } from "domain/assetMenuMetricFormat";
 import {
   getBuildingExtensionLabels,
   getBuildingFlagGroups,
@@ -28,7 +25,7 @@ interface BuildingResultDetailsProps {
  */
 export const BuildingResultDetails = ({ entry, resolveFacetLabel }: BuildingResultDetailsProps) => {
   const { translate } = useLocalization();
-  const separators = getNumberSeparators(translate, useUnitSystem());
+  const separators = useNumberSeparators();
 
   const detailMetrics = getBuildingDetailMetrics(entry, separators);
   const flagGroups = getBuildingFlagGroups(entry.placementFlags);

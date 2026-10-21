@@ -6,14 +6,12 @@ import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuMetricLabel } from "domain/assetMenuLayout";
 import type { AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
-import { getNumberSeparators } from "domain/assetMenuMetricFormat";
 import {
   ASSET_MENU_COLUMN_SORT,
   getAssetMenuColumnSortIndicator,
 } from "domain/assetMenuSortPresentation";
 import { flattenGroupedRows, takeRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
-import { useUnitSystem } from "mods/gameSettings";
 import { useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";
@@ -86,13 +84,11 @@ export const TableView = ({
   footer,
 }: TableViewProps) => {
   const { translate } = useLocalization();
-  const unitSystem = useUnitSystem();
-  // Read once for every row, which is what the hook asks of its caller.
+  // Read once for every row, which is what the hook asks of its caller. Its
+  // separators are the player's own marks, so our columns agree with the
+  // numbers the game is drawing elsewhere on the same screen.
   const hoverCard = useHoverCardContext();
-  // The player's own thousands/decimal marks, so our columns agree with the
-  // numbers the game is drawing elsewhere on the same screen. Memoised, with
-  // the labels, so the rows' props hold still between renders.
-  const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
+  // Memoised so the rows' props hold still between renders.
   const labels: TableRowLabels = useMemo(() => ({
     place: translate("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place") ?? "Place",
     inspect: translate("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details") ?? "Details",
@@ -173,7 +169,6 @@ export const TableView = ({
               entry={line.entry}
               expanded={expandedId === line.entry.id}
               nameBudget={nameBudget}
-              separators={separators}
               labels={labels}
               hoverCard={hoverCard}
               metrics={metrics}

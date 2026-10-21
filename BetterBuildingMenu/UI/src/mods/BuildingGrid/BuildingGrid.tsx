@@ -1,8 +1,7 @@
 import { useValue } from "mods/panelValue";
 import { Button, Scrollable } from "cs2/ui";
 import { type ReactNode } from "react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocalization } from "cs2/l10n";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
@@ -12,8 +11,7 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
 import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor } from "domain/sortedMetric";
-import { getNumberSeparators, type NumberSeparators } from "domain/assetMenuMetricFormat";
-import { useTextScale, useUnitSystem } from "mods/gameSettings";
+import { useTextScale } from "mods/gameSettings";
 import styles from "./buildingGrid.module.scss";
 import { ActivePrefabId$, BuildingCatalogSortColumn$, AssetMenuTileSize$ } from "mods/bindings";
 
@@ -95,17 +93,13 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
 };
 
 export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: BuildingGridProps) => {
-  const { translate } = useLocalization();
   // One card for every view mode, read once here rather than per tile: it is a
   // dozen live bindings, and a tile each would open hundreds of them to draw
-  // one hover at a time. The tiles take its state words too.
+  // one hover at a time. The tiles take its separators and state words too.
   const hoverCard = useHoverCardContext();
   // The figure the result is ordered by, drawn on the tile so a re-sort says
   // why the tiles moved. Null for Name and Category, which the tile shows.
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
-  const unitSystem = useUnitSystem();
-  // One object until the language or the unit system changes, so tiles skip a render.
-  const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
   const tileSize = useValue(AssetMenuTileSize$);
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
@@ -133,7 +127,6 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
           entry={entry}
           armed={activePrefabId !== 0 && entry.id === activePrefabId}
           sortedMetric={sortedMetric}
-          separators={separators}
           tileSize={tileSize}
           textScale={textScale}
           hoverCard={hoverCard}
@@ -166,10 +159,9 @@ interface BuildingTileProps {
   /** Whether this tile's prefab is the armed one. ActivePrefabId is 0 when nothing is armed. */
   armed: boolean;
   sortedMetric: ReturnType<typeof sortedMetricFor>;
-  separators: NumberSeparators;
   tileSize: number;
   textScale: number;
-  /** The hover card's context, whose state words the tile draws with too. */
+  /** The hover card's context, whose separators and state words the tile draws with too. */
   hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
@@ -183,7 +175,6 @@ const BuildingTile = memo(function BuildingTile({
   entry,
   armed,
   sortedMetric,
-  separators,
   tileSize,
   textScale,
   hoverCard,
@@ -191,7 +182,7 @@ const BuildingTile = memo(function BuildingTile({
 }: BuildingTileProps) {
   const label = entry.name || entry.prefabName;
   const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
-  const sortedText = sortedBadgeText(entry, sortedMetric, separators);
+  const sortedText = sortedBadgeText(entry, sortedMetric, hoverCard.separators);
   const locked = isEntryLocked(entry);
   // Independent of locked, which is how vanilla arranges it: the padlock
   // answers "can I build it yet" and this answers "is there only one of
