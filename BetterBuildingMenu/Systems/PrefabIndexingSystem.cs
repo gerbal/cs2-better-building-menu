@@ -44,7 +44,7 @@ namespace BetterBuildingMenu.Systems
 		private HashSet<string> _blackList = null!;
 		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
 		private ComponentType? _roadBuilderDiscarded;
-		private bool _warnedRoadBuilderDiscarded;
+		private readonly LogOnce _roadBuilderDiscardedWarning = new();
 		private EntityQuery _unlockEventQuery;
 		// Prefabs the game created or changed this frame — the incremental
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
@@ -488,12 +488,11 @@ namespace BetterBuildingMenu.Systems
 				failure = ex;
 			}
 
-			if (_warnedRoadBuilderDiscarded)
+			if (!_roadBuilderDiscardedWarning.IsFirst())
 			{
 				return mods;
 			}
 
-			_warnedRoadBuilderDiscarded = true;
 			const string message = "Road Builder is enabled, but its DiscardedRoadBuilderPrefab could not be read; roads it discards stay listed";
 
 			if (failure is null)

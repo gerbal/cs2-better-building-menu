@@ -1,3 +1,4 @@
+using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Placement;
 using BetterBuildingMenu.Utilities;
 
@@ -27,7 +28,7 @@ namespace BetterBuildingMenu.Systems
 
 		private static readonly TimeSpan FlushEvery = TimeSpan.FromSeconds(120);
 		private static readonly Stopwatch FlushClock = Stopwatch.StartNew();
-		private static bool _loggedChainRead;
+		private static readonly LogOnce ChainReadFailure = new();
 
 		private readonly PlacementCounter _counter = new(Rule);
 		private ToolSystem _toolSystem = null!;
@@ -41,7 +42,7 @@ namespace BetterBuildingMenu.Systems
 		// PreTool runs every frame.
 		private PrefabBase? _lastPrefab;
 		private int _lastPrefabId;
-		private bool _warnedUpdate;
+		private readonly LogOnce _updateFailure = new();
 
 		protected override void OnCreate()
 		{
@@ -88,9 +89,8 @@ namespace BetterBuildingMenu.Systems
 			catch (Exception ex)
 			{
 				// The game logs a throwing system at every update. Once is enough.
-				if (!_warnedUpdate)
+				if (_updateFailure.IsFirst())
 				{
-					_warnedUpdate = true;
 					Mod.Log.Warn(ex, "Placement counting failed; placements may be missed this session");
 				}
 			}
@@ -209,9 +209,8 @@ namespace BetterBuildingMenu.Systems
 			catch (Exception ex)
 			{
 				// Once: PreTool reads the chain every frame.
-				if (!_loggedChainRead)
+				if (ChainReadFailure.IsFirst())
 				{
-					_loggedChainRead = true;
 					Mod.Log.Debug($"[PLACEMENT] The net tool's control points could not be read ({ex.Message}); its road counts as still open");
 				}
 
