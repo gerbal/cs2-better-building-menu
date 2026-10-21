@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { shownMenu, type KeptMenus } from "../src/domain/keptMenus.ts";
+import { answersOpen, shownMenu, type KeptMenus } from "../src/domain/keptMenus.ts";
 
 // One built panel per toolbar menu, each holding the page it last drew. Which one is
 // in the slot decides whether an open is instant and whether it is correct: a panel
@@ -60,5 +60,27 @@ describe("which kept menu the slot shows", () => {
     // Only OwnsCurrentMenu put the slot up: its panel waits for C# like any first open.
     assert.equal(shownMenu(state({ opened: "", built: built({ "": "" }) })), null);
     assert.equal(shownMenu(state({ opened: "", built: built({ "": "" }), answered: true })), "");
+  });
+});
+
+describe("which page answers an open", () => {
+  // The opened menu's panel thaws on C#'s answer and records the menu of the page it
+  // drew. A page another menu asked for, still in flight when the player switched,
+  // must not thaw it, or the panel draws that menu's page under this menu's button
+  // and is remembered as that menu's.
+  it("takes the opened menu's own page", () => {
+    assert.equal(answersOpen("Roads", "Roads"), true);
+  });
+
+  it("takes a page for a narrower query, which names no menu", () => {
+    assert.equal(answersOpen("", "Roads"), true);
+  });
+
+  it("refuses a page another menu asked for", () => {
+    assert.equal(answersOpen("Landscaping", "Roads"), false);
+  });
+
+  it("takes any page for a menu opened without a name", () => {
+    assert.equal(answersOpen("Roads", ""), true);
   });
 });

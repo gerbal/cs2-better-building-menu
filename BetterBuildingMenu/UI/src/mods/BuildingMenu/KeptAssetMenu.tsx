@@ -7,7 +7,7 @@ import { AssetMenuViewMode$, BuildingCatalog$, BuildingCatalogGroupBy$ } from "m
 import { ExtensionBoundary } from "mods/ExtensionBoundary";
 import { createAssetMenuSlotStore, type AssetMenuSlot as Slot } from "domain/assetMenuSlot";
 import { getAssetMenuView } from "domain/assetMenuViewStore";
-import { shownMenu } from "domain/keptMenus";
+import { answersOpen, shownMenu } from "domain/keptMenus";
 import { chooseViewMode } from "domain/viewModeChoice";
 import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
 import { createPanelFreeze, PanelFreezeContext, setPanelFrozen, type PanelFreeze } from "mods/panelValue";
@@ -147,6 +147,9 @@ export const KeptAssetMenu = () => {
       }
 
       held.current = next !== null && swapping ? from : null;
+      // Now, not at the next render: C#'s answer can arrive in between, and belongs
+      // to this slot, not the one before.
+      currentSlot.current = next;
       setSlot(next);
     });
     setSlot(slots.current());
@@ -157,15 +160,17 @@ export const KeptAssetMenu = () => {
   useEffect(() => {
     const subscription = BuildingCatalog$.subscribe((page) => {
       const open = currentSlot.current;
+      const opened = menuOf(open);
+      const pageMenu = page?.menu ?? "";
 
-      if (!open) {
+      if (!open || opened === null || !answersOpen(pageMenu, opened)) {
         return;
       }
 
-      const panel = panels.current.get(menuOf(open) ?? "");
+      const panel = panels.current.get(opened);
 
       if (panel) {
-        panel.pageMenu = page?.menu ?? "";
+        panel.pageMenu = pageMenu;
         setPanelFrozen(panel.freeze, false);
       }
 

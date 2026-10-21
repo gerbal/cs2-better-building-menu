@@ -39,3 +39,12 @@ export function shownMenu({ opened, answered, built, stale, held }: KeptMenus): 
 
   return held !== null && built.has(held) ? held : null;
 }
+
+/**
+ * Whether a page arriving while a menu is open is C#'s answer to that open: the
+ * opened menu's own page, or a narrower query's, which names no menu. A page that
+ * names another menu was asked for before the switch and is still in flight.
+ */
+export function answersOpen(pageMenu: string, opened: string): boolean {
+  return pageMenu === "" || opened === "" || pageMenu === opened;
+}
