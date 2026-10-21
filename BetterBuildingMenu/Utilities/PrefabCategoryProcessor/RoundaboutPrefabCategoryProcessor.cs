@@ -49,11 +49,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             {
                 prefabIndex.SubCategory = Domain.Enums.PrefabSubCategory.Networks_Intersections;
             }
-            else if (_entityManager.HasComponent<PillarData>(entity))
-            {
-                prefabIndex.Category = Domain.Enums.PrefabCategory.Props;
-                prefabIndex.SubCategory = Domain.Enums.PrefabSubCategory.Props_Road;
-            }
             else
             {
                 prefabIndex.SubCategory = Domain.Enums.PrefabSubCategory.Networks_Stops;

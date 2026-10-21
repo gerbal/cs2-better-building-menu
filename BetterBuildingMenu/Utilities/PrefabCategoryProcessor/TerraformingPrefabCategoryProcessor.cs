@@ -20,13 +20,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	/// </remarks>
 	public class TerraformingPrefabCategoryProcessor : IPrefabCategoryProcessor
 	{
-		private readonly EntityManager _entityManager;
-
-		public TerraformingPrefabCategoryProcessor(EntityManager entityManager)
-		{
-			_entityManager = entityManager;
-		}
-
 		public EntityQueryDesc[] GetEntityQuery()
 		{
 			return new[]

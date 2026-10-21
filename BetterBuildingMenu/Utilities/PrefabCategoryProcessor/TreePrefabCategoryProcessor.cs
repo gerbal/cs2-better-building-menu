@@ -11,13 +11,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
     public class TreePrefabCategoryProcessor : IPrefabCategoryProcessor
     {
-        private readonly EntityManager _entityManager;
-
-        public TreePrefabCategoryProcessor(EntityManager entityManager)
-        {
-            _entityManager = entityManager;
-        }
-
         public EntityQueryDesc[] GetEntityQuery()
         {
             return new[]
