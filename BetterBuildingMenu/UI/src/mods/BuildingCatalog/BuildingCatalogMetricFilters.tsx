@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   clearBuildingCatalogMetricRangesCommand,
   setBuildingCatalogMetricRangeCommand,
-} from "domain/buildingCatalogContracts";
+} from "domain/commands";
 import {
   countActiveMetricRanges,
   metricRangesFromState,

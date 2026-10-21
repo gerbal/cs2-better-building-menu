@@ -1,6 +1,5 @@
 import { countActiveMetricRanges, metricRangesFromState, type MetricRangeId, type NormalizedMetricRange } from "./buildingCatalogRanges";
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
-import type { Command } from "./command";
 
 export interface AssetMenuMetricRangeState {
   minCost: number | null;
@@ -32,8 +31,6 @@ export interface AssetMenuFilterSummary {
   /** The subset the asset menu's Clear button can reset; equal to count today. */
   resultCount: number;
 }
-
-export type AssetMenuFilterTriggerCommand = Command;
 
 const metricLabels: Record<MetricRangeId, string> = {
   cost: "Cost",
@@ -127,11 +124,4 @@ export function getAssetMenuEmptyStateMessage(
   }
 
   return `No buildings match ${constraints.join(", ")}.`;
-}
-
-export function clearAssetMenuFiltersCommand(): AssetMenuFilterTriggerCommand {
-  return {
-    method: "ClearAssetMenuFilters",
-    args: [],
-  };
 }

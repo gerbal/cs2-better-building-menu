@@ -5,7 +5,7 @@
  */
 
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
-import type { Command } from "./command";
+import type { Command } from "./commands";
 import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
 import type { MetricRangeId } from "./buildingCatalogRanges";
 

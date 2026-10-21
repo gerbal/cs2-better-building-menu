@@ -6,12 +6,11 @@ import {
   escapeRoute,
   nextWatchState,
   toolbarEntityIndex,
-  vanillaMenuDeselectedCommand,
-  vanillaMenuSelectedCommand,
   watchAction,
   watchStateWhileOff,
   type WatchState,
 } from "domain/vanillaMenuWatch";
+import { vanillaMenuDeselectedCommand, vanillaMenuSelectedCommand } from "domain/commands";
 import {
   FindItPanelShown$,
   OwnsCurrentMenu$,

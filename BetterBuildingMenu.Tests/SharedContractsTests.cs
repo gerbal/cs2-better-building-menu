@@ -12,7 +12,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The ids and numbers C# and the UI both use, owned here and generated into the UI.
+	/// The ids, numbers and triggers C# and the UI both use, owned here and generated into the UI.
 	/// </summary>
 	/// <remarks>
 	/// The UI reads them from sharedContracts.generated.ts, which this test writes from the C#
@@ -38,6 +38,31 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(
 				expected == File.ReadAllText(path).Replace("\r\n", "\n"),
 				$"{GeneratedPath} is out of date with the C#; run the tests with CS2_WRITE_CONTRACTS=1 and commit it");
+		}
+
+		[Fact]
+		public void TheTriggerReaderFindsEveryTriggerWithTheArgumentsCSharpReads()
+		{
+			var triggers = TriggerRegistrations.Read().ToDictionary(trigger => trigger.Name, trigger => string.Join(", ", trigger.Arguments));
+
+			Assert.True(triggers.Count > 20, $"the reader found {triggers.Count} triggers");
+			Assert.Equal("", triggers["SearchEverything"]);
+			Assert.Equal("string", triggers["SearchChanged"]);
+			Assert.Equal("number", triggers["SetAssetMenuHeight"]);
+			Assert.Equal("string, string, boolean, boolean", triggers["SetVanillaToolbarSelection"]);
+			// Read/write bindings: the setter takes the binding's type, from the field it is assigned to.
+			Assert.Equal("boolean", triggers["SetBuildingCatalogSortDescending"]);
+			Assert.Equal("number", triggers["SetAssetMenuSchoolTier"]);
+		}
+
+		[Fact]
+		public void ARegistrationTheReaderCannotTypeStopsTheGenerator()
+		{
+			// Each would otherwise leave a trigger out of the UI's table, or give it the wrong arguments.
+			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateTrigger(TriggerName, Handler);"));
+			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateTrigger<Entity>(\"Pick\", Handler);"));
+			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateBinding(\"Value\", \"SetValue\", 0, SetValue);"));
+			Assert.Throws<InvalidOperationException>(() => TriggerRegistrations.Parse("CreateTrigger(\"Twice\", A); CreateTrigger(\"Twice\", B);"));
 		}
 
 		[Fact]
@@ -100,6 +125,16 @@ namespace BetterBuildingMenu.Tests
 			AppendNumber(ts, "ASSET_MENU_CATALOG_MIN_WIDTH", AssetMenuCatalogWidth.Min);
 			AppendNumber(ts, "ASSET_MENU_CATALOG_DEFAULT", AssetMenuCatalogWidth.Default);
 			AppendNumber(ts, "ASSET_MENU_CATALOG_FILL_SNAP", AssetMenuCatalogWidth.FillSnap);
+
+			ts.Append("\n/** Every trigger the mod's systems register, with the arguments C# reads; domain/commands builds from it. */\n");
+			ts.Append("export interface TriggerArgs {\n");
+
+			foreach (var trigger in TriggerRegistrations.Read())
+			{
+				ts.Append($"  {trigger.Name}: [{string.Join(", ", trigger.Arguments)}];\n");
+			}
+
+			ts.Append("}\n");
 
 			return ts.ToString();
 		}

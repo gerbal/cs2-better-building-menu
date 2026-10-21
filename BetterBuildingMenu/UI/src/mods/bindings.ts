@@ -1,11 +1,11 @@
 import { bindValue, trigger } from "cs2/api";
 import mod from "../../mod.json";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
-import { nextSortState, setSortColumnCommand, setSortDescendingCommand } from "domain/buildingCatalogContracts";
+import { nextSortState } from "domain/buildingCatalogContracts";
 import type { SortColumn, SortState } from "domain/buildingCatalogContracts";
 import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
 import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
-import type { Command } from "domain/command";
+import { setSortColumnCommand, setSortDescendingCommand, type Command } from "domain/commands";
 import type { OwnedAssetMenu } from "domain/menuOwnership";
 import type { MenuBranchCount, MenuCategoryTabs } from "domain/menuProgression";
 import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";

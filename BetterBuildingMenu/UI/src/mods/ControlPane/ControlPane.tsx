@@ -4,7 +4,6 @@ import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import type { Command } from "domain/command";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
 import {
   groupDimensionsFor,
@@ -15,8 +14,7 @@ import { ChipRow } from "mods/ChipRow/ChipRow";
 import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
-import { clearAssetMenuFiltersCommand } from "domain/assetMenuFilterSummary";
-import { toggleAssetMenuFacetCommand } from "domain/buildingCatalogFacets";
+import { clearAssetMenuFiltersCommand, toggleAssetMenuFacetCommand, type Command } from "domain/commands";
 import {
   ASSET_PACK_TRIGGER_GROUP,
   ASSET_PACK_TRIGGER_NAME,

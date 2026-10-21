@@ -15,22 +15,6 @@ export function toolbarEntityIndex(entity: ToolbarEntity | null | undefined): nu
   return Number.isFinite(index) && index > 0 ? (index as number) : null;
 }
 
-/** Hands a toolbar menu selection to the backend, which resolves its preset. */
-export function vanillaMenuSelectedCommand(entityIndex: number) {
-  return {
-    method: "VanillaMenuSelected",
-    args: [entityIndex],
-  } as const;
-}
-
-/** Tells the backend the toolbar dropped its menu, so the asset menu should go too. */
-export function vanillaMenuDeselectedCommand() {
-  return {
-    method: "VanillaMenuDeselected",
-    args: [] as const,
-  } as const;
-}
-
 /** What the watcher remembers between emissions. */
 export interface WatchState {
   /** Whether any selection has been observed since mount. */

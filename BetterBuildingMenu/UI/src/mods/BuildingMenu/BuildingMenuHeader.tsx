@@ -6,7 +6,7 @@ import classNames from "classnames";
 import { memo, useRef } from "react";
 
 import find from "images/find.svg";
-import { searchChangedCommand } from "domain/buildingCatalogContracts";
+import { searchChangedCommand } from "domain/commands";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 

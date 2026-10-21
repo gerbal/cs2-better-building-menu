@@ -1,7 +1,7 @@
 import { useValue } from "mods/panelValue";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
+import { loadMoreCatalogCommand } from "domain/commands";
 import { CATALOG_WINDOW_STEP, confirmFill, drawnCount, isScrollContainer, nextGrowth, nextWindowLimit, shouldFillViewport, shouldLoadMore, type FillLook } from "domain/catalogWindow";
 import { reuseUnchanged } from "domain/stableEntries";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
