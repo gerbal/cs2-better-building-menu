@@ -29,19 +29,15 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void MatchesASubsequenceSoAbbreviationsWork()
+		public void ScoresOnlyWhatTheSearchFilterLetsThrough()
 		{
-			Assert.True(BuildingCatalogRelevance.Score(E(1, "Disease Control Center"), "dcc") > 0);
-			Assert.True(BuildingCatalogRelevance.Score(E(2, "Elementary School"), "esc") > 0);
-		}
-
-		[Fact]
-		public void ScoresASubsequenceBelowAnyRealSubstringMatch()
-		{
-			var sub = BuildingCatalogRelevance.Score(E(1, "Disease Control Center"), "dcc");
-			var real = BuildingCatalogRelevance.Score(E(2, "DCC Depot"), "dcc");
-
-			Assert.True(real > sub);
+			// The filter keeps a row only when every word is in its name, prefab name or Paradox
+			// Mods id, so those are all a score reads. Abbreviations and category text are not
+			// searched: "dcc" finds no Disease Control Center, and "health" no Health building.
+			// Owner's call, 2026-10-21: in a menu already scoped by its tabs, category text would
+			// flood every search.
+			Assert.Equal(0, BuildingCatalogRelevance.Score(E(1, "Disease Control Center"), "dcc"));
+			Assert.Equal(0, BuildingCatalogRelevance.Score(E(2, "Some Building", "ServiceBuildings", "Health"), "health"));
 		}
 
 		[Fact]
@@ -71,9 +67,30 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void FindsABuildingByItsCategory()
+		public void RanksWordsInAnyOrderBelowThePhraseAndAboveAnotherField()
 		{
-			Assert.True(BuildingCatalogRelevance.Score(E(1, "Some Building", "ServiceBuildings", "Health"), "health") > 0);
+			var phrase = BuildingCatalogRelevance.Score(E(1, "Police Station"), "police station");
+			var reordered = BuildingCatalogRelevance.Score(E(1, "Police Station"), "station police");
+			var spread = BuildingCatalogRelevance.Score(E(2, "Police Station") with { PdxModsId = "158589" }, "police 158589");
+
+			Assert.Equal(BuildingCatalogRelevance.Exact, phrase);
+			Assert.Equal(BuildingCatalogRelevance.AllWords, reordered);
+			Assert.Equal(BuildingCatalogRelevance.Field, spread);
+			Assert.True(BuildingCatalogRelevance.Substring > BuildingCatalogRelevance.AllWords);
+			Assert.True(BuildingCatalogRelevance.AllWords > BuildingCatalogRelevance.Field);
+		}
+
+		[Fact]
+		public void ScoresAnAccentedNameAsIfTypedWithItsAccents()
+		{
+			Assert.Equal(BuildingCatalogRelevance.Exact, BuildingCatalogRelevance.Score(E(1, "Café"), "cafe"));
+			Assert.Equal(BuildingCatalogRelevance.Prefix, BuildingCatalogRelevance.Score(E(1, "Straße 1"), "strasse"));
+		}
+
+		[Fact]
+		public void CollapsesTheSpacesInsideAQuery()
+		{
+			Assert.Equal(BuildingCatalogRelevance.Exact, BuildingCatalogRelevance.Score(E(1, "Big Park"), "big   park"));
 		}
 	}
 }

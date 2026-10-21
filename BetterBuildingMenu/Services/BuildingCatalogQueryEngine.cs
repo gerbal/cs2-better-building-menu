@@ -38,8 +38,29 @@ namespace BetterBuildingMenu.Services
 			}
 
 			var unfiltered = BuildingCatalogFacetSelection.Clear(query);
+			var terms = SearchTerms.From(unfiltered.SearchText);
 
-			return entries.Where(entry => Matches(entry, unfiltered));
+			return entries.Where(entry => Matches(entry, unfiltered, terms));
+		}
+
+		/// <summary>How many entries <see cref="Query"/> would find, without ordering or paging them.</summary>
+		public static int Count(
+			IEnumerable<BuildingCatalogEntry> entries,
+			BuildingCatalogQuery query)
+		{
+			if (entries is null)
+			{
+				throw new ArgumentNullException(nameof(entries));
+			}
+
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var terms = SearchTerms.From(query.SearchText);
+
+			return entries.Count(entry => Matches(entry, query, terms));
 		}
 
 		public static BuildingCatalogPage Query(
@@ -60,13 +81,14 @@ namespace BetterBuildingMenu.Services
 			// Reframed before ordering, because the Roads menu's extra networks are placed
 			// behind its own categories by a rewritten priority. Materialised once: Count,
 			// Order and ReorderableSortColumns all read this array.
+			var terms = SearchTerms.From(query.SearchText);
 			var matching = entries
-				.Where(entry => Matches(entry, query))
+				.Where(entry => Matches(entry, query, terms))
 				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu))
 				.ToArray();
 			var totalCount = matching.Length;
 			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
-			var items = Order(matching, query)
+			var items = Order(matching, query, terms)
 				.Skip(offset)
 				.Take(limit)
 				.ToArray();
@@ -88,7 +110,7 @@ namespace BetterBuildingMenu.Services
 				limit,
 				HasMore: hasMore,
 				ReorderableSortColumns: usableColumns,
-				BestMatchId: FindBestMatchId(items, query.SearchText),
+				BestMatchId: FindBestMatchId(items, terms),
 				SearchText: query.SearchText ?? string.Empty);
 		}
 
@@ -97,9 +119,9 @@ namespace BetterBuildingMenu.Services
 		/// name, then page order, as a group orders. Locked and already-built rows are skipped,
 		/// because Enter on them does nothing.
 		/// </summary>
-		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, string? searchText)
+		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, SearchTerms terms)
 		{
-			if (string.IsNullOrWhiteSpace(searchText))
+			if (terms.IsEmpty)
 			{
 				return null;
 			}
@@ -115,7 +137,7 @@ namespace BetterBuildingMenu.Services
 					continue;
 				}
 
-				var score = BuildingCatalogRelevance.Score(entry, searchText);
+				var score = BuildingCatalogRelevance.Score(entry, terms);
 				var length = (entry.Name ?? string.Empty).Length;
 
 				if (best is null || score > bestScore || (score == bestScore && length < bestLength))
@@ -151,7 +173,7 @@ namespace BetterBuildingMenu.Services
 			return offset > lastPopulatedPageStart ? lastPopulatedPageStart : offset;
 		}
 
-		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query)
+		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query, SearchTerms terms)
 		{
 			if (!MatchesVanillaMenuTree(entry, query))
 			{
@@ -174,10 +196,7 @@ namespace BetterBuildingMenu.Services
 				return false;
 			}
 
-			if (!string.IsNullOrWhiteSpace(query.SearchText)
-				&& !Contains(entry.Name, query.SearchText)
-				&& !Contains(entry.PrefabName, query.SearchText)
-				&& !Contains(entry.PdxModsId, query.SearchText))
+			if (!terms.IsEmpty && !terms.FoundIn(entry))
 			{
 				return false;
 			}
@@ -345,13 +364,6 @@ namespace BetterBuildingMenu.Services
 				&& (!maximum.HasValue || value.Value <= maximum.Value);
 		}
 
-		private static bool Contains(string? value, string search)
-		{
-			return value is not null
-				&& value.Length > 0
-				&& value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
-		}
-
 		/// <summary>
 		/// Matches zone density by enum name. An unrecognised name matches nothing rather
 		/// than everything: a broken preset should look broken, not wide open.
@@ -398,7 +410,8 @@ namespace BetterBuildingMenu.Services
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> Order(
 			IEnumerable<BuildingCatalogEntry> entries,
-			BuildingCatalogQuery query)
+			BuildingCatalogQuery query,
+			SearchTerms terms)
 		{
 			// Grouping first, so every member of a group is contiguous and paging
 			// cuts cleanly. Without this a group splits across a page boundary
@@ -407,10 +420,10 @@ namespace BetterBuildingMenu.Services
 			// Relevance decides within a group while a search is active; the chosen sort breaks
 			// ties. Shortest name next: "clinic" ties Medical Clinic with Additional Clinic
 			// Center, and the plain one is nearly always what was meant.
-			if (!string.IsNullOrWhiteSpace(query.SearchText))
+			if (!terms.IsEmpty)
 			{
 				seed = seed
-					.ThenByDescending(entry => BuildingCatalogRelevance.Score(entry, query.SearchText))
+					.ThenByDescending(entry => BuildingCatalogRelevance.Score(entry, terms))
 					.ThenBy(entry => (entry.Name ?? string.Empty).Length);
 			}
 

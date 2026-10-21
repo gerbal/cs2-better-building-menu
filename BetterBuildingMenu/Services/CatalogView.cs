@@ -80,6 +80,13 @@ namespace BetterBuildingMenu.Services
 
 		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(GroupedSet, _query with { GroupBy = EffectiveGroupBy }));
 
+		/// <summary>The page's <see cref="BuildingCatalogPage.TotalCount"/>, counted without building the page
+		/// when nothing else has.</summary>
+		/// <remarks>For a count of another scope, such as the "matches elsewhere" notice, which would
+		/// otherwise order and label a whole page of the entire catalog on every keystroke.</remarks>
+		public int TotalCount => _page?.TotalCount
+			?? BuildingCatalogQueryEngine.Count(GroupedSet, _query with { GroupBy = EffectiveGroupBy });
+
 		/// <summary>
 		/// The menu set the page is grouped from: Parking's lone branches folded where the category
 		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else.

@@ -72,7 +72,7 @@ namespace BetterBuildingMenu.Systems
 			// the button delivers.
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText)
-					? _buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery(), _toolbarSelection).Page.TotalCount
+					? _buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery(), _toolbarSelection).TotalCount
 					: 0;
 			var pageMs = Lap();
 			_BuildingCatalogBinding.Value = page with
