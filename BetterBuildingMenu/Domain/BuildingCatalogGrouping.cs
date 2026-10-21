@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BetterBuildingMenu.Domain
@@ -477,21 +478,82 @@ namespace BetterBuildingMenu.Domain
 		private static string? Text(string? value) =>
 			value?.Trim() is { Length: > 0 } trimmed ? Humanize(trimmed) : null;
 
+		// The label helpers below run for every row of a page, and again on each Load more, so they
+		// loop rather than use Mono's slow Regex. LabelRegexParityTests holds the expressions they
+		// replaced.
+
 		/// <summary>Word-splits an id so a heading does not read as one shout.</summary>
+		/// <remarks>"Service_BuildingsHealth" is "Service Buildings Health": a run of underscores,
+		/// hyphens and whitespace is one space, and a capital after a lower-case letter or a digit
+		/// starts a word.</remarks>
 		public static string Humanize(string value)
 		{
-			var spaced = System.Text.RegularExpressions.Regex.Replace(value, "[_-]+", " ");
-			spaced = System.Text.RegularExpressions.Regex.Replace(spaced, "([a-z0-9])([A-Z])", "$1 $2");
-			spaced = System.Text.RegularExpressions.Regex.Replace(spaced, "\\s+", " ");
-			return spaced.Trim();
+			var spaced = new StringBuilder(value.Length + 8);
+
+			for (var index = 0; index < value.Length; index++)
+			{
+				var current = value[index];
+
+				if (current is '_' or '-' || char.IsWhiteSpace(current))
+				{
+					if (spaced.Length > 0 && spaced[spaced.Length - 1] != ' ')
+					{
+						spaced.Append(' ');
+					}
+
+					continue;
+				}
+
+				if (index > 0 && current is >= 'A' and <= 'Z' && IsLowerOrDigit(value[index - 1]))
+				{
+					spaced.Append(' ');
+				}
+
+				spaced.Append(current);
+			}
+
+			return spaced.ToString().Trim();
 		}
 
-		private static string SplitWords(string value)
+		/// <summary>"TransportationRoad" is "Transportation Road", and "HTMLParser" "HTML Parser".</summary>
+		internal static string SplitWords(string value)
 		{
-			var split = System.Text.RegularExpressions.Regex.Replace(value, "([a-z0-9])([A-Z])", "$1 $2");
-			split = System.Text.RegularExpressions.Regex.Replace(split, "([A-Z]+)([A-Z][a-z])", "$1 $2");
-			return split.Trim();
+			var split = new StringBuilder(value.Length + 8);
+
+			for (var index = 0; index < value.Length; index++)
+			{
+				var current = value[index];
+
+				if (index > 0 && current is >= 'A' and <= 'Z'
+					&& (IsLowerOrDigit(value[index - 1])
+						|| (value[index - 1] is >= 'A' and <= 'Z' && index + 1 < value.Length && value[index + 1] is >= 'a' and <= 'z')))
+				{
+					split.Append(' ');
+				}
+
+				split.Append(current);
+			}
+
+			return split.ToString().Trim();
 		}
+
+		/// <summary>The ASCII letters of a value, in order.</summary>
+		internal static string Letters(string value)
+		{
+			var letters = new StringBuilder(value.Length);
+
+			foreach (var c in value)
+			{
+				if (c is >= 'A' and <= 'Z' or >= 'a' and <= 'z')
+				{
+					letters.Append(c);
+				}
+			}
+
+			return letters.ToString();
+		}
+
+		private static bool IsLowerOrDigit(char c) => c is >= 'a' and <= 'z' or >= '0' and <= '9';
 
 		/// <summary>
 		/// A group heading for the game's own category. The id is a prefab name, so it is split into
@@ -507,7 +569,7 @@ namespace BetterBuildingMenu.Domain
 				return Other;
 			}
 
-			var menu = System.Text.RegularExpressions.Regex.Replace(entry.UiMenu ?? string.Empty, "[^A-Za-z]", string.Empty);
+			var menu = Letters(entry.UiMenu ?? string.Empty);
 			var withoutMenu = menu.Length > 0 && raw.StartsWith(menu, StringComparison.OrdinalIgnoreCase)
 				? raw.Substring(menu.Length)
 				: raw;
