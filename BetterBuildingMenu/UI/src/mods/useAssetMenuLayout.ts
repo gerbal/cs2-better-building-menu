@@ -1,7 +1,7 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 
 import { assetMenuBandWidth, assetMenuRowWidth, resolveCatalogWidth } from "domain/assetMenuLayout";
-import { useTextScale } from "domain/textScaleSetting";
+import { useTextScale } from "mods/gameSettings";
 import { AssetMenuCatalogWidth$, AssetMenuWidth$, ControlPaneShown$ } from "mods/bindings";
 
 /** The asset menu's widths as drawn now, in rem. */

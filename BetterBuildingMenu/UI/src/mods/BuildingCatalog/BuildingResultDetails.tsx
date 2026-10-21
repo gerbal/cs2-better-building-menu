@@ -1,7 +1,7 @@
 import { useLocalization } from "cs2/l10n";
 
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { useUnitSystem } from "domain/unitSettings";
+import { useUnitSystem } from "mods/gameSettings";
 import {
   getBuildingDetailMetrics,
   getNumberSeparators,

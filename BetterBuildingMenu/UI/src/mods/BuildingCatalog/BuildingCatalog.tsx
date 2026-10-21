@@ -1,10 +1,10 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import classNames from "classnames";
 import { tableLabelCharBudget } from "domain/tileLabel";
-import { useTextScale } from "domain/textScaleSetting";
+import { useTextScale } from "mods/gameSettings";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   ASSET_MENU_CHROME_WIDTH,
@@ -249,6 +249,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const pendingEnter = useRef<string | null>(null);
   const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
   onEnter.current = (event) => {
+    // Every menu's panel is kept built and listens; only the one shown was typed in.
+    if (!shown) return;
     if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
 
     const decision = enterDecision({ items: pageItems, bestMatchId, searchText: pageSearch }, currentSearch ?? "");

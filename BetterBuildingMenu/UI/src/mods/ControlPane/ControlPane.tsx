@@ -1,4 +1,5 @@
-import { trigger, useValue } from "cs2/api";
+import { trigger } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";

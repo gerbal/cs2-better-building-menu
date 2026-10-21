@@ -1,4 +1,4 @@
-import { useValue } from "cs2/api";
+import { useValue } from "mods/panelValue";
 import { Button, Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { FOCUS_DISABLED } from "cs2/input";

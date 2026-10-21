@@ -14,7 +14,7 @@ export interface StubBinding<T> {
   key: string;
   fallback: T | undefined;
   readonly value: T;
-  subscribe(listener?: (value: T) => void): { readonly value: T; dispose(): void };
+  subscribe(listener?: (value: T) => void): { readonly value: T; setChangeListener(listener: (value: T) => void): void; dispose(): void };
 }
 
 const read = <T,>(binding: { key: string; fallback: T | undefined }): T =>
@@ -26,9 +26,14 @@ export function bindValue<T>(group: string, name: string, fallback?: T): StubBin
   binding.subscribe = (listener) => {
     const set = subscribers.get(binding.key) ?? new Set<(value: unknown) => void>();
     subscribers.set(binding.key, set);
-    const entry = (value: unknown) => listener?.(value as T);
+    let current = listener;
+    const entry = (value: unknown) => current?.(value as T);
     set.add(entry);
-    return { get value() { return read(binding); }, dispose: () => { set.delete(entry); } };
+    return {
+      get value() { return read(binding); },
+      setChangeListener: (next) => { current = next; },
+      dispose: () => { set.delete(entry); },
+    };
   };
   return binding;
 }

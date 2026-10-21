@@ -438,6 +438,18 @@ the cards built, and most of a long menu sits below the fold.
   sends again, about 45 ms of engine layout for the reattached panel, and the game's own work. The
   hidden panel holds what it last showed until the next open: 300–900 elements and up to 1.4 MB of
   JS heap at a menu's first window, about 4,000 elements and 9 MB for Roads scrolled to its end.
+- **Every menu is kept built.** One kept panel per toolbar menu, built the first time C# answers an
+  open of it, so a switch shows a built panel as a reopen does: switches went from 66–105 ms to
+  41–49 ms (spike, 2026-10-20), first visits about 14 ms slower, the UI's JS heap 16 → 46 MB with all
+  15 built (flat over 480 opens; the owner judged the memory worth it). Every panel freezes when a
+  menu opens or closes, and the opened menu's thaws when C# answers; which one the slot shows
+  meanwhile is `domain/keptMenus` (never another menu's panel under this menu's button). A frozen
+  panel does no work because everything inside the menu reads bindings through `mods/panelValue`'s
+  `useValue` and the view store through `usePanelStore`, which hold still while frozen. That
+  `useValue` copies cs2/api's (`domain/bindingValue`, read from the game's bundle): a version built
+  on `useSyncExternalStore` re-rendered synchronously and on equal values, which loaded twice per
+  scroll and left a short list unfilled. `bindingReadContract.test` keeps the game's hook out of the
+  menu. Design: `docs/superpowers/specs/2026-10-20-keep-every-menu-design.md`.
 - **The menu opens in the frame the player clicks.** C# clears `OwnsCurrentMenu` on every close and
   sets it again only when it hears the next selection, a frame after the game has mounted its own
   asset menu; until then vanilla's grid was built and drawn for a frame. C# now publishes the menus it
