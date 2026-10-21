@@ -6,6 +6,7 @@ import {
   getUnplumbedStrings,
 } from "../src/domain/localizableStrings.ts";
 import { GROUP_DIMENSIONS, UNGROUPED_LABEL } from "../src/domain/buildingGroups.ts";
+import { SERVICE_FACT_LOCALIZATION_KEYS } from "../src/domain/serviceFacts.ts";
 
 const locale = JSON.parse(readFileSync(new URL("../../Locale.json", import.meta.url), "utf8"));
 
@@ -117,6 +118,10 @@ describe("Every key the source asks for is a key we ship", () => {
       }
     };
     walk(new URL("../src/", import.meta.url));
+    // The service-fact table builds its keys rather than spelling them.
+    for (const key of SERVICE_FACT_LOCALIZATION_KEYS.join("\n").match(KEY) ?? []) {
+      found.set(key, [...(found.get(key) ?? []), "serviceFacts.ts"]);
+    }
     return found;
   };
 
