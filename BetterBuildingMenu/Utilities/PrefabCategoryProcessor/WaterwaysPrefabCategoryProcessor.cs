@@ -1,11 +1,5 @@
-using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Interfaces;
+using BetterBuildingMenu.Domain.Enums;
 using Game.Prefabs;
-
-using System.Diagnostics.CodeAnalysis;
-
-using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
@@ -17,25 +11,10 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     /// carries WaterwayData rather than RoadData or TrackData, and every network
     /// processor here queries one specific data component.
     /// </remarks>
-    public class WaterwaysPrefabCategoryProcessor : IPrefabCategoryProcessor
+    public class WaterwaysPrefabCategoryProcessor : TypedProcessor<WaterwayPrefab>
     {
-        public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(WaterwayData), typeof(NetData));
+        public override ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(WaterwayData), typeof(NetData));
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
-        {
-            if (prefab is not WaterwayPrefab)
-            {
-                prefabIndex = null;
-                return false;
-            }
-
-            prefabIndex = new PrefabIndex(prefab)
-            {
-                Category = Domain.Enums.PrefabCategory.Networks,
-                SubCategory = Domain.Enums.PrefabSubCategory.Networks_Waterways,
-            };
-
-            return true;
-        }
+        protected override PrefabSubCategory SubCategory => PrefabSubCategory.Networks_Waterways;
     }
 }

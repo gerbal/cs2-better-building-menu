@@ -1,11 +1,5 @@
-using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Interfaces;
+using BetterBuildingMenu.Domain.Enums;
 using Game.Prefabs;
-
-using System.Diagnostics.CodeAnalysis;
-
-using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
@@ -17,25 +11,10 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     /// drawn stop to stop across track that already exists, so it gets its own
     /// subcategory rather than being filed with the rails it runs on.
     /// </remarks>
-    public class TransportLinePrefabCategoryProcessor : IPrefabCategoryProcessor
+    public class TransportLinePrefabCategoryProcessor : TypedProcessor<TransportLinePrefab>
     {
-        public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(TransportLineData), typeof(RouteData));
+        public override ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(TransportLineData), typeof(RouteData));
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
-        {
-            if (prefab is not TransportLinePrefab)
-            {
-                prefabIndex = null;
-                return false;
-            }
-
-            prefabIndex = new PrefabIndex(prefab)
-            {
-                Category = Domain.Enums.PrefabCategory.Networks,
-                SubCategory = Domain.Enums.PrefabSubCategory.Networks_Routes,
-            };
-
-            return true;
-        }
+        protected override PrefabSubCategory SubCategory => PrefabSubCategory.Networks_Routes;
     }
 }

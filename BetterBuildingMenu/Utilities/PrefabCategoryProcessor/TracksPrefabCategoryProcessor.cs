@@ -1,33 +1,12 @@
-﻿using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Interfaces;
+﻿using BetterBuildingMenu.Domain.Enums;
 using Game.Prefabs;
-
-using System.Diagnostics.CodeAnalysis;
-
-using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
-    public class TracksPrefabCategoryProcessor : IPrefabCategoryProcessor
+    public class TracksPrefabCategoryProcessor : TypedProcessor<TrackPrefab>
     {
-        public ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(TrackData));
+        public override ProcessorQuery Query { get; } = ProcessorQuery.All(typeof(TrackData));
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
-        {
-            if (prefab is not TrackPrefab)
-            {
-                prefabIndex = null;
-                return false;
-            }
-
-            prefabIndex = new PrefabIndex(prefab)
-            {
-                Category = Domain.Enums.PrefabCategory.Networks,
-                SubCategory = Domain.Enums.PrefabSubCategory.Networks_Tracks
-            };
-
-            return true;
-        }
+        protected override PrefabSubCategory SubCategory => PrefabSubCategory.Networks_Tracks;
     }
 }

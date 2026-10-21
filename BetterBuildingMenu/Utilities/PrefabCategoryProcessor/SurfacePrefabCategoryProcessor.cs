@@ -1,30 +1,15 @@
-﻿using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Interfaces;
+﻿using BetterBuildingMenu.Domain.Enums;
 using Game.Prefabs;
-
-using System.Diagnostics.CodeAnalysis;
-
-using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
-    public class SurfacePrefabCategoryProcessor : IPrefabCategoryProcessor
+    public class SurfacePrefabCategoryProcessor : TypedProcessor<PrefabBase>
     {
-        public ProcessorQuery Query { get; } = ProcessorQuery
+        public override ProcessorQuery Query { get; } = ProcessorQuery
             .All(typeof(AreaData))
             .Or(ProcessorQuery.All(typeof(SurfaceData)))
             .None(typeof(PlaceholderObjectElement));
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
-        {
-            prefabIndex = new PrefabIndex(prefab)
-            {
-                Category = Domain.Enums.PrefabCategory.Props,
-                SubCategory = Domain.Enums.PrefabSubCategory.Props_Surfaces,
-            };
-
-            return true;
-        }
+        protected override PrefabSubCategory SubCategory => PrefabSubCategory.Props_Surfaces;
     }
 }

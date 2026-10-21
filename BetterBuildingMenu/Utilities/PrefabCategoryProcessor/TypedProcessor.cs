@@ -16,17 +16,10 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	public abstract class TypedProcessor<TPrefab> : IPrefabCategoryProcessor
 		where TPrefab : PrefabBase
 	{
-		private readonly PrefabCategory _category;
-		private readonly PrefabSubCategory _subCategory;
+		public abstract ProcessorQuery Query { get; }
 
-		protected TypedProcessor(ProcessorQuery query, PrefabSubCategory subCategory)
-		{
-			Query = query;
-			_category = subCategory.CategoryOf();
-			_subCategory = subCategory;
-		}
-
-		public ProcessorQuery Query { get; }
+		/// <summary>Where it files a prefab, under the category this lies in.</summary>
+		protected abstract PrefabSubCategory SubCategory { get; }
 
 		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
 		{
@@ -36,10 +29,12 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				return false;
 			}
 
+			var subCategory = SubCategory;
+
 			prefabIndex = new PrefabIndex(prefab)
 			{
-				Category = _category,
-				SubCategory = _subCategory,
+				Category = subCategory.CategoryOf(),
+				SubCategory = subCategory,
 			};
 
 			return true;

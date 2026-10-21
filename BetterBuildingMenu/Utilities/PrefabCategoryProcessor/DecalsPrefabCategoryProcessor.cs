@@ -1,16 +1,11 @@
-﻿using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Domain.Interfaces;
-using BetterBuildingMenu.Utilities;
+﻿using BetterBuildingMenu.Domain.Enums;
 using Game.Prefabs;
-
-using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 {
-    public class DecalsPrefabCategoryProcessor : IPrefabCategoryProcessor
+    public class DecalsPrefabCategoryProcessor : TypedProcessor<StaticObjectPrefab>
     {
         private readonly EntityManager _entityManager;
 
@@ -19,25 +14,12 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             _entityManager = entityManager;
         }
 
-        public ProcessorQuery Query { get; } = ProcessorQuery
+        public override ProcessorQuery Query { get; } = ProcessorQuery
             .All(typeof(StaticObjectData), typeof(SubMesh))
             .None(typeof(BuildingData), typeof(BrandObjectData), typeof(PlaceholderObjectElement));
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
-        {
-            if (prefab is not StaticObjectPrefab || !_entityManager.IsDecal(entity))
-            {
-                prefabIndex = null;
-                return false;
-            }
+        protected override PrefabSubCategory SubCategory => PrefabSubCategory.Props_Decals;
 
-            prefabIndex = new PrefabIndex(prefab)
-            {
-                Category = Domain.Enums.PrefabCategory.Props,
-                SubCategory = Domain.Enums.PrefabSubCategory.Props_Decals
-            };
-
-            return true;
-        }
+        protected override bool Accepts(StaticObjectPrefab prefab, Entity entity) => _entityManager.IsDecal(entity);
     }
 }
