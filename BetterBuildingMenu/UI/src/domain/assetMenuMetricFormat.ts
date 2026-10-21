@@ -471,19 +471,13 @@ export function formatServiceRange(
 
     const miles = Math.round(value / 1000 / KILOMETRES_PER_MILE * 10) / 10;
 
-    return applyMoneyTemplate(
-      length.mile,
-      Number.isInteger(miles) ? String(miles) : miles.toFixed(1),
-    );
+    return applyMoneyTemplate(length.mile, roundedDigits(miles, 1, separators));
   }
 
   if (value >= METRIC_LONG) {
     const km = Math.round(value / 100) / 10;
 
-    return applyMoneyTemplate(
-      length.kilometre,
-      Number.isInteger(km) ? String(km) : km.toFixed(1),
-    );
+    return applyMoneyTemplate(length.kilometre, roundedDigits(km, 1, separators));
   }
 
   return applyMoneyTemplate(length.metre, formatBuildingMetric(Math.round(value), "capacity", separators));

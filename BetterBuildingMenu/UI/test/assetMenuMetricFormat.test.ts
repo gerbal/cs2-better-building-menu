@@ -461,6 +461,16 @@ describe("formatServiceRange under the player's unit system", () => {
     // the binding has answered.
     assert.match(formatServiceRange(2000), /2 km$/);
   });
+
+  it("writes a fraction with the player's own decimal separator", () => {
+    // Common.DECIMAL_SEPARATOR, as every other formatter here uses: a range
+    // beside a weight on one card cannot write its decimal a different way.
+    const comma = { group: ".", decimal: "," };
+
+    assert.equal(formatServiceRange(1500, { ...metric, ...comma }), "1,5 km");
+    assert.equal(formatServiceRange(2000, { ...imperial, ...comma }), "1,2 mi");
+    assert.equal(formatServiceRange(1500, metric), "1.5 km");
+  });
 });
 
 describe("width and speed follow the same setting", () => {
