@@ -101,10 +101,7 @@ namespace BetterBuildingMenu.Services
 			}
 
 			bool matchesDlc = prefab.DlcId.id != GameDlcIds.Invalid
-				&& dlcIds.Any(id => string.Equals(
-					id,
-					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
-					StringComparison.Ordinal));
+				&& dlcIds.ContainsIgnoreCase(prefab.DlcId.id.ToString(CultureInfo.InvariantCulture));
 
 			// Content is ONE axis, so its options combine as OR. Two of them
 			// live in the game's selection, which ORs them itself; the third is
@@ -830,8 +827,7 @@ namespace BetterBuildingMenu.Services
 				.Select(value => new BuildingCatalogFacetOption(
 					value,
 					WordFormat.SplitIdentifier(value),
-					selected is not null
-						&& selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
+					selected.ContainsIgnoreCase(value)))
 				.ToArray();
 
 			groups.Add(new BuildingCatalogFacetGroup(
@@ -926,8 +922,7 @@ namespace BetterBuildingMenu.Services
 				.Select(dlc => new BuildingCatalogFacetOption(
 					ContentOption.Dlc + dlc,
 					FormatDlcLabel(dlc),
-					query.DlcIds is not null
-					&& query.DlcIds.Any(selected => string.Equals(selected, dlc, StringComparison.Ordinal)))));
+					query.DlcIds.ContainsIgnoreCase(dlc))));
 
 			// Same rule as every other dimension: one value splits nothing, and
 			// a selection holds the group open so it can still be cleared.
@@ -964,7 +959,7 @@ namespace BetterBuildingMenu.Services
 				.Select(value => new BuildingCatalogFacetOption(
 					value,
 					formatLabel?.Invoke(value) ?? value,
-					selected is not null && selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
+					selected.ContainsIgnoreCase(value)))
 				.ToArray();
 		}
 
@@ -985,7 +980,7 @@ namespace BetterBuildingMenu.Services
 
 			var missing = selected
 				.Where(value => !string.IsNullOrWhiteSpace(value))
-				.Where(value => !present.Any(candidate => string.Equals(candidate, value, StringComparison.OrdinalIgnoreCase)))
+				.Where(value => !present.ContainsIgnoreCase(value))
 				.ToArray();
 
 			if (missing.Length == 0)

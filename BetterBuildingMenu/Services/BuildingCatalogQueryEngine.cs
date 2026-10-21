@@ -184,7 +184,7 @@ namespace BetterBuildingMenu.Services
 			// axis names. Nothing to do when no tab is picked, which is also
 			// the case for every menu whose strip is vanilla's categories.
 			if (query.StripTabs is { Count: > 0 }
-				&& !query.StripTabs.Any(tab => StripMatches(entry, tab)))
+				&& !MatchesAnyStripTab(entry, query.StripTabs))
 			{
 				return false;
 			}
@@ -386,6 +386,19 @@ namespace BetterBuildingMenu.Services
 			return false;
 		}
 
+		private static bool MatchesAnyStripTab(BuildingCatalogEntry entry, IReadOnlyList<string> tabs)
+		{
+			for (var i = 0; i < tabs.Count; i++)
+			{
+				if (StripMatches(entry, tabs[i]))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		private static bool MatchesAny(string? value, IReadOnlyList<string>? selected)
 		{
 			if (selected is null || selected.Count == 0)
@@ -393,19 +406,30 @@ namespace BetterBuildingMenu.Services
 				return true;
 			}
 
-			return value is not null
-				&& selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase));
+			return value is not null && selected.ContainsIgnoreCase(value);
 		}
 
-		private static bool MatchesAny(IEnumerable<string>? values, IReadOnlyList<string>? selected)
+		private static bool MatchesAny(IReadOnlyList<string>? values, IReadOnlyList<string>? selected)
 		{
 			if (selected is null || selected.Count == 0)
 			{
 				return true;
 			}
 
-			return values is not null
-				&& values.Any(value => selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase)));
+			if (values is null)
+			{
+				return false;
+			}
+
+			for (var i = 0; i < values.Count; i++)
+			{
+				if (selected.ContainsIgnoreCase(values[i]))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> Order(
