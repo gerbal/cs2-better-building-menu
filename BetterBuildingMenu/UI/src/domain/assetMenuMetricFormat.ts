@@ -47,100 +47,77 @@ const DECIMAL_SEPARATOR_KEY = "Common.DECIMAL_SEPARATOR";
 /** The `translate` from `useLocalization`, kept structural so this stays pure. */
 export type Translate = (id: string, fallback?: string | null) => string | null;
 
-/**
- * The game's own money templates, e.g. "{SIGN}¢{VALUE}". Taken from vanilla
- * because they localize the suffix and the symbol's placement too, so a cost
- * reads here exactly as it does in the game's panels, in every language.
- */
-export interface MoneyTemplates {
-  plain: string;
-  perMonth: string;
-  perKilometre: string;
-  perKilometrePerMonth: string;
-  perMile: string;
-  perMilePerMonth: string;
-}
+/** A unit template's key in the game's dictionary, and the template used without one. */
+type TemplateRow = readonly [key: string, fallback: string];
 
 /**
- * The game's own length templates, "{SIGN}{VALUE} m". Vanilla owns the spacing
- * and the word. Both unit systems are here because the player's choice is
- * readable off ("options", "unitSettings") and the game ships both sets.
+ * The game's own unit templates, e.g. "{SIGN}¢{VALUE}". Vanilla owns the
+ * symbol's placement, the spacing and the word, so a figure reads here exactly
+ * as it does in the game's panels, in every language.
  */
-export interface LengthTemplates {
-  cubicMetre: string;
-  gallon: string;
-  cubicMetrePerMonth: string;
-  gallonPerMonth: string;
-  metre: string;
-  kilometre: string;
-  yard: string;
-  mile: string;
-  foot: string;
-}
+const UNIT_TEMPLATES = {
+  money: {
+    plain: ["Common.VALUE_MONEY", "¢{VALUE}"],
+    perMonth: ["Common.VALUE_MONEY_PER_MONTH", "¢{VALUE}/mo"],
+    perKilometre: ["Common.VALUE_MONEY_PER_KILOMETER", "¢{VALUE}/km"],
+    perKilometrePerMonth: ["Common.VALUE_MONEY_PER_KILOMETER_PER_MONTH", "¢{VALUE}/km/mo"],
+    perMile: ["Common.VALUE_MONEY_PER_MILE", "¢{VALUE}/mi"],
+    perMilePerMonth: ["Common.VALUE_MONEY_PER_MILE_PER_MONTH", "¢{VALUE}/mi/mo"],
+  },
+  // Both unit systems, because the player's choice is readable off
+  // ("options", "unitSettings") and the game ships both sets.
+  length: {
+    metre: ["Common.VALUE_METER", "{VALUE} m"],
+    kilometre: ["Common.VALUE_KILOMETER", "{VALUE} km"],
+    yard: ["Common.VALUE_YARD", "{VALUE} yd"],
+    mile: ["Common.VALUE_MILE", "{VALUE} mi"],
+    foot: ["Common.VALUE_FOOT", "{VALUE} ft"],
+    cubicMetre: ["Common.VALUE_CUBIC_METER", "{VALUE} m³"],
+    gallon: ["Common.VALUE_GALLON", "{VALUE} gal"],
+    cubicMetrePerMonth: ["Common.VALUE_CUBIC_METER_PER_MONTH", "{VALUE} m³/mo."],
+    gallonPerMonth: ["Common.VALUE_GALLON_PER_MONTH", "{VALUE} gal/mo."],
+  },
+  // The English strings in the shipped Locale.cok, minus {SIGN}. The short
+  // kiloton one is absent from that file, so its fallback is a guess used only
+  // when the game's own template is missing.
+  weight: {
+    kilogram: ["Common.VALUE_KILOGRAM", "{VALUE} kg"],
+    ton: ["Common.VALUE_TON", "{VALUE} t"],
+    kiloton: ["Common.VALUE_KILOTON", "{VALUE} kt"],
+    pound: ["Common.VALUE_POUND", "{VALUE} lb"],
+    shortTon: ["Common.VALUE_SHORT_TON", "{VALUE} tn"],
+    shortKiloton: ["Common.VALUE_SHORT_KILOTON", "{VALUE} ktn"],
+    kilogramPerMonth: ["Common.VALUE_KG_PER_MONTH", "{VALUE} kg/mo."],
+    tonPerMonth: ["Common.VALUE_TON_PER_MONTH", "{VALUE} t/mo."],
+    poundPerMonth: ["Common.VALUE_POUND_PER_MONTH", "{VALUE} lb/mo."],
+    shortTonPerMonth: ["Common.VALUE_SHORT_TON_PER_MONTH", "{VALUE} tn/mo."],
+  },
+  // Power and energy; the raw figures are in hundreds of watts.
+  power: {
+    kilowatt: ["Common.VALUE_KILOWATT", "{VALUE} kW"],
+    megawatt: ["Common.VALUE_MEGAWATT", "{VALUE} MW"],
+    megawattHours: ["Common.VALUE_MEGAWATT_HOURS", "{VALUE} MWh"],
+    // Vanilla's dataRate unit.
+    gigabitPerSecond: ["Common.VALUE_GIGABIT_PER_SECOND", "{VALUE} Gbit/s"],
+  },
+} as const;
 
-/**
- * The game's weight templates. Vanilla's Weight formatter takes kilograms and
- * picks the unit by size — see formatWeight for the thresholds.
- */
-export interface WeightTemplates {
-  kilogram: string;
-  ton: string;
-  kiloton: string;
-  pound: string;
-  shortTon: string;
-  shortKiloton: string;
-  kilogramPerMonth: string;
-  tonPerMonth: string;
-  poundPerMonth: string;
-  shortTonPerMonth: string;
-}
+/** One filled-in template per unit of a group in UNIT_TEMPLATES. */
+type Templates<Group> = { -readonly [Unit in keyof Group]: string };
 
-/** The game's power and energy templates; the raw figures are in hundreds of watts. */
-export interface PowerTemplates {
-  kilowatt: string;
-  megawatt: string;
-  megawattHours: string;
-  /** Common.VALUE_GIGABIT_PER_SECOND — vanilla's dataRate unit. */
-  gigabitPerSecond: string;
-}
+export type MoneyTemplates = Templates<typeof UNIT_TEMPLATES.money>;
+export type LengthTemplates = Templates<typeof UNIT_TEMPLATES.length>;
+export type WeightTemplates = Templates<typeof UNIT_TEMPLATES.weight>;
+export type PowerTemplates = Templates<typeof UNIT_TEMPLATES.power>;
 
-export const FALLBACK_POWER: PowerTemplates = {
-  kilowatt: "{VALUE} kW",
-  megawatt: "{VALUE} MW",
-  megawattHours: "{VALUE} MWh",
-  gigabitPerSecond: "{VALUE} Gbit/s",
-};
+// The table read with no dictionary.
+export const FALLBACK_MONEY: MoneyTemplates = resolveTemplates(undefined, UNIT_TEMPLATES.money);
+export const FALLBACK_LENGTH: LengthTemplates = resolveTemplates(undefined, UNIT_TEMPLATES.length);
+export const FALLBACK_WEIGHT: WeightTemplates = resolveTemplates(undefined, UNIT_TEMPLATES.weight);
+export const FALLBACK_POWER: PowerTemplates = resolveTemplates(undefined, UNIT_TEMPLATES.power);
 
 /** Vanilla's Common.VALUE_PER_MONTH, minus {SIGN}. */
 export const FALLBACK_PER_MONTH = "{VALUE} /mo.";
-
-// The English strings in the shipped Locale.cok, minus {SIGN}. The short
-// kiloton one is absent from that file, so its fallback is a guess used only
-// when the game's own template is missing.
-export const FALLBACK_WEIGHT: WeightTemplates = {
-  kilogram: "{VALUE} kg",
-  ton: "{VALUE} t",
-  kiloton: "{VALUE} kt",
-  pound: "{VALUE} lb",
-  shortTon: "{VALUE} tn",
-  shortKiloton: "{VALUE} ktn",
-  kilogramPerMonth: "{VALUE} kg/mo.",
-  tonPerMonth: "{VALUE} t/mo.",
-  poundPerMonth: "{VALUE} lb/mo.",
-  shortTonPerMonth: "{VALUE} tn/mo.",
-};
-
-export const FALLBACK_LENGTH: LengthTemplates = {
-  cubicMetre: "{VALUE} m³",
-  gallon: "{VALUE} gal",
-  cubicMetrePerMonth: "{VALUE} m³/mo.",
-  gallonPerMonth: "{VALUE} gal/mo.",
-  metre: "{VALUE} m",
-  kilometre: "{VALUE} km",
-  yard: "{VALUE} yd",
-  mile: "{VALUE} mi",
-  foot: "{VALUE} ft",
-};
 
 /**
  * Which units the player reads the rest of the game in. The names and numbers
@@ -174,15 +151,6 @@ const GALLONS_PER_CUBIC_METRE = 264.172;
 const METRIC_LONG = 1000;
 const FREEDOM_LONG = 1609;
 
-export const FALLBACK_MONEY: MoneyTemplates = {
-  plain: "¢{VALUE}",
-  perMonth: "¢{VALUE}/mo",
-  perKilometre: "¢{VALUE}/km",
-  perKilometrePerMonth: "¢{VALUE}/km/mo",
-  perMile: "¢{VALUE}/mi",
-  perMilePerMonth: "¢{VALUE}/mi/mo",
-};
-
 export interface NumberSeparators {
   group: string;
   decimal: string;
@@ -211,7 +179,7 @@ export function applyMoneyTemplate(template: string, digits: string): string {
   return template.replace("{SIGN}", "").replace("{VALUE}", digits);
 }
 
-function resolveMoney(translate: Translate | undefined, key: string, fallback: string): string {
+function resolveUnitTemplate(translate: Translate | undefined, key: string, fallback: string): string {
   if (!translate) return fallback;
 
   const value = translate(key, fallback);
@@ -221,6 +189,18 @@ function resolveMoney(translate: Translate | undefined, key: string, fallback: s
   // A template that lost its placeholder would render the symbol and drop the
   // number, which is worse than our own fallback.
   return value.includes("{VALUE}") ? value : fallback;
+}
+
+/** Every unit of one group of UNIT_TEMPLATES, each read like any other template. */
+function resolveTemplates<Group extends Readonly<Record<string, TemplateRow>>>(
+  translate: Translate | undefined,
+  group: Group,
+): Templates<Group> {
+  const resolved = {} as Templates<Group>;
+  for (const unit in group) {
+    resolved[unit] = resolveUnitTemplate(translate, group[unit][0], group[unit][1]);
+  }
+  return resolved;
 }
 
 function resolveSeparator(translate: Translate | undefined, key: string, fallback: string): string {
@@ -242,52 +222,11 @@ export function getNumberSeparators(
   return {
     group: resolveSeparator(translate, THOUSANDS_SEPARATOR_KEY, FALLBACK_GROUP_SEPARATOR),
     decimal: resolveSeparator(translate, DECIMAL_SEPARATOR_KEY, FALLBACK_DECIMAL_SEPARATOR),
-    money: {
-      plain: resolveMoney(translate, "Common.VALUE_MONEY", FALLBACK_MONEY.plain),
-      perMonth: resolveMoney(translate, "Common.VALUE_MONEY_PER_MONTH", FALLBACK_MONEY.perMonth),
-      perKilometre: resolveMoney(translate, "Common.VALUE_MONEY_PER_KILOMETER", FALLBACK_MONEY.perKilometre),
-      perKilometrePerMonth: resolveMoney(
-        translate,
-        "Common.VALUE_MONEY_PER_KILOMETER_PER_MONTH",
-        FALLBACK_MONEY.perKilometrePerMonth,
-      ),
-      perMile: resolveMoney(translate, "Common.VALUE_MONEY_PER_MILE", FALLBACK_MONEY.perMile),
-      perMilePerMonth: resolveMoney(
-        translate,
-        "Common.VALUE_MONEY_PER_MILE_PER_MONTH",
-        FALLBACK_MONEY.perMilePerMonth,
-      ),
-    },
-    length: {
-      metre: resolveMoney(translate, "Common.VALUE_METER", FALLBACK_LENGTH.metre),
-      kilometre: resolveMoney(translate, "Common.VALUE_KILOMETER", FALLBACK_LENGTH.kilometre),
-      yard: resolveMoney(translate, "Common.VALUE_YARD", FALLBACK_LENGTH.yard),
-      mile: resolveMoney(translate, "Common.VALUE_MILE", FALLBACK_LENGTH.mile),
-      foot: resolveMoney(translate, "Common.VALUE_FOOT", FALLBACK_LENGTH.foot),
-      cubicMetre: resolveMoney(translate, "Common.VALUE_CUBIC_METER", FALLBACK_LENGTH.cubicMetre),
-      gallon: resolveMoney(translate, "Common.VALUE_GALLON", FALLBACK_LENGTH.gallon),
-      cubicMetrePerMonth: resolveMoney(translate, "Common.VALUE_CUBIC_METER_PER_MONTH", FALLBACK_LENGTH.cubicMetrePerMonth),
-      gallonPerMonth: resolveMoney(translate, "Common.VALUE_GALLON_PER_MONTH", FALLBACK_LENGTH.gallonPerMonth),
-    },
-    weight: {
-      kilogram: resolveMoney(translate, "Common.VALUE_KILOGRAM", FALLBACK_WEIGHT.kilogram),
-      ton: resolveMoney(translate, "Common.VALUE_TON", FALLBACK_WEIGHT.ton),
-      kiloton: resolveMoney(translate, "Common.VALUE_KILOTON", FALLBACK_WEIGHT.kiloton),
-      pound: resolveMoney(translate, "Common.VALUE_POUND", FALLBACK_WEIGHT.pound),
-      shortTon: resolveMoney(translate, "Common.VALUE_SHORT_TON", FALLBACK_WEIGHT.shortTon),
-      shortKiloton: resolveMoney(translate, "Common.VALUE_SHORT_KILOTON", FALLBACK_WEIGHT.shortKiloton),
-      kilogramPerMonth: resolveMoney(translate, "Common.VALUE_KG_PER_MONTH", FALLBACK_WEIGHT.kilogramPerMonth),
-      tonPerMonth: resolveMoney(translate, "Common.VALUE_TON_PER_MONTH", FALLBACK_WEIGHT.tonPerMonth),
-      poundPerMonth: resolveMoney(translate, "Common.VALUE_POUND_PER_MONTH", FALLBACK_WEIGHT.poundPerMonth),
-      shortTonPerMonth: resolveMoney(translate, "Common.VALUE_SHORT_TON_PER_MONTH", FALLBACK_WEIGHT.shortTonPerMonth),
-    },
-    power: {
-      kilowatt: resolveMoney(translate, "Common.VALUE_KILOWATT", FALLBACK_POWER.kilowatt),
-      megawatt: resolveMoney(translate, "Common.VALUE_MEGAWATT", FALLBACK_POWER.megawatt),
-      megawattHours: resolveMoney(translate, "Common.VALUE_MEGAWATT_HOURS", FALLBACK_POWER.megawattHours),
-      gigabitPerSecond: resolveMoney(translate, "Common.VALUE_GIGABIT_PER_SECOND", FALLBACK_POWER.gigabitPerSecond),
-    },
-    perMonth: resolveMoney(translate, "Common.VALUE_PER_MONTH", FALLBACK_PER_MONTH),
+    money: resolveTemplates(translate, UNIT_TEMPLATES.money),
+    length: resolveTemplates(translate, UNIT_TEMPLATES.length),
+    weight: resolveTemplates(translate, UNIT_TEMPLATES.weight),
+    power: resolveTemplates(translate, UNIT_TEMPLATES.power),
+    perMonth: resolveUnitTemplate(translate, "Common.VALUE_PER_MONTH", FALLBACK_PER_MONTH),
     unitSystem,
   };
 }
