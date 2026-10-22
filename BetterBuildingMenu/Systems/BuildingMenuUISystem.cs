@@ -161,21 +161,17 @@ namespace BetterBuildingMenu.Systems
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
 			// Seeded here and re-pushed by OnSettingsApplied: the UI's menu watcher and
 			// the upgrades panel read it, and C# reads the setting live.
-			_ReplaceVanillaBuildMenu = new SettingBinding<bool>(
+			_ReplaceVanillaBuildMenu = SettingBinding<bool>.PushOnly(
 				seed => CreateBinding("ReplaceVanillaBuildMenu", seed),
-				() => Mod.Settings.ReplaceVanillaBuildMenu,
-				replace => Mod.Settings.ReplaceVanillaBuildMenu = replace,
-				SaveSettings);
+				() => Mod.Settings.ReplaceVanillaBuildMenu);
 			_OwnsCurrentMenu = CreateBinding("OwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
 			_BuildingExtensionMenu = CreateBinding("BuildingExtensionMenu", BuildingExtensionMenu.Empty);
 			// Seeded here and re-pushed by OnSettingsApplied, so the options screen's Tile
 			// size slider takes effect without a reload.
-			_AssetMenuTileSize = new SettingBinding<int>(
+			_AssetMenuTileSize = SettingBinding<int>.PushOnly(
 				seed => CreateBinding("AssetMenuTileSize", seed),
-				() => Mod.Settings.AssetMenuTileSize,
-				size => Mod.Settings.AssetMenuTileSize = size,
-				SaveSettings);
+				() => Mod.Settings.AssetMenuTileSize);
 			CreateTrigger("SearchEverything", SearchEverything);
 			_AssetMenuWidth = CreateBinding("AssetMenuWidth", 0f);
 			// Seeded from the setting rather than 0: the asset menu draws from this

@@ -4,8 +4,7 @@
  * not the row. The rule is C#'s; this only carries the selection across.
  */
 
-import type { ToolbarEntity } from "./toolbarEntity";
-import { toolbarEntityIndex } from "./vanillaMenuWatch";
+import { toolbarEntityIndex, type ToolbarEntity } from "./toolbarEntity";
 
 /** What the four bindings currently say. */
 export interface VanillaToolbarState {

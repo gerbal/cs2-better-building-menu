@@ -16,8 +16,8 @@ namespace BetterBuildingMenu.Utilities
 	{
 		private readonly IBindingValue<T> _binding;
 		private readonly Func<T> _read;
-		private readonly Action<T> _write;
-		private readonly Action _save;
+		// Null for a push-only binding.
+		private readonly (Action<T> Write, Action Save)? _writeBack;
 		private readonly Func<T, T> _sanitize;
 		private readonly Func<T, T, bool> _same;
 
@@ -32,14 +32,27 @@ namespace BetterBuildingMenu.Utilities
 			Action save,
 			Func<T, T>? sanitize = null,
 			Func<T, T, bool>? same = null)
+			: this(create, read, (write, save), sanitize, same)
+		{
+		}
+
+		private SettingBinding(
+			Func<T, IBindingValue<T>> create,
+			Func<T> read,
+			(Action<T> Write, Action Save)? writeBack,
+			Func<T, T>? sanitize,
+			Func<T, T, bool>? same)
 		{
 			_read = read;
-			_write = write;
-			_save = save;
+			_writeBack = writeBack;
 			_sanitize = sanitize ?? (value => value);
 			_same = same ?? EqualityComparer<T>.Default.Equals;
 			_binding = create(Stored);
 		}
+
+		/// <summary>A binding the UI only reads: seeded and re-pushed from the setting, with nothing to save to.</summary>
+		public static SettingBinding<T> PushOnly(Func<T, IBindingValue<T>> create, Func<T> read) =>
+			new(create, read, writeBack: null, sanitize: null, same: null);
 
 		private T Stored => _sanitize(_read());
 
@@ -52,6 +65,8 @@ namespace BetterBuildingMenu.Utilities
 		/// <summary>Saves the published value, unless the stored setting already holds it.</summary>
 		public void Commit()
 		{
+			var (write, save) = _writeBack
+				?? throw new InvalidOperationException("A push-only setting binding has nothing to save to.");
 			var value = _sanitize(_binding.Value!);
 
 			if (_same(_read(), value))
@@ -59,8 +74,8 @@ namespace BetterBuildingMenu.Utilities
 				return;
 			}
 
-			_write(value);
-			_save();
+			write(value);
+			save();
 		}
 
 		/// <summary>Publishes a value from the UI and saves it at once, for a control with no drag to wait out.</summary>

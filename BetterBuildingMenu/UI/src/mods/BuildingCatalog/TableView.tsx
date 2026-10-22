@@ -106,7 +106,7 @@ export const TableView = ({
         {/* "Name", not "Building": the sort control offers a field called
             Name and sorting by it reorders THIS column, and the column holds
             roads, props and zones, none of which are buildings. */}
-        <span className={styles.identityHeader}>{translate("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
+        <span className={styles.identityHeader}>{label("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
         {metricColumns.filter((column) => metrics.includes(column.key)).map((column) => {
           const fullLabel = label(column.localizationKey, column.fallback);
           const indicator = getAssetMenuColumnSortIndicator(column.key, { column: sortColumn, descending });

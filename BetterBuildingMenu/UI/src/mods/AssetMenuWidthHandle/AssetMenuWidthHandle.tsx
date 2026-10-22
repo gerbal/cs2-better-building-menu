@@ -13,7 +13,7 @@ import {
 import { commitAssetMenuCatalogWidthCommand, setAssetMenuCatalogWidthCommand } from "domain/commands";
 import { send } from "mods/bindings";
 import { useLabel } from "mods/useLabel";
-import { useRafDrag } from "mods/useRafDrag";
+import { useRafDrag, type RafDrag } from "mods/useRafDrag";
 import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
 
 /**
@@ -31,15 +31,9 @@ export const DOUBLE_PRESS_MS = 400;
  */
 export const DRAG_THRESHOLD_PX = 3;
 
-export interface AssetMenuWidthDrag {
-  isResizing: boolean;
+export interface AssetMenuWidthDrag extends Pick<RafDrag, "isResizing" | "blocker"> {
   /** Starts a drag from a press on an element `widthRem` wide, which the press measures rem against. */
   beginResize: (event: any, widthRem?: number) => void;
-  /**
-   * Covers the screen for the length of a drag so the menu keeps the mouse
-   * when it leaves the strip. Null between drags; render it beside the menu.
-   */
-  blocker: JSX.Element | null;
   /** Whether the mouse is on the strip or its reach: the two answer as one handle. */
   isHovered: boolean;
   /** Spread on the strip and its reach so either lights both. */

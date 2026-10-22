@@ -5,11 +5,11 @@ import { useEffect, useRef } from "react";
 import {
   escapeRoute,
   nextWatchState,
-  toolbarEntityIndex,
   watchAction,
   watchStateWhileOff,
   type WatchState,
 } from "domain/vanillaMenuWatch";
+import { toolbarEntityIndex } from "domain/toolbarEntity";
 import {
   CLEAR_ASSET_SELECTION_TRIGGER,
   TOOLBAR_TRIGGER_GROUP,

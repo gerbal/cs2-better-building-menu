@@ -4,8 +4,8 @@ import { type ReactNode } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { canPlace, entryStateWord, isEntryLocked } from "domain/buildingLockState";
-import { entryLabel, entryStateAttributes, sortedBadgeText } from "domain/buildingEntryView";
+import { canPlace, isEntryLocked } from "domain/buildingLockState";
+import { entryLabel, entryStateAttributes, entryStateWordOf, sortedBadgeText } from "domain/buildingEntryView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
@@ -151,7 +151,7 @@ const BuildingTile = memo(function BuildingTile({
   onPlace,
 }: BuildingTileProps) {
   const label = entryLabel(entry);
-  const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
+  const stateWord = entryStateWordOf(entry, hoverCard.labels);
   const sortedText = sortedBadgeText(entry, sortedMetric, hoverCard.separators);
 
   return (

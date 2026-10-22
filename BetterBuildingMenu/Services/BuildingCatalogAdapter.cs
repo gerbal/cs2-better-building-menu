@@ -764,14 +764,13 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// Locked and Unlocked, always both, and both ticked when nothing is
-		/// stored.
+		/// Unlocked, Locked and AlreadyBuilt, always all three, and none ticked when nothing
+		/// is stored.
 		/// </summary>
 		/// <remarks>
 		/// The dimension is exhaustive, so it is offered even where only one value is present
 		/// — a founding city where everything is locked is exactly when the filter should say
-		/// so — and an empty stored selection reads as both, which is what it means.
-		/// </remarks>
+		/// so — and an empty stored selection admits all three, which is what it means.
 		/// </remarks>
 		private static void AddAvailabilityGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,

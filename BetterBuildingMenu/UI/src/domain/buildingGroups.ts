@@ -59,7 +59,7 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = GROUP_DIMENSION_IDS.m
  * one, matched loosely so a rename or a variant still resolves. C# makes the
  * same test in VanillaMenus.IsEducation.
  */
-export function isEducationMenu(name: string | null | undefined): boolean {
+export function isEducation(name: string | null | undefined): boolean {
   return /education/i.test(name ?? "");
 }
 

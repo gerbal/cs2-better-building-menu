@@ -4,6 +4,7 @@
  * wider view: the game's row is per category, the rail's is per menu.
  */
 
+import type { Command } from "./commands";
 import type { FacetId } from "./sharedContracts.generated";
 import type { ToolbarEntity, ToolbarEntityRef } from "./toolbarEntity";
 
@@ -71,9 +72,12 @@ export function toggleAssetPack(
     : [...current, pack];
 }
 
-/** Whether a facet command belongs to the Content axis. */
-export function isContentFacetCommand(command: { args: readonly unknown[] } | null | undefined): boolean {
-  return command?.args?.[0] === CONTENT_FACET_ID;
+/** A facet toggle: the facet's id, then the option's. */
+type FacetToggleCommand = Extract<Command, { method: "ToggleAssetMenuFacet" }>;
+
+/** Whether a command toggles an option on the Content axis. */
+export function isContentFacetCommand(command: Command | null | undefined): command is FacetToggleCommand {
+  return command?.method === "ToggleAssetMenuFacet" && command.args[0] === CONTENT_FACET_ID;
 }
 
 export type ContentOptionKind = "vanilla" | "pack" | "dlc";

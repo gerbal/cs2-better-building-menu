@@ -23,7 +23,7 @@ namespace BetterBuildingMenu.Tests
 			};
 
 		private static string[] Path(BuildingCatalogEntry entry, string dimension, string[]? names = null) =>
-			BuildingCatalogGrouping.Labels(entry, dimension, names).Path;
+			BuildingCatalogGrouping.Resolve(dimension).Labels(entry, names).Path;
 
 		[Fact]
 		public void YieldsTwoLevelsForCategoryAndOneForEverythingElse()
@@ -52,8 +52,8 @@ namespace BetterBuildingMenu.Tests
 		{
 			var names = new System.Collections.Generic.Dictionary<int, string> { [1] = "Grundschule" };
 
-			Assert.Equal(new[] { "Grundschule" }, BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 1 }, "schoolTier", schoolTierNames: names).Path);
-			Assert.Equal(new[] { "High School" }, BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 2 }, "schoolTier", schoolTierNames: names).Path);
+			Assert.Equal(new[] { "Grundschule" }, BuildingCatalogGrouping.Resolve("schoolTier").Labels(Entry() with { EducationLevel = 1 }, schoolTierNames: names).Path);
+			Assert.Equal(new[] { "High School" }, BuildingCatalogGrouping.Resolve("schoolTier").Labels(Entry() with { EducationLevel = 2 }, schoolTierNames: names).Path);
 		}
 
 		[Fact]
@@ -67,19 +67,19 @@ namespace BetterBuildingMenu.Tests
 		{
 			// Beside the school levels in the game's language, a research heading takes the game's
 			// name for its category too, as a menuCategory heading does.
-			Assert.Equal("Research", BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = null, UiCategory = " Research " }, "schoolTier").LabelId);
-			Assert.Null(BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 1, UiCategory = "Education" }, "schoolTier").LabelId);
+			Assert.Equal("Research", BuildingCatalogGrouping.Resolve("schoolTier").Labels(Entry() with { EducationLevel = null, UiCategory = " Research " }).LabelId);
+			Assert.Null(BuildingCatalogGrouping.Resolve("schoolTier").Labels(Entry() with { EducationLevel = 1, UiCategory = "Education" }).LabelId);
 		}
 
 		[Fact]
 		public void CarriesTheGamesCategoryIdOnTheCategoryLevelOnly()
 		{
 			// The renderer resolves LabelId back to the game's own category name.
-			var labels = BuildingCatalogGrouping.Labels(Entry() with { UiMenu = "Zones", UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.Low }, "menuCategory");
+			var labels = BuildingCatalogGrouping.Resolve("menuCategory").Labels(Entry() with { UiMenu = "Zones", UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.Low });
 
 			Assert.Equal("ZonesResidential", labels.LabelId);
 			Assert.Equal(new[] { "Residential", "Low Density" }, labels.Path);
-			Assert.Null(BuildingCatalogGrouping.Labels(Entry() with { BuildingType = "Hospital" }, "role").LabelId);
+			Assert.Null(BuildingCatalogGrouping.Resolve("role").Labels(Entry() with { BuildingType = "Hospital" }).LabelId);
 		}
 
 		[Fact]

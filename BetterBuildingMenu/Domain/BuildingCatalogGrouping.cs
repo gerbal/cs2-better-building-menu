@@ -276,11 +276,6 @@ namespace BetterBuildingMenu.Domain
 			return Unrecognised;
 		}
 
-		/// <summary>One entry's outermost group key: see <see cref="GroupDimension.PrimaryKey"/>.</summary>
-		/// <remarks>A pass over many entries resolves the dimension once with <see cref="Resolve"/>.</remarks>
-		public static string PrimaryKey(BuildingCatalogEntry entry, string? groupBy) =>
-			Resolve(groupBy).PrimaryKey(entry);
-
 		private static bool Is(string value, string dimension) =>
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);
 
@@ -306,11 +301,6 @@ namespace BetterBuildingMenu.Domain
 		private static bool IsTransitMenu(string? menu) =>
 			menu is { Length: > 0 }
 			&& menu.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
-
-		/// <summary>One entry's second group level: see <see cref="GroupDimension.SecondaryKey"/>.</summary>
-		/// <remarks>Only the two category dimensions have one.</remarks>
-		public static string SecondaryKey(BuildingCatalogEntry entry, string? groupBy) =>
-			Resolve(groupBy).SecondaryKey(entry);
 
 		/// <summary>The tier beneath the game's own category. It needs a KEY, not just a heading, so a
 		/// group cannot straddle a page boundary; three sources, prefixed so they cannot collide.</summary>
@@ -443,14 +433,6 @@ namespace BetterBuildingMenu.Domain
 		public const string ProgressionUngated = "From the start";
 
 		public readonly record struct GroupLabels(string[] Path, string? LabelId);
-
-		/// <summary>The headings one entry files under: see <see cref="GroupDimension.Labels"/>.</summary>
-		public static GroupLabels Labels(
-			BuildingCatalogEntry entry,
-			string? groupBy,
-			IReadOnlyList<string>? milestoneNames = null,
-			IReadOnlyDictionary<int, string>? schoolTierNames = null) =>
-			Resolve(groupBy).Labels(entry, milestoneNames, schoolTierNames);
 
 		/// <summary>A school's level; any other entry, such as a research facility, under its category's
 		/// heading, with the game's id so the UI can say it in the game's language, as menuCategory's does.</summary>

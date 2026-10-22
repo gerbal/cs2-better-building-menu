@@ -1,6 +1,5 @@
 import { useValue } from "mods/panelValue";
 import { FOCUS_DISABLED } from "cs2/input";
-import { useLocalization } from "cs2/l10n";
 import { Button } from "cs2/ui";
 import classNames from "classnames";
 import { useEffect, useMemo, useState } from "react";
@@ -24,6 +23,7 @@ import {
 } from "domain/metricRangeDebouncer";
 import { ASSET_MENU_DISCLOSURE_KEYS, getAssetMenuDisclosure, setAssetMenuDisclosure } from "domain/assetMenuViewStore";
 import { useAssetMenuView } from "mods/useAssetMenuView";
+import { useLabel } from "mods/useLabel";
 import { textInputValue } from "domain/textInput";
 import styles from "./buildingCatalog.module.scss";
 
@@ -82,7 +82,7 @@ function draftsFromState(
 }
 
 export const BuildingCatalogMetricFilters = () => {
-  const { translate } = useLocalization();
+  const label = useLabel();
   const state = useValue(BuildingCatalogMetricRanges$) ?? null;
   // In the shared store, so this drawer outlives the remount and the metric
   // ranges the player set stay visible.
@@ -164,14 +164,14 @@ export const BuildingCatalogMetricFilters = () => {
         >
           <span>
             {open
-              ? translate("Tooltip.LABEL[BetterBuildingMenu.HideMetricFilters]", "Hide metric filters")
-              : translate("Tooltip.LABEL[BetterBuildingMenu.MetricFilters]", "Metric filters")}
+              ? label("Tooltip.LABEL[BetterBuildingMenu.HideMetricFilters]", "Hide metric filters")
+              : label("Tooltip.LABEL[BetterBuildingMenu.MetricFilters]", "Metric filters")}
           </span>
           {activeCount > 0 && <span className={styles.metricRangeSelectionCount}>{activeCount}</span>}
         </Button>
         {activeCount > 0 && (
           <Button className={styles.metricRangeClear} variant="icon" onSelect={clear}>
-            {translate("Tooltip.LABEL[BetterBuildingMenu.ClearAssetMenuMetricRanges]", "Clear metric ranges")}
+            {label("Tooltip.LABEL[BetterBuildingMenu.ClearAssetMenuMetricRanges]", "Clear metric ranges")}
           </Button>
         )}
       </div>
@@ -179,25 +179,19 @@ export const BuildingCatalogMetricFilters = () => {
       {open && (
         <div className={styles.metricRangeGroups}>
           {METRIC_RANGE_DEFINITIONS.map((definition) => {
-            const label = translate(definition.localizationKey, definition.label) ?? definition.label;
+            const metricLabel = label(definition.localizationKey, definition.label);
             const draft = drafts[definition.id];
             // Say what happened to the text instead of dropping it in silence.
             const invalid = getInvalidMetricBounds(definition.id, draft);
             const swapped = didSwapMetricBounds(definition.id, draft);
             const notice = invalid.min || invalid.max
-              ? translate(
-                  "Tooltip.LABEL[BetterBuildingMenu.MetricRangeInvalid]",
-                  "Not a number — this bound is ignored",
-                ) ?? "Not a number — this bound is ignored"
+              ? label("Tooltip.LABEL[BetterBuildingMenu.MetricRangeInvalid]", "Not a number — this bound is ignored")
               : swapped
-                ? translate(
-                    "Tooltip.LABEL[BetterBuildingMenu.MetricRangeSwapped]",
-                    "Bounds reversed — showing lowest to highest",
-                  ) ?? "Bounds reversed — showing lowest to highest"
+                ? label("Tooltip.LABEL[BetterBuildingMenu.MetricRangeSwapped]", "Bounds reversed — showing lowest to highest")
                 : "";
             return (
               <div className={styles.metricRangeGroup} key={definition.id}>
-                <span className={styles.metricRangeLabel}>{label}</span>
+                <span className={styles.metricRangeLabel}>{metricLabel}</span>
                 <div className={styles.metricRangeInputs}>
                   <GameTextInput
                     multiline={1}
@@ -207,7 +201,7 @@ export const BuildingCatalogMetricFilters = () => {
                     className={classNames(TextInputTheme.input, styles.metricRangeInput)}
                     focusKey={FOCUS_DISABLED}
                     placeholder="min"
-                    aria-label={`${label} minimum`}
+                    aria-label={`${metricLabel} minimum`}
                     data-invalid={invalid.min ? "true" : undefined}
                     onChange={(value: Event) => updateBound(definition.id, "minText", value)}
                   />
@@ -220,7 +214,7 @@ export const BuildingCatalogMetricFilters = () => {
                     className={classNames(TextInputTheme.input, styles.metricRangeInput)}
                     focusKey={FOCUS_DISABLED}
                     placeholder="max"
-                    aria-label={`${label} maximum`}
+                    aria-label={`${metricLabel} maximum`}
                     data-invalid={invalid.max ? "true" : undefined}
                     onChange={(value: Event) => updateBound(definition.id, "maxText", value)}
                   />

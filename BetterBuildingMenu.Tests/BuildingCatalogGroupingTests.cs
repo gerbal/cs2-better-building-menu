@@ -100,8 +100,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void CategoryGroupsByCategoryThenSubCategory()
 		{
-			Assert.Equal("ServiceBuildings", BuildingCatalogGrouping.PrimaryKey(Entry(1), BuildingCatalogGrouping.Category));
-			Assert.Equal("Health", BuildingCatalogGrouping.SecondaryKey(Entry(1), BuildingCatalogGrouping.Category));
+			Assert.Equal("ServiceBuildings", BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.Category).PrimaryKey(Entry(1)));
+			Assert.Equal("Health", BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.Category).SecondaryKey(Entry(1)));
 		}
 
 		[Fact]
@@ -120,7 +120,7 @@ namespace BetterBuildingMenu.Tests
 				BuildingCatalogGrouping.Footprint,
 			})
 			{
-				Assert.Equal(string.Empty, BuildingCatalogGrouping.SecondaryKey(Entry(1), dimension));
+				Assert.Equal(string.Empty, BuildingCatalogGrouping.Resolve(dimension).SecondaryKey(Entry(1)));
 			}
 		}
 
@@ -147,7 +147,7 @@ namespace BetterBuildingMenu.Tests
 			})
 			{
 				Assert.False(
-					string.IsNullOrEmpty(BuildingCatalogGrouping.PrimaryKey(entry, dimension)),
+					string.IsNullOrEmpty(BuildingCatalogGrouping.Resolve(dimension).PrimaryKey(entry)),
 					$"{dimension} produced no group key, so grouping by it orders nothing");
 			}
 		}
@@ -271,9 +271,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AssetsInNoMenuCategorySortAfterEveryNamedOne()
 		{
-			var unnamed = BuildingCatalogGrouping.PrimaryKey(
-				Entry(1) with { UiCategory = null },
-				BuildingCatalogGrouping.MenuCategory);
+			var unnamed = BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.MenuCategory).PrimaryKey(
+				Entry(1) with { UiCategory = null });
 
 			Assert.True(
 				string.CompareOrdinal(unnamed, BuildingCatalogGrouping.MenuCategoryRank("Anything", int.MaxValue)) > 0);
@@ -284,10 +283,10 @@ namespace BetterBuildingMenu.Tests
 		{
 			Assert.Equal(
 				"BridgesAndPorts",
-				BuildingCatalogGrouping.PrimaryKey(Entry(1, dlcId: "BridgesAndPorts"), BuildingCatalogGrouping.Source));
+				BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.Source).PrimaryKey(Entry(1, dlcId: "BridgesAndPorts")));
 			Assert.Equal(
 				"BaseGame",
-				BuildingCatalogGrouping.PrimaryKey(Entry(1, dlcId: ""), BuildingCatalogGrouping.Source));
+				BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.Source).PrimaryKey(Entry(1, dlcId: "")));
 		}
 
 		[Fact]
@@ -323,10 +322,10 @@ namespace BetterBuildingMenu.Tests
 		{
 			// An empty key sorts first, which opens a menu on the entries that
 			// have no role at all.
-			string unnamed = BuildingCatalogGrouping.PrimaryKey(
-				Entry(1, buildingType: ""), BuildingCatalogGrouping.Role);
-			string named = BuildingCatalogGrouping.PrimaryKey(
-				Entry(2, buildingType: "Zoo"), BuildingCatalogGrouping.Role);
+			string unnamed = BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.Role).PrimaryKey(
+				Entry(1, buildingType: ""));
+			string named = BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.Role).PrimaryKey(
+				Entry(2, buildingType: "Zoo"));
 
 			Assert.True(string.CompareOrdinal(unnamed, named) > 0);
 		}
@@ -351,7 +350,7 @@ namespace BetterBuildingMenu.Tests
 
 			// Unknown but non-"none" still yields an empty key rather than
 			// throwing, so a UI that sends something stale degrades to flat.
-			Assert.Equal(string.Empty, BuildingCatalogGrouping.PrimaryKey(Entry(1), "assetPack"));
+			Assert.Equal(string.Empty, BuildingCatalogGrouping.Resolve("assetPack").PrimaryKey(Entry(1)));
 		}
 		[Fact]
 		public void RanksDensityByTheDecidedOrderRatherThanTheEnumValue()
@@ -408,8 +407,8 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.True(
 				string.CompareOrdinal(
-					BuildingCatalogGrouping.SecondaryKey(low, "menuCategory"),
-					BuildingCatalogGrouping.SecondaryKey(high, "menuCategory")) < 0);
+					BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(low),
+					BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(high)) < 0);
 		}
 
 		[Fact]
@@ -423,8 +422,8 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.True(
 				string.CompareOrdinal(
-					BuildingCatalogGrouping.SecondaryKey(basic, "menuCategory"),
-					BuildingCatalogGrouping.SecondaryKey(later, "menuCategory")) < 0);
+					BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(basic),
+					BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(later)) < 0);
 		}
 
 		[Fact]
@@ -437,13 +436,13 @@ namespace BetterBuildingMenu.Tests
 			var late = Entry(2) with { UiCategory = "SignaturesCommercial", ZoneType = ZoneTypeFilter.Signature, UnlockMilestone = 9 };
 
 			Assert.NotEqual(
-				BuildingCatalogGrouping.SecondaryKey(early, "menuCategory"),
-				BuildingCatalogGrouping.SecondaryKey(late, "menuCategory"));
+				BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(early),
+				BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(late));
 
 			Assert.True(
 				string.CompareOrdinal(
-					BuildingCatalogGrouping.SecondaryKey(early, "menuCategory"),
-					BuildingCatalogGrouping.SecondaryKey(late, "menuCategory")) < 0);
+					BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(early),
+					BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(late)) < 0);
 		}
 
 		[Fact]
@@ -456,7 +455,7 @@ namespace BetterBuildingMenu.Tests
 			var milestone = Entry(3) with { UiCategory = "C", UnlockMilestone = 4 };
 
 			var keys = new[] { density, branch, milestone }
-				.Select(entry => BuildingCatalogGrouping.SecondaryKey(entry, "menuCategory"))
+				.Select(entry => BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(entry))
 				.ToArray();
 
 			Assert.Equal(keys.Length, keys.Distinct().Count());
@@ -477,8 +476,8 @@ namespace BetterBuildingMenu.Tests
 			var station = track with { Id = 2, SubCategory = "ServiceBuildings_Transportation" };
 
 			Assert.NotEqual(
-				BuildingCatalogGrouping.SecondaryKey(track, "menuCategory"),
-				BuildingCatalogGrouping.SecondaryKey(station, "menuCategory"));
+				BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(track),
+				BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(station));
 		}
 
 		[Fact]
@@ -498,8 +497,8 @@ namespace BetterBuildingMenu.Tests
 			var basic = hospital with { Id = 2, DevTreeBranch = "Healthcare", DevTreeBranchDepth = 0 };
 
 			Assert.NotEqual(
-				BuildingCatalogGrouping.SecondaryKey(hospital, "menuCategory"),
-				BuildingCatalogGrouping.SecondaryKey(basic, "menuCategory"));
+				BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(hospital),
+				BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(basic));
 		}
 
 		[Fact]
@@ -573,8 +572,8 @@ namespace BetterBuildingMenu.Tests
 			var early = Entry(1) with { UnlockMilestone = 2, DevTreeBranch = "Basic", DevTreeBranchDepth = 0 };
 			var late = Entry(2) with { UnlockMilestone = 10, DevTreeBranch = "Nuclear", DevTreeBranchDepth = 3 };
 
-			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.PrimaryKey(early, "progression"), BuildingCatalogGrouping.PrimaryKey(late, "progression")) < 0);
-			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.PrimaryKey(early, "development"), BuildingCatalogGrouping.PrimaryKey(late, "development")) < 0);
+			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.Resolve("progression").PrimaryKey(early), BuildingCatalogGrouping.Resolve("progression").PrimaryKey(late)) < 0);
+			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.Resolve("development").PrimaryKey(early), BuildingCatalogGrouping.Resolve("development").PrimaryKey(late)) < 0);
 		}
 
 		[Fact]
@@ -598,7 +597,7 @@ namespace BetterBuildingMenu.Tests
 				Transit(6, "Networks_Routes", null),
 			};
 
-			var keys = ordered.Select(entry => BuildingCatalogGrouping.SecondaryKey(entry, "menuCategory")).ToArray();
+			var keys = ordered.Select(entry => BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(entry)).ToArray();
 
 			Assert.Equal(keys, keys.OrderBy(key => key, StringComparer.Ordinal).ToArray());
 			Assert.Equal(keys.Length, keys.Distinct().Count());
@@ -606,7 +605,7 @@ namespace BetterBuildingMenu.Tests
 			// A transit building with no transit role files under the stations' own key,
 			// so the two never read as two groups with one heading.
 			var untyped = Transit(7, "ServiceBuildings_Transportation", null);
-			Assert.Equal(keys[1], BuildingCatalogGrouping.SecondaryKey(untyped, "menuCategory"));
+			Assert.Equal(keys[1], BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(untyped));
 		}
 
 		[Theory]
@@ -624,9 +623,9 @@ namespace BetterBuildingMenu.Tests
 					DevTreeBranch = "Water",
 				};
 
-			var way = BuildingCatalogGrouping.SecondaryKey(Transit(1, subCategory, null), "menuCategory");
-			var track = BuildingCatalogGrouping.SecondaryKey(Transit(2, "Networks_Tracks", null), "menuCategory");
-			var station = BuildingCatalogGrouping.SecondaryKey(Transit(3, "ServiceBuildings_Transportation", TransitRole.Station), "menuCategory");
+			var way = BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(Transit(1, subCategory, null));
+			var track = BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(Transit(2, "Networks_Tracks", null));
+			var station = BuildingCatalogGrouping.Resolve("menuCategory").SecondaryKey(Transit(3, "ServiceBuildings_Transportation", TransitRole.Station));
 
 			Assert.True(string.CompareOrdinal(way, station) < 0);
 			Assert.NotEqual(track, way);

@@ -396,7 +396,7 @@ The Transportation menu files every mode's assets under one service, so a mode's
 track, its stations, its stops, the depot that runs its vehicles and its freight terminal. Under
 each tab they are split by what each one is for, in the order a mode is built: the way it runs on,
 Stations, Stops, Depots, Cargo Stations, then the lines and anything else by subcategory
-(`BuildingCatalogGrouping.SecondaryKey`, `TransitTierLabel`).
+(`BuildingCatalogGrouping.MenuCategoryTierKey`, `TransitTierLabel`).
 
 - **The split reads the game's components, not names.** `TransitRole` files a station by
   `TransportStationData`, a depot by `TransportDepotData` and a stop by `TransportStopData`, and the

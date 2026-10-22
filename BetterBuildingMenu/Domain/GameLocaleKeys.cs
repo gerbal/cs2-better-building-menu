@@ -70,10 +70,9 @@ namespace BetterBuildingMenu.Domain
 
 			[nameof(PrefabCategory.Any)] = Title("All"),
 
-			// Props. The zoned ones are Landscaping tabs VanillaCategoryMapping reads
-			// by the same ids. Park and Lights have a game name too, but "Park" and
-			// "Lights" say less than ours do, and the game leaves "Fences" English
-			// in German.
+			// Props. The zoned ones are the Landscaping tabs' own ids. Park and Lights
+			// have a game name too, but "Park" and "Lights" say less than ours do, and
+			// the game leaves "Fences" English in German.
 			[nameof(PrefabCategory.Props)] = Title("Props"),
 			[nameof(PrefabSubCategory.Props_Residential)] = SubService("PropsResidential"),
 			[nameof(PrefabSubCategory.Props_Commercial)] = SubService("PropsCommercial"),

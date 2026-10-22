@@ -9,8 +9,8 @@ import {
   formatLotDimensions,
   hasFootprint,
 } from "domain/assetMenuMetricFormat";
-import { entryLabel, entryStateAttributes, sortedBadgeText } from "domain/buildingEntryView";
-import { canPlace, entryStateWord } from "domain/buildingLockState";
+import { entryLabel, entryStateAttributes, entryStateWordOf, sortedBadgeText } from "domain/buildingEntryView";
+import { canPlace } from "domain/buildingLockState";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
@@ -101,7 +101,7 @@ const BuildingListCard = memo(function BuildingListCard({
   const sortedText = sortedBadgeText(entry, sortedMetric, separators);
   const fullName = entryLabel(entry);
   const label = listLabel(fullName);
-  const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
+  const stateWord = entryStateWordOf(entry, hoverCard.labels);
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
   // A road's lot is 0x0 and a zone has none: "0 × 0" measures something

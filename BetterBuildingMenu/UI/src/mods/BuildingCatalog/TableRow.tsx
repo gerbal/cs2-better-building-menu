@@ -12,8 +12,8 @@ import {
   hasFootprint, METRIC_NO_DATA,
 } from "domain/assetMenuMetricFormat";
 import { shortenTileLabel } from "domain/tileLabel";
-import { canPlace, entryStateWord } from "domain/buildingLockState";
-import { entryLabel, entryStateAttributes } from "domain/buildingEntryView";
+import { canPlace } from "domain/buildingLockState";
+import { entryLabel, entryStateAttributes, entryStateWordOf } from "domain/buildingEntryView";
 import { BuildingHoverCard, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
 import { BuildingResultDetails } from "./BuildingResultDetails";
@@ -71,7 +71,7 @@ export const TableRow = memo(function TableRow({
   const name = entryLabel(entry);
   const rowPlaceLabel = `${labels.place}: ${name}`;
   const rowInspectLabel = `${labels.inspect}: ${name}`;
-  const stateWord = entryStateWord(entry, hoverCard.labels.lockedValue, hoverCard.labels.alreadyBuilt);
+  const stateWord = entryStateWordOf(entry, hoverCard.labels);
 
   return (
     <div

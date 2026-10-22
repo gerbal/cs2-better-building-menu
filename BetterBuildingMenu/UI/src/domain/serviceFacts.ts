@@ -5,9 +5,8 @@
  */
 
 /**
- * The number formatter is INJECTED rather than imported: this folder
- * cross-imports types only, so every module can load on its own under Node's
- * type stripping. The caller already holds the separators.
+ * The number formatter is INJECTED rather than imported: the caller already holds
+ * the player's separators and unit system, and this module imports nothing at runtime.
  */
 export type FormatNumber = (value: number) => string;
 
@@ -23,7 +22,7 @@ export interface ServiceTextFact {
 }
 
 /** One of vanilla's own unit rules, each following the player's unit system. */
-type Measure = "length" | "height" | "volume" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
+type UnitRule = "length" | "height" | "volume" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
 
 /** A string asked for by key, with the English drawn when no locale answers. */
 interface Wording {
@@ -49,7 +48,7 @@ interface NumericPresentation extends Wording {
   /** A change, so a positive figure carries its "+" — vanilla's signed binder. */
   signed?: boolean;
   /** Follows the player's unit system instead of carrying a fixed `unit`. */
-  measure?: Measure;
+  measure?: UnitRule;
 }
 
 interface WordedPresentation extends Wording {
@@ -63,7 +62,7 @@ interface WordedPresentation extends Wording {
   omit?: readonly string[];
 }
 
-interface Tier {
+interface FactTier {
   /**
    * A fact under one of the game's keys is the game's line. One under ours is ours
    * unless marked here: the game's tooltip draws it, but under no single key of its own.
@@ -85,15 +84,15 @@ interface WordedFact extends WordedPresentation {
 
 const isOurKey = (localizationKey: string): boolean => localizationKey.startsWith(OUR_KEY_PREFIX);
 
-const inGameTier = (label: Wording, tier: Tier): boolean => tier.vanilla === true || !isOurKey(label.localizationKey);
+const inGameTier = (label: Wording, tier: FactTier): boolean => tier.vanilla === true || !isOurKey(label.localizationKey);
 
 /** A figure drawn as a number. */
-function numeric(key: string, label: Wording, format: Partial<Omit<NumericPresentation, keyof Wording>> & Tier = {}): NumericFact {
+function numeric(key: string, label: Wording, format: Partial<Omit<NumericPresentation, keyof Wording>> & FactTier = {}): NumericFact {
   return { key, kind: "numeric", ...label, unit: "", ...format, vanilla: inGameTier(label, format) };
 }
 
 /** A figure drawn as a word. */
-function worded(key: string, label: Wording, words: Omit<WordedPresentation, keyof Wording> & Tier = {}): WordedFact {
+function worded(key: string, label: Wording, words: Omit<WordedPresentation, keyof Wording> & FactTier = {}): WordedFact {
   return { key, kind: "worded", ...label, ...words, vanilla: inGameTier(label, words) };
 }
 
@@ -365,7 +364,7 @@ export function renderServiceFacts(
   formatNumber: FormatNumber = (value) => String(value),
   // Injected like formatNumber, and for the same reason: this module is
   // imported by pure siblings and must not reach into the metric formatter.
-  measured: Partial<Record<Measure, (value: number) => string>> = {},
+  measured: Partial<Record<UnitRule, (value: number) => string>> = {},
 ): RenderedServiceFact[] {
   if (!facts || facts.length === 0) {
     return [];
