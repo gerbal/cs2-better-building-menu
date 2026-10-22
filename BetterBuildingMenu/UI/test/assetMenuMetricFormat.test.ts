@@ -459,6 +459,31 @@ describe("formatServiceRange under the player's unit system", () => {
     assert.match(formatServiceRange(1610, imperial), /mi$/);
   });
 
+  it("keeps one decimal below 100 of a unit and none from 100 up", () => {
+    // Vanilla's number formatter: one place, trailing zero dropped, under 100
+    // of whatever unit it landed in; whole units from 100.
+    assert.equal(formatServiceRange(7.5, metric), "7.5 m");
+    assert.equal(formatServiceRange(12, metric), "12 m");
+    assert.equal(formatServiceRange(99.94, metric), "99.9 m");
+    assert.equal(formatServiceRange(100.4, metric), "100 m");
+    assert.equal(formatServiceRange(999.4, metric), "999 m");
+    assert.equal(formatServiceRange(1000, metric), "1 km");
+    assert.equal(formatServiceRange(99_940, metric), "99.9 km");
+    assert.equal(formatServiceRange(100_000, metric), "100 km");
+    assert.equal(formatServiceRange(123_456, metric), "123 km");
+  });
+
+  it("applies the same places to yards and miles", () => {
+    // 50 m is 54.68 yd; 100 yd is 91.44 m; 100 mi is 160 934.4 m.
+    assert.equal(formatServiceRange(50, imperial), "54.7 yd");
+    assert.equal(formatServiceRange(91.4, imperial), "100 yd");
+    assert.equal(formatServiceRange(91.5, imperial), "100 yd");
+    assert.equal(formatServiceRange(1608, imperial), `${groupDigits(1759)} yd`);
+    assert.equal(formatServiceRange(1609, imperial), "1 mi");
+    assert.equal(formatServiceRange(160_000, imperial), "99.4 mi");
+    assert.equal(formatServiceRange(170_000, imperial), "106 mi");
+  });
+
   it("defaults to metric when nobody said otherwise", () => {
     // An older caller that passes no unit system, and the first frame before
     // the binding has answered.
@@ -481,10 +506,11 @@ describe("width and speed follow the same setting", () => {
 
   it("states a network width by the game's Length rule", () => {
     // A width is a horizontal distance, so it takes the units vanilla gives a
-    // Length: metres, and YARDS under Freedom. Whole units, no decimal, which
-    // is what vanilla's Length does below its threshold.
-    assert.match(formatNetworkWidth(16, imperial), /17 yd$/);
-    assert.match(formatNetworkWidth(16), /16 m$/);
+    // Length: metres, and YARDS under Freedom, to one place below 100.
+    assert.equal(formatNetworkWidth(16, imperial), "17.5 yd");
+    assert.equal(formatNetworkWidth(16), "16 m");
+    assert.equal(formatNetworkWidth(7.5), "7.5 m");
+    assert.equal(formatNetworkWidth(7.5, { ...imperial, group: ".", decimal: "," }), "8,2 yd");
   });
 
   it("states a speed limit in mph", () => {
