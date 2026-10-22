@@ -9,6 +9,7 @@ import { seed } from "../harness/seed";
 import { getAssetMenuAnchorKey, resetAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { CATALOG_WINDOW_STEP } from "../../src/domain/catalogWindow";
+import { groupDigits } from "../../src/domain/assetMenuMetricFormat";
 import { AssetMenuHeight$, AssetMenuWidth$, BuildingCatalog$ } from "../../src/mods/bindings";
 
 // Mounted, so the button's handler runs. The effects need a document and a
@@ -88,5 +89,40 @@ describe("Load more", () => {
     tree.mount(<BuildingCatalogComponent />);
 
     assert.equal(drawnRows(), 40);
+  });
+});
+
+// The window has a ceiling as well as an end: past it C# reports no more to load
+// while the total still counts every match.
+describe("a list cut short by the window's ceiling", () => {
+  const tree = mountEach();
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    installFakeBrowser({ frames: "none" });
+    seed(AssetMenuWidth$, 700);
+    setAssetMenuView({ viewMode: "list" });
+  });
+
+  const five = () => Array.from({ length: 5 }, (_, i) => entry(i + 1));
+  const windowState = () => tree.root.findAll((node) => node.props.className === "windowState" && typeof node.type === "string");
+  const text = (node: { children: unknown[] }): string => node.children.map((child) => typeof child === "string" ? child : text(child as { children: unknown[] })).join("");
+
+  it("names the true total and how to see the rest, with nothing to load", () => {
+    seed(BuildingCatalog$, catalogPage(five(), { hasMore: false, totalCount: 14876, limit: 2000 }));
+    tree.mount(<BuildingCatalogComponent />);
+
+    assert.deepEqual(windowState().map(text), [`Showing 5 of ${groupDigits(14876)}`]);
+    assert.equal(tree.root.findAll((node) => node.props.className === "loadMore" && typeof node.props.onSelect === "function").length, 0);
+    const hint = tree.root.findAll((node) => node.props.className === "narrowHint" && typeof node.type === "string");
+    assert.deepEqual(hint.map(text), ["Search, pick a tab or add a filter to see the rest."]);
+  });
+
+  it("says nothing at the end of a list that holds every match", () => {
+    seed(BuildingCatalog$, catalogPage(five(), { hasMore: false, totalCount: 5, limit: 2000 }));
+    tree.mount(<BuildingCatalogComponent />);
+
+    assert.deepEqual(windowState(), []);
   });
 });

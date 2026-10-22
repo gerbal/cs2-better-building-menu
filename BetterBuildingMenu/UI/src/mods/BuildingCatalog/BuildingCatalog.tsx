@@ -260,23 +260,30 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
    * owns the scroll — which differs by view mode, so it is passed down. It
-   * names both ends, so a truncated list reads as one rather than as the whole.
+   * names both ends, so a truncated list reads as one rather than as the whole,
+   * including one the window's ceiling cut short, where nothing more can load.
    */
   const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
   // Memoised with what it shows, so the views it is handed to can skip a render.
-  const catalogFooter = useMemo(() => hasMore ? (
+  const catalogFooter = useMemo(() => hasMore || remaining !== null ? (
     <div className={styles.loadMoreRow}>
       <span className={styles.windowState}>
         {label("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
           .replace("{0}", groupDigits(items.length, separators))
           .replace("{1}", groupDigits(totalCount, separators))}
       </span>
-      <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
-        {remaining === null
-          ? label("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more")
-          : label("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            .replace("{0}", `${loadMoreCount(remaining, nextCount)}`)}
-      </Button>
+      {hasMore ? (
+        <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
+          {remaining === null
+            ? label("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more")
+            : label("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
+              .replace("{0}", `${loadMoreCount(remaining, nextCount)}`)}
+        </Button>
+      ) : (
+        <span className={styles.narrowHint}>
+          {label("Tooltip.LABEL[BetterBuildingMenu.NarrowToSeeRest]", "Search, pick a tab or add a filter to see the rest.")}
+        </span>
+      )}
     </div>
   ) : null, [hasMore, items.length, totalCount, remaining, nextCount, label, separators, loadMore]);
 
