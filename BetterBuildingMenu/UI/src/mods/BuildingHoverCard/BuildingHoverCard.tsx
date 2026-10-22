@@ -11,6 +11,7 @@ import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "do
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { useNumberSeparators } from "mods/gameSettings";
 import { overflowsBox } from "domain/measuredFit";
+import { useSettledMeasure } from "mods/useSettledMeasure";
 import styles from "./buildingHoverCard.module.scss";
 import { AssetMenuMilestones$ } from "mods/bindings";
 
@@ -54,6 +55,11 @@ export const useHoverCardContext = (): HoverCardContext => {
   }), [translate, separators, milestoneNames]);
 };
 
+/** Gives a card line the whole row once it is drawn too long for its half; one for every line. */
+const flagOverflow = (element: HTMLDivElement, [setOverflowed]: readonly [(overflowed: boolean) => void, ...unknown[]]) => {
+  if (overflowsBox(element)) setOverflowed(true);
+};
+
 /**
  * One label/value pair. Half the card, unless it needs the whole row: a list of
  * values is a stack, and pairing it with a neighbour would put a one-line
@@ -71,33 +77,8 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
     setOverflowed(false);
   }, [line.label, line.value]);
 
-  useEffect(() => {
-    const element = lineRef.current;
-    if (!element || stacked || overflowed) return;
-    const measure = () => {
-      if (overflowsBox(element)) setOverflowed(true);
-    };
-    // Never in the tick of the render: Cohtml reports the PREVIOUS text's
-    // scrollWidth for a line whose text just changed, and 0 for one it has not
-    // laid out. Every read waits two frames, the observer's included.
-    let outer = 0;
-    let inner = 0;
-    const scheduleMeasure = () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-      outer = requestAnimationFrame(() => {
-        inner = requestAnimationFrame(measure);
-      });
-    };
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleMeasure) : null;
-    observer?.observe(element);
-    scheduleMeasure();
-    return () => {
-      observer?.disconnect();
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [line.label, line.value, stacked, overflowed]);
+  // A stacked line has its row already, and one found too long keeps it.
+  useSettledMeasure(lineRef, stacked || overflowed ? null : flagOverflow, [setOverflowed, line.label, line.value, stacked, overflowed]);
 
   return (
     <div

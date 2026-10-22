@@ -13,6 +13,7 @@ import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "mods/gameSettings";
 import { useGuardedPlace } from "mods/useGuardedPlace";
+import { useSettledMeasure } from "mods/useSettledMeasure";
 import styles from "./buildingGrid.module.scss";
 import { ActivePrefabId$, BuildingCatalogSortColumn$, AssetMenuTileSize$ } from "mods/bindings";
 
@@ -31,6 +32,12 @@ interface BuildingGridProps {
   standalone?: boolean;
 }
 
+/** Tightens a tile name's budget to what its drawn lines show fits; one for every tile. */
+const fitTileName = (box: HTMLSpanElement, [effective, setFit]: readonly [number, (fit: number) => void, ...unknown[]]) => {
+  const next = lineBudgetFromDrawn(effective, Array.from(box.children) as HTMLElement[]);
+  if (next < effective) setFit(next);
+};
+
 /**
  * The name on a tile, shortened for drawing only — the tooltip and aria-label
  * carry the whole of it. The character budget is an estimate corrected from
@@ -45,36 +52,7 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
   }, [label, budget]);
   const effective = fit === null ? budget : Math.min(budget, fit);
 
-  useEffect(() => {
-    const box = boxRef.current;
-    if (!box) return;
-    const measure = () => {
-      const next = lineBudgetFromDrawn(effective, Array.from(box.children) as HTMLElement[]);
-      if (next < effective) setFit(next);
-    };
-    // Never in the tick of the render: Cohtml reports the PREVIOUS text's
-    // scrollWidth for a line whose text just changed, and 0 for one it has not
-    // laid out. Every read waits two frames, the observer's included.
-    let outer = 0;
-    let inner = 0;
-    const scheduleMeasure = () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-      outer = requestAnimationFrame(() => {
-        inner = requestAnimationFrame(measure);
-      });
-    };
-    // Watch the box rather than guess when it settles — Cohtml relayouts a
-    // frame after a view change; the box's own resize is the signal.
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleMeasure) : null;
-    observer?.observe(box);
-    scheduleMeasure();
-    return () => {
-      observer?.disconnect();
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [label, effective]);
+  useSettledMeasure(boxRef, fitTileName, [effective, setFit, label]);
 
   return (
     <span ref={boxRef} className={styles.tileName}>

@@ -5,11 +5,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
-import {
-  groupDimensionsFor,
-  groupDimensionLabel,
-  type GroupDimensionId,
-} from "domain/buildingGroups";
+import { groupDimensionsFor, groupDimensionLabel } from "domain/buildingGroups";
 import { ChipRow } from "mods/ChipRow/ChipRow";
 import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
@@ -35,19 +31,17 @@ import { countActiveMetricRanges, metricRangesFromState } from "domain/buildingC
 import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setAssetMenuView } from "domain/assetMenuViewStore";
-import { chooseViewMode } from "domain/viewModeChoice";
-import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useNumberSeparators } from "mods/gameSettings";
+import { useLabel } from "mods/useLabel";
+import { useViewShape } from "mods/viewShape";
 import { memo, useState } from "react";
 import {
   BuildingCatalog$,
-  BuildingCatalogGroupBy$,
   BuildingCatalogMetricRanges$,
   BuildingCatalogSortColumn$,
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
   AssetMenuGroupDimensions$,
-  AssetMenuViewMode$,
   CurrentSearch$,
   SelectedAssetPacks$,
   VanillaSelected$,
@@ -63,6 +57,7 @@ import styles from "./controlPane.module.scss";
  */
 export const ControlPane = memo(function ControlPane() {
   const { translate } = useLocalization();
+  const label = useLabel();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   // Only for which sort fields can act on these results; see BuildingCatalogPage.
@@ -83,11 +78,7 @@ export const ControlPane = memo(function ControlPane() {
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
 
-  const viewModeChoice = chooseViewMode(
-    useAssetMenuView((view) => view.viewMode),
-    useValue(AssetMenuViewMode$),
-    DEFAULT_VIEW_MODE
-  );
+  const { viewMode: viewModeChoice, groupBy } = useViewShape();
   // The store first, so the pick redraws now; then C#, which keeps it for the
   // next session. Only from a click: an effect that sent on a binding change
   // would answer C#'s own echo.
@@ -95,18 +86,11 @@ export const ControlPane = memo(function ControlPane() {
     setAssetMenuView({ viewMode: next });
     send(setAssetMenuViewModeCommand(next));
   };
-  // Resolved on the C# side: the player's choice, or the menu's default.
-  const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
-
   const sortPresentation = getAssetMenuSortPresentation(
     { column: sortColumn, descending },
     reorderableSortColumns
   );
-  const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
-
-  const groupByLabel =
-    translate(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy))
-    ?? groupDimensionLabel(groupBy);
+  const groupByLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy));
 
   const fire = send;
 
@@ -257,10 +241,7 @@ export const ControlPane = memo(function ControlPane() {
                 {groupPickerOpen && (
                   <div className={styles.pickerOptions}>
                     {groupDimensionsFor(offeredDimensions).map((dimension) => {
-                      const optionLabel = translate(
-                        `Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`,
-                        dimension.label
-                      ) ?? dimension.label;
+                      const optionLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`, dimension.label);
 
                       return (
                         <Button

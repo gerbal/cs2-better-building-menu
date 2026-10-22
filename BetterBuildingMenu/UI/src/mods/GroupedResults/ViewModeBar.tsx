@@ -1,5 +1,5 @@
-import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
+import { useLabel } from "mods/useLabel";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import type { CatalogViewMode } from "./GroupedResults";
 import styles from "./groupedResults.module.scss";
@@ -42,18 +42,18 @@ interface ViewModeBarProps {
  * the vanilla ToolButton, so the selected state is the game's.
  */
 export const ViewModeBar = ({ value, onChange, omit = [] }: ViewModeBarProps) => {
-  const { translate } = useLocalization();
+  const label = useLabel();
 
   return (
     <div className={styles.viewModes}>
       {VIEW_MODES.filter((option) => !omit.includes(option.id)).map((option) => {
-        const label = translate(option.localizationKey, option.fallback) ?? option.fallback;
+        const text = label(option.localizationKey, option.fallback);
 
         return (
           <VanillaComponentResolver.instance.ToolButton
             key={option.id}
             selected={option.id === value}
-            tooltip={label}
+            tooltip={text}
             onSelect={() => onChange(option.id)}
             src=""
             focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
@@ -63,7 +63,7 @@ export const ViewModeBar = ({ value, onChange, omit = [] }: ViewModeBarProps) =>
               option.id === value && styles.viewModeSelected
             )}
           >
-            <span className={styles.viewModeLabel}>{label}</span>
+            <span className={styles.viewModeLabel}>{text}</span>
           </VanillaComponentResolver.instance.ToolButton>
         );
       })}

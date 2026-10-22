@@ -1,11 +1,11 @@
 import { useValue } from "mods/panelValue";
 import { Button, Tooltip } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 
 import panelRight from "images/panel-right.svg";
 import panelRightOff from "images/panel-right-off.svg";
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
 import { AssetMenuFacets$, BuildingCatalogMetricRanges$ } from "mods/bindings";
+import { useLabel } from "mods/useLabel";
 import styles from "mods/ControlPaneToggle/controlPaneToggle.module.scss";
 
 export interface ControlPaneToggleProps {
@@ -21,8 +21,7 @@ export interface ControlPaneToggleProps {
  * here alone.
  */
 export const ControlPaneToggle = ({ shown, filterCount, onToggle }: ControlPaneToggleProps) => {
-  const { translate } = useLocalization();
-  const label = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
+  const label = useLabel();
 
   const action = shown
     ? label("Tooltip.LABEL[BetterBuildingMenu.HideOptions]", "Hide options")

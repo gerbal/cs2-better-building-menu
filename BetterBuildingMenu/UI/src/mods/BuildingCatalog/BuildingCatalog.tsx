@@ -30,37 +30,28 @@ import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } f
 import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchor, getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
-// The view mode is shared with the control plane, which is a sibling of this
-// asset menu rather than a descendant, so it goes through the subscribing hook.
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
+import { useCaptureKeydown } from "mods/useCaptureKeydown";
+import { useLabel } from "mods/useLabel";
 import { useAssetMenuShown } from "mods/BuildingMenu/assetMenuShown";
-import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
-import { chooseViewMode } from "domain/viewModeChoice";
-import {
-  type GroupDimensionId,
-} from "domain/buildingGroups";
+import { GroupedResults } from "mods/GroupedResults/GroupedResults";
+import { useViewShape } from "mods/viewShape";
 import { TableView } from "./TableView";
 import { useCatalogWindow } from "./useCatalogWindow";
 import { useRevealExpandedRow, useScrollAnchor, useScrollToTopOnShow } from "./useScrollAnchor";
 import {
   AssetMenuHeight$,
-  BuildingCatalogGroupBy$,
   BuildingCatalogMatchesElsewhere$,
   BuildingCatalogMetricRanges$,
   BuildingCatalogSortColumn$,
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
-  AssetMenuViewMode$,
   CurrentSearch$,
   send,
   sendSort,
 } from "mods/bindings";
 import styles from "./buildingCatalog.module.scss";
-
-/** Grid recognises, List scans, Table compares. */
-type ViewMode = CatalogViewMode;
 
 const densityClassNames: Record<AssetMenuDensityTier, string> = {
   compact: styles.densityCompact,
@@ -75,23 +66,18 @@ const densityClassNames: Record<AssetMenuDensityTier, string> = {
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();
+  const label = useLabel();
   // The build menu as drawn, plus the pane: the row the table arithmetic was tuned
   // against, which subtracts the pane itself.
   const layoutWidth = catalogLayoutWidth(useAssetMenuLayout().menuWidth);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  // In the shared store, not useState: the control plane is a sibling of this
-  // asset menu rather than a descendant, and the choice has to survive the remount
-  // that placing a building causes.
-  const sessionViewMode = useAssetMenuView((view) => view.viewMode);
-  const storedViewMode = useValue(AssetMenuViewMode$);
   // Obeyed at every asset menu height. A control that lights up and changes nothing
   // is the same defect as a control that is missing, and the height is the
   // player's to set.
-  const viewMode: ViewMode = chooseViewMode(sessionViewMode, storedViewMode, DEFAULT_VIEW_MODE);
+  const { viewMode, groupBy } = useViewShape();
   const tableMode = viewMode === "table";
-  const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
   // In the store rather than useState so the open row survives the remount
   // that placing a building causes, the way the anchor does.
   const expandedId = useAssetMenuView((view) => view.expandedId);
@@ -181,14 +167,10 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     elsewhere: matchesElsewhere ?? 0,
   });
   const scopeNoticeText = scopeNotice
-    ? (translate(
-        "Tooltip.LABEL[BetterBuildingMenu.MatchesElsewhere]",
-        "No matches here — {0} elsewhere"
-      ) ?? "No matches here — {0} elsewhere").replace("{0}", `${scopeNotice.elsewhere}`)
+    ? label("Tooltip.LABEL[BetterBuildingMenu.MatchesElsewhere]", "No matches here — {0} elsewhere")
+      .replace("{0}", `${scopeNotice.elsewhere}`)
     : "";
-  const searchEverywhereLabel =
-    translate("Tooltip.LABEL[BetterBuildingMenu.SearchEverything]", "Search everything")
-    ?? "Search everything";
+  const searchEverywhereLabel = label("Tooltip.LABEL[BetterBuildingMenu.SearchEverything]", "Search everything");
   /**
    * "Nothing here, {n} elsewhere" and the button that goes there. Built once
    * and rendered by every view mode: widening is the whole answer to a scoped
@@ -247,11 +229,11 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   // Enter arms the backend's best match, so a search can be finished without
   // leaving the keyboard. One listener for every view, on the document because
-  // the search field is the header's; the ref keeps it reading this render.
-  // An Enter pressed before the page catches up with the box is held for it.
+  // the search field is the header's. An Enter pressed before the page catches
+  // up with the box is held for it.
   const pendingEnter = useRef<string | null>(null);
-  const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
-  onEnter.current = (event) => {
+  useCaptureKeydown((event) => {
+    if (!isPlainEnter(event)) return;
     // Every menu's panel is kept built and listens; only the one shown was typed in.
     if (!shown) return;
     if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
@@ -259,7 +241,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     const decision = enterDecision({ items: pageItems, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
     pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
     if (decision && "arm" in decision) activate(decision.arm);
-  };
+  });
   useEffect(() => {
     const waiting = pendingEnter.current;
     if (waiting === null) return;
@@ -276,18 +258,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     pendingEnter.current = null;
     if (decision) activate(decision.arm);
   }, [pageItems, bestMatchId, pageSearch, currentSearch, activate]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (isPlainEnter(event)) onEnter.current(event);
-    };
-
-    // Capture phase: the game's app container stops keydown propagation, so a
-    // bubble listener on the document never hears an Enter typed in the search
-    // box. VanillaMenuWatcher's Escape listens the same way.
-    document.addEventListener("keydown", onKey, true);
-
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, []);
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
@@ -299,19 +269,18 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const catalogFooter = useMemo(() => hasMore ? (
     <div className={styles.loadMoreRow}>
       <span className={styles.windowState}>
-        {(translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
-          ?? "Showing {0} of {1}")
+        {label("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
           .replace("{0}", groupDigits(items.length, separators))
           .replace("{1}", groupDigits(totalCount, separators))}
       </span>
       <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
         {remaining === null
-          ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
-          : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining, nextCount)}`)}
+          ? label("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more")
+          : label("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
+            .replace("{0}", `${loadMoreCount(remaining, nextCount)}`)}
       </Button>
     </div>
-  ) : null, [hasMore, items.length, totalCount, remaining, nextCount, translate, separators, loadMore]);
+  ) : null, [hasMore, items.length, totalCount, remaining, nextCount, label, separators, loadMore]);
 
   return (
     <div

@@ -25,8 +25,8 @@ let nextFrame: () => void;
 let clock = 1000;
 
 let drag: AssetMenuWidthDrag;
-const Probe = ({ width, paneShown }: { width: number; paneShown: boolean }) => {
-  drag = useAssetMenuWidthDrag({ menuWidth: width, bandWidth: BAND, paneShown }, () => clock);
+const Probe = ({ width, paneShown, shown = true }: { width: number; paneShown: boolean; shown?: boolean }) => {
+  drag = useAssetMenuWidthDrag({ menuWidth: width, bandWidth: BAND, paneShown }, () => clock, shown);
   return drag.blocker;
 };
 
@@ -224,6 +224,24 @@ describe("dragging the build menu's width", () => {
     press();
 
     assert.equal(drag.isResizing, true);
+  });
+
+  it("fills the room on a press soon after a drag the menu's hiding ended", () => {
+    // Hiding ends the drag without the release that resets the double-press
+    // clock, so the press that began the drag still counts as a first press.
+    mount();
+    press();
+    move(450);
+    act(() => tree.renderer.update(<Probe width={900} paneShown shown={false} />));
+    assert.deepEqual(names(), ["SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth"], "hiding ends the drag as a release does");
+
+    act(() => tree.renderer.update(<Probe width={900} paneShown />));
+    clock += 100;
+    press();
+
+    assert.deepEqual(widths(), [850, ASSET_MENU_CATALOG_DEFAULT]);
+    assert.equal(names().at(-1), "CommitAssetMenuCatalogWidth");
+    assert.equal(drag.isResizing, false, "the press starts no drag");
   });
 
   it("ends the drag when the mouse leaves the screen, as a release does", () => {

@@ -13,6 +13,7 @@ import {
 import { flattenGroupedRows, takeRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { useLabel } from "mods/useLabel";
 import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";
 
@@ -84,15 +85,16 @@ export const TableView = ({
   footer,
 }: TableViewProps) => {
   const { translate } = useLocalization();
+  const label = useLabel();
   // Read once for every row, which is what the hook asks of its caller. Its
   // separators are the player's own marks, so our columns agree with the
   // numbers the game is drawing elsewhere on the same screen.
   const hoverCard = useHoverCardContext();
   // Memoised so the rows' props hold still between renders.
   const labels: TableRowLabels = useMemo(() => ({
-    place: translate("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place") ?? "Place",
-    inspect: translate("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details") ?? "Details",
-  }), [translate]);
+    place: label("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place"),
+    inspect: label("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details"),
+  }), [label]);
 
   return (
     <>
@@ -106,12 +108,12 @@ export const TableView = ({
             roads, props and zones, none of which are buildings. */}
         <span className={styles.identityHeader}>{translate("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
         {metricColumns.filter((column) => metrics.includes(column.key)).map((column) => {
-          const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
+          const fullLabel = label(column.localizationKey, column.fallback);
           const indicator = getAssetMenuColumnSortIndicator(column.key, { column: sortColumn, descending });
           const sortTarget = ASSET_MENU_COLUMN_SORT[column.key];
           const headerTitle = indicator === ""
-            ? `${fullLabel} — ${translate("Tooltip.LABEL[BetterBuildingMenu.SortByColumn]", "sort by this column") ?? "sort by this column"}`
-            : `${fullLabel} — ${translate("Tooltip.LABEL[BetterBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort"}`;
+            ? `${fullLabel} — ${label("Tooltip.LABEL[BetterBuildingMenu.SortByColumn]", "sort by this column")}`
+            : `${fullLabel} — ${label("Tooltip.LABEL[BetterBuildingMenu.ReverseSort]", "reverse this sort")}`;
 
           return (
             <Button
