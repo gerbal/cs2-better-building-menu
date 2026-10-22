@@ -197,15 +197,26 @@ describe("the control pane's second grouping", () => {
     seed();
   });
 
-  it("sits beside the first, with Auto naming what it groups by", () => {
+  it("sits beside the first, naming what Auto groups by", () => {
     const html = render();
 
-    assert.match(html, /class="pickerLabel">Category<\/span>[\s\S]*class="pickerLabel">Auto \(Progression\)</);
+    assert.match(html, /class="pickerLabel">Category<\/span>[\s\S]*class="pickerLabel">Progression</);
+    assert.doesNotMatch(html, /Auto/);
+  });
+
+  it("reads None, not an empty Auto, under a first choice with no second level", () => {
+    seedBinding(AssetMenuAutoThenBy$, []);
+    tree.mount(<ControlPane />);
+    act(() => summary("None").props.onSelect());
+
+    const options = tree.root.findAll((node) => node.props.className?.includes?.("pickerOption") && typeof node.props.onSelect === "function");
+    assert.equal(options.filter((node) => node.props["aria-label"] === "None").length, 1, "one None");
+    assert.ok(options.find((node) => node.props["aria-label"] === "None")!.props.className.includes("pickerOptionSelected"));
   });
 
   it("sends the dimension the player picks", () => {
     tree.mount(<ControlPane />);
-    act(() => summary("Auto (Progression)").props.onSelect());
+    act(() => summary("Progression").props.onSelect());
     act(() => tree.root.find((node) => node.props["aria-label"] === "Theme" && typeof node.props.onSelect === "function").props.onSelect());
 
     assert.deepEqual(sent(), [["theme"]]);

@@ -133,7 +133,6 @@
   "Tooltip.LABEL[BetterBuildingMenu.ViewList]": "List",
   "Tooltip.LABEL[BetterBuildingMenu.ViewTable]": "Table",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_none]": "None",
-  "Tooltip.LABEL[BetterBuildingMenu.GroupBy_auto]": "Auto",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_menuCategory]": "Category",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_category]": "Asset type",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_subCategory]": "Type",

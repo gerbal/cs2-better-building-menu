@@ -100,6 +100,12 @@
   min-width: 0;
 }
 
+// The two groupings split the row evenly, whatever their names: a long name is
+// cut (FittedLabel), it does not take its neighbour's room.
+.groupPicker {
+  flex: 1 1 0;
+}
+
 // The second grouping, beside the first: the row's own inset between them.
 .thenBy {
   margin-left: 6rem;
@@ -134,8 +140,23 @@
   background-color: rgba(52, 63, 74, 1);
 }
 
+// Fills the summary beside the caret and shrinks with it: its width is the room
+// FittedLabel cuts the text to. The mixin's ellipsis is never drawn in Cohtml.
 .pickerLabel {
   @include _base.truncate;
+
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+// The whole summary, unseen, for FittedLabel to measure the room against.
+.pickerProbe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .caret {

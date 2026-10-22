@@ -46,8 +46,6 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },
   { key: key("GroupBy_none"), english: "None", source: "buildingGroups", plumbed: true },
-  // The second grouping's default: the first choice's own second level, named in brackets.
-  { key: key("GroupBy_auto"), english: "Auto", source: "buildingGroups", plumbed: true },
   // The game's own categories — the dimension the tab strip shows.
   { key: key("GroupBy_menuCategory"), english: "Category", source: "buildingGroups", plumbed: true },
   // Ours: Buildings, Networks, Service Buildings. Not "Category", which is the

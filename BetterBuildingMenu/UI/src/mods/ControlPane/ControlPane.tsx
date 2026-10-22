@@ -6,6 +6,7 @@ import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
 import {
   autoThenByLabel,
+  fitLabelToWidth,
   groupDimensionsFor,
   groupDimensionLabel,
   thenByOptionsFor,
@@ -40,7 +41,7 @@ import { setAssetMenuView } from "domain/assetMenuViewStore";
 import { useNumberSeparators } from "mods/gameSettings";
 import { useLabel } from "mods/useLabel";
 import { useViewShape } from "mods/viewShape";
-import { memo, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import {
   BuildingCatalog$,
   BuildingCatalogMetricRanges$,
@@ -103,14 +104,11 @@ export const ControlPane = memo(function ControlPane() {
   const dimensionLabel = (id: GroupDimensionId): string =>
     label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${id}]`, groupDimensionLabel(id));
   const groupByLabel = dimensionLabel(groupBy);
-  // Auto names what it groups by here, so the player can tell it from the others.
+  // Auto reads as what it groups by here; where it adds no level it is None, and says so.
+  const thenByChoice: GroupDimensionId | "" = thenBy === "" && autoThenBy.length === 0 ? "none" : thenBy;
   const thenByChoiceLabel = (id: GroupDimensionId | ""): string =>
     id === ""
-      ? autoThenByLabel(
-        autoThenBy.map((dimension) => dimensionLabel(dimension as GroupDimensionId)),
-        label("Tooltip.LABEL[BetterBuildingMenu.GroupBy_auto]", "Auto"),
-        dimensionLabel("none")
-      )
+      ? autoThenByLabel(autoThenBy.map((dimension) => dimensionLabel(dimension as GroupDimensionId)))
       : dimensionLabel(id);
 
   const fire = send;
@@ -248,6 +246,7 @@ export const ControlPane = memo(function ControlPane() {
                 on screen under None, disabled, so the row keeps its shape. */}
             <div className={styles.rowValue}>
               <Picker
+                className={styles.groupPicker}
                 summary={groupByLabel}
                 open={groupPickerOpen}
                 onToggle={() => setGroupPickerOpen((open) => !open)}
@@ -262,15 +261,15 @@ export const ControlPane = memo(function ControlPane() {
                 }))}
               />
               <Picker
-                className={styles.thenBy}
-                summary={thenByChoiceLabel(thenBy)}
+                className={classNames(styles.groupPicker, styles.thenBy)}
+                summary={thenByChoiceLabel(thenByChoice)}
                 open={thenByPickerOpen && groupBy !== "none"}
                 disabled={groupBy === "none"}
                 onToggle={() => setThenByPickerOpen((open) => !open)}
-                options={thenByOptionsFor(offeredDimensions, groupBy).map((id) => ({
+                options={thenByOptionsFor(offeredDimensions, groupBy, autoThenBy).map((id) => ({
                   key: id || "auto",
                   label: thenByChoiceLabel(id),
-                  selected: id === thenBy,
+                  selected: id === thenByChoice,
                   onSelect: () => {
                     send(setBuildingCatalogThenByCommand(id));
                     setThenByPickerOpen(false);
@@ -405,7 +404,7 @@ function Picker({
         aria-expanded={open}
         title={summary}
       >
-        <span className={styles.pickerLabel}>{summary}</span>
+        <FittedLabel text={summary} />
         {/* U+25BC, not the small U+25BE: the game's font stack has no
             small triangles, so the one mark saying this control opens
             would be the one glyph that would not render. */}
@@ -429,3 +428,52 @@ function Picker({
     </div>
   );
 }
+
+/**
+ * A summary cut to the width its picker gives it, with the "…" Cohtml never draws
+ * for `text-overflow`. The label fills the picker, so its width is the room; a
+ * hidden copy of the whole text is what that room is measured against.
+ */
+function FittedLabel({ text }: { text: string }) {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const probeRef = useRef<HTMLSpanElement>(null);
+  const [fitted, setFitted] = useState(text);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    const probe = probeRef.current;
+
+    if (!box || !probe) {
+      return;
+    }
+
+    const fit = () => {
+      const available = box.clientWidth;
+      const needed = probe.scrollWidth;
+
+      // Not laid out yet: keep the whole text rather than fit to a width that is not real.
+      setFitted(available > 0 && needed > 0 ? fitLabelToWidth(text, available, needed) : text);
+    };
+
+    if (typeof ResizeObserver !== "function") {
+      fit();
+      return;
+    }
+
+    const observer = new ResizeObserver(fit);
+
+    observer.observe(box);
+    observer.observe(probe);
+    fit();
+
+    return () => observer.disconnect();
+  }, [text]);
+
+  return (
+    <>
+      <span ref={boxRef} className={styles.pickerLabel}>{fitted}</span>
+      <span ref={probeRef} className={styles.pickerProbe} aria-hidden="true">{text}</span>
+    </>
+  );
+}
+
