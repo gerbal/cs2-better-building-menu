@@ -15,18 +15,12 @@ import { commitAssetMenuHeightCommand, setAssetMenuHeightCommand } from "domain/
 import styles from "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 import { AssetMenuHeight$, send } from "mods/bindings";
 import { useLabel } from "mods/useLabel";
-import { useRafDrag } from "mods/useRafDrag";
+import { useRafDrag, type RafDrag } from "mods/useRafDrag";
 
-export interface AssetMenuHeight {
+export interface AssetMenuHeight extends Pick<RafDrag, "isResizing" | "blocker"> {
   /** In rem, already clamped to the range the layout can hold. */
   height: number;
-  isResizing: boolean;
   beginResize: (event: any) => void;
-  /**
-   * Covers the screen for the length of a drag so the panel keeps the mouse
-   * when it leaves the strip. Null between drags; render it beside the panel.
-   */
-  blocker: JSX.Element | null;
 }
 
 /**
