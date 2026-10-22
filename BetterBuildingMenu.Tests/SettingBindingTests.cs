@@ -211,6 +211,23 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void APushOnlyBindingPublishesTheSettingAndHasNothingToSave()
+		{
+			var stored = new Stored<int>(100);
+			var published = new Published<int>();
+			var tile = SettingBinding<int>.PushOnly(published.Seed, () => stored.Value);
+
+			Assert.Equal(100, published.Value);
+
+			stored.Value = 120;
+			tile.Push();
+			Assert.Equal(120, published.Value);
+
+			Assert.Throws<InvalidOperationException>(tile.Commit);
+			Assert.Equal(0, stored.Saves);
+		}
+
+		[Fact]
 		public void ComparesWithTheSettingAsStoredRatherThanAsPublished()
 		{
 			// A view the UI does not know, from a file edited by hand, publishes as no pick; picking
