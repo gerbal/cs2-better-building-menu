@@ -469,7 +469,7 @@ the cards built, and most of a long menu sits below the fold.
   `useValue` copies cs2/api's (`domain/bindingValue`, read from the game's bundle): a version built
   on `useSyncExternalStore` re-rendered synchronously and on equal values, which loaded twice per
   scroll and left a short list unfilled. `bindingReadContract.test` keeps the game's hook out of the
-  menu. Design: `docs/superpowers/specs/2026-10-20-keep-every-menu-design.md`.
+  menu.
 - **The menu opens in the frame the player clicks.** C# clears `OwnsCurrentMenu` on every close and
   sets it again only when it hears the next selection, a frame after the game has mounted its own
   asset menu; until then vanilla's grid was built and drawn for a frame. C# now publishes the menus it

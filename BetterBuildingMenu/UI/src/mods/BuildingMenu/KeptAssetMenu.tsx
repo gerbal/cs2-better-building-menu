@@ -89,7 +89,7 @@ const menuOf = (slot: Slot<HTMLElement> | null): string | null => (slot ? slot.m
  * Game, this outlives the slot. Each toolbar menu has a panel of its own, rendered
  * into an element that is moved into the slot while it is the one shown and is out
  * of the document otherwise, so switching menus shows a built panel as a reopen
- * does (see docs/superpowers/specs/2026-10-20-keep-every-menu-design.md).
+ * does.
  *
  * Every panel freezes when a menu opens or closes, before any update for the new
  * menu can arrive (mods/panelValue): a hidden panel keeps the page it last drew and
