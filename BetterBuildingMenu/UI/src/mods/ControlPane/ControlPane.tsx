@@ -122,7 +122,7 @@ export const ControlPane = memo(function ControlPane() {
   // not own, leaving the chip un-removable.
   const removeChip = (command: Command) => {
     if (isContentFacetCommand(command)) {
-      toggleFacetOption(CONTENT_FACET_ID, String(command.args[1]));
+      toggleFacetOption(CONTENT_FACET_ID, command.args[1]);
       return;
     }
 
