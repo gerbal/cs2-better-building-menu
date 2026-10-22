@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using Xunit;
 
@@ -15,10 +14,7 @@ namespace BetterBuildingMenu.Tests
 	public sealed class CatalogViewTests
 	{
 		private static BuildingCatalogEntry Entry(int id, string name, string category, string menu, string uiCategory) =>
-			new BuildingCatalogEntry(
-				Id: id, PrefabName: name, Name: name, Category: category, SubCategory: category + "_Any",
-				Thumbnail: "", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "")
+			TestEntries.Make(id, name, category: category, subCategory: category + "_Any", lotWidth: 2, lotDepth: 2)
 				with { UiMenu = menu, UiCategory = uiCategory };
 
 		private static readonly BuildingCatalogEntry[] Fixture =
@@ -93,10 +89,9 @@ namespace BetterBuildingMenu.Tests
 			// building render.
 			var lone = new[]
 			{
-				new BuildingCatalogEntry(
-					Id: 9, PrefabName: "ParkingHall02", Name: "Parking Hall", Category: "ServiceBuildings", SubCategory: "ServiceBuildings_Transportation",
-					Thumbnail: "ParkingHall02?width=128", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-					HasParking: true, IsVanilla: true, PdxModsId: "")
+				TestEntries.Make(
+					9, "Parking Hall", "ParkingHall02", subCategory: "ServiceBuildings_Transportation",
+					lotWidth: 4, lotDepth: 4, hasParking: true, thumbnail: "ParkingHall02?width=128")
 					with { FallbackThumbnail = "Media/Game/Icons/Parking.svg", DevTreeBranch = "Parking", DevTreeBranchIcon = null },
 			};
 
@@ -115,10 +110,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			// Two categories at one priority, as a tie in the game's strip: the glyph
 			// comes from the one the strip draws first, not the first by name.
-			var alpha = new BuildingCatalogEntry(
-				Id: 1, PrefabName: "Alpha", Name: "Alpha", Category: "ServiceBuildings", SubCategory: "ServiceBuildings_Transportation",
-				Thumbnail: "alpha.png", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "")
+			var alpha = TestEntries.Make(1, "Alpha", subCategory: "ServiceBuildings_Transportation", lotWidth: 2, lotDepth: 2, thumbnail: "alpha.png")
 				with { UiCategoryPriority = 70, UiCategoryTab = 5, FallbackThumbnail = "alpha.svg" };
 			var beta = alpha with { Id = 2, PrefabName = "Beta", Name = "Beta", Thumbnail = "beta.png", UiCategoryTab = 2, FallbackThumbnail = "beta.svg" };
 

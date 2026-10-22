@@ -36,8 +36,7 @@ namespace BetterBuildingMenu.Domain
 		public const int ExtraGroupPriorityBase = 1_000_000;
 
 		/// <summary>Whether this menu is the one that gathers every network.</summary>
-		public static bool IsExtended(string? menu) =>
-			string.Equals(menu?.Trim(), RoadsMenu, StringComparison.OrdinalIgnoreCase);
+		public static bool IsExtended(string? menu) => VanillaMenus.IsRoads(menu);
 
 		/// <summary>
 		/// Network subcategories the extension does not gather.
@@ -67,7 +66,7 @@ namespace BetterBuildingMenu.Domain
 		public static bool IsExtraNetwork(string? entryCategory, string? entryMenu, string? menu, string? entrySubCategory = null) =>
 			IsExtended(menu)
 			&& string.Equals(entryCategory?.Trim(), NetworksCategory, StringComparison.OrdinalIgnoreCase)
-			&& !string.Equals(entryMenu?.Trim(), RoadsMenu, StringComparison.OrdinalIgnoreCase)
+			&& !VanillaMenus.IsRoads(entryMenu)
 			&& IsGathered(entrySubCategory);
 
 		/// <summary>

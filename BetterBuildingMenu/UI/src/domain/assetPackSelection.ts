@@ -4,6 +4,7 @@
  * wider view: the game's row is per category, the rail's is per menu.
  */
 
+import type { Command } from "./commands";
 import type { FacetId } from "./sharedContracts.generated";
 import type { ToolbarEntity, ToolbarEntityRef } from "./toolbarEntity";
 
@@ -15,12 +16,6 @@ export const CONTENT_VANILLA = "vanilla";
 export const CONTENT_PACK_PREFIX = "pack:";
 /** A DLC shipping no pack, then its numeric id. Ours to filter. */
 export const CONTENT_DLC_PREFIX = "dlc:";
-
-export const VANILLA_TRIGGER_NAME = "setVanillaSelected";
-
-/** The vanilla trigger that owns the pack selection. */
-export const ASSET_PACK_TRIGGER_GROUP = "toolbar";
-export const ASSET_PACK_TRIGGER_NAME = "setSelectedAssetPacks";
 
 export function parseAssetPackId(id: string | null | undefined): ToolbarEntityRef | null {
   const raw = (id ?? "").startsWith(CONTENT_PACK_PREFIX)
@@ -77,9 +72,12 @@ export function toggleAssetPack(
     : [...current, pack];
 }
 
-/** Whether a facet command belongs to the Content axis. */
-export function isContentFacetCommand(command: { args: readonly unknown[] } | null | undefined): boolean {
-  return command?.args?.[0] === CONTENT_FACET_ID;
+/** A facet toggle: the facet's id, then the option's. */
+type FacetToggleCommand = Extract<Command, { method: "ToggleAssetMenuFacet" }>;
+
+/** Whether a command toggles an option on the Content axis. */
+export function isContentFacetCommand(command: Command | null | undefined): command is FacetToggleCommand {
+  return command?.method === "ToggleAssetMenuFacet" && command.args[0] === CONTENT_FACET_ID;
 }
 
 export type ContentOptionKind = "vanilla" | "pack" | "dlc";

@@ -3,14 +3,12 @@ import { createPortal } from "react-dom";
 
 import { AssetMenu } from "mods/BuildingMenu/AssetMenu";
 import { AssetMenuShownContext } from "mods/BuildingMenu/assetMenuShown";
-import { AssetMenuViewMode$, BuildingCatalog$, BuildingCatalogGroupBy$ } from "mods/bindings";
+import { BuildingCatalog$ } from "mods/bindings";
 import { ExtensionBoundary } from "mods/ExtensionBoundary";
 import { createAssetMenuSlotStore, type AssetMenuSlot as Slot } from "domain/assetMenuSlot";
-import { getAssetMenuView } from "domain/assetMenuViewStore";
 import { answersOpen, shownMenu } from "domain/keptMenus";
-import { chooseViewMode } from "domain/viewModeChoice";
-import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
 import { createPanelFreeze, PanelFreezeContext, setPanelFrozen, type PanelFreeze } from "mods/panelValue";
+import { currentViewShape } from "mods/viewShape";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 
@@ -72,11 +70,13 @@ interface KeptPanel {
 }
 
 /**
- * What a catalog is drawn as: the view (as BuildingCatalog chooses it) and the
- * grouping. A panel frozen in another shape would rebuild its catalog on screen.
+ * What a catalog is drawn as: the view and the grouping, read as the catalog
+ * reads them. A panel frozen in another shape would rebuild its catalog on screen.
  */
-const catalogShape = (): string =>
-  `${chooseViewMode(getAssetMenuView().viewMode, AssetMenuViewMode$.value, DEFAULT_VIEW_MODE)}/${BuildingCatalogGroupBy$.value || "category"}`;
+const catalogShape = (): string => {
+  const { viewMode, groupBy } = currentViewShape();
+  return `${viewMode}/${groupBy}`;
+};
 
 const menuOf = (slot: Slot<HTMLElement> | null): string | null => (slot ? slot.menu ?? "" : null);
 

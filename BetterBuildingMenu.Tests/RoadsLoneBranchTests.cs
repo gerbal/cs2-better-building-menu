@@ -1,5 +1,4 @@
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 
 using System.Linq;
@@ -18,27 +17,9 @@ namespace BetterBuildingMenu.Tests
 	/// </remarks>
 	public class RoadsLoneBranchTests
 	{
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "Buildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
-
 		private static BuildingCatalogEntry Entry(int id, string category, string branch, int depth, string icon, string menu = VanillaMenus.Roads) =>
-			Base with
+			TestEntries.Make(id, $"Building {id}", $"Prefab{id}", category: "Buildings") with
 			{
-				Id = id,
-				PrefabName = $"Prefab{id}",
-				Name = $"Building {id}",
 				UiMenu = menu,
 				UiCategory = category,
 				DevTreeBranch = branch,

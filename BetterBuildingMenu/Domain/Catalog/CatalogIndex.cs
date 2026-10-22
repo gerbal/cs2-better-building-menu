@@ -48,10 +48,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 					continue;
 				}
 
-				// A subcategory's value sits just above its category's, within the next hundred.
 				foreach (PrefabSubCategory subCategory in Enum.GetValues(typeof(PrefabSubCategory)))
 				{
-					if ((int)subCategory > (int)category && (int)subCategory < (int)category + 100)
+					if (category.Contains(subCategory))
 					{
 						_lists[category][subCategory] = new();
 					}
@@ -239,12 +238,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 			if (entry.PrefabName.Length > 0)
 			{
-				if (!_namesakes.TryGetValue(entry.PrefabName, out var namesakes))
-				{
-					_namesakes[entry.PrefabName] = namesakes = new List<PrefabIndex>(1);
-				}
-
-				namesakes.Add(entry);
+				_namesakes.GetOrAdd(entry.PrefabName, static () => new List<PrefabIndex>(1)).Add(entry);
 			}
 		}
 

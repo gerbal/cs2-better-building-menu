@@ -1,23 +1,31 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { renderHtml, count } from "../harness/render";
-import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
+import { resetBindings } from "../harness/stubs/cs2-api";
+import { seed as seedBinding } from "../harness/seed";
 import { MenuCategoryStrip } from "../../src/mods/MenuCategoryStrip/MenuCategoryStrip";
+import {
+  AssetMenu$,
+  AssetMenuCategories$,
+  AssetMenuCategory$,
+  AssetMenuCategoryCounts$,
+  AssetMenuStripTabs$,
+} from "../../src/mods/bindings";
 
 const category = (id: string) => ({ id, name: id, icon: `Media/Game/Icons/${id}.svg`, priority: 0 });
 
 const seed = (menu: string) => {
-  setBinding("BetterBuildingMenu", "AssetMenu", menu);
-  setBinding("BetterBuildingMenu", "AssetMenuCategories", [category("Small Roads"), category("Medium Roads")]);
-  setBinding("BetterBuildingMenu", "AssetMenuCategory", "");
-  setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", [
+  seedBinding(AssetMenu$, menu);
+  seedBinding(AssetMenuCategories$, [category("Small Roads"), category("Medium Roads")]);
+  seedBinding(AssetMenuCategory$, "");
+  seedBinding(AssetMenuCategoryCounts$, [
     { id: "", count: 40 },
     { id: "Small Roads", count: 24 },
     { id: "Medium Roads", count: 16 },
   ]);
   // The branch fallback the strip draws where a menu has no categories — it
   // must obey the same guard, because All menus has branches too.
-  setBinding("BetterBuildingMenu", "AssetMenuStripTabs", [
+  seedBinding(AssetMenuStripTabs$, [
     { id: "Fossil", count: 7, icon: "" },
     { id: "Renewable", count: 5, icon: "" },
   ]);

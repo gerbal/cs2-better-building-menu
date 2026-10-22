@@ -1,27 +1,27 @@
 import { trigger } from "cs2/api";
 import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import type { Command } from "domain/command";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
-import {
-  groupDimensionsFor,
-  groupDimensionLabel,
-  type GroupDimensionId,
-} from "domain/buildingGroups";
+import { groupDimensionsFor, groupDimensionLabel } from "domain/buildingGroups";
 import { ChipRow } from "mods/ChipRow/ChipRow";
 import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
-import { clearAssetMenuFiltersCommand } from "domain/assetMenuFilterSummary";
-import { toggleAssetMenuFacetCommand } from "domain/buildingCatalogFacets";
 import {
-  ASSET_PACK_TRIGGER_GROUP,
-  ASSET_PACK_TRIGGER_NAME,
+  SET_SELECTED_ASSET_PACKS_TRIGGER,
+  SET_VANILLA_SELECTED_TRIGGER,
+  TOOLBAR_TRIGGER_GROUP,
+  clearAssetMenuFiltersCommand,
+  resetAssetMenuCommand,
+  setAssetMenuViewModeCommand,
+  setBuildingCatalogGroupByCommand,
+  toggleAssetMenuFacetCommand,
+  type Command,
+} from "domain/commands";
+import {
   CONTENT_FACET_ID,
-  VANILLA_TRIGGER_NAME,
   contentOptionKind,
   isContentFacetCommand,
   toggleAssetPack,
@@ -30,18 +30,17 @@ import { countActiveMetricRanges, metricRangesFromState } from "domain/buildingC
 import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setAssetMenuView } from "domain/assetMenuViewStore";
-import { chooseViewMode } from "domain/viewModeChoice";
-import { useAssetMenuView } from "mods/useAssetMenuView";
+import { useNumberSeparators } from "mods/gameSettings";
+import { useLabel } from "mods/useLabel";
+import { useViewShape } from "mods/viewShape";
 import { memo, useState } from "react";
 import {
   BuildingCatalog$,
-  BuildingCatalogGroupBy$,
   BuildingCatalogMetricRanges$,
   BuildingCatalogSortColumn$,
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
   AssetMenuGroupDimensions$,
-  AssetMenuViewMode$,
   CurrentSearch$,
   SelectedAssetPacks$,
   VanillaSelected$,
@@ -56,7 +55,7 @@ import styles from "./controlPane.module.scss";
  * catalog — what narrows it, how it is grouped and ordered, what shape it draws.
  */
 export const ControlPane = memo(function ControlPane() {
-  const { translate } = useLocalization();
+  const label = useLabel();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   // Only for which sort fields can act on these results; see BuildingCatalogPage.
@@ -70,36 +69,26 @@ export const ControlPane = memo(function ControlPane() {
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
+  const separators = useNumberSeparators();
   const selectedAssetPacks = useValue(SelectedAssetPacks$) ?? [];
   const vanillaSelected = useValue(VanillaSelected$) ?? false;
 
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
 
-  const viewModeChoice = chooseViewMode(
-    useAssetMenuView((view) => view.viewMode),
-    useValue(AssetMenuViewMode$),
-    DEFAULT_VIEW_MODE
-  );
+  const { viewMode: viewModeChoice, groupBy } = useViewShape();
   // The store first, so the pick redraws now; then C#, which keeps it for the
   // next session. Only from a click: an effect that sent on a binding change
   // would answer C#'s own echo.
   const pickViewMode = (next: CatalogViewMode): void => {
     setAssetMenuView({ viewMode: next });
-    send({ method: "SetAssetMenuViewMode", args: [next] });
+    send(setAssetMenuViewModeCommand(next));
   };
-  // Resolved on the C# side: the player's choice, or the menu's default.
-  const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
-
   const sortPresentation = getAssetMenuSortPresentation(
     { column: sortColumn, descending },
     reorderableSortColumns
   );
-  const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
-
-  const groupByLabel =
-    translate(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy))
-    ?? groupDimensionLabel(groupBy);
+  const groupByLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy));
 
   const fire = send;
 
@@ -115,13 +104,13 @@ export const ControlPane = memo(function ControlPane() {
     switch (contentOptionKind(optionId)) {
       case "pack":
         trigger(
-          ASSET_PACK_TRIGGER_GROUP,
-          ASSET_PACK_TRIGGER_NAME,
+          TOOLBAR_TRIGGER_GROUP,
+          SET_SELECTED_ASSET_PACKS_TRIGGER,
           toggleAssetPack(selectedAssetPacks, optionId)
         );
         return;
       case "vanilla":
-        trigger(ASSET_PACK_TRIGGER_GROUP, VANILLA_TRIGGER_NAME, !vanillaSelected);
+        trigger(TOOLBAR_TRIGGER_GROUP, SET_VANILLA_SELECTED_TRIGGER, !vanillaSelected);
         return;
       default:
         fire(toggleAssetMenuFacetCommand(groupId, optionId));
@@ -133,7 +122,7 @@ export const ControlPane = memo(function ControlPane() {
   // not own, leaving the chip un-removable.
   const removeChip = (command: Command) => {
     if (isContentFacetCommand(command)) {
-      toggleFacetOption(CONTENT_FACET_ID, String(command.args[1]));
+      toggleFacetOption(CONTENT_FACET_ID, command.args[1]);
       return;
     }
 
@@ -143,6 +132,7 @@ export const ControlPane = memo(function ControlPane() {
   const chips = buildFilterChips({
     facets,
     metricRanges,
+    separators,
   });
 
   const clearLabel = label("Tooltip.LABEL[BetterBuildingMenu.ClearFilters]", "Clear filters");
@@ -165,8 +155,8 @@ export const ControlPane = memo(function ControlPane() {
           one caption that does not restate something already in view. */}
       {currentSearch?.trim() && (
         <div className={styles.searchContext} title={currentSearch}>
-          {translate("Tooltip.LABEL[BetterBuildingMenu.AssetMenuSearchResults]", "Results for {0}")
-            ?.replace("{0}", currentSearch)}
+          {label("Tooltip.LABEL[BetterBuildingMenu.AssetMenuSearchResults]", "Results for {0}")
+            .replace("{0}", currentSearch)}
         </div>
       )}
 
@@ -249,10 +239,7 @@ export const ControlPane = memo(function ControlPane() {
                 {groupPickerOpen && (
                   <div className={styles.pickerOptions}>
                     {groupDimensionsFor(offeredDimensions).map((dimension) => {
-                      const optionLabel = translate(
-                        `Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`,
-                        dimension.label
-                      ) ?? dimension.label;
+                      const optionLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`, dimension.label);
 
                       return (
                         <Button
@@ -263,7 +250,7 @@ export const ControlPane = memo(function ControlPane() {
                           )}
                           variant="icon"
                           onSelect={() => {
-                            send({ method: "SetBuildingCatalogGroupBy", args: [dimension.id] });
+                            send(setBuildingCatalogGroupByCommand(dimension.id));
                             setGroupPickerOpen(false);
                           }}
                           aria-label={optionLabel}
@@ -357,9 +344,9 @@ export const ControlPane = memo(function ControlPane() {
               // cannot drift from it, and "" is "no pick" in the settings, so the next
               // session opens there too.
               setAssetMenuView({ viewMode: DEFAULT_VIEW_MODE });
-              send({ method: "SetAssetMenuViewMode", args: [""] });
+              send(setAssetMenuViewModeCommand(""));
               // The grouping is the query's; ResetAssetMenu clears it.
-              send({ method: "ResetAssetMenu", args: [] });
+              send(resetAssetMenuCommand());
             }}
           >
             {label("Tooltip.LABEL[BetterBuildingMenu.ResetMenu]", "Reset menu")}

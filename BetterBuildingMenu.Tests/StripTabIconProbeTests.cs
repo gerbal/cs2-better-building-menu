@@ -1,6 +1,5 @@
 using System.Linq;
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using Xunit;
 
@@ -12,10 +11,7 @@ namespace BetterBuildingMenu.Tests
 		private const string Menu = "Services";
 
 		private static BuildingCatalogEntry E(int id, string name, string category, string uiCategory, string branch, int depth, string? thumb, string? fallback, int priority = 0) =>
-			new BuildingCatalogEntry(
-				Id: id, PrefabName: name, Name: name, Category: category, SubCategory: category + "_Roads",
-				Thumbnail: thumb ?? "", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "")
+			TestEntries.Make(id, name, category: category, subCategory: category + "_Roads", lotWidth: 2, lotDepth: 2, thumbnail: thumb ?? "")
 				with { UiMenu = Menu, UiCategory = uiCategory, DevTreeBranch = branch, DevTreeBranchDepth = depth, FallbackThumbnail = fallback, UiCategoryPriority = priority };
 
 		[Fact]

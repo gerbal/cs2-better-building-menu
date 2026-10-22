@@ -1,28 +1,29 @@
 import { useValue } from "mods/panelValue";
 import { FOCUS_DISABLED } from "cs2/input";
-import { useLocalization } from "cs2/l10n";
 import { Button } from "cs2/ui";
 import classNames from "classnames";
 import { useEffect, useMemo, useState } from "react";
 import {
   clearBuildingCatalogMetricRangesCommand,
   setBuildingCatalogMetricRangeCommand,
-} from "domain/buildingCatalogContracts";
+} from "domain/commands";
 import {
+  BOUND_KEYS,
   countActiveMetricRanges,
   metricRangesFromState,
   METRIC_RANGE_DEFINITIONS,
   didSwapMetricBounds,
   getInvalidMetricBounds,
-  type MetricRangeId,
   type MetricRangeInput,
 } from "domain/buildingCatalogRanges";
+import type { MetricRangeId } from "domain/sharedContracts.generated";
 import {
   createMetricRangeDebouncer,
   type MetricRangeDebouncerScheduler,
 } from "domain/metricRangeDebouncer";
 import { ASSET_MENU_DISCLOSURE_KEYS, getAssetMenuDisclosure, setAssetMenuDisclosure } from "domain/assetMenuViewStore";
 import { useAssetMenuView } from "mods/useAssetMenuView";
+import { useLabel } from "mods/useLabel";
 import { textInputValue } from "domain/textInput";
 import styles from "./buildingCatalog.module.scss";
 
@@ -30,21 +31,14 @@ import type { AssetMenuMetricRangeState as BuildingCatalogMetricRangeState } fro
 import { BuildingCatalogMetricBounds$, BuildingCatalogMetricRanges$, send } from "mods/bindings";
 import { GameTextInput, gameClasses } from "mods/gameModules";
 
-const emptyMetricRangeState: BuildingCatalogMetricRangeState = {
-  minCost: null,
-  maxCost: null,
-  minUpkeep: null,
-  maxUpkeep: null,
-  minWorkers: null,
-  maxWorkers: null,
-  minCapacity: null,
-  maxCapacity: null,
-  minLotWidth: null,
-  maxLotWidth: null,
-  minLotDepth: null,
-  maxLotDepth: null,
-  hasSelection: false,
-};
+/**
+ * A stable key for the twelve numbers, for hook deps: the bindings hand back a
+ * fresh object on every emit, so depending on the object itself re-runs on
+ * unrelated churn, including while the player is typing.
+ */
+function boundsKeyOf(state: BuildingCatalogMetricRangeState | null): string {
+  return BOUND_KEYS.map((key) => state?.[key] ?? null).join("|");
+}
 
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
@@ -68,8 +62,8 @@ function formatBound(value: number | null, integer: boolean): string {
 }
 
 function draftsFromState(
-  state: BuildingCatalogMetricRangeState,
-  bounds: BuildingCatalogMetricRangeState = emptyMetricRangeState,
+  state: BuildingCatalogMetricRangeState | null,
+  bounds: BuildingCatalogMetricRangeState | null,
 ): MetricRangeDrafts {
   const ranges = metricRangesFromState(state);
   const limits = metricRangesFromState(bounds);
@@ -88,8 +82,8 @@ function draftsFromState(
 }
 
 export const BuildingCatalogMetricFilters = () => {
-  const { translate } = useLocalization();
-  const state = useValue(BuildingCatalogMetricRanges$) ?? emptyMetricRangeState;
+  const label = useLabel();
+  const state = useValue(BuildingCatalogMetricRanges$) ?? null;
   // In the shared store, so this drawer outlives the remount and the metric
   // ranges the player set stay visible.
   const open = useAssetMenuView((view) => view.disclosures[ASSET_MENU_DISCLOSURE_KEYS.metricRanges] ?? false);
@@ -99,18 +93,9 @@ export const BuildingCatalogMetricFilters = () => {
   };
   // The spread each metric has here. A field with no selection shows its bound,
   // so the control states the scale before asking anyone to narrow it.
-  const bounds = useValue(BuildingCatalogMetricBounds$) ?? emptyMetricRangeState;
-  // A stable key for the twelve numbers: the binding hands back a fresh object
-  // on every emit, so depending on `bounds` itself re-seeds the drafts on
-  // unrelated churn, including while the player is typing.
-  const boundsKey = [
-    bounds.minCost, bounds.maxCost,
-    bounds.minUpkeep, bounds.maxUpkeep,
-    bounds.minWorkers, bounds.maxWorkers,
-    bounds.minCapacity, bounds.maxCapacity,
-    bounds.minLotWidth, bounds.maxLotWidth,
-    bounds.minLotDepth, bounds.maxLotDepth,
-  ].join("|");
+  const bounds = useValue(BuildingCatalogMetricBounds$) ?? null;
+  const boundsKey = boundsKeyOf(bounds);
+  const stateKey = boundsKeyOf(state);
   const [drafts, setDrafts] = useState<MetricRangeDrafts>(() => draftsFromState(state, bounds));
   const metricRangeDebouncer = useMemo(
     () =>
@@ -136,21 +121,10 @@ export const BuildingCatalogMetricFilters = () => {
 
       return next;
     });
-    // Keyed on the numbers, not on the fresh objects the bindings emit; see boundsKey.
+    // Keyed on the numbers, not on the fresh objects the bindings emit; see boundsKeyOf.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    state.minCost,
-    state.maxCost,
-    state.minUpkeep,
-    state.maxUpkeep,
-    state.minWorkers,
-    state.maxWorkers,
-    state.minCapacity,
-    state.maxCapacity,
-    state.minLotWidth,
-    state.maxLotWidth,
-    state.minLotDepth,
-    state.maxLotDepth,
+    stateKey,
     // Re-seed when the view changes: opening a different menu changes what
     // there is to ask about, so an empty field has to show the NEW range rather
     // than the last menu's.
@@ -159,20 +133,7 @@ export const BuildingCatalogMetricFilters = () => {
 
   // Keyed on the numbers, like the drafts above.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const ranges = useMemo(() => metricRangesFromState(state), [
-    state.minCost,
-    state.maxCost,
-    state.minUpkeep,
-    state.maxUpkeep,
-    state.minWorkers,
-    state.maxWorkers,
-    state.minCapacity,
-    state.maxCapacity,
-    state.minLotWidth,
-    state.maxLotWidth,
-    state.minLotDepth,
-    state.maxLotDepth,
-  ]);
+  const ranges = useMemo(() => metricRangesFromState(state), [stateKey]);
   const activeCount = countActiveMetricRanges(ranges);
 
   function updateBound(id: MetricRangeId, bound: "minText" | "maxText", value: Event): void {
@@ -189,7 +150,7 @@ export const BuildingCatalogMetricFilters = () => {
     metricRangeDebouncer.cancel();
     // Back to the full range of what is in view, not back to blank: clearing a
     // filter should say what is there again.
-    setDrafts(draftsFromState(emptyMetricRangeState, bounds));
+    setDrafts(draftsFromState(null, bounds));
     send(clearBuildingCatalogMetricRangesCommand());
   }
 
@@ -203,14 +164,14 @@ export const BuildingCatalogMetricFilters = () => {
         >
           <span>
             {open
-              ? translate("Tooltip.LABEL[BetterBuildingMenu.HideMetricFilters]", "Hide metric filters")
-              : translate("Tooltip.LABEL[BetterBuildingMenu.MetricFilters]", "Metric filters")}
+              ? label("Tooltip.LABEL[BetterBuildingMenu.HideMetricFilters]", "Hide metric filters")
+              : label("Tooltip.LABEL[BetterBuildingMenu.MetricFilters]", "Metric filters")}
           </span>
           {activeCount > 0 && <span className={styles.metricRangeSelectionCount}>{activeCount}</span>}
         </Button>
         {activeCount > 0 && (
           <Button className={styles.metricRangeClear} variant="icon" onSelect={clear}>
-            {translate("Tooltip.LABEL[BetterBuildingMenu.ClearAssetMenuMetricRanges]", "Clear metric ranges")}
+            {label("Tooltip.LABEL[BetterBuildingMenu.ClearAssetMenuMetricRanges]", "Clear metric ranges")}
           </Button>
         )}
       </div>
@@ -218,25 +179,19 @@ export const BuildingCatalogMetricFilters = () => {
       {open && (
         <div className={styles.metricRangeGroups}>
           {METRIC_RANGE_DEFINITIONS.map((definition) => {
-            const label = translate(definition.localizationKey, definition.label) ?? definition.label;
+            const metricLabel = label(definition.localizationKey, definition.label);
             const draft = drafts[definition.id];
             // Say what happened to the text instead of dropping it in silence.
             const invalid = getInvalidMetricBounds(definition.id, draft);
             const swapped = didSwapMetricBounds(definition.id, draft);
             const notice = invalid.min || invalid.max
-              ? translate(
-                  "Tooltip.LABEL[BetterBuildingMenu.MetricRangeInvalid]",
-                  "Not a number — this bound is ignored",
-                ) ?? "Not a number — this bound is ignored"
+              ? label("Tooltip.LABEL[BetterBuildingMenu.MetricRangeInvalid]", "Not a number — this bound is ignored")
               : swapped
-                ? translate(
-                    "Tooltip.LABEL[BetterBuildingMenu.MetricRangeSwapped]",
-                    "Bounds reversed — showing lowest to highest",
-                  ) ?? "Bounds reversed — showing lowest to highest"
+                ? label("Tooltip.LABEL[BetterBuildingMenu.MetricRangeSwapped]", "Bounds reversed — showing lowest to highest")
                 : "";
             return (
               <div className={styles.metricRangeGroup} key={definition.id}>
-                <span className={styles.metricRangeLabel}>{label}</span>
+                <span className={styles.metricRangeLabel}>{metricLabel}</span>
                 <div className={styles.metricRangeInputs}>
                   <GameTextInput
                     multiline={1}
@@ -246,7 +201,7 @@ export const BuildingCatalogMetricFilters = () => {
                     className={classNames(TextInputTheme.input, styles.metricRangeInput)}
                     focusKey={FOCUS_DISABLED}
                     placeholder="min"
-                    aria-label={`${label} minimum`}
+                    aria-label={`${metricLabel} minimum`}
                     data-invalid={invalid.min ? "true" : undefined}
                     onChange={(value: Event) => updateBound(definition.id, "minText", value)}
                   />
@@ -259,7 +214,7 @@ export const BuildingCatalogMetricFilters = () => {
                     className={classNames(TextInputTheme.input, styles.metricRangeInput)}
                     focusKey={FOCUS_DISABLED}
                     placeholder="max"
-                    aria-label={`${label} maximum`}
+                    aria-label={`${metricLabel} maximum`}
                     data-invalid={invalid.max ? "true" : undefined}
                     onChange={(value: Event) => updateBound(definition.id, "maxText", value)}
                   />

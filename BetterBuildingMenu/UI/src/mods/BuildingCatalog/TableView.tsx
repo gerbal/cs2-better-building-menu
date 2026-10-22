@@ -6,15 +6,14 @@ import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuMetricLabel } from "domain/assetMenuLayout";
 import type { AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
-import { getNumberSeparators } from "domain/assetMenuMetricFormat";
 import {
   ASSET_MENU_COLUMN_SORT,
   getAssetMenuColumnSortIndicator,
 } from "domain/assetMenuSortPresentation";
 import { flattenGroupedRows, takeRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
-import { useUnitSystem } from "mods/gameSettings";
 import { useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { useLabel } from "mods/useLabel";
 import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";
 
@@ -86,22 +85,16 @@ export const TableView = ({
   footer,
 }: TableViewProps) => {
   const { translate } = useLocalization();
-  const unitSystem = useUnitSystem();
-  // Read once for every row, which is what the hook asks of its caller.
+  const label = useLabel();
+  // Read once for every row, which is what the hook asks of its caller. Its
+  // separators are the player's own marks, so our columns agree with the
+  // numbers the game is drawing elsewhere on the same screen.
   const hoverCard = useHoverCardContext();
-  // The player's own thousands/decimal marks, so our columns agree with the
-  // numbers the game is drawing elsewhere on the same screen. Memoised, with
-  // the labels, so the rows' props hold still between renders.
-  const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
+  // Memoised so the rows' props hold still between renders.
   const labels: TableRowLabels = useMemo(() => ({
-    place: translate("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place") ?? "Place",
-    inspect: translate("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details") ?? "Details",
-    locked: translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked",
-    built:
-      translate("Toolbar.ASSET_ALREADY_BUILT", "")
-      || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
-      || "Already built",
-  }), [translate]);
+    place: label("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place"),
+    inspect: label("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details"),
+  }), [label]);
 
   return (
     <>
@@ -113,14 +106,14 @@ export const TableView = ({
         {/* "Name", not "Building": the sort control offers a field called
             Name and sorting by it reorders THIS column, and the column holds
             roads, props and zones, none of which are buildings. */}
-        <span className={styles.identityHeader}>{translate("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
+        <span className={styles.identityHeader}>{label("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
         {metricColumns.filter((column) => metrics.includes(column.key)).map((column) => {
-          const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
+          const fullLabel = label(column.localizationKey, column.fallback);
           const indicator = getAssetMenuColumnSortIndicator(column.key, { column: sortColumn, descending });
           const sortTarget = ASSET_MENU_COLUMN_SORT[column.key];
           const headerTitle = indicator === ""
-            ? `${fullLabel} — ${translate("Tooltip.LABEL[BetterBuildingMenu.SortByColumn]", "sort by this column") ?? "sort by this column"}`
-            : `${fullLabel} — ${translate("Tooltip.LABEL[BetterBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort"}`;
+            ? `${fullLabel} — ${label("Tooltip.LABEL[BetterBuildingMenu.SortByColumn]", "sort by this column")}`
+            : `${fullLabel} — ${label("Tooltip.LABEL[BetterBuildingMenu.ReverseSort]", "reverse this sort")}`;
 
           return (
             <Button
@@ -178,7 +171,6 @@ export const TableView = ({
               entry={line.entry}
               expanded={expandedId === line.entry.id}
               nameBudget={nameBudget}
-              separators={separators}
               labels={labels}
               hoverCard={hoverCard}
               metrics={metrics}

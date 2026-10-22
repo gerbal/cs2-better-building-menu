@@ -195,7 +195,7 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		string[]? SupportedUpgrades = null,
 		// The headings this entry files under, set on the page by CatalogView from
-		// BuildingCatalogGrouping.Labels: the UI builds its group tree from consecutive runs
+		// GroupDimension.Labels: the UI builds its group tree from consecutive runs
 		// of these. LabelId is the game's category id, so the UI can localise that one.
 		string[]? GroupPath = null,
 		string? GroupLabelId = null) : IJsonWritable
@@ -226,153 +226,75 @@ namespace BetterBuildingMenu.Domain
 		{
 			writer.TypeBegin(GetType().FullName);
 
-			writer.PropertyName("id");
-			writer.Write(Id);
-			writer.PropertyName("prefabName");
-			writer.Write(PrefabName);
-			writer.PropertyName("name");
-			writer.Write(Name);
-			writer.PropertyName("category");
-			writer.Write(Category);
-			writer.PropertyName("subCategory");
-			writer.Write(SubCategory);
-			writer.PropertyName("categoryLabel");
-			writer.Write(CategoryLabel ?? Category);
-			writer.PropertyName("subCategoryLabel");
-			writer.Write(SubCategoryLabel ?? SubCategory);
-			writer.PropertyName("thumbnail");
-			writer.Write(Thumbnail);
-			writer.PropertyName("fallbackThumbnail");
-			writer.Write(FallbackThumbnail ?? string.Empty);
-			writer.PropertyName("silhouetteThumbnail");
-			writer.Write(SilhouetteThumbnail ?? string.Empty);
-			writer.PropertyName("lotWidth");
-			writer.Write(LotWidth);
-			writer.PropertyName("lotDepth");
-			writer.Write(LotDepth);
-			writer.PropertyName("buildingLevel");
-			writer.Write(BuildingLevel);
-			writer.PropertyName("zoneType");
-			writer.Write((int)ZoneType);
-			writer.PropertyName("hasParking");
-			writer.Write(HasParking);
-			writer.PropertyName("isVanilla");
-			writer.Write(IsVanilla);
-			writer.PropertyName("isLocked");
-			writer.Write(IsLocked);
-			writer.PropertyName("isUnique");
-			writer.Write(IsUnique);
-			writer.PropertyName("isAlreadyBuilt");
-			writer.Write(IsAlreadyBuilt);
-			writer.PropertyName("unlockMilestone");
-			writer.Write(UnlockMilestone);
-			writer.PropertyName("devTreeBranch");
-			writer.Write(DevTreeBranch ?? string.Empty);
+			writer.Prop("id", Id);
+			writer.Prop("prefabName", PrefabName);
+			writer.Prop("name", Name);
+			writer.Prop("category", Category);
+			writer.Prop("subCategory", SubCategory);
+			writer.Prop("categoryLabel", CategoryLabel ?? Category);
+			writer.Prop("subCategoryLabel", SubCategoryLabel ?? SubCategory);
+			writer.Prop("thumbnail", Thumbnail);
+			writer.Prop("fallbackThumbnail", FallbackThumbnail ?? string.Empty);
+			writer.Prop("silhouetteThumbnail", SilhouetteThumbnail ?? string.Empty);
+			writer.Prop("lotWidth", LotWidth);
+			writer.Prop("lotDepth", LotDepth);
+			writer.Prop("buildingLevel", BuildingLevel);
+			writer.Prop("zoneType", (int)ZoneType);
+			writer.Prop("hasParking", HasParking);
+			writer.Prop("isVanilla", IsVanilla);
+			writer.Prop("isLocked", IsLocked);
+			writer.Prop("isUnique", IsUnique);
+			writer.Prop("isAlreadyBuilt", IsAlreadyBuilt);
+			writer.Prop("unlockMilestone", UnlockMilestone);
+			writer.Prop("devTreeBranch", DevTreeBranch ?? string.Empty);
 			// The tree column, so the UI can order its headings by unlock the way the tabs
 			// already are rather than in encounter order.
-			writer.PropertyName("devTreeBranchDepth");
-			writer.Write(DevTreeBranchDepth);
-			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
-			WriteStringArray(writer, "bonuses", Bonuses);
-			writer.PropertyName("costIsPerDistance");
-			writer.Write(CostIsPerDistance);
-			writer.PropertyName("parkingSlots");
-			writer.Write(ParkingSlots);
-			writer.PropertyName("pdxModsId");
-			writer.Write(PdxModsId);
-			writer.PropertyName("educationLevel");
-			if (EducationLevel.HasValue) writer.Write(EducationLevel.Value); else writer.WriteNull();
-			writer.PropertyName("buildingType");
-			writer.Write(BuildingType ?? string.Empty);
-			writer.PropertyName("provenance");
-			writer.Write(Provenance ?? string.Empty);
-			writer.PropertyName("dlcId");
-			writer.Write(DlcId ?? string.Empty);
-			writer.PropertyName("theme");
-			writer.Write(Theme ?? string.Empty);
-			WriteStringArray(writer, "assetPacks", AssetPacks);
-			WriteStringArray(writer, "placementFlags", PlacementFlags);
-			WriteStringArray(writer, "extensions", Extensions);
-			WriteStringArray(writer, "supportedUpgrades", SupportedUpgrades);
-			WriteNullable(writer, "constructionCost", ConstructionCost);
-			WriteNullable(writer, "upkeep", Upkeep);
-			WriteNullable(writer, "workers", Workers);
-			WriteNullable(writer, "households", Households);
-			WriteNullable(writer, "capacity", Capacity);
-			WriteNullable(writer, "serviceRange", ServiceRange);
-			WriteArray(writer, "serviceFacts", ServiceFacts);
-			WriteArray(writer, "footprints", Footprints);
-			writer.PropertyName("footprintOverflow");
-			writer.Write(FootprintOverflow);
-			WriteArray(writer, "serviceTextFacts", ServiceTextFacts);
-			WriteNullable(writer, "speedLimit", SpeedLimit);
-			WriteNullable(writer, "networkWidth", NetworkWidth);
-			writer.PropertyName("leisureType");
-			writer.Write(LeisureType ?? string.Empty);
-			WriteNullable(writer, "leisureEfficiency", LeisureEfficiency);
-			WriteNullable(writer, "electricityConsumption", ElectricityConsumption);
-			WriteNullable(writer, "waterConsumption", WaterConsumption);
-			WriteNullable(writer, "garbageAccumulation", GarbageAccumulation);
-			WriteNullable(writer, "telecomNeed", TelecomNeed);
-			WriteNullable(writer, "waterCapacity", WaterCapacity);
-			WriteNullable(writer, "sewageCapacity", SewageCapacity);
-			WriteNullable(writer, "groundPollution", GroundPollution);
-			WriteNullable(writer, "airPollution", AirPollution);
-			WriteNullable(writer, "noisePollution", NoisePollution);
-			writer.PropertyName("groupPath");
-			var path = GroupPath ?? Array.Empty<string>();
-			writer.ArrayBegin((uint)path.Length);
-			foreach (var label in path)
-			{
-				writer.Write(label);
-			}
-			writer.ArrayEnd();
-			writer.PropertyName("groupLabelId");
-			writer.Write(GroupLabelId ?? string.Empty);
+			writer.Prop("devTreeBranchDepth", DevTreeBranchDepth);
+			writer.Prop("unlockRequirements", NonBlank(UnlockRequirements));
+			writer.Prop("bonuses", NonBlank(Bonuses));
+			writer.Prop("costIsPerDistance", CostIsPerDistance);
+			writer.Prop("parkingSlots", ParkingSlots);
+			writer.Prop("pdxModsId", PdxModsId);
+			writer.Prop("educationLevel", EducationLevel);
+			writer.Prop("buildingType", BuildingType ?? string.Empty);
+			writer.Prop("provenance", Provenance ?? string.Empty);
+			writer.Prop("dlcId", DlcId ?? string.Empty);
+			writer.Prop("theme", Theme ?? string.Empty);
+			writer.Prop("assetPacks", NonBlank(AssetPacks));
+			writer.Prop("placementFlags", NonBlank(PlacementFlags));
+			writer.Prop("extensions", NonBlank(Extensions));
+			writer.Prop("supportedUpgrades", NonBlank(SupportedUpgrades));
+			writer.Prop("constructionCost", ConstructionCost);
+			writer.Prop("upkeep", Upkeep);
+			writer.Prop("workers", Workers);
+			writer.Prop("households", Households);
+			writer.Prop("capacity", Capacity);
+			writer.Prop("serviceRange", ServiceRange);
+			writer.Prop("serviceFacts", ServiceFacts);
+			writer.Prop("footprints", Footprints);
+			writer.Prop("footprintOverflow", FootprintOverflow);
+			writer.Prop("serviceTextFacts", ServiceTextFacts);
+			writer.Prop("speedLimit", SpeedLimit);
+			writer.Prop("networkWidth", NetworkWidth);
+			writer.Prop("leisureType", LeisureType ?? string.Empty);
+			writer.Prop("leisureEfficiency", LeisureEfficiency);
+			writer.Prop("electricityConsumption", ElectricityConsumption);
+			writer.Prop("waterConsumption", WaterConsumption);
+			writer.Prop("garbageAccumulation", GarbageAccumulation);
+			writer.Prop("telecomNeed", TelecomNeed);
+			writer.Prop("waterCapacity", WaterCapacity);
+			writer.Prop("sewageCapacity", SewageCapacity);
+			writer.Prop("groundPollution", GroundPollution);
+			writer.Prop("airPollution", AirPollution);
+			writer.Prop("noisePollution", NoisePollution);
+			writer.Prop("groupPath", GroupPath);
+			writer.Prop("groupLabelId", GroupLabelId ?? string.Empty);
 
 			writer.TypeEnd();
 		}
 
-		private static void WriteNullable(IJsonWriter writer, string propertyName, double? value)
-		{
-			writer.PropertyName(propertyName);
-			if (value.HasValue)
-			{
-				writer.Write(value.Value);
-			}
-			else
-			{
-				writer.WriteNull();
-			}
-		}
-
-		private static void WriteArray<T>(IJsonWriter writer, string propertyName, IReadOnlyList<T>? items)
-			where T : IJsonWritable
-		{
-			writer.PropertyName(propertyName);
-			writer.ArrayBegin(items?.Count ?? 0);
-
-			if (items is not null)
-			{
-				for (var i = 0; i < items.Count; i++)
-				{
-					items[i].Write(writer);
-				}
-			}
-
-			writer.ArrayEnd();
-		}
-
-		private static void WriteStringArray(IJsonWriter writer, string propertyName, IEnumerable<string>? values)
-		{
-			writer.PropertyName(propertyName);
-			string[] normalized = values?.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray() ?? Array.Empty<string>();
-			writer.ArrayBegin((uint)normalized.Length);
-			foreach (string value in normalized)
-			{
-				writer.Write(value);
-			}
-			writer.ArrayEnd();
-		}
+		// The string lists the UI receives hold no blank members.
+		private static string[] NonBlank(IEnumerable<string>? values) =>
+			values?.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray() ?? Array.Empty<string>();
 	}
 }

@@ -1,25 +1,27 @@
 import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   formatBuildingMetric,
   formatCapacity,
   formatLotDimensions,
-  getNumberSeparators,
   hasFootprint,
-  type NumberSeparators,
 } from "domain/assetMenuMetricFormat";
-import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { thumbnailErrorHandler } from "domain/thumbnailFallback";
+import { entryLabel, entryStateAttributes, entryStateWordOf, sortedBadgeText } from "domain/buildingEntryView";
+import { canPlace } from "domain/buildingLockState";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
-import { useUnitSystem } from "mods/gameSettings";
+import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
+import { useGuardedPlace } from "mods/useGuardedPlace";
+import { sortedMetricFor } from "domain/sortedMetric";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
+
+const UNIQUE_BADGE: UniqueBadgeClasses = { badge: styles.uniqueAsset, unique: styles.uniqueMark, alreadyBuilt: styles.alreadyBuilt };
+// A card's larger picture takes a larger badge, at the same ratio.
+const UNIQUE_BADGE_LARGE: UniqueBadgeClasses = { ...UNIQUE_BADGE, badge: classNames(styles.uniqueAsset, styles.uniqueAssetLarge) };
 
 /**
  * compact — icon and name only.
@@ -45,34 +47,15 @@ interface BuildingListProps {
  * (does it fit, can I afford it), never comparisons.
  */
 export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
-  const { translate } = useLocalization();
-  const unitSystem = useUnitSystem();
-  // One object until the language or the unit system changes, so the cards it is
-  // handed to can skip a render.
-  const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
   // The same card the grid and the table show, so which facts a building
-  // states does not depend on which view mode the player is in.
+  // states does not depend on which view mode the player is in. The rows take
+  // its separators and state words too, the game's own words where it has them.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
-  const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
-  // The game's own words first, so the row reads as vanilla's does; see the
-  // hover card, which asks for the same key.
-  const builtLabel =
-    translate("Toolbar.ASSET_ALREADY_BUILT", "")
-    || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
-    || "Already built";
   const cards = variant === "cards";
 
-  // One callback for the list's lifetime, reading the newest onPlace through a ref,
-  // so a card's props hold still between renders and the card skips its own.
-  const latestOnPlace = useRef(onPlace);
-  latestOnPlace.current = onPlace;
-  const place = useCallback((entry: BuildingCatalogEntry) => {
-    // See BuildingGrid: locked assets are shown and refused, not hidden.
-    if (!canPlace(entry)) return;
-
-    latestOnPlace.current(entry);
-  }, []);
+  // Locked assets are shown and refused, not hidden.
+  const place = useGuardedPlace(onPlace);
 
   return (
     <div className={styles.list}>
@@ -84,9 +67,6 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
           cards={cards}
           selected={selectedId === entry.id}
           sortedMetric={sortedMetric}
-          separators={separators}
-          lockedLabel={lockedLabel}
-          builtLabel={builtLabel}
           hoverCard={hoverCard}
           onPlace={place}
         />
@@ -100,9 +80,7 @@ interface BuildingListCardProps {
   cards: boolean;
   selected: boolean;
   sortedMetric: ReturnType<typeof sortedMetricFor>;
-  separators: NumberSeparators;
-  lockedLabel: string;
-  builtLabel: string;
+  /** The hover card's context, whose separators and state words the row draws with too. */
   hoverCard: HoverCardContext;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
@@ -116,34 +94,14 @@ const BuildingListCard = memo(function BuildingListCard({
   cards,
   selected,
   sortedMetric,
-  separators,
-  lockedLabel,
-  builtLabel,
   hoverCard,
   onPlace,
 }: BuildingListCardProps) {
-  /** The figure this list is ordered by. See sortedMetric.ts. */
-  const sortedBadge = () => {
-    if (sortedMetric === null) {
-      return null;
-    }
-
-    const text = sortedMetric === "lot"
-      ? (hasFootprint(entry.lotWidth, entry.lotDepth)
-        ? formatLotDimensions(entry.lotWidth, entry.lotDepth)
-        : null)
-      : (() => {
-        const value = sortedMetricValue(entry, sortedMetric);
-        return value === null
-          ? null
-          : formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance);
-      })();
-
-    return text === null ? null : <span className={styles.sortedMetric}>{text}</span>;
-  };
-
-  const fullName = entry.name || entry.prefabName;
+  const { separators } = hoverCard;
+  const sortedText = sortedBadgeText(entry, sortedMetric, separators);
+  const fullName = entryLabel(entry);
   const label = listLabel(fullName);
+  const stateWord = entryStateWordOf(entry, hoverCard.labels);
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
   // A road's lot is 0x0 and a zone has none: "0 × 0" measures something
@@ -167,43 +125,17 @@ const BuildingListCard = memo(function BuildingListCard({
         // Both unplaceable states, not just locked: a row has no
         // thumbnail to silhouette, so the ground and this suffix carry
         // the whole message.
-        aria-label={
-          (() => {
-            const word = entryStateWord(entry, lockedLabel, builtLabel);
-            return word ? `${fullName} — ${word}` : fullName;
-          })()
-        }
+        aria-label={stateWord ? `${fullName} — ${stateWord}` : fullName}
         aria-disabled={!canPlace(entry) ? "true" : undefined}
-        data-locked={isEntryLocked(entry) ? "true" : undefined}
-        data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
-        data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
+        {...entryStateAttributes(entry)}
       >
         {/* The picture and its badge share a box, as the tile's do, so
             the mark sits ON the building. Sized from base.scss's ratio,
             so it reads the same against a row icon and a grid tile. */}
         {entry.thumbnail
           ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
-              <img
-                className={classNames(styles.icon, cards && styles.iconLarge)}
-                src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
-                onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-                alt=""
-                aria-hidden="true"
-              />
-              {entry.isUnique === true && (
-                <img
-                  className={classNames(
-                    styles.uniqueAsset,
-                    cards && styles.uniqueAssetLarge,
-                    isEntryAlreadyBuilt(entry) ? styles.alreadyBuilt : styles.uniqueMark
-                  )}
-                  src={isEntryAlreadyBuilt(entry)
-                    ? "Media/Game/Icons/AlreadyBuilt.svg"
-                    : "Media/Game/Icons/Unique.svg"}
-                  alt=""
-                  aria-hidden="true"
-                />
-              )}
+              {entryThumbnail(entry, classNames(styles.icon, cards && styles.iconLarge))}
+              {uniqueBadge(entry, cards ? UNIQUE_BADGE_LARGE : UNIQUE_BADGE)}
             </span>
           : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
         <span className={styles.text}>
@@ -239,7 +171,7 @@ const BuildingListCard = memo(function BuildingListCard({
         </span>
         {/* Right-aligned, so the sorted figures line up as a column and
             the order can be read down the page. */}
-        {sortedBadge()}
+        {sortedText !== null && <span className={styles.sortedMetric}>{sortedText}</span>}
       </Button>
     </BuildingHoverCard>
   );

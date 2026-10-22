@@ -1,7 +1,5 @@
 using Colossal.UI.Binding;
 
-using System;
-
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
@@ -23,62 +21,55 @@ namespace BetterBuildingMenu.Domain
 	{
 		public static BuildingCatalogMetricRangeState Empty { get; } = new(null, null, null, null, null, null, null, null, null, null, null, null);
 
-		public bool HasSelection =>
-			MinCost.HasValue || MaxCost.HasValue
-			|| MinUpkeep.HasValue || MaxUpkeep.HasValue
-			|| MinWorkers.HasValue || MaxWorkers.HasValue
-			|| MinCapacity.HasValue || MaxCapacity.HasValue
-			|| MinLotWidth.HasValue || MaxLotWidth.HasValue
-			|| MinLotDepth.HasValue || MaxLotDepth.HasValue;
+		public bool HasSelection
+		{
+			get
+			{
+				for (int i = 0; i < BuildingCatalogMetrics.All.Count; i++)
+				{
+					BuildingCatalogMetric metric = BuildingCatalogMetrics.All[i];
+					if (metric.StateMin(this).HasValue || metric.StateMax(this).HasValue)
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
+		}
 
 		public static BuildingCatalogMetricRangeState FromQuery(BuildingCatalogQuery query)
 		{
-			return new BuildingCatalogMetricRangeState(
-				query.MinConstructionCost,
-				query.MaxConstructionCost,
-				query.MinUpkeep,
-				query.MaxUpkeep,
-				query.MinWorkers,
-				query.MaxWorkers,
-				query.MinCapacity,
-				query.MaxCapacity,
-				query.MinLotWidth,
-				query.MaxLotWidth,
-				query.MinLotDepth,
-				query.MaxLotDepth);
+			double?[] bounds = new double?[BuildingCatalogMetrics.All.Count * 2];
+			for (int i = 0; i < BuildingCatalogMetrics.All.Count; i++)
+			{
+				bounds[2 * i] = BuildingCatalogMetrics.All[i].QueryMin(query);
+				bounds[2 * i + 1] = BuildingCatalogMetrics.All[i].QueryMax(query);
+			}
+
+			return FromBounds(bounds);
 		}
+
+		/// <summary>
+		/// A state from a minimum and a maximum per metric, in <see cref="BuildingCatalogMetrics.All"/>'s
+		/// order, which is the order of this record's own parameters.
+		/// </summary>
+		internal static BuildingCatalogMetricRangeState FromBounds(double?[] bounds) =>
+			new(bounds[0], bounds[1], bounds[2], bounds[3], bounds[4], bounds[5],
+				bounds[6], bounds[7], bounds[8], bounds[9], bounds[10], bounds[11]);
 
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			WriteNullable(writer, "minCost", MinCost);
-			WriteNullable(writer, "maxCost", MaxCost);
-			WriteNullable(writer, "minUpkeep", MinUpkeep);
-			WriteNullable(writer, "maxUpkeep", MaxUpkeep);
-			WriteNullable(writer, "minWorkers", MinWorkers);
-			WriteNullable(writer, "maxWorkers", MaxWorkers);
-			WriteNullable(writer, "minCapacity", MinCapacity);
-			WriteNullable(writer, "maxCapacity", MaxCapacity);
-			WriteNullable(writer, "minLotWidth", MinLotWidth);
-			WriteNullable(writer, "maxLotWidth", MaxLotWidth);
-			WriteNullable(writer, "minLotDepth", MinLotDepth);
-			WriteNullable(writer, "maxLotDepth", MaxLotDepth);
-			writer.PropertyName("hasSelection");
-			writer.Write(HasSelection);
-			writer.TypeEnd();
-		}
+			for (int i = 0; i < BuildingCatalogMetrics.All.Count; i++)
+			{
+				BuildingCatalogMetric metric = BuildingCatalogMetrics.All[i];
+				writer.Prop(metric.MinKey, metric.StateMin(this));
+				writer.Prop(metric.MaxKey, metric.StateMax(this));
+			}
 
-		private static void WriteNullable(IJsonWriter writer, string name, double? value)
-		{
-			writer.PropertyName(name);
-			if (value.HasValue)
-			{
-				writer.Write(value.Value);
-			}
-			else
-			{
-				writer.WriteNull();
-			}
+			writer.Prop("hasSelection", HasSelection);
+			writer.TypeEnd();
 		}
 	}
 }

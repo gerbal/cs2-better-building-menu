@@ -1,5 +1,4 @@
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
@@ -8,10 +7,7 @@ namespace BetterBuildingMenu.Tests
 	public sealed class BuildingCatalogRelevanceTests
 	{
 		private static BuildingCatalogEntry E(int id, string name, string category = "", string sub = "") =>
-			new BuildingCatalogEntry(
-				Id: id, PrefabName: name.Replace(" ", string.Empty), Name: name, Category: category, SubCategory: sub,
-				Thumbnail: "", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "");
+			TestEntries.Make(id, name, name.Replace(" ", string.Empty), category, sub, lotWidth: 4, lotDepth: 4);
 
 		[Fact]
 		public void RanksAnExactNameAboveAPrefixAboveAWordStartAboveASubstring()

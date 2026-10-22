@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { act, create } from "react-test-renderer";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
+import { seed } from "../harness/seed";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_CATALOG_FULL } from "../../src/domain/assetMenuLayout";
 import { useAssetMenuLayout, type AssetMenuLayout } from "../../src/mods/useAssetMenuLayout";
+import { AssetMenuCatalogWidth$, AssetMenuWidth$, ControlPaneShown$ } from "../../src/mods/bindings";
 
 let layout: AssetMenuLayout;
 const Probe = () => {
@@ -22,7 +24,7 @@ describe("the asset menu's layout", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    seed(AssetMenuWidth$, 1441);
   });
 
   it("draws today's layout by default: the menu filling the room beside the pane", () => {
@@ -30,13 +32,13 @@ describe("the asset menu's layout", () => {
   });
 
   it("keeps the default width when the pane is hidden, so the toggle moves nothing it has room for", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    seed(ControlPaneShown$, false);
     assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1091, rowWidth: 1091, paneShown: false });
   });
 
   it("gives the menu the whole band when the player fills it with the pane hidden", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FULL);
+    seed(ControlPaneShown$, false);
+    seed(AssetMenuCatalogWidth$, ASSET_MENU_CATALOG_FULL);
     assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1476, rowWidth: 1476, paneShown: false });
   });
 
@@ -46,20 +48,20 @@ describe("the asset menu's layout", () => {
   });
 
   it("sizes the row to a chosen width, leaving no empty stretch", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 900);
+    seed(AssetMenuCatalogWidth$, 900);
     assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 900, rowWidth: 1285, paneShown: true });
   });
 
   it("draws a chosen width that no longer fits at the room, and gives it back when the pane is hidden", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1200);
+    seed(AssetMenuCatalogWidth$, 1200);
     assert.equal(read().menuWidth, 1091);
 
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    seed(ControlPaneShown$, false);
     assert.equal(read().menuWidth, 1200);
   });
 
   it("draws every view at the player's width, the table included", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    seed(AssetMenuCatalogWidth$, 735);
     setAssetMenuView({ viewMode: "table" });
     assert.equal(read().menuWidth, 735);
   });

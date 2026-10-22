@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { beforeEach, describe, it } from "node:test";
+import { act, create } from "react-test-renderer";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { installFakeBrowser } from "../harness/fakeBrowser";
+import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
 import {
   ASSET_MENU_MAX_HEIGHT,
   ASSET_MENU_MIN_HEIGHT,
@@ -9,15 +12,10 @@ import {
   draggedAssetMenuHeight,
 } from "../../src/domain/assetMenuLayout";
 import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
+import { AssetMenuHeight$ } from "../../src/mods/bindings";
 
 // A frame clock the test advances by hand, so "one per frame" can be counted.
-const globals = globalThis as unknown as Record<string, unknown>;
-let frames: Array<(() => void) | null> = [];
-const nextFrame = () => act(() => {
-  const due = frames;
-  frames = [];
-  for (const callback of due) callback?.();
-});
+let nextFrame: () => void;
 
 let assetMenu: AssetMenuHeight;
 const Probe = () => {
@@ -29,29 +27,18 @@ const heights = () => triggers.filter((call) => call.name === "SetAssetMenuHeigh
 const names = () => triggers.map((call) => call.name);
 
 describe("dragging the asset menu's height", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
-    frames = [];
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = (handle: number) => {
-      if (handle > 0) frames[handle - 1] = null;
-    };
-    act(() => {
-      root = create(<Probe />);
-    });
+    ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
+    tree.mount(<Probe />);
     // The strip is drawn 14px tall, so a pixel is a rem here.
     act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
   });
 
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
-  });
-
-  const move = (clientY: number) => act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY }));
-  const release = () => act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+  const move = (clientY: number) => act(() => tree.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY }));
+  const release = () => act(() => tree.root.find((node) => node.props.onMouseUp).props.onMouseUp());
   const expected = (clientY: number) => draggedAssetMenuHeight(clampAssetMenuHeight(420), 500, clientY, 1);
 
   it("sends one height per frame, the latest", () => {
@@ -67,7 +54,7 @@ describe("dragging the asset menu's height", () => {
 
   it("ends the drag where the button was last held when a move says none is", () => {
     move(490);
-    act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 480, buttons: 0 }));
+    act(() => tree.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 480, buttons: 0 }));
 
     assert.deepEqual(heights(), [expected(490)]);
     assert.equal(names().at(-1), "CommitAssetMenuHeight");
@@ -93,33 +80,22 @@ describe("dragging the asset menu's height", () => {
 });
 
 describe("the asset menu's height between drags", () => {
-  let root: ReactTestRenderer | undefined;
-  const mount = () => act(() => {
-    root = create(<Probe />);
-  });
-  const blocker = () => root!.root.findAll((node) => node.props.onMouseUp !== undefined);
+  const tree = mountEach();
+  const mount = () => tree.mount(<Probe />);
+  const blocker = () => tree.root.findAll((node) => node.props.onMouseUp !== undefined);
   const begin = () => act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
 
   beforeEach(() => {
     resetBindings();
-    frames = [];
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = (handle: number) => {
-      if (handle > 0) frames[handle - 1] = null;
-    };
-  });
-
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
+    ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
   });
 
   it("is the saved height, held inside what the layout can take", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuHeight", 5000);
+    seed(AssetMenuHeight$, 5000);
     mount();
     assert.equal(assetMenu.height, ASSET_MENU_MAX_HEIGHT);
 
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuHeight", 10));
+    act(() => seed(AssetMenuHeight$, 10));
     assert.equal(assetMenu.height, ASSET_MENU_MIN_HEIGHT);
   });
 
@@ -152,8 +128,7 @@ describe("the asset menu's height between drags", () => {
     mount();
     begin();
     act(() => blocker()[0].props.onMouseMove({ clientY: 480 }));
-    act(() => root!.unmount());
-    root = undefined;
+    act(() => tree.renderer.unmount());
 
     nextFrame();
     assert.deepEqual(names(), ["SetAssetMenuHeight", "CommitAssetMenuHeight"]);
@@ -165,9 +140,11 @@ describe("the resize strip", () => {
   const strip = (active: boolean, onBeginResize: (event: unknown) => void = () => undefined) =>
     create(<AssetMenuResizeHandle active={active} onBeginResize={onBeginResize} />);
 
-  it("says what it is for, and shows the grip pressed while a drag is on", () => {
+  it("says what it is for in the game's own tooltip, and shows the grip pressed while a drag is on", () => {
     const idle = strip(false).root;
-    assert.equal(idle.findByProps({ className: "resizeHandle" }).props.title, "Drag to resize");
+    // The game draws no title attribute, so the hint goes through its Tooltip.
+    assert.equal(idle.findByProps({ className: "resizeHandle" }).props.title, undefined);
+    assert.deepEqual(idle.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize"]);
     assert.equal(idle.findAll((node) => node.props.className === "resizeGrip").length, 1);
 
     assert.equal(strip(true).root.findAll((node) => node.props.className === "resizeGrip resizeGripActive").length, 1);

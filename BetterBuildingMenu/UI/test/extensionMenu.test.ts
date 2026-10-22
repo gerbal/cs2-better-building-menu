@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { decideExtensionMenu, type VanillaUpgradeRow } from "../src/domain/extensionMenu.ts";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
+import { entry as catalogEntry } from "./harness/entries.ts";
 
 // The picker replaces vanilla's only when it can account for every row vanilla
 // lists. Vanilla is the authority on WHAT may be attached; our catalog only
@@ -18,7 +19,7 @@ const listed = (name: string, over: Partial<VanillaUpgradeRow> = {}): VanillaUpg
 });
 
 const entry = (prefabName: string, over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry =>
-  ({ id: prefabName.length, prefabName, name: `The ${prefabName}`, isLocked: false, isUnique: false, isAlreadyBuilt: false, ...over }) as BuildingCatalogEntry;
+  catalogEntry(prefabName.length, { prefabName, name: `The ${prefabName}`, isLocked: false, isUnique: false, isAlreadyBuilt: false, ...over });
 
 describe("whether our extension picker draws", () => {
   it("stays vanilla when the mod is not replacing menus", () => {

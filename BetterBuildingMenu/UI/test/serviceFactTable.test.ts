@@ -1,0 +1,99 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { SERVICE_FACTS, SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, isVanillaFact, orderFacts } from "../src/domain/serviceFacts.ts";
+
+// Display order with each fact's tier: the facts the game's tooltip shows sit among ours,
+// and an unplaced key falls to the end. A new fact is placed and given its tier here on purpose.
+const PINNED = [
+  "requiredResource game",
+  "processingRate game",
+  "garbageProcessing game",
+  "sortingRate game",
+  "jailCapacity game",
+  "collectionTrucks game",
+  "postVans game",
+  "postTrucks game",
+  "ambulances game",
+  "hearses game",
+  "prisonVans game",
+  "depotVehicles game",
+  "maintenanceVehicles game",
+  "helicopters game",
+  "disasterResponse ours",
+  "shelterVehicles game",
+  "powerOutput game",
+  "electricityCapacity game",
+  "voltage game",
+  "garbageStorage game",
+  "batteryOutput game",
+  "transformerCapacity game",
+  "transformerInput game",
+  "transformerOutput game",
+  "pipeType game",
+  "stormCapacity ours",
+  "cargoCapacity game",
+  "mailboxCapacity game",
+  "purification game",
+  "waterSource game",
+  "maintenancePool ours",
+  "airplaneStops game",
+  "helicopterStops game",
+  "shipStops game",
+  "subwayStops game",
+  "tramStops game",
+  "trainStops game",
+  "busStops game",
+  "comfort game",
+  "transportType ours",
+  "trackType ours",
+  "graduation ours",
+  "studentWellbeing ours",
+  "studentHealth ours",
+  "prisonerWellbeing ours",
+  "prisonerHealth ours",
+  "attractiveness game",
+  "groundPollutionLevel game",
+  "airPollutionLevel game",
+  "noisePollutionLevel game",
+  "groundPollutionModifier game",
+  "airPollutionModifier game",
+  "noisePollutionModifier game",
+  "resourceConsumption game",
+  "jobComplexity ours",
+  "minCrew ours",
+  "workConditions ours",
+  "eveningShift ours",
+  "nightShift ours",
+  "elevatedWidth ours",
+  "roadFeature ours",
+  "zoneMaxHeight ours",
+  "zoneHouseholds ours",
+  "zoneHouseholdsPerCell ours",
+  "zoneSpace ours",
+  "zoneUpkeep ours",
+  "zoneFireHazard ours",
+  "zoneLotShapes ours",
+  "zoneSold ours",
+  "zoneManufactured ours",
+  "zoneStored ours",
+  "facilityFeature ours",
+  "zoneFeature ours",
+  "xpReward ours",
+  "somethingNew ours",
+  "upkeep:Coal game",
+];
+
+describe("the service-fact table", () => {
+  it("keeps each fact's place and tier", () => {
+    const keys = [...SERVICE_FACT_KEYS, ...SERVICE_TEXT_FACT_KEYS, "upkeep:Coal", "somethingNew"].reverse();
+    const lines = orderFacts(keys.map((key) => ({ key }))).map(({ key }) => `${key} ${isVanillaFact(key) ? "game" : "ours"}`);
+
+    assert.deepEqual(lines, PINNED);
+  });
+
+  it("names each fact once, numeric and worded together", () => {
+    const keys = SERVICE_FACTS.map((fact) => fact.key);
+
+    assert.deepEqual(keys.filter((key, index) => keys.indexOf(key) !== index), []);
+  });
+});

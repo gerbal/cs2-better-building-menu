@@ -44,7 +44,7 @@ namespace BetterBuildingMenu.Systems
 		/// A partial pass walks again, since the game moves a recreated prefab to a new entity.</remarks>
 		/// <returns>False when the walk threw; <paramref name="placements"/> then holds what it read
 		/// before that.</returns>
-		private bool TryIndexVanillaMenuPlacements(bool full, out Dictionary<int, VanillaMenuPlacement> placements)
+		private bool TryIndexVanillaMenuPlacements(out Dictionary<int, VanillaMenuPlacement> placements)
 		{
 			placements = new Dictionary<int, VanillaMenuPlacement>();
 			_flattenedAssets.Clear();
@@ -55,7 +55,7 @@ namespace BetterBuildingMenu.Systems
 				var query = GetEntityQuery(
 					ComponentType.ReadOnly<UIAssetMenuData>(),
 					ComponentType.ReadOnly<PrefabData>());
-				var menus = query.ToEntityArray(Allocator.Temp);
+				using var menus = query.ToEntityArray(Allocator.Temp);
 
 				for (var i = 0; i < menus.Length; i++)
 				{
@@ -81,8 +81,6 @@ namespace BetterBuildingMenu.Systems
 						}
 					}
 				}
-
-				menus.Dispose();
 			}
 			catch (Exception ex)
 			{
@@ -90,17 +88,7 @@ namespace BetterBuildingMenu.Systems
 				Mod.Log.Error(ex, "[MENU-COVERAGE] walk failed");
 			}
 
-			// A partial pass can run every frame a mod edits prefabs.
-			var message = $"Indexed Vanilla Menu Placements: {placements.Count}";
-
-			if (full)
-			{
-				Mod.Log.Debug(message);
-			}
-			else
-			{
-				Mod.Log.Debug(message);
-			}
+			Mod.Log.Debug($"Indexed Vanilla Menu Placements: {placements.Count}");
 
 			return complete;
 		}
@@ -122,7 +110,7 @@ namespace BetterBuildingMenu.Systems
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<UIAssetMenuData>(),
 				ComponentType.ReadOnly<PrefabData>());
-			var menus = query.ToEntityArray(Allocator.Temp);
+			using var menus = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
 			var entities = new Dictionary<string, Entity>(System.StringComparer.OrdinalIgnoreCase);
 			var found = new List<(Entity Menu, VanillaMenuCategory Record)>();
@@ -270,13 +258,7 @@ namespace BetterBuildingMenu.Systems
 					prefab.TryGet<UIObject>(out var uIObject);
 
 					// Two menus sharing a prefab name share one list.
-					if (!byMenu.TryGetValue(menuName, out var tabs))
-					{
-						tabs = new List<VanillaMenuCategory>();
-						byMenu[menuName] = tabs;
-					}
-
-					tabs.Add(new VanillaMenuCategory(
+					byMenu.GetOrAdd(menuName, static () => new List<VanillaMenuCategory>()).Add(new VanillaMenuCategory(
 						Id: prefab.name,
 						Name: prefab.name,
 						Icon: CategoryIcon.Resolve(uIObject?.m_Icon, GameIcons.IconOrGroupIcon(_imageSystem, entity, prefab)) ?? string.Empty,

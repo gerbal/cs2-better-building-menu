@@ -3,12 +3,15 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { createRef, forwardRef } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import "../harness/render";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings } from "../harness/stubs/cs2-api";
 import { ExtensionBoundary, safeAppend, safeExtension } from "../../src/mods/ExtensionBoundary";
 import { gameClasses, gameModule, PlainTextInput } from "../../src/mods/gameModules";
 import { AssetMenuToolOptions } from "../../src/mods/AssetMenuToolOptions/AssetMenuToolOptions";
 import register from "../../src/index";
 import { installVanillaRegistry } from "../harness/vanillaRegistry";
+import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
+import { AssetMenuFacets$, OwnsCurrentMenu$ } from "../../src/mods/bindings";
 
 // React and the boundary both log a caught render error; the tests count ours.
 const originalError = console.error;
@@ -21,7 +24,7 @@ const Broken = (): JSX.Element => {
 };
 
 describe("a component we put into vanilla's tree", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     logged = [];
@@ -30,8 +33,6 @@ describe("a component we put into vanilla's tree", () => {
   });
 
   afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
     console.error = originalError;
     console.warn = originalWarn;
   });
@@ -39,9 +40,9 @@ describe("a component we put into vanilla's tree", () => {
   it("draws the game's own component, with its props, when ours throws", () => {
     const Safe = safeExtension("AssetMenu", () => Broken)(Vanilla as never) as (props: { label: string }) => JSX.Element;
 
-    act(() => { root = create(<Safe label="vanilla grid" />); });
+    tree.mount(<Safe label="vanilla grid" />);
 
-    assert.deepEqual(root!.toJSON(), { type: "div", props: { "data-vanilla": "true" }, children: ["vanilla grid"] });
+    assert.deepEqual(tree.renderer.toJSON(), { type: "div", props: { "data-vanilla": "true" }, children: ["vanilla grid"] });
     assert.ok(logged.some((line) => line.includes("[BetterBuildingMenu] AssetMenu failed")));
   });
 
@@ -49,9 +50,9 @@ describe("a component we put into vanilla's tree", () => {
     const Ours = () => <span>ours</span>;
     const Safe = safeExtension("AssetMenu", () => Ours)(Vanilla as never) as (props: object) => JSX.Element;
 
-    act(() => { root = create(<Safe />); });
+    tree.mount(<Safe />);
 
-    assert.deepEqual(root!.toJSON(), { type: "span", props: {}, children: ["ours"] });
+    assert.deepEqual(tree.renderer.toJSON(), { type: "span", props: {}, children: ["ours"] });
   });
 
   it("passes the ref vanilla gives to ours, and to the game's own in its place", () => {
@@ -61,22 +62,22 @@ describe("a component we put into vanilla's tree", () => {
 
     const oursRef = createRef<unknown>();
     const Working = safeExtension("ToolOptionsPanel", (() => OursWithRef) as never)(VanillaWithRef as never) as never as (props: { ref: unknown }) => JSX.Element;
-    act(() => { root = create(<Working ref={oursRef} />, { createNodeMock: () => node }); });
+    tree.mount(<Working ref={oursRef} />, { createNodeMock: () => node });
     assert.equal(oursRef.current, node);
-    act(() => root?.unmount());
+    act(() => tree.renderer.unmount());
 
     const vanillaRef = createRef<unknown>();
     const Failing = safeExtension("ToolOptionsPanel", () => Broken)(VanillaWithRef as never) as never as (props: { ref: unknown }) => JSX.Element;
-    act(() => { root = create(<Failing ref={vanillaRef} />, { createNodeMock: () => node }); });
+    tree.mount(<Failing ref={vanillaRef} />, { createNodeMock: () => node });
     assert.equal(vanillaRef.current, node);
   });
 
   it("drops an appended watcher that throws, and nothing else", () => {
     const Watcher = safeAppend("VanillaMenuWatcher", Broken);
 
-    act(() => { root = create(<><Watcher /><Vanilla label="game" /></>); });
+    tree.mount(<><Watcher /><Vanilla label="game" /></>);
 
-    assert.deepEqual(root!.toJSON(), { type: "div", props: { "data-vanilla": "true" }, children: ["game"] });
+    assert.deepEqual(tree.renderer.toJSON(), { type: "div", props: { "data-vanilla": "true" }, children: ["game"] });
   });
 
   it("stays on the game's component once ours has failed", () => {
@@ -86,15 +87,13 @@ describe("a component we put into vanilla's tree", () => {
       return <span>ours</span>;
     };
 
-    act(() => {
-      root = create(<ExtensionBoundary name="Flaky" fallback={() => <Vanilla label="game" />}><Flaky /></ExtensionBoundary>);
-    });
+    tree.mount(<ExtensionBoundary name="Flaky" fallback={() => <Vanilla label="game" />}><Flaky /></ExtensionBoundary>);
     fail = false;
     act(() => {
-      root!.update(<ExtensionBoundary name="Flaky" fallback={() => <Vanilla label="game" />}><Flaky /></ExtensionBoundary>);
+      tree.renderer.update(<ExtensionBoundary name="Flaky" fallback={() => <Vanilla label="game" />}><Flaky /></ExtensionBoundary>);
     });
 
-    assert.deepEqual(root!.toJSON(), { type: "div", props: { "data-vanilla": "true" }, children: ["game"] });
+    assert.deepEqual(tree.renderer.toJSON(), { type: "div", props: { "data-vanilla": "true" }, children: ["game"] });
   });
 });
 
@@ -133,8 +132,8 @@ describe("a game UI module a game update has moved", () => {
 describe("the tool-options bank", () => {
   beforeEach(() => {
     resetBindings();
-    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
-    setBinding("BetterBuildingMenu", "AssetMenuFacets", {
+    seed(OwnsCurrentMenu$, true);
+    seed(AssetMenuFacets$, {
       groups: [{ id: "availability", label: "Availability", options: [{ id: "Locked", label: "Locked", selected: false }] }],
       hasSelection: false,
     });
@@ -183,7 +182,7 @@ describe("the tool-options bank", () => {
   });
 
   it("drops only our section when it throws, keeping vanilla's bank", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuFacets", {
+    seed(AssetMenuFacets$, {
       get groups(): never { throw new Error("our section broke"); },
       hasSelection: false,
     });

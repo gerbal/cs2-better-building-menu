@@ -93,14 +93,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NamesPropsByTheLandscapingTabsVanillaFilesThemUnder()
 		{
-			// VanillaCategoryMapping reads these same ids off the game's categories.
-			foreach (var id in new[] { "PropsResidential", "PropsCommercial", "PropsIndustrial" })
-			{
-				var subCategory = VanillaCategoryMapping.PropSubCategoryFor(id);
-
-				Assert.NotNull(subCategory);
-				Assert.Equal($"SubServices.NAME[{id}]", GameLocaleKeys.For(subCategory.ToString()));
-			}
+			Assert.Equal("SubServices.NAME[PropsResidential]", GameLocaleKeys.For(nameof(PrefabSubCategory.Props_Residential)));
+			Assert.Equal("SubServices.NAME[PropsCommercial]", GameLocaleKeys.For(nameof(PrefabSubCategory.Props_Commercial)));
+			Assert.Equal("SubServices.NAME[PropsIndustrial]", GameLocaleKeys.For(nameof(PrefabSubCategory.Props_Industrial)));
 		}
 
 		[Fact]

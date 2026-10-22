@@ -1,11 +1,9 @@
 import { useLocalization } from "cs2/l10n";
 
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { useUnitSystem } from "mods/gameSettings";
-import {
-  getBuildingDetailMetrics,
-  getNumberSeparators,
-} from "domain/assetMenuMetricFormat";
+import { useNumberSeparators } from "mods/gameSettings";
+import { useLabel } from "mods/useLabel";
+import { getBuildingDetailMetrics } from "domain/assetMenuMetricFormat";
 import {
   getBuildingExtensionLabels,
   getBuildingFlagGroups,
@@ -28,18 +26,16 @@ interface BuildingResultDetailsProps {
  */
 export const BuildingResultDetails = ({ entry, resolveFacetLabel }: BuildingResultDetailsProps) => {
   const { translate } = useLocalization();
-  const separators = getNumberSeparators(translate, useUnitSystem());
+  const label = useLabel();
+  const separators = useNumberSeparators();
 
   const detailMetrics = getBuildingDetailMetrics(entry, separators);
   const flagGroups = getBuildingFlagGroups(entry.placementFlags);
   const extensionLabels = getBuildingExtensionLabels(entry.supportedUpgrades);
   const provenanceChips = getBuildingProvenanceChips(entry, resolveFacetLabel);
   const description = resolveAssetDescription(entry.prefabName, translate);
-  const upgradesLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Upgrades]", "Upgrades") ?? "Upgrades";
-  const noDetailsLabel = translate(
-    "Tooltip.LABEL[BetterBuildingMenu.NoDetailMetrics]",
-    "No further data for this building",
-  ) ?? "No further data for this building";
+  const upgradesLabel = label("Tooltip.LABEL[BetterBuildingMenu.Upgrades]", "Upgrades");
+  const noDetailsLabel = label("Tooltip.LABEL[BetterBuildingMenu.NoDetailMetrics]", "No further data for this building");
 
   return (
     <div className={styles.rowDetails}>

@@ -1,26 +1,24 @@
-import { countActiveMetricRanges, metricRangesFromState, type MetricRangeId, type NormalizedMetricRange } from "./buildingCatalogRanges";
+import type { NumberSeparators } from "./assetMenuMetricFormat";
+import {
+  countActiveMetricRanges,
+  describeRange,
+  metricRangesFromState,
+  METRIC_RANGE_DEFINITIONS,
+  type NormalizedMetricRange,
+} from "./buildingCatalogRanges";
 import type { AssetMenuFacetState } from "./buildingCatalogFacets";
-import type { Command } from "./command";
+import type { MetricBoundKey, MetricRangeId } from "./sharedContracts.generated";
 
-export interface AssetMenuMetricRangeState {
-  minCost: number | null;
-  maxCost: number | null;
-  minUpkeep: number | null;
-  maxUpkeep: number | null;
-  minWorkers: number | null;
-  maxWorkers: number | null;
-  minCapacity: number | null;
-  maxCapacity: number | null;
-  minLotWidth: number | null;
-  maxLotWidth: number | null;
-  minLotDepth: number | null;
-  maxLotDepth: number | null;
+/** The published bounds, a minimum and a maximum per metric, null where unset. */
+export interface AssetMenuMetricRangeState extends Record<MetricBoundKey, number | null> {
   hasSelection: boolean;
 }
 
 export interface AssetMenuFilterSummaryInput {
   facets?: AssetMenuFacetState | null;
   metricRanges?: AssetMenuMetricRangeState | null;
+  /** The player's number marks for a range's bounds; the fallback marks when absent. */
+  separators?: NumberSeparators | null;
 }
 
 export interface AssetMenuFilterSummary {
@@ -33,18 +31,6 @@ export interface AssetMenuFilterSummary {
   resultCount: number;
 }
 
-export type AssetMenuFilterTriggerCommand = Command;
-
-const metricLabels: Record<MetricRangeId, string> = {
-  cost: "Cost",
-  upkeep: "Upkeep",
-  workers: "Workers",
-  capacity: "Capacity",
-  lotWidth: "Lot width",
-  lotDepth: "Lot depth",
-};
-
-const metricRangeIds = Object.keys(metricLabels) as MetricRangeId[];
 
 function selectedFacetLabels(state: AssetMenuFacetState | null | undefined): string[] {
   return (state?.groups ?? [])
@@ -59,26 +45,13 @@ function selectedFacetLabels(state: AssetMenuFacetState | null | undefined): str
     );
 }
 
-function formatBound(value: number): string {
-  return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function formatRange(range: NormalizedMetricRange): string {
-  if (range.min !== null && range.max !== null) {
-    return `${formatBound(range.min)}–${formatBound(range.max)}`;
-  }
-
-  if (range.min !== null) {
-    return `≥ ${formatBound(range.min)}`;
-  }
-
-  return `≤ ${formatBound(range.max as number)}`;
-}
-
-function metricDetails(ranges: Record<MetricRangeId, NormalizedMetricRange>): string[] {
-  return metricRangeIds
-    .filter((id) => ranges[id].min !== null || ranges[id].max !== null)
-    .map((id) => `${metricLabels[id]} ${formatRange(ranges[id])}`);
+function metricDetails(
+  ranges: Record<MetricRangeId, NormalizedMetricRange>,
+  separators: NumberSeparators | undefined,
+): string[] {
+  return METRIC_RANGE_DEFINITIONS
+    .filter(({ id }) => ranges[id].min !== null || ranges[id].max !== null)
+    .map(({ id, label }) => `${label} ${describeRange(ranges[id].min, ranges[id].max, separators)}`);
 }
 
 export function getAssetMenuFilterSummary(
@@ -94,7 +67,7 @@ export function getAssetMenuFilterSummary(
     // Named, not counted: with filters composing freely an empty intersection
     // is easy to reach, so the message has to say which constraint to drop.
     ...facetLabels,
-    ...metricDetails(ranges),
+    ...metricDetails(ranges, input?.separators ?? undefined),
   ];
 
   const resultCount = count;
@@ -127,11 +100,4 @@ export function getAssetMenuEmptyStateMessage(
   }
 
   return `No buildings match ${constraints.join(", ")}.`;
-}
-
-export function clearAssetMenuFiltersCommand(): AssetMenuFilterTriggerCommand {
-  return {
-    method: "ClearAssetMenuFilters",
-    args: [],
-  };
 }

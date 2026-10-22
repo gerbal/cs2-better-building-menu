@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { useState } from "react";
 import { act, create } from "react-test-renderer";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings } from "../harness/stubs/cs2-api";
+import { seed } from "../harness/seed";
 import { ToolOptionsVisibility } from "../../src/mods/ToolOptionsVisibility/ToolOptionsVisibility";
+import { OwnsCurrentMenu$ } from "../../src/mods/bindings";
 
 // The game can add a mod's UI module to a page whose components are already
 // mounted (subscribe, then load a city in the same session). A wrapper around
@@ -26,7 +28,7 @@ describe("ToolOptionsVisibility on a panel mounted before the mod loaded", () =>
     assert.equal(root.toJSON(), "hidden");
 
     useToolOptionsVisible = ToolOptionsVisibility(useVanillaToolOptionsVisible);
-    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
+    seed(OwnsCurrentMenu$, true);
 
     assert.doesNotThrow(() => act(() => { root.update(<Panel />); }));
     assert.equal(root.toJSON(), "shown");
@@ -35,7 +37,7 @@ describe("ToolOptionsVisibility on a panel mounted before the mod loaded", () =>
   it("still keeps the bank open for the asset menu on a fresh mount", () => {
     const useToolOptionsVisible = ToolOptionsVisibility(useVanillaToolOptionsVisible);
     const Panel = () => <>{useToolOptionsVisible() ? "shown" : "hidden"}</>;
-    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
+    seed(OwnsCurrentMenu$, true);
     let root!: ReturnType<typeof create>;
     act(() => { root = create(<Panel />); });
     assert.equal(root.toJSON(), "shown");

@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  joinEntityIndices,
-  toolbarSelectionKey,
-  setVanillaToolbarSelectionCommand,
-} from "../src/domain/vanillaToolbarSelection.ts";
+import { joinEntityIndices, toolbarSelectionKey } from "../src/domain/vanillaToolbarSelection.ts";
+import { setVanillaToolbarSelectionCommand } from "../src/domain/commands.ts";
 
 describe("Carrying the vanilla toolbar row to the backend", () => {
   it("joins entity indices in the order the toolbar gave them", () => {

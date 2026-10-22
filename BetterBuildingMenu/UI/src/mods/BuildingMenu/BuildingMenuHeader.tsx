@@ -6,7 +6,7 @@ import classNames from "classnames";
 import { memo, useRef } from "react";
 
 import find from "images/find.svg";
-import { searchChangedCommand } from "domain/buildingCatalogContracts";
+import { searchChangedCommand, setControlPaneShownCommand } from "domain/commands";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 
@@ -16,6 +16,7 @@ import { textInputText } from "domain/textInput";
 import { ControlPaneShown$, CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
 import { ControlPaneToggle, useActiveFilterCount } from "mods/ControlPaneToggle/ControlPaneToggle";
 import { GameTextInput, gameClasses } from "mods/gameModules";
+import { useLabel } from "mods/useLabel";
 
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
@@ -37,14 +38,13 @@ export interface BuildingMenuHeaderProps {
  */
 export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, large, onClose }: BuildingMenuHeaderProps) {
   const { translate } = useLocalization();
+  const label = useLabel();
   const searchRef = useRef(null);
 
   const IsSearchLoading = useValue(IsSearchLoading$);
   const CurrentSearch = useValue(CurrentSearch$);
   const paneShown = useValue(ControlPaneShown$);
   const filterCount = useActiveFilterCount();
-
-  const localizedLabel = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
 
   const setSearchText = (value: string) => {
     send(searchChangedCommand(value));
@@ -91,11 +91,11 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
             />
 
             {CurrentSearch.trim() !== "" && (
-              <Tooltip tooltip={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.ClearSearch]", "Clear search")}>
+              <Tooltip tooltip={label("Tooltip.LABEL[BetterBuildingMenu.ClearSearch]", "Clear search")}>
                 <Button
                   className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
                   variant="icon"
-                  aria-label={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.ClearSearch]", "Clear search")}
+                  aria-label={label("Tooltip.LABEL[BetterBuildingMenu.ClearSearch]", "Clear search")}
                   onSelect={() => setSearchText("")}
                 >
                   <img src="coui://uil/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true" />
@@ -110,17 +110,17 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
         <ControlPaneToggle
           shown={paneShown}
           filterCount={filterCount}
-          onToggle={() => send({ method: "SetControlPaneShown", args: [!paneShown] })}
+          onToggle={() => send(setControlPaneShownCommand(!paneShown))}
         />
         {/* Vanilla closes its menus from an X here, so ours does too. Masked
             and tinted like .searchIcon because Close.svg carries no fill of its
             own; no assetGridTheme.item, which is the 48x48 TILE theme. */}
         {onClose && (
-          <Tooltip tooltip={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close")}>
+          <Tooltip tooltip={label("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close")}>
             <Button
               className={styles.menuClose}
               variant="round"
-              aria-label={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close")}
+              aria-label={label("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close")}
               onSelect={onClose}
             >
               <img

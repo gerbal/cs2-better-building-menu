@@ -53,41 +53,18 @@ namespace BetterBuildingMenu.Domain
 		{
 			writer.TypeBegin(GetType().FullName);
 
-			writer.PropertyName("items");
-			writer.ArrayBegin((uint)Items.Count);
-			foreach (var item in Items)
-			{
-				item.Write(writer);
-			}
-			writer.ArrayEnd();
-
-			writer.PropertyName("reorderableSortColumns");
-			var columns = ReorderableSortColumns ?? System.Array.Empty<string>();
-			writer.ArrayBegin((uint)columns.Count);
-			foreach (var column in columns)
-			{
-				writer.Write(column);
-			}
-			writer.ArrayEnd();
-
-			writer.PropertyName("totalCount");
-			writer.Write(TotalCount);
-			writer.PropertyName("offset");
-			writer.Write(Offset);
-			writer.PropertyName("limit");
-			writer.Write(Limit);
-			writer.PropertyName("hasMore");
-			writer.Write(HasMore);
-			writer.PropertyName("bestMatchId");
-			if (BestMatchId.HasValue) writer.Write(BestMatchId.Value); else writer.WriteNull();
-			writer.PropertyName("searchText");
-			writer.Write(SearchText ?? string.Empty);
-			writer.PropertyName("menu");
-			writer.Write(Menu ?? string.Empty);
+			writer.Prop("items", Items);
+			writer.Prop("reorderableSortColumns", ReorderableSortColumns);
+			writer.Prop("totalCount", TotalCount);
+			writer.Prop("offset", Offset);
+			writer.Prop("limit", Limit);
+			writer.Prop("hasMore", HasMore);
+			writer.Prop("bestMatchId", BestMatchId);
+			writer.Prop("searchText", SearchText ?? string.Empty);
+			writer.Prop("menu", Menu ?? string.Empty);
 			if (Status is not null)
 			{
-				writer.PropertyName("status");
-				writer.Write(Status);
+				writer.Prop("status", Status);
 			}
 
 			writer.TypeEnd();

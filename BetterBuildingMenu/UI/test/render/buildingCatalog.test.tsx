@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { act } from "react-test-renderer";
 import { renderHtml, entry, catalogPage } from "../harness/render";
+import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
+import { loadLocale, resetLocale } from "../harness/stubs/cs2-l10n";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
@@ -14,17 +18,30 @@ import {
   type AssetMenuMetric,
 } from "../../src/domain/assetMenuLayout";
 import { shortenTileLabel, tableLabelCharBudget } from "../../src/domain/tileLabel";
+import {
+  AssetMenuCatalogWidth$,
+  AssetMenuViewMode$,
+  AssetMenuWidth$,
+  BuildingCatalog$,
+  BuildingCatalogMatchesElsewhere$,
+  BuildingCatalogMetricRanges$,
+  BuildingCatalogSortColumn$,
+  ControlPaneShown$,
+  CurrentSearch$,
+} from "../../src/mods/bindings";
 
 const page = (over: Record<string, unknown> = {}) =>
-  setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], over));
+  seed(BuildingCatalog$, catalogPage([entry(1), entry(2)], over));
 const render = () => renderHtml(<BuildingCatalogComponent />);
 
 describe("the catalog container", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
+    seed(AssetMenuWidth$, 700);
   });
+
+  afterEach(() => resetLocale());
 
   for (const mode of ["table", "grid", "list", "cards"]) {
     it(`ends the feed with a load-more inside the scroll in ${mode} mode`, () => {
@@ -46,8 +63,8 @@ describe("the catalog container", () => {
       // match": that leaves no count of what exists elsewhere and no way there.
       setAssetMenuView({ viewMode: mode });
       page({ items: [], totalCount: 0 });
-      setBinding("BetterBuildingMenu", "CurrentSearch", "police");
-      setBinding("BetterBuildingMenu", "BuildingCatalogMatchesElsewhere", 5);
+      seed(CurrentSearch$, "police");
+      seed(BuildingCatalogMatchesElsewhere$, 5);
       const html = render();
 
       assert.match(html, /No matches here — 5 elsewhere/);
@@ -88,7 +105,7 @@ describe("the catalog container", () => {
     page();
 
     for (const width of [300, 700, 1100]) {
-      setBinding("BetterBuildingMenu", "AssetMenuWidth", width);
+      seed(AssetMenuWidth$, width);
       assert.match(render(), /class="columnHeader"/, `width ${width}`);
     }
   });
@@ -100,8 +117,25 @@ describe("the catalog container", () => {
     assert.match(render(), /class="empty"/);
   });
 
+  it("names a range that emptied the table in the player's own number marks", () => {
+    loadLocale({ "Common.THOUSANDS_SEPARATOR": ".", "Common.DECIMAL_SEPARATOR": "," });
+    setAssetMenuView({ viewMode: "table" });
+    page({ items: [], totalCount: 0 });
+    seed(BuildingCatalogMetricRanges$, {
+      minCost: 1234.5, maxCost: null,
+      minUpkeep: null, maxUpkeep: null,
+      minWorkers: null, maxWorkers: null,
+      minCapacity: null, maxCapacity: null,
+      minLotWidth: null, maxLotWidth: null,
+      minLotDepth: null, maxLotDepth: null,
+      hasSelection: true,
+    });
+
+    assert.match(render(), /No buildings match Cost ≥ 1\.234,5\./);
+  });
+
   it("draws the view C# kept while nothing was picked this session", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    seed(AssetMenuViewMode$, "list");
     page();
     const html = render();
 
@@ -110,7 +144,7 @@ describe("the catalog container", () => {
   });
 
   it("draws the session's pick over the kept view", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    seed(AssetMenuViewMode$, "list");
     setAssetMenuView({ viewMode: "cards" });
     page();
 
@@ -146,10 +180,10 @@ describe("the table under a larger text scale", () => {
   // above it. The columns follow the S size's own growth; see domain/textScale.ts.
   it("widens the metric columns by the S size's ratio", () => {
     resetBindings();
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
+    seed(BuildingCatalog$, catalogPage([entry(1)], {}));
     // Wide, so the room beside the name does not cap the ratio — at a 720p
     // width it does, and the columns grow only as far as the name allows.
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 2400);
+    seed(AssetMenuWidth$, 2400);
     const widthOf = (html: string) => Number(/metricUpkeep[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
 
     const base = widthOf(render());
@@ -169,12 +203,12 @@ describe("the table follows the build menu's width", () => {
     resetBindings();
     resetAssetMenuView();
     setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    seed(BuildingCatalog$, catalogPage([entry(1)], {}));
+    seed(AssetMenuWidth$, 1441);
   });
 
   it("drops columns rather than clip them when the player narrows the menu", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    seed(AssetMenuCatalogWidth$, 735);
     const html = render();
 
     assert.match(html, /metricCost/);
@@ -186,22 +220,22 @@ describe("the table follows the build menu's width", () => {
   });
 
   it("keeps the column the table is sorted by at any width", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "HasParking");
+    seed(AssetMenuCatalogWidth$, 735);
+    seed(BuildingCatalogSortColumn$, "HasParking");
 
     assert.match(render(), /metricParking/);
   });
 
   it("keeps the lot column when sorted by lot depth, as by lot width: one cell shows both", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "LotDepth");
+    seed(AssetMenuCatalogWidth$, 735);
+    seed(BuildingCatalogSortColumn$, "LotDepth");
 
     assert.match(render(), /metricLot/);
   });
 
   it("keeps the columns it has at fill when the pane is hidden: the table's arithmetic counts the pane either way", () => {
     const shown = costWidth(render());
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    seed(ControlPaneShown$, false);
 
     assert.ok(costWidth(render()) >= shown);
   });
@@ -227,8 +261,8 @@ describe("the table's names follow the build menu's width", () => {
     resetBindings();
     resetAssetMenuView();
     setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1, { name })], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    seed(BuildingCatalog$, catalogPage([entry(1, { name })], {}));
+    seed(AssetMenuWidth$, 1441);
   });
 
   it("gives the name what the default width leaves beside the columns", () => {
@@ -238,13 +272,13 @@ describe("the table's names follow the build menu's width", () => {
   });
 
   it("gives the name what a narrow menu leaves beside the columns it keeps", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    seed(AssetMenuCatalogWidth$, 735);
     assert.ok(render().includes(shortenedAt(735, ["cost", "upkeep"])));
   });
 
   it("gives a wide menu with the pane hidden its own room, counted without the pane", () => {
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300);
+    seed(ControlPaneShown$, false);
+    seed(AssetMenuCatalogWidth$, 1300);
     const expected = shortenedAt(1300, ALL);
     assert.notEqual(expected, shortenedAt(1091, ALL));
     assert.ok(render().includes(expected), expected);
@@ -252,35 +286,29 @@ describe("the table's names follow the build menu's width", () => {
 });
 
 describe("the table while the build menu's width is dragged", () => {
-  const globals = globalThis as unknown as Record<string, unknown>;
-  let saved: unknown;
-  let root: ReactTestRenderer | undefined;
+  let browser: FakeBrowser;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
     setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
-    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    saved = globals.document;
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
-    globals.requestAnimationFrame = () => 0;
-    globals.cancelAnimationFrame = () => undefined;
+    seed(BuildingCatalog$, catalogPage([entry(1)], {}));
+    seed(AssetMenuWidth$, 1441);
+    seed(ControlPaneShown$, false);
+    browser = installFakeBrowser({ frames: "none" });
   });
 
   it("hands the rows the same columns while a new width changes none of them", () => {
     // Every row is memoised: new column props each frame would redraw them all.
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
-    const row = () => root!.root.find((node) => node.props.columnStyle !== undefined && node.props.entry !== undefined).props;
+    tree.mount(<BuildingCatalogComponent />);
+    const row = () => tree.root.find((node) => node.props.columnStyle !== undefined && node.props.entry !== undefined).props;
     const before = row();
 
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300));
+    act(() => seed(AssetMenuCatalogWidth$, 1300));
     const after = row();
-    act(() => root?.unmount());
-    globals.document = saved;
+    act(() => tree.renderer.unmount());
+    browser.restore();
 
     assert.equal(after.metrics, before.metrics);
     assert.equal(after.columnStyle, before.columnStyle);

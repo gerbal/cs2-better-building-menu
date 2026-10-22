@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { LOCALIZABLE_STRINGS } from "../src/domain/localizableStrings.ts";
 import { GROUP_DIMENSIONS } from "../src/domain/buildingGroups.ts";
+import { SERVICE_FACT_LOCALIZATION_KEYS } from "../src/domain/serviceFacts.ts";
 
 /*
  * Locale.json against the code, both ways: every key the code names has an
@@ -25,7 +26,13 @@ function sources(dir: string, pattern: RegExp): string[] {
   return out;
 }
 
-const code = [...sources(MOD, /\.cs$/), ...sources(join(MOD, "UI", "src"), /\.tsx?$/)].join("\n");
+// The service-fact table builds its keys rather than spelling them, so its key
+// list stands in for its source.
+const code = [
+  ...sources(MOD, /\.cs$/),
+  ...sources(join(MOD, "UI", "src"), /\.tsx?$/),
+  ...SERVICE_FACT_LOCALIZATION_KEYS,
+].join("\n");
 const literalKeys = new Set(code.match(/(?:Tooltip|Options)\.[A-Z_]+\[BetterBuildingMenu\.[A-Za-z0-9_.]+\]/g) ?? []);
 
 // The keys the code builds rather than spells.

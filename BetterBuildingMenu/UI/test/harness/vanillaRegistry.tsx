@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
+import { dataAndAria } from "./props";
 
 /**
  * The game's module registry, as far as VanillaComponentResolver reads it.
@@ -19,7 +20,7 @@ const ToolButton = ({ children, className, selected, tooltip, onSelect, disabled
     disabled={disabled as boolean}
     data-selected={selected ? "true" : undefined}
     data-has-select={onSelect ? "true" : undefined}
-    {...Object.fromEntries(Object.entries(rest).filter(([k]) => k.startsWith("data-") || k.startsWith("aria-")))}
+    {...dataAndAria(rest)}
   >
     {children}
   </button>

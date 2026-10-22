@@ -327,9 +327,9 @@ Where the game's own tooltip shows a figure, `Apply` follows its binder in
 docs/design-notes.md, "The card against vanilla", lists where the card differs from vanilla
 and why.
 
-The entry keeps the facts in the order they are added, but a card re-sorts them by `FACT_ORDER`
-in `serviceFacts.ts`. So the order `Apply` adds them in only breaks ties within one key, such as
-a road's features.
+The entry keeps the facts in the order they are added, but a card re-sorts them by their row order
+in `SERVICE_FACTS` (`serviceFacts.ts`). So the order `Apply` adds them in only breaks ties within
+one key, such as a road's features.
 
 The rest of an entry's per-prefab data is split the same way, `.Facts.cs` reading and a plain
 class in `Domain/` deciding, so a test can reach every rule without the entity world:

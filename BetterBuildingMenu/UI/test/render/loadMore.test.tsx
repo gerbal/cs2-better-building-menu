@@ -1,43 +1,36 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { beforeEach, describe, it } from "node:test";
+import { act } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { installFakeBrowser } from "../harness/fakeBrowser";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
+import { seed } from "../harness/seed";
 import { getAssetMenuAnchorKey, resetAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { CATALOG_WINDOW_STEP } from "../../src/domain/catalogWindow";
+import { AssetMenuHeight$, AssetMenuWidth$, BuildingCatalog$ } from "../../src/mods/bindings";
 
 // Mounted, so the button's handler runs. The effects need a document and a
 // frame clock; neither does anything here.
-const globals = globalThis as unknown as Record<string, unknown>;
-
 describe("Load more", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
-    globals.requestAnimationFrame = () => 0;
-    globals.cancelAnimationFrame = () => undefined;
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
-  });
-
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
+    installFakeBrowser({ frames: "none" });
+    seed(AssetMenuWidth$, 700);
   });
 
   it("names the window it wants, so a double click grows it once", () => {
     // A bare "one more" would add a step per copy in C#; the same limit twice
     // is a no-op there (AssetMenuState.LoadMoreTo).
     setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], { hasMore: true, totalCount: 403, limit: 300 }));
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
+    seed(BuildingCatalog$, catalogPage([entry(1), entry(2)], { hasMore: true, totalCount: 403, limit: 300 }));
+    tree.mount(<BuildingCatalogComponent />);
 
-    const button = root!.root.find((node) => node.props.className === "loadMore" && typeof node.props.onSelect === "function");
+    const button = tree.root.find((node) => node.props.className === "loadMore" && typeof node.props.onSelect === "function");
     act(() => button.props.onSelect());
     act(() => button.props.onSelect());
 
@@ -46,28 +39,24 @@ describe("Load more", () => {
   });
 
   const page40 = () => catalogPage(Array.from({ length: 40 }, (_, i) => entry(i + 1)), { hasMore: true, totalCount: 204, limit: 40 });
-  const drawnRows = () => root!.root.findAll((node) => typeof node.type === "string" && node.props["data-catalog-entry"] !== undefined).length;
-  const loadMoreButton = () => root!.root.find((node) => node.props.className === "loadMore" && typeof node.props.onSelect === "function");
+  const drawnRows = () => tree.root.findAll((node) => typeof node.type === "string" && node.props["data-catalog-entry"] !== undefined).length;
+  const loadMoreButton = () => tree.root.find((node) => node.props.className === "loadMore" && typeof node.props.onSelect === "function");
 
   it("draws a screen of the table's rows, not the whole page", () => {
     // 420 rem of catalog over 92 rem rows reaches five rows; two more to scroll into.
     setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
-    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
+    seed(AssetMenuHeight$, 420);
+    seed(BuildingCatalog$, page40());
+    tree.mount(<BuildingCatalogComponent />);
 
     assert.equal(drawnRows(), 7);
   });
 
   it("draws the page's next screen before asking C# for more", () => {
     setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
-    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
+    seed(AssetMenuHeight$, 420);
+    seed(BuildingCatalog$, page40());
+    tree.mount(<BuildingCatalogComponent />);
 
     act(() => loadMoreButton().props.onSelect());
 
@@ -84,23 +73,19 @@ describe("Load more", () => {
   it("draws far enough to reach a building the menu returns to", () => {
     // Placed from row 31: the next open scrolls back to it, so its row must be drawn.
     setAssetMenuView({ viewMode: "table" });
-    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
-    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
+    seed(AssetMenuHeight$, 420);
+    seed(BuildingCatalog$, page40());
     setAssetMenuAnchor(getAssetMenuAnchorKey({ list: "catalog", viewMode: "table", groupBy: "category" }), 31);
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
+    tree.mount(<BuildingCatalogComponent />);
 
     assert.equal(drawnRows(), 33);
   });
 
   it("draws the whole page in the grid, which shows most of it", () => {
     setAssetMenuView({ viewMode: "grid" });
-    setBinding("BetterBuildingMenu", "AssetMenuHeight", 420);
-    setBinding("BetterBuildingMenu", "BuildingCatalog", page40());
-    act(() => {
-      root = create(<BuildingCatalogComponent />);
-    });
+    seed(AssetMenuHeight$, 420);
+    seed(BuildingCatalog$, page40());
+    tree.mount(<BuildingCatalogComponent />);
 
     assert.equal(drawnRows(), 40);
   });

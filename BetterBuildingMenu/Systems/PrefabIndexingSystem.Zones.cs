@@ -49,9 +49,9 @@ namespace BetterBuildingMenu.Systems
 				ComponentType.ReadOnly<ZoneData>(),
 				ComponentType.ReadOnly<ZonePropertiesData>(),
 				ComponentType.ReadOnly<PrefabData>());
-			var zones = zonesQuery.ToEntityArray(Allocator.Temp);
-			var propertiesData = zonesQuery.ToComponentDataArray<ZonePropertiesData>(Allocator.Temp);
-			var zoneData = zonesQuery.ToComponentDataArray<ZoneData>(Allocator.Temp);
+			using var zones = zonesQuery.ToEntityArray(Allocator.Temp);
+			using var propertiesData = zonesQuery.ToComponentDataArray<ZonePropertiesData>(Allocator.Temp);
+			using var zoneData = zonesQuery.ToComponentDataArray<ZoneData>(Allocator.Temp);
 
 			var buildingsQuery = GetEntityQuery(new EntityQueryDesc
 			{
@@ -63,8 +63,8 @@ namespace BetterBuildingMenu.Systems
 				},
 				None = new[] { ComponentType.ReadOnly<SignatureBuildingData>() }
 			});
-			var buildingsData = buildingsQuery.ToComponentDataArray<BuildingData>(Allocator.Temp);
-			var spawnableBuildings = buildingsQuery.ToComponentDataArray<SpawnableBuildingData>(Allocator.Temp);
+			using var buildingsData = buildingsQuery.ToComponentDataArray<BuildingData>(Allocator.Temp);
+			using var spawnableBuildings = buildingsQuery.ToComponentDataArray<SpawnableBuildingData>(Allocator.Temp);
 
 			// One pass over the buildings rather than a rescan per zone. It also
 			// yields the lot sizes each zone can actually fill, which the game never
@@ -209,7 +209,7 @@ namespace BetterBuildingMenu.Systems
 
 			foreach (var placement in placements.Values)
 			{
-				if (!string.Equals(placement.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+				if (!VanillaMenus.IsZones(placement.Menu))
 				{
 					continue;
 				}
@@ -255,7 +255,7 @@ namespace BetterBuildingMenu.Systems
 
 			var placedInZones = new HashSet<int>(
 				placements.Values
-					.Where(p => string.Equals(p.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+					.Where(p => VanillaMenus.IsZones(p.Menu))
 					.Select(p => p.Entity.Index));
 
 			if (placedInZones.Count > 0)
@@ -282,8 +282,8 @@ namespace BetterBuildingMenu.Systems
 			var areasQuery = GetEntityQuery(
 				ComponentType.ReadOnly<ExtractorAreaData>(),
 				ComponentType.ReadOnly<PrefabData>());
-			var areas = areasQuery.ToEntityArray(Allocator.Temp);
-			var areaData = areasQuery.ToComponentDataArray<ExtractorAreaData>(Allocator.Temp);
+			using var areas = areasQuery.ToEntityArray(Allocator.Temp);
+			using var areaData = areasQuery.ToComponentDataArray<ExtractorAreaData>(Allocator.Temp);
 
 			for (var i = 0; i < areas.Length; i++)
 			{
@@ -320,8 +320,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			Mod.Log.Debug($"Indexed Extractor Areas: {areas.Length}");
-			areas.Dispose();
-			areaData.Dispose();
 		}
 	}
 }

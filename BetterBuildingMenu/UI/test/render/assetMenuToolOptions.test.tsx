@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
+import { beforeEach, describe, it } from "node:test";
+import { act, type ReactTestInstance } from "react-test-renderer";
 import "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
 import { VanillaComponentResolver } from "../../src/mods/VanillaComponentResolver/VanillaComponentResolver";
 import { AssetMenuToolOptions } from "../../src/mods/AssetMenuToolOptions/AssetMenuToolOptions";
 
@@ -26,15 +27,13 @@ const vanillaBank = () => (
 const Bank = AssetMenuToolOptions(vanillaBank) as () => JSX.Element;
 
 describe("the tool-options bank", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
-  const render = () => act(() => {
-    root = create(<Bank />);
-  });
+  const render = () => tree.mount(<Bank />);
   const sections = (): string[] =>
-    root!.root.findAll((node) => typeof node.type === "string" && (node.props["data-vanilla"] ?? node.props["data-section"]) !== undefined)
+    tree.root.findAll((node) => typeof node.type === "string" && (node.props["data-vanilla"] ?? node.props["data-section"]) !== undefined)
       .map((node) => node.props["data-vanilla"] ?? node.props["data-section"]);
-  const options = (): ReactTestInstance[] => root!.root.findAllByType(VanillaComponentResolver.instance.ToolButton);
+  const options = (): ReactTestInstance[] => tree.root.findAllByType(VanillaComponentResolver.instance.ToolButton);
 
   beforeEach(() => {
     resetBindings();
@@ -42,11 +41,6 @@ describe("the tool-options bank", () => {
     setBinding("BetterBuildingMenu", "AssetMenuFacets", {
       groups: [{ id: "theme", label: "Theme", options: [{ id: "European", label: "European", selected: false }] }, availability],
     });
-  });
-
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
   });
 
   it("adds availability after vanilla's own sections, and only availability", () => {

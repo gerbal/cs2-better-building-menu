@@ -8,23 +8,26 @@ import {
   formatCapacity,
   applyMoneyTemplate,
   FALLBACK_MONEY,
-  FALLBACK_SEPARATORS,
   formatHeight,
   formatNetworkWidth,
   formatVolume,
+  formatVolumePerMonth,
   formatWeight,
   formatWeightPerMonth,
   getBuildingDetailMetrics,
   formatPerMonth,
   formatPower,
   formatEnergy,
+  formatDataRate,
   formatSpeedLimit,
   formatServiceRange,
   UnitSystem,
   getCapacityUnitLabel,
   groupDigits,
   hasFootprint,
+  type NumberSeparators,
 } from "../src/domain/assetMenuMetricFormat.ts";
+import { separators } from "./harness/locale.ts";
 
 describe("Asset menu metric formatting", () => {
   it("groups thousands without relying on Intl", () => {
@@ -434,8 +437,8 @@ describe("formatServiceRange under the player's unit system", () => {
   // The rules are vanilla's own, read out of its UI bundle: Length is metres
   // below 1000 and kilometres above with one decimal; under Freedom it is
   // YARDS below 1609 and miles above — not feet, which Height uses.
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
-  const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
+  const imperial = separators(UnitSystem.Freedom);
+  const metric = separators(UnitSystem.Metric);
 
   it("keeps the game's own metric thresholds", () => {
     assert.match(formatServiceRange(480, metric), /480 m$/);
@@ -461,10 +464,20 @@ describe("formatServiceRange under the player's unit system", () => {
     // the binding has answered.
     assert.match(formatServiceRange(2000), /2 km$/);
   });
+
+  it("writes a fraction with the player's own decimal separator", () => {
+    // Common.DECIMAL_SEPARATOR, as every other formatter here uses: a range
+    // beside a weight on one card cannot write its decimal a different way.
+    const comma = { group: ".", decimal: "," };
+
+    assert.equal(formatServiceRange(1500, { ...metric, ...comma }), "1,5 km");
+    assert.equal(formatServiceRange(2000, { ...imperial, ...comma }), "1,2 mi");
+    assert.equal(formatServiceRange(1500, metric), "1.5 km");
+  });
 });
 
 describe("width and speed follow the same setting", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("states a network width by the game's Length rule", () => {
     // A width is a horizontal distance, so it takes the units vanilla gives a
@@ -481,7 +494,7 @@ describe("width and speed follow the same setting", () => {
 });
 
 describe("per-distance money under Freedom units", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("converts the rate as well as the unit, and keeps money whole", () => {
     // Changing the unit without converting the figure would understate a road
@@ -496,14 +509,14 @@ describe("per-distance money under Freedom units", () => {
   });
 
   it("leaves the metric rate exactly as it was", () => {
-    const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
+    const metric = separators(UnitSystem.Metric);
 
     assert.match(formatBuildingMetric(4000, "cost", metric, true), /4.000.*km/);
   });
 });
 
 describe("height and volume take the game's other two rules", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("states a height in feet, which is what vanilla's Height does", () => {
     // Height and NetElevation are the two places vanilla uses FEET rather than
@@ -524,7 +537,7 @@ describe("weight follows the game's own rule", () => {
   // Vanilla's Weight formatter, read off the shipped bundle: metric shows kg
   // below 100, tonnes below a million (two decimals) and kilotonnes above;
   // imperial shows lb, short tons and short kilotons on the same thresholds.
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("metric: kilograms, tonnes, kilotonnes at vanilla's thresholds", () => {
     assert.equal(formatWeight(50), "50 kg");
@@ -561,7 +574,7 @@ describe("rates follow the game's own per-month rules", () => {
   // Vanilla's WeightPerMonth: kg/mo. below 100 (one decimal) and t/mo. above
   // (two), imperial on Weight's constants. Garbage processing and garbage
   // accumulation are these; deathcare and mail sorting are integers per month.
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   it("weight per month", () => {
     assert.equal(formatWeightPerMonth(50), "50 kg/mo.");
@@ -610,7 +623,7 @@ describe("electricity follows the game's own units", () => {
 });
 
 describe("water volumes follow the game's own unit system", () => {
-  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const imperial = separators(UnitSystem.Freedom);
 
   // Vanilla binds WATER_CAPACITY and SEWAGE_CAPACITY with the volumePerMonth
   // unit: cubic metres a month, and US gallons a month under Freedom at the
@@ -637,9 +650,131 @@ describe("a telecom facility's capacity is a data rate", () => {
   // with the dataRate unit: the figure as gigabits a second, one decimal,
   // through Common.VALUE_GIGABIT_PER_SECOND.
   it("states gigabits a second in both unit systems", () => {
-    const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+    const imperial = separators(UnitSystem.Freedom);
 
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility"), /^2[.,]5 Gbit\/s$/);
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility", imperial), /^2[.,]5 Gbit\/s$/);
+  });
+});
+
+describe("unit templates", () => {
+  // Every template the formatters fill: the key the game ships it under, and
+  // the English used when the dictionary has none.
+  type Group = "money" | "length" | "weight" | "power";
+  const TEMPLATES: ReadonlyArray<readonly [group: Group, unit: string, key: string, english: string]> = [
+    ["money", "plain", "Common.VALUE_MONEY", "¢{VALUE}"],
+    ["money", "perMonth", "Common.VALUE_MONEY_PER_MONTH", "¢{VALUE}/mo"],
+    ["money", "perKilometre", "Common.VALUE_MONEY_PER_KILOMETER", "¢{VALUE}/km"],
+    ["money", "perKilometrePerMonth", "Common.VALUE_MONEY_PER_KILOMETER_PER_MONTH", "¢{VALUE}/km/mo"],
+    ["money", "perMile", "Common.VALUE_MONEY_PER_MILE", "¢{VALUE}/mi"],
+    ["money", "perMilePerMonth", "Common.VALUE_MONEY_PER_MILE_PER_MONTH", "¢{VALUE}/mi/mo"],
+    ["length", "metre", "Common.VALUE_METER", "{VALUE} m"],
+    ["length", "kilometre", "Common.VALUE_KILOMETER", "{VALUE} km"],
+    ["length", "yard", "Common.VALUE_YARD", "{VALUE} yd"],
+    ["length", "mile", "Common.VALUE_MILE", "{VALUE} mi"],
+    ["length", "foot", "Common.VALUE_FOOT", "{VALUE} ft"],
+    ["length", "cubicMetre", "Common.VALUE_CUBIC_METER", "{VALUE} m³"],
+    ["length", "gallon", "Common.VALUE_GALLON", "{VALUE} gal"],
+    ["length", "cubicMetrePerMonth", "Common.VALUE_CUBIC_METER_PER_MONTH", "{VALUE} m³/mo."],
+    ["length", "gallonPerMonth", "Common.VALUE_GALLON_PER_MONTH", "{VALUE} gal/mo."],
+    ["weight", "kilogram", "Common.VALUE_KILOGRAM", "{VALUE} kg"],
+    ["weight", "ton", "Common.VALUE_TON", "{VALUE} t"],
+    ["weight", "kiloton", "Common.VALUE_KILOTON", "{VALUE} kt"],
+    ["weight", "pound", "Common.VALUE_POUND", "{VALUE} lb"],
+    ["weight", "shortTon", "Common.VALUE_SHORT_TON", "{VALUE} tn"],
+    ["weight", "shortKiloton", "Common.VALUE_SHORT_KILOTON", "{VALUE} ktn"],
+    ["weight", "kilogramPerMonth", "Common.VALUE_KG_PER_MONTH", "{VALUE} kg/mo."],
+    ["weight", "tonPerMonth", "Common.VALUE_TON_PER_MONTH", "{VALUE} t/mo."],
+    ["weight", "poundPerMonth", "Common.VALUE_POUND_PER_MONTH", "{VALUE} lb/mo."],
+    ["weight", "shortTonPerMonth", "Common.VALUE_SHORT_TON_PER_MONTH", "{VALUE} tn/mo."],
+    ["power", "kilowatt", "Common.VALUE_KILOWATT", "{VALUE} kW"],
+    ["power", "megawatt", "Common.VALUE_MEGAWATT", "{VALUE} MW"],
+    ["power", "megawattHours", "Common.VALUE_MEGAWATT_HOURS", "{VALUE} MWh"],
+    ["power", "gigabitPerSecond", "Common.VALUE_GIGABIT_PER_SECOND", "{VALUE} Gbit/s"],
+  ];
+  const unitsOf = (separators: NumberSeparators, group: Group) =>
+    (separators[group] ?? {}) as Readonly<Record<string, string>>;
+
+  it("reads each unit's template under its own key", () => {
+    const keyed = getNumberSeparators((id) => `${id} {VALUE}`);
+
+    for (const [group, unit, key] of TEMPLATES) {
+      assert.equal(unitsOf(keyed, group)[unit], `${key} {VALUE}`, `${group}.${unit}`);
+    }
+    for (const group of ["money", "length", "weight", "power"] as const) {
+      assert.deepEqual(
+        Object.keys(unitsOf(keyed, group)).sort(),
+        TEMPLATES.filter(([listed]) => listed === group).map(([, unit]) => unit).sort(),
+        `${group} carries a unit this list does not name`,
+      );
+    }
+    assert.equal(keyed.perMonth, "Common.VALUE_PER_MONTH {VALUE}");
+  });
+
+  it("falls back to the shipped English for each unit", () => {
+    const english = getNumberSeparators();
+
+    for (const [group, unit, , fallback] of TEMPLATES) {
+      assert.equal(unitsOf(english, group)[unit], fallback, `${group}.${unit}`);
+    }
+    assert.equal(english.perMonth, "{VALUE} /mo.");
+  });
+});
+
+describe("every measured formatter", () => {
+  const metric = separators(UnitSystem.Metric);
+  const imperial = separators(UnitSystem.Freedom);
+
+  it("says nothing for a quantity with nothing to measure", () => {
+    // Empty rather than a dash, so a card's line drops out entirely.
+    const measured = {
+      formatServiceRange, formatNetworkWidth, formatSpeedLimit, formatHeight, formatVolume, formatVolumePerMonth,
+      formatWeight, formatWeightPerMonth, formatPerMonth, formatPower, formatEnergy, formatDataRate,
+    };
+    const nothing = [null, undefined, 0, -0, -1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+
+    for (const [name, format] of Object.entries(measured)) {
+      for (const value of nothing) {
+        assert.equal(format(value, metric), "", `${name}(${value})`);
+        assert.equal(format(value, imperial), "", `${name}(${value}) under Freedom`);
+      }
+    }
+  });
+
+  it("changes length units at a kilometre, or at a mile under Freedom", () => {
+    assert.equal(formatServiceRange(999, metric), "999 m");
+    assert.equal(formatServiceRange(1000, metric), "1 km");
+    assert.equal(formatServiceRange(1608, imperial), "1 759 yd");
+    assert.equal(formatServiceRange(1609, imperial), "1 mi");
+  });
+
+  it("changes weight units at the game's thresholds in both systems", () => {
+    assert.equal(formatWeight(99.94, metric), "99.9 kg");
+    assert.equal(formatWeight(100, metric), "0.1 t");
+    assert.equal(formatWeight(999_999, metric), "1 000 t");
+    assert.equal(formatWeight(1_000_000, metric), "1 kt");
+    assert.equal(formatWeight(99, imperial), "218.3 lb");
+    assert.equal(formatWeight(100, imperial), "0.11 tn");
+    assert.equal(formatWeight(9_071_847, imperial), "10 000 tn");
+    assert.equal(formatWeight(9_071_847.4, imperial), "10 ktn");
+  });
+
+  it("changes weight-a-month units at a hundred kilograms in both systems", () => {
+    assert.equal(formatWeightPerMonth(99.94, metric), "99.9 kg/mo.");
+    assert.equal(formatWeightPerMonth(100, metric), "0.1 t/mo.");
+    assert.equal(formatWeightPerMonth(99, imperial), "218.3 lb/mo.");
+    assert.equal(formatWeightPerMonth(100, imperial), "0.11 tn/mo.");
+  });
+
+  it("changes power units at ten thousand, the same in both systems", () => {
+    assert.equal(formatPower(9999, metric), "999.9 kW");
+    assert.equal(formatPower(10_000, metric), "1 MW");
+    assert.equal(formatPower(10_000, imperial), "1 MW");
+  });
+
+  it("converts a height and a volume a month under Freedom", () => {
+    assert.equal(formatHeight(30.4, imperial), "100 ft");
+    assert.equal(formatVolumePerMonth(10, metric), "10 m³/mo.");
+    assert.equal(formatVolumePerMonth(10, imperial), "2 642 gal/mo.");
   });
 });

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
+import { beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { installFakeBrowser } from "../harness/fakeBrowser";
+import { mountEach } from "../harness/mount";
 import {
   ASSET_MENU_CATALOG_DEFAULT,
   ASSET_MENU_CATALOG_FULL,
@@ -19,18 +21,12 @@ import {
 
 // The band at the reference resolution; with the pane shown the room is 1,091.
 const BAND = 1476;
-const globals = globalThis as unknown as Record<string, unknown>;
-let frames: Array<(() => void) | null> = [];
-const nextFrame = () => act(() => {
-  const due = frames;
-  frames = [];
-  for (const callback of due) callback?.();
-});
+let nextFrame: () => void;
 let clock = 1000;
 
 let drag: AssetMenuWidthDrag;
-const Probe = ({ width, paneShown }: { width: number; paneShown: boolean }) => {
-  drag = useAssetMenuWidthDrag({ menuWidth: width, bandWidth: BAND, paneShown }, () => clock);
+const Probe = ({ width, paneShown, shown = true }: { width: number; paneShown: boolean; shown?: boolean }) => {
+  drag = useAssetMenuWidthDrag({ menuWidth: width, bandWidth: BAND, paneShown }, () => clock, shown);
   return drag.blocker;
 };
 
@@ -41,27 +37,16 @@ const press = (clientX = 500, button = 0) =>
   act(() => drag.beginResize({ button, clientX, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
 
 describe("dragging the build menu's width", () => {
-  let root: ReactTestRenderer | undefined;
-  const mount = (width = 900, paneShown = true) => act(() => {
-    root = create(<Probe width={width} paneShown={paneShown} />);
-  });
-  const blocker = () => root!.root.find((node) => node.props.onMouseUp !== undefined);
+  const tree = mountEach();
+  const mount = (width = 900, paneShown = true) => tree.mount(<Probe width={width} paneShown={paneShown} />);
+  const blocker = () => tree.root.find((node) => node.props.onMouseUp !== undefined);
   const move = (clientX: number, buttons = 1) => act(() => blocker().props.onMouseMove({ clientX, buttons }));
   const release = () => act(() => blocker().props.onMouseUp());
 
   beforeEach(() => {
     resetBindings();
-    frames = [];
     clock = 1000;
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = (handle: number) => {
-      if (handle > 0) frames[handle - 1] = null;
-    };
-  });
-
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
+    ({ nextFrame } = installFakeBrowser({ frames: "manual" }));
   });
 
   it("sends one width per frame, the latest", () => {
@@ -241,6 +226,24 @@ describe("dragging the build menu's width", () => {
     assert.equal(drag.isResizing, true);
   });
 
+  it("fills the room on a press soon after a drag the menu's hiding ended", () => {
+    // Hiding ends the drag without the release that resets the double-press
+    // clock, so the press that began the drag still counts as a first press.
+    mount();
+    press();
+    move(450);
+    act(() => tree.renderer.update(<Probe width={900} paneShown shown={false} />));
+    assert.deepEqual(names(), ["SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth"], "hiding ends the drag as a release does");
+
+    act(() => tree.renderer.update(<Probe width={900} paneShown />));
+    clock += 100;
+    press();
+
+    assert.deepEqual(widths(), [850, ASSET_MENU_CATALOG_DEFAULT]);
+    assert.equal(names().at(-1), "CommitAssetMenuCatalogWidth");
+    assert.equal(drag.isResizing, false, "the press starts no drag");
+  });
+
   it("ends the drag when the mouse leaves the screen, as a release does", () => {
     mount();
     press();
@@ -257,8 +260,7 @@ describe("dragging the build menu's width", () => {
     mount();
     press();
     move(480);
-    act(() => root!.unmount());
-    root = undefined;
+    act(() => tree.renderer.unmount());
 
     assert.deepEqual(names(), ["SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth"]);
     assert.deepEqual(widths(), [880]);
@@ -269,8 +271,7 @@ describe("dragging the build menu's width", () => {
   it("saves nothing when the asset menu goes away after a press that never moved", () => {
     mount();
     press();
-    act(() => root!.unmount());
-    root = undefined;
+    act(() => tree.renderer.unmount());
 
     assert.deepEqual(names(), []);
   });

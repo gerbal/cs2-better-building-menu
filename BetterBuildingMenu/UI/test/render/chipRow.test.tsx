@@ -1,31 +1,38 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestInstance, type ReactTestRenderer } from "react-test-renderer";
+import { beforeEach, describe, it } from "node:test";
+import { act, type ReactTestInstance } from "react-test-renderer";
 import "../harness/render";
-import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { Button } from "../harness/stubs/cs2-ui";
+import { mountEach } from "../harness/mount";
+import { seed as seedBinding } from "../harness/seed";
 import { ChipRow } from "../../src/mods/ChipRow/ChipRow";
+import {
+  AssetMenu$,
+  AssetMenuCategories$,
+  AssetMenuCategory$,
+  AssetMenuCategoryCounts$,
+  AssetMenus$,
+} from "../../src/mods/bindings";
 
 // The translate stub answers every vanilla key with null, so a menu or a
 // category reads as its raw id here.
 const category = (id: string, priority: number) => ({ id, name: id, icon: `${id}.svg`, priority });
 
 const seed = ({ menu = "Roads", menuCategory = "", categories = 2 } = {}) => {
-  setBinding("BetterBuildingMenu", "AssetMenu", menu);
-  setBinding("BetterBuildingMenu", "AssetMenuCategory", menuCategory);
-  setBinding("BetterBuildingMenu", "AssetMenuCategories", [category("Highways", 2), category("SmallRoads", 1)].slice(0, categories));
-  setBinding("BetterBuildingMenu", "AssetMenus", [category("Zones", 2), category("Roads", 1), category("Parks", 3)]);
+  seedBinding(AssetMenu$, menu);
+  seedBinding(AssetMenuCategory$, menuCategory);
+  seedBinding(AssetMenuCategories$, [category("Highways", 2), category("SmallRoads", 1)].slice(0, categories));
+  seedBinding(AssetMenus$, [category("Zones", 2), category("Roads", 1), category("Parks", 3)]);
 };
 
 const sent = () => triggers.map((call) => [call.name, ...call.args]);
 
 describe("the chip row", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
 
-  const render = () => act(() => {
-    root = create(<ChipRow />);
-  });
-  const buttons = (): ReactTestInstance[] => root!.root.findAllByType(Button);
+  const render = () => tree.mount(<ChipRow />);
+  const buttons = (): ReactTestInstance[] => tree.root.findAllByType(Button);
   const button = (label: string): ReactTestInstance => {
     const found = buttons().filter((node) => node.props["aria-label"] === label);
     assert.equal(found.length, 1, `one button labelled ${label}; found ${buttons().map((node) => node.props["aria-label"]).join(", ")}`);
@@ -39,11 +46,6 @@ describe("the chip row", () => {
 
   beforeEach(() => {
     resetBindings();
-  });
-
-  afterEach(() => {
-    act(() => root?.unmount());
-    root = undefined;
   });
 
   it("names the scoped menu, and offers to drop it", () => {
@@ -69,7 +71,7 @@ describe("the chip row", () => {
     render();
     assert.equal(buttons().filter((node) => node.props["aria-label"] === "All").length, 0);
 
-    act(() => root!.unmount());
+    act(() => tree.renderer.unmount());
     seed({ categories: 2 });
     render();
     button("All");
@@ -125,11 +127,11 @@ describe("the chip row", () => {
 
   it("leaves out a category the strip hides for having nothing in it", () => {
     seed({ menuCategory: "Highways" });
-    setBinding("BetterBuildingMenu", "AssetMenuCategories", [
+    seedBinding(AssetMenuCategories$, [
       category("Highways", 2), category("SmallRoads", 1), category("Roundabouts", 3),
     ]);
     // By id, as the backend sends them, so the picker's own order is what is pinned.
-    setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", [
+    seedBinding(AssetMenuCategoryCounts$, [
       { id: "Highways", count: 2 }, { id: "Roundabouts", count: 0 }, { id: "SmallRoads", count: 4 },
     ]);
     render();
@@ -140,7 +142,7 @@ describe("the chip row", () => {
 
   it("lists every category until the counts arrive", () => {
     seed({ menuCategory: "Highways" });
-    setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", []);
+    seedBinding(AssetMenuCategoryCounts$, []);
     render();
 
     press("Highways");

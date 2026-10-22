@@ -3,9 +3,8 @@ import { describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
 import { TableRow, type TableRowProps } from "../../src/mods/BuildingCatalog/TableRow";
 import { useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
-import { FALLBACK_SEPARATORS } from "../../src/domain/assetMenuMetricFormat";
 
-const labels = { place: "Place", inspect: "Details", locked: "Locked", built: "Already built" };
+const labels = { place: "Place", inspect: "Details" };
 
 // The table reads the hover card's context once and hands it to every row.
 const TableRowInTable = (props: Omit<TableRowProps, "hoverCard">) => (
@@ -18,7 +17,6 @@ const row = (over: Partial<TableRowProps> = {}) =>
       entry={entry(7, { name: "Clinic" })}
       expanded={false}
       nameBudget={40}
-      separators={FALLBACK_SEPARATORS}
       labels={labels}
       columnStyle={() => ({})}
       resolveFacetLabel={() => null}

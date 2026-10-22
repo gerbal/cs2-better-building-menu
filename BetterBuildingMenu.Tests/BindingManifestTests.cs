@@ -111,7 +111,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var names = new HashSet<string>(StringComparer.Ordinal);
 
-			foreach (var file in Directory.EnumerateFiles(Path.Combine(RepoRoot(), "BetterBuildingMenu", "Systems"), "*.cs"))
+			foreach (var file in Directory.EnumerateFiles(Path.Combine(TestPaths.RepoRoot(), "BetterBuildingMenu", "Systems"), "*.cs"))
 			{
 				foreach (Match match in CSharpRegistration.Matches(File.ReadAllText(file)))
 				{
@@ -131,7 +131,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var names = new HashSet<string>(StringComparer.Ordinal);
 			var foreign = new HashSet<string>(StringComparer.Ordinal);
-			var root = Path.Combine(RepoRoot(), "BetterBuildingMenu", "UI", "src");
+			var root = Path.Combine(TestPaths.RepoRoot(), "BetterBuildingMenu", "UI", "src");
 
 			foreach (var file in Directory.EnumerateFiles(root, "*.ts*", SearchOption.AllDirectories))
 			{
@@ -156,20 +156,6 @@ namespace BetterBuildingMenu.Tests
 			names.ExceptWith(foreign);
 
 			return names;
-		}
-
-		private static string RepoRoot()
-		{
-			var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-
-			while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "BetterBuildingMenu")))
-			{
-				dir = dir.Parent;
-			}
-
-			Assert.NotNull(dir);
-
-			return dir!.FullName;
 		}
 	}
 }

@@ -58,49 +58,19 @@ namespace BetterBuildingMenu.Utilities
             }
         }
 
-        public static string Translate(string id, string? fallback = null)
+        /// <summary>The game's words under the key, trimmed, or null when it has none or no game is running.</summary>
+        public static string? TryTranslate(string? key)
         {
-            if (GameManager.instance.localizationManager.activeDictionary.TryGetValue(id, out var result)
-                && WordFormat.GameText(result) is { } text)
-            {
-                return text;
-            }
+            var dictionary = GameManager.instance?.localizationManager?.activeDictionary;
 
-            return fallback ?? id;
+            return key is not null && dictionary is not null && dictionary.TryGetValue(key, out var text)
+                ? WordFormat.GameText(text)
+                : null;
         }
 
-        /// <summary>A label for one of our identifiers, preferring the game's own string.</summary>
-        /// <remarks>
-        /// Category and subcategory labels name the game's own concepts, which
-        /// it ships in every language while the mod's Locale.json is English
-        /// only. A missing game key falls through to the mod's string.
-        /// </remarks>
-        public static string TranslateLabel(string identifier, string fallback)
-        {
-            string? gameKey = GameLocaleKeys.For(identifier);
-            if (gameKey != null)
-            {
-                string localized = Translate(gameKey, string.Empty);
-                if (!string.IsNullOrWhiteSpace(localized))
-                {
-                    return localized;
-                }
-            }
-
-            return Translate($"Tooltip.LABEL[{Mod.Id}.{identifier}]", fallback);
-        }
-
-        /// <summary>A tooltip string for one of our short identifiers.</summary>
-        /// <remarks>
-        /// The fallback is required, not optional: each locale is registered as
-        /// its own DictionarySource (see GetAvailableLanguages), with English under
-        /// its Options keys only, so Translate answers any other missing key with
-        /// the id itself.
-        /// </remarks>
-        internal static string GetTooltip(string key, string fallback)
-        {
-            return Translate($"Tooltip.LABEL[{Mod.Id}.{key}]", fallback);
-        }
+        /// <summary>The words under the first key the game has any for, else the fallback.</summary>
+        public static string FirstTranslated(string? first, string? second, string fallback) =>
+            TryTranslate(first) ?? TryTranslate(second) ?? fallback;
 
         /// <summary>
         /// One source per language, each translation with English under its Options keys,

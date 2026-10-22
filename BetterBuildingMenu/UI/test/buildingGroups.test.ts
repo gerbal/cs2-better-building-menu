@@ -10,7 +10,7 @@ import {
   groupDimensionsFor,
   groupTreeFromPaths,
   headingBands,
-  isEducationMenu,
+  isEducation,
   levelDrawsHeading,
   shouldShowHeading,
   takeRows,
@@ -35,10 +35,10 @@ describe("Group dimensions", () => {
   });
 
   it("names the education menu loosely, like C#", () => {
-    assert.equal(isEducationMenu("Education & Research"), true);
-    assert.equal(isEducationMenu("education"), true);
-    assert.equal(isEducationMenu("Roads"), false);
-    assert.equal(isEducationMenu(null), false);
+    assert.equal(isEducation("Education & Research"), true);
+    assert.equal(isEducation("education"), true);
+    assert.equal(isEducation("Roads"), false);
+    assert.equal(isEducation(null), false);
   });
 });
 

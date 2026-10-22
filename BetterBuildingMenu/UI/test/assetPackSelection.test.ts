@@ -9,6 +9,7 @@ import {
   parseAssetPackId,
   toggleAssetPack,
 } from "../src/domain/assetPackSelection.ts";
+import { setBuildingCatalogMetricRangeCommand, toggleAssetMenuFacetCommand } from "../src/domain/commands.ts";
 
 describe("asset pack selection", () => {
   it("parses the index:version id C# mints", () => {
@@ -55,8 +56,9 @@ describe("asset pack selection", () => {
   });
 
   it("recognises a Content chip's remove command", () => {
-    assert.equal(isContentFacetCommand({ args: [CONTENT_FACET_ID, "pack:4211:1"] }), true);
-    assert.equal(isContentFacetCommand({ args: ["theme", "European"] }), false);
+    assert.equal(isContentFacetCommand(toggleAssetMenuFacetCommand(CONTENT_FACET_ID, "pack:4211:1")), true);
+    assert.equal(isContentFacetCommand(toggleAssetMenuFacetCommand("theme", "European")), false);
+    assert.equal(isContentFacetCommand(setBuildingCatalogMetricRangeCommand("cost", "", "")), false);
     assert.equal(isContentFacetCommand(null), false);
   });
 

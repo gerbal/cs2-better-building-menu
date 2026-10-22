@@ -36,9 +36,9 @@ export function canPlace(entry: LockableEntry | null | undefined): boolean {
 }
 
 /**
- * The word for why an asset cannot be placed, or null when it can — one
- * function for every view mode, so they cannot drift apart. Locked wins over
- * already-built, matching AvailabilityOf: if both read true the data is wrong.
+ * The word for why an asset cannot be placed, or null when it can — one function for
+ * every view mode, so they cannot drift apart. Locked wins over already-built, as in
+ * BuildingCatalogFacetSelection.Availability.Of: if both read true the data is wrong.
  */
 export function entryStateWord(
   entry: LockableEntry | null | undefined,

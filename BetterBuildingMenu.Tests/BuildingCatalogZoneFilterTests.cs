@@ -9,20 +9,7 @@ namespace BetterBuildingMenu.Tests
 	public sealed class BuildingCatalogZoneFilterTests
 	{
 		private static BuildingCatalogEntry Entry(int id, string name, ZoneTypeFilter zone) =>
-			new(
-				Id: id,
-				PrefabName: name,
-				Name: name,
-				Category: "Buildings",
-				SubCategory: "Buildings_Residential",
-				Thumbnail: "",
-				LotWidth: 4,
-				LotDepth: 4,
-				BuildingLevel: 1,
-				ZoneType: zone,
-				HasParking: false,
-				IsVanilla: true,
-				PdxModsId: "");
+			TestEntries.Make(id, name, category: "Buildings", subCategory: "Buildings_Residential", lotWidth: 4, lotDepth: 4, zoneType: zone);
 
 		private static readonly List<BuildingCatalogEntry> Source = new()
 		{

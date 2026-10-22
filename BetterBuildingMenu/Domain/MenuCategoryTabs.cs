@@ -1,7 +1,5 @@
 using Colossal.UI.Binding;
 
-using System;
-
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
@@ -17,17 +15,8 @@ namespace BetterBuildingMenu.Domain
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
-			writer.PropertyName("categoryId");
-			writer.Write(CategoryId ?? string.Empty);
-			writer.PropertyName("tabs");
-			writer.ArrayBegin((Tabs ?? Array.Empty<MenuBranchCount>()).Length);
-
-			foreach (var tab in Tabs ?? Array.Empty<MenuBranchCount>())
-			{
-				tab.Write(writer);
-			}
-
-			writer.ArrayEnd();
+			writer.Prop("categoryId", CategoryId ?? string.Empty);
+			writer.Prop("tabs", Tabs);
 			writer.TypeEnd();
 		}
 	}

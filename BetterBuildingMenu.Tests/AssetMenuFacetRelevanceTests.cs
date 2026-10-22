@@ -12,29 +12,9 @@ namespace BetterBuildingMenu.Tests
 	/// </summary>
 	public class AssetMenuFacetRelevanceTests
 	{
-		// The record is positional and wide, so the fixture is built by `with` off
-		// one minimal instance rather than a constructor call per case.
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "ServiceBuildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: Domain.Enums.ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
-
 		private static BuildingCatalogEntry Entry(int id, string role, string provenance, bool locked = false) =>
-			Base with
+			TestEntries.Make(id, $"Entry {id}", $"Entry{id}") with
 			{
-				Id = id,
-				PrefabName = $"Entry{id}",
-				Name = $"Entry {id}",
 				BuildingType = role,
 				Provenance = provenance,
 				IsLocked = locked,

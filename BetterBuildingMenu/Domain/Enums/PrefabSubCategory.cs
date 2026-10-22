@@ -9,17 +9,17 @@ namespace BetterBuildingMenu.Domain.Enums
 
 		[Obsolete("Use PrefabCategory", true)]
 		Buildings = PrefabCategory.Buildings,
-		[CategoryIcon("Media/Game/Icons/ZoneResidential.svg")]
+		[CategoryIcon(ZoningIcons.Residential)]
 		Buildings_Residential,
 		[CategoryIcon("coui://betterbuildingmenu/ZoneResidentialMixed.svg")]
 		Buildings_Mixed,
-		[CategoryIcon("Media/Game/Icons/ZoneCommercial.svg")]
+		[CategoryIcon(ZoningIcons.Commercial)]
 		Buildings_Commercial,
-		[CategoryIcon("Media/Game/Icons/ZoneIndustrial.svg")]
+		[CategoryIcon(ZoningIcons.Industrial)]
 		Buildings_Industrial,
-		[CategoryIcon("Media/Game/Icons/ZoneOffice.svg")]
+		[CategoryIcon(ZoningIcons.Office)]
 		Buildings_Office,
-		[CategoryIcon("Media/Game/Icons/ZoneExtractors.svg")]
+		[CategoryIcon(ZoningIcons.Extractors)]
 		Buildings_Specialized,
 		[CategoryIcon("coui://uil/Colored/ServiceBuilding.svg")]
 		Buildings_Services,
@@ -138,20 +138,36 @@ namespace BetterBuildingMenu.Domain.Enums
 		// residential zone and a residential building are one idea at two scales.
 		[Obsolete("Use PrefabCategory", true)]
 		Zones = PrefabCategory.Zones,
-		[CategoryIcon("Media/Game/Icons/ZoneResidential.svg")]
+		[CategoryIcon(ZoningIcons.Residential)]
 		Zones_Residential,
-		[CategoryIcon("Media/Game/Icons/ZoneCommercial.svg")]
+		[CategoryIcon(ZoningIcons.Commercial)]
 		Zones_Commercial,
-		[CategoryIcon("Media/Game/Icons/ZoneIndustrial.svg")]
+		[CategoryIcon(ZoningIcons.Industrial)]
 		Zones_Industrial,
-		[CategoryIcon("Media/Game/Icons/ZoneOffice.svg")]
+		[CategoryIcon(ZoningIcons.Office)]
 		Zones_Office,
-		[CategoryIcon("Media/Game/Icons/ZoneExtractors.svg")]
+		[CategoryIcon(ZoningIcons.Extractors)]
 		Zones_Extractors,
 		// Zones whose AreaType the data does not distinguish at all. IndexZones
 		// drops these from its own catalog; the index keeps them, because being
 		// unclassifiable is not a reason to be unarmable.
 		[CategoryIcon("coui://uil/Standard/StarAll.svg")]
 		Zones_Misc,
+	}
+
+	/// <summary>Where a subcategory sits: each category's subcategories take the hundred values above it.</summary>
+	/// <remarks>Any is -1 and lies in no hundred, so a caller for whom Any is legal keeps the
+	/// (category, subcategory) pair rather than deriving one from the other.</remarks>
+	public static class PrefabSubCategories
+	{
+		/// <summary>The category whose hundred this subcategory lies in.</summary>
+		public static PrefabCategory CategoryOf(this PrefabSubCategory subCategory) =>
+			subCategory is PrefabSubCategory.Any
+				? throw new ArgumentOutOfRangeException(nameof(subCategory), "Any belongs to every category.")
+				: (PrefabCategory)((int)subCategory - (int)subCategory % 100);
+
+		/// <summary>Whether this subcategory is one of the category's own.</summary>
+		public static bool Contains(this PrefabCategory category, PrefabSubCategory subCategory) =>
+			(int)subCategory > (int)category && (int)subCategory < (int)category + 100;
 	}
 }

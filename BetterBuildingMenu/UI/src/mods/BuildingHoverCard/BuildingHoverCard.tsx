@@ -4,13 +4,14 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { getNumberSeparators } from "domain/assetMenuMetricFormat";
+import { entryLabel } from "domain/buildingEntryView";
 import type { TileTooltipLine } from "domain/buildingTileTooltip";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "domain/hoverCardLines";
 import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "domain/assetMenuRowDetails";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
-import { useUnitSystem } from "mods/gameSettings";
+import { useNumberSeparators } from "mods/gameSettings";
 import { overflowsBox } from "domain/measuredFit";
+import { useSettledMeasure } from "mods/useSettledMeasure";
 import styles from "./buildingHoverCard.module.scss";
 import { AssetMenuMilestones$ } from "mods/bindings";
 
@@ -34,7 +35,7 @@ export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
   // One subscription per grid, like the milestones below — the whole reason
   // this context exists rather than each card reading its own.
-  const unitSystem = useUnitSystem();
+  const separators = useNumberSeparators();
   const milestoneNames = useValue(AssetMenuMilestones$) ?? NO_MILESTONE_NAMES;
 
   // One object until one of these changes, so the rows it is handed to can skip
@@ -49,9 +50,14 @@ export const useHoverCardContext = (): HoverCardContext => {
     // the component that holds the localization hook, not to the card.
     leisureName: (leisureType: string | null | undefined) => leisureLabel(leisureType, translate),
     translateFact: translate,
-    separators: getNumberSeparators(translate, unitSystem),
+    separators,
     labels: hoverCardLabels(translate),
-  }), [translate, unitSystem, milestoneNames]);
+  }), [translate, separators, milestoneNames]);
+};
+
+/** Gives a card line the whole row once it is drawn too long for its half; one for every line. */
+const flagOverflow = (element: HTMLDivElement, [setOverflowed]: readonly [(overflowed: boolean) => void, ...unknown[]]) => {
+  if (overflowsBox(element)) setOverflowed(true);
 };
 
 /**
@@ -71,33 +77,8 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
     setOverflowed(false);
   }, [line.label, line.value]);
 
-  useEffect(() => {
-    const element = lineRef.current;
-    if (!element || stacked || overflowed) return;
-    const measure = () => {
-      if (overflowsBox(element)) setOverflowed(true);
-    };
-    // Never in the tick of the render: Cohtml reports the PREVIOUS text's
-    // scrollWidth for a line whose text just changed, and 0 for one it has not
-    // laid out. Every read waits two frames, the observer's included.
-    let outer = 0;
-    let inner = 0;
-    const scheduleMeasure = () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-      outer = requestAnimationFrame(() => {
-        inner = requestAnimationFrame(measure);
-      });
-    };
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleMeasure) : null;
-    observer?.observe(element);
-    scheduleMeasure();
-    return () => {
-      observer?.disconnect();
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [line.label, line.value, stacked, overflowed]);
+  // A stacked line has its row already, and one found too long keeps it.
+  useSettledMeasure(lineRef, stacked || overflowed ? null : flagOverflow, [setOverflowed, line.label, line.value, stacked, overflowed]);
 
   return (
     <div
@@ -136,7 +117,7 @@ const HoverCardContent = ({
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
 }) => {
-  const label = entry.name || entry.prefabName;
+  const label = entryLabel(entry);
   // What the thing IS, before every line that is a number about it — the same
   // sentence vanilla shows on selection.
   const description = context.describe(entry.prefabName);

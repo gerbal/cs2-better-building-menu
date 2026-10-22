@@ -1,11 +1,26 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
-import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { act } from "react-test-renderer";
 import { renderHtml, entry, catalogPage, count } from "../harness/render";
-import { setBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { mountEach } from "../harness/mount";
+import { seed as seedBinding } from "../harness/seed";
+import { loadLocale, resetLocale } from "../harness/stubs/cs2-l10n";
 import { getAssetMenuView, resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { GROUP_DIMENSIONS } from "../../src/domain/buildingGroups";
 import { ControlPane } from "../../src/mods/ControlPane/ControlPane";
+import {
+  AssetMenu$,
+  AssetMenuFacets$,
+  AssetMenuGroupDimensions$,
+  AssetMenuViewMode$,
+  BuildingCatalog$,
+  BuildingCatalogGroupBy$,
+  BuildingCatalogMetricRanges$,
+  BuildingCatalogSortColumn$,
+  BuildingCatalogSortDescending$,
+  CurrentSearch$,
+} from "../../src/mods/bindings";
 
 const facets = (selected: boolean) => ({
   groups: [{ id: "role", label: "Role", options: [{ id: "Hospital", label: "Hospital", selected }] }],
@@ -13,15 +28,15 @@ const facets = (selected: boolean) => ({
 });
 
 const seed = (menu = "Roads") => {
-  setBinding("BetterBuildingMenu", "AssetMenu", menu);
-  setBinding("BetterBuildingMenu", "BuildingCatalogGroupBy", "menuCategory");
-  setBinding("BetterBuildingMenu", "AssetMenuGroupDimensions", GROUP_DIMENSIONS.map((d) => d.id));
-  setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Name");
-  setBinding("BetterBuildingMenu", "BuildingCatalogSortDescending", false);
-  setBinding("BetterBuildingMenu", "CurrentSearch", "");
-  setBinding("BetterBuildingMenu", "AssetMenuFacets", facets(false));
-  setBinding("BetterBuildingMenu", "BuildingCatalogMetricRanges", null);
-  setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], { reorderableSortColumns: ["Name", "ConstructionCost"] }));
+  seedBinding(AssetMenu$, menu);
+  seedBinding(BuildingCatalogGroupBy$, "menuCategory");
+  seedBinding(AssetMenuGroupDimensions$, GROUP_DIMENSIONS.map((d) => d.id));
+  seedBinding(BuildingCatalogSortColumn$, "Name");
+  seedBinding(BuildingCatalogSortDescending$, false);
+  seedBinding(CurrentSearch$, "");
+  seedBinding(AssetMenuFacets$, facets(false));
+  seedBinding(BuildingCatalogMetricRanges$, null);
+  seedBinding(BuildingCatalog$, catalogPage([entry(1)], { reorderableSortColumns: ["Name", "ConstructionCost"] }));
 };
 
 const render = () => renderHtml(<ControlPane />);
@@ -36,6 +51,8 @@ describe("the control pane", () => {
     resetAssetMenuView();
     seed();
   });
+
+  afterEach(() => resetLocale());
 
   it("carries grouping, sorting and view mode", () => {
     // A band inside the asset menu would be gated on `expanded`, so every control
@@ -52,11 +69,26 @@ describe("the control pane", () => {
   });
 
   it("carries the filters and their chips", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuFacets", facets(true));
+    seedBinding(AssetMenuFacets$, facets(true));
     const html = render();
 
     assert.match(html, /class="rail"/);
     assert.match(html, /aria-label="Remove Hospital"/);
+  });
+
+  it("writes a range chip in the player's own number marks", () => {
+    loadLocale({ "Common.THOUSANDS_SEPARATOR": ".", "Common.DECIMAL_SEPARATOR": "," });
+    seedBinding(BuildingCatalogMetricRanges$, {
+      minCost: 1234.5, maxCost: 98765,
+      minUpkeep: null, maxUpkeep: null,
+      minWorkers: null, maxWorkers: null,
+      minCapacity: null, maxCapacity: null,
+      minLotWidth: null, maxLotWidth: null,
+      minLotDepth: null, maxLotDepth: null,
+      hasSelection: true,
+    });
+
+    assert.match(render(), /class="chipText">Cost 1\.234,5–98\.765</);
   });
 
   it("draws no facet chip while nothing narrows the set", () => {
@@ -69,10 +101,10 @@ describe("the control pane", () => {
   });
 
   it("still says what a search is for, where the search box is not", () => {
-    setBinding("BetterBuildingMenu", "CurrentSearch", "road");
+    seedBinding(CurrentSearch$, "road");
 
     assert.match(render(), /class="searchContext" title="road">Results for road</);
-    setBinding("BetterBuildingMenu", "CurrentSearch", "   ");
+    seedBinding(CurrentSearch$, "   ");
     assert.doesNotMatch(render(), /class="searchContext"/);
   });
 
@@ -97,11 +129,11 @@ describe("the control pane", () => {
 });
 
 describe("the control pane's view", () => {
-  let root: ReactTestRenderer | undefined;
+  const tree = mountEach();
   const sent = () => triggers.filter((call) => call.name === "SetAssetMenuViewMode").map((call) => call.args);
-  const selected = () => root!.root.find((node) => node.props.selected === true && typeof node.props.onSelect === "function").props.tooltip;
+  const selected = () => tree.root.find((node) => node.props.selected === true && typeof node.props.onSelect === "function").props.tooltip;
   const press = (label: string) =>
-    act(() => root!.root.find((node) => node.props.tooltip === label && typeof node.props.onSelect === "function").props.onSelect());
+    act(() => tree.root.find((node) => node.props.tooltip === label && typeof node.props.onSelect === "function").props.onSelect());
 
   beforeEach(() => {
     resetBindings();
@@ -110,46 +142,42 @@ describe("the control pane's view", () => {
   });
 
   it("opens on the view C# kept while nothing was picked this session", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
-    act(() => { root = create(<ControlPane />); });
+    seedBinding(AssetMenuViewMode$, "list");
+    tree.mount(<ControlPane />);
 
     assert.equal(selected(), "List");
     assert.deepEqual(sent(), [], "reading the kept view sends nothing back");
-    act(() => root?.unmount());
   });
 
   it("draws a pick at once and sends it to C# once", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
-    act(() => { root = create(<ControlPane />); });
+    seedBinding(AssetMenuViewMode$, "list");
+    tree.mount(<ControlPane />);
     press("Table");
 
     assert.equal(selected(), "Table");
     assert.deepEqual(sent(), [["table"]]);
 
     // C#'s echo of the same value redraws nothing and sends nothing.
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "table"));
+    act(() => seedBinding(AssetMenuViewMode$, "table"));
     assert.equal(selected(), "Table");
     assert.deepEqual(sent(), [["table"]]);
-    act(() => root?.unmount());
   });
 
   it("keeps the session's pick over a stale value C# pushes later", () => {
-    act(() => { root = create(<ControlPane />); });
+    tree.mount(<ControlPane />);
     press("Grid");
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list"));
+    act(() => seedBinding(AssetMenuViewMode$, "list"));
 
     assert.equal(selected(), "Grid");
-    act(() => root?.unmount());
   });
 
   it("goes back to Cards on Reset menu and keeps no view for the next session", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
-    act(() => { root = create(<ControlPane />); });
-    act(() => root!.root.find((node) => node.type === "button" && node.props.className === "resetButton").props.onClick());
+    seedBinding(AssetMenuViewMode$, "list");
+    tree.mount(<ControlPane />);
+    act(() => tree.root.find((node) => node.type === "button" && node.props.className === "resetButton").props.onClick());
 
     assert.equal(selected(), "Cards");
     assert.equal(getAssetMenuView().viewMode, "cards");
     assert.deepEqual(sent(), [[""]]);
-    act(() => root?.unmount());
   });
 });

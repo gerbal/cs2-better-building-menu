@@ -27,28 +27,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			_prefabSystem = prefabSystem;
 		}
 
-		public EntityQueryDesc[] GetEntityQuery()
-		{
-			return new[]
-			{
-				new EntityQueryDesc
-				{
-					All = new[]
-					{
-						ComponentType.ReadOnly<BuildingData>(),
-						ComponentType.ReadOnly<SpawnableBuildingData>(),
-					}
-				},
-				new EntityQueryDesc
-				{
-					All = new[]
-					{
-						ComponentType.ReadOnly<BuildingData>(),
-						ComponentType.ReadOnly<PlaceholderBuildingData>()
-					}
-				}
-			};
-		}
+		public ProcessorQuery Query { get; } = ProcessorQuery
+			.All(typeof(BuildingData), typeof(SpawnableBuildingData))
+			.Or(ProcessorQuery.All(typeof(BuildingData), typeof(PlaceholderBuildingData)));
 
 		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
 		{
@@ -78,7 +59,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			{
 				prefabIndex.ZoneType = GetZoneType(entity, zonePrefab, target.Zones);
 				prefabIndex.Theme = _zonePrefab.GetComponent<ThemeObject>()?.m_Theme;
-				prefabIndex.AssetPacks = _zonePrefab.GetComponent<AssetPackItem>()?.m_Packs ?? new AssetPackPrefab[0];
 			}
 
 			var zoneData = _entityManager.GetComponentData<ZoneData>(zonePrefab);

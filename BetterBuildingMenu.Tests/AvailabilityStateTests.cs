@@ -1,6 +1,5 @@
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
-using BetterBuildingMenu.Services;
 
 using Xunit;
 
@@ -11,20 +10,7 @@ namespace BetterBuildingMenu.Tests
 	/// </summary>
 	public class AvailabilityStateTests
 	{
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "ServiceBuildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: Domain.Enums.ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
+		private static readonly BuildingCatalogEntry Base = TestEntries.Make(0, "Base");
 
 		[Fact]
 		public void AlreadyBuiltSupersedesUnlocked()
@@ -33,7 +19,7 @@ namespace BetterBuildingMenu.Tests
 			// unbuildable in the only sense the player cares about.
 			Assert.Equal(
 				BuildingCatalogFacetSelection.Availability.AlreadyBuilt,
-				BuildingCatalogQueryEngine.AvailabilityOf(Base with { IsLocked = false, IsAlreadyBuilt = true }));
+				BuildingCatalogFacetSelection.Availability.Of(Base with { IsLocked = false, IsAlreadyBuilt = true }));
 		}
 
 		[Fact]
@@ -43,13 +29,13 @@ namespace BetterBuildingMenu.Tests
 			// data is wrong and Locked is the safer answer.
 			Assert.Equal(
 				BuildingCatalogFacetSelection.Availability.Locked,
-				BuildingCatalogQueryEngine.AvailabilityOf(Base with { IsLocked = true, IsAlreadyBuilt = true }));
+				BuildingCatalogFacetSelection.Availability.Of(Base with { IsLocked = true, IsAlreadyBuilt = true }));
 		}
 
 		[Fact]
 		public void EveryEntryLandsInExactlyOneState()
 		{
-			var plain = BuildingCatalogQueryEngine.AvailabilityOf(Base);
+			var plain = BuildingCatalogFacetSelection.Availability.Of(Base);
 			Assert.Equal(BuildingCatalogFacetSelection.Availability.Unlocked, plain);
 			Assert.Contains(plain, BuildingCatalogFacetSelection.Availability.All);
 			Assert.Equal(3, BuildingCatalogFacetSelection.Availability.All.Count);

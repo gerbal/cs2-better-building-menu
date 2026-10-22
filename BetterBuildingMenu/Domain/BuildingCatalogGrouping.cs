@@ -44,32 +44,103 @@ namespace BetterBuildingMenu.Domain
 		public const string Progression = "progression";
 		public const string Development = "development";
 
-		/// <summary>Every dimension the picker offers, by id, in the picker's order.</summary>
-		/// <remarks>The UI's copy of the ids and the order is generated from this; the labels
-		/// are the UI's.</remarks>
-		public static readonly IReadOnlyList<string> Dimensions = new[]
+		/// <summary>No grouping: what none, a blank id and no choice all mean.</summary>
+		private static readonly GroupDimension Ungrouped = new(None, NoKey, NoKey, NoLabels, isGrouped: false);
+
+		/// <summary>An id that names no dimension: grouped, but under one empty key and no heading.</summary>
+		private static readonly GroupDimension Unrecognised = new(string.Empty, NoKey, NoKey, NoLabels);
+
+		/// <summary>Every dimension the picker offers, in its order. Band edges, tier names and category
+		/// words have one home in this class, so each row's keys and headings agree. LabelId carries the
+		/// game's category id for a menu-category heading; every other label is final text.</summary>
+		private static readonly GroupDimension[] Table =
 		{
 			// The game's own categories, the split the tab strip shows: first, because it
 			// is the division the player already has in mind.
-			MenuCategory,
-			// Ours: Buildings, Networks, Service Buildings.
-			Category,
-			SubCategory,
-			Role,
+			new(
+				MenuCategory,
+				entry => MenuCategoryRank(entry.UiCategory, entry.UiCategoryPriority, entry.UiCategoryTab),
+				MenuCategoryTierKey,
+				(entry, milestoneNames, _) => new GroupLabels(
+					new[] { MenuCategoryLabel(entry), CategoryTierLabel(entry, milestoneNames) },
+					MenuCategoryId(entry))),
+			// Ours: Buildings, Networks, Service Buildings. The subcategory beneath is what keeps it
+			// useful once the player has navigated into a category and the outer heading says nothing.
+			new(
+				Category,
+				entry => Normalize(entry.Category),
+				entry => Normalize(entry.SubCategory),
+				(entry, _, _) => new GroupLabels(
+					new[]
+					{
+						Text(entry.CategoryLabel) ?? Text(entry.Category) ?? Other,
+						Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other,
+					},
+					null)),
+			new(
+				SubCategory,
+				entry => Normalize(entry.SubCategory),
+				NoKey,
+				(entry, _, _) => Heading(Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other)),
+			new(
+				Role,
+				entry => Normalize(entry.BuildingType),
+				NoKey,
+				(entry, _, _) => Heading(entry.BuildingType?.Trim() is { Length: > 0 } role ? BuildingCatalogLabels.ForRole(role) : Other)),
 			// Directly under Role, because it is the level below it: Role answers
 			// "school", School tier answers "which one".
-			SchoolTier,
+			new(
+				SchoolTier,
+				entry => SchoolTierRank(entry.EducationLevel),
+				NoKey,
+				(entry, _, schoolTierNames) => SchoolTierLabels(entry, schoolTierNames)),
 			// The game's own progression, then the other unlock modality, the per-service
 			// tree bought with development points.
-			Progression,
-			Development,
-			Theme,
-			Source,
-			Density,
-			Footprint,
-			Cost,
-			None,
+			new(
+				Progression,
+				entry => entry.UnlockMilestone.ToString("D3", CultureInfo.InvariantCulture),
+				NoKey,
+				(entry, milestoneNames, _) => Heading(MilestoneLabel(entry.UnlockMilestone, milestoneNames))),
+			new(
+				Development,
+				entry => string.IsNullOrWhiteSpace(entry.DevTreeBranch)
+					? UnnamedKey
+					: entry.DevTreeBranchDepth.ToString("D3", CultureInfo.InvariantCulture) + Normalize(entry.DevTreeBranch),
+				NoKey,
+				(entry, _, _) => Heading(Text(entry.DevTreeBranch) ?? Other)),
+			new(
+				Theme,
+				entry => Normalize(entry.Theme),
+				NoKey,
+				(entry, _, _) => Heading(entry.Theme?.Trim() is { Length: > 0 } theme ? BuildingCatalogLabels.ForTheme(theme) : Other)),
+			// The DLC name is the more specific answer where there is one.
+			new(
+				Source,
+				entry => Normalize(string.IsNullOrWhiteSpace(entry.DlcId) ? entry.Provenance : entry.DlcId),
+				NoKey,
+				(entry, _, _) => Heading(Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other)),
+			new(
+				Density,
+				entry => DensityRank(entry.ZoneType),
+				NoKey,
+				(entry, _, _) => Heading(DensityTierLabel(entry.ZoneType))),
+			new(
+				Footprint,
+				entry => FootprintRank(entry.LotWidth, entry.LotDepth),
+				NoKey,
+				(entry, _, _) => Heading(FootprintBandLabel(entry.LotWidth, entry.LotDepth))),
+			new(
+				Cost,
+				entry => CostRank(entry.ConstructionCost),
+				NoKey,
+				(entry, _, _) => Heading(CostBandLabel(entry.ConstructionCost))),
+			Ungrouped,
 		};
+
+		/// <summary>Every dimension the picker offers, by id, in the picker's order.</summary>
+		/// <remarks>The UI's copy of the ids and the order is generated from this; the labels
+		/// are the UI's.</remarks>
+		public static readonly IReadOnlyList<string> Dimensions = Table.Select(dimension => dimension.Id).ToArray();
 
 		/// <summary>Cost band edges.</summary>
 		public static readonly double[] CostBands = { 5_000d, 25_000d, 100_000d };
@@ -124,7 +195,7 @@ namespace BetterBuildingMenu.Domain
 
 		public static bool IsDimension([NotNullWhen(true)] string? value) =>
 			value?.Trim() is { Length: > 0 } trimmed
-			&& Dimensions.Any(dimension => Is(trimmed, dimension));
+			&& Dimensions.ContainsIgnoreCase(trimmed);
 
 		/// <summary>
 		/// What a menu opens grouped by when the player has not chosen.
@@ -182,113 +253,94 @@ namespace BetterBuildingMenu.Domain
 			return candidates.FirstOrDefault(offered.Contains) ?? None;
 		}
 
-		/// <summary>
-		/// Outermost group key. Empty when the dimension is unknown or "none",
-		/// which leaves the ordering to the chosen sort alone.
-		/// </summary>
-		/// <remarks>
-		/// Matched with <see cref="Is"/> rather than by lowercasing and switching on the constants,
-		/// so a dimension id that is not already all-lowercase still matches its own case. A missing
-		/// key costs paging: a group split across a page boundary is what this design prevents.
-		/// </remarks>
-		public static string PrimaryKey(BuildingCatalogEntry entry, string? groupBy)
+		/// <summary>The dimension a grouping id names, ignoring case and surrounding space.</summary>
+		/// <remarks>Blank and "none" group nothing. Any other id that names no dimension groups everything
+		/// under one empty key with no heading, which leaves the order to the chosen sort.</remarks>
+		public static GroupDimension Resolve(string? groupBy)
 		{
-			if (entry is null || !IsGrouped(groupBy))
+			if (!IsGrouped(groupBy))
 			{
-				return string.Empty;
+				return Ungrouped;
 			}
 
-			string dimension = groupBy.Trim();
+			var dimension = groupBy.Trim();
 
-			if (Is(dimension, Category)) return Normalize(entry.Category);
-			if (Is(dimension, MenuCategory)) return MenuCategoryRank(entry.UiCategory, entry.UiCategoryPriority, entry.UiCategoryTab);
-			if (Is(dimension, SubCategory)) return Normalize(entry.SubCategory);
-			if (Is(dimension, Role)) return Normalize(entry.BuildingType);
-			if (Is(dimension, SchoolTier)) return SchoolTierRank(entry.EducationLevel);
-			if (Is(dimension, Theme)) return Normalize(entry.Theme);
-			// The DLC name is the more specific answer where there is one.
-			if (Is(dimension, Source)) return Normalize(string.IsNullOrWhiteSpace(entry.DlcId) ? entry.Provenance : entry.DlcId);
-			if (Is(dimension, Density)) return DensityRank(entry.ZoneType);
-			if (Is(dimension, Footprint)) return FootprintRank(entry.LotWidth, entry.LotDepth);
-			if (Is(dimension, Cost)) return CostRank(entry.ConstructionCost);
-			if (Is(dimension, Progression)) return entry.UnlockMilestone.ToString("D3", CultureInfo.InvariantCulture);
-			if (Is(dimension, Development)) return string.IsNullOrWhiteSpace(entry.DevTreeBranch)
-				? UnnamedKey
-				: entry.DevTreeBranchDepth.ToString("D3", CultureInfo.InvariantCulture) + Normalize(entry.DevTreeBranch);
+			for (var i = 0; i < Table.Length; i++)
+			{
+				if (Is(dimension, Table[i].Id))
+				{
+					return Table[i];
+				}
+			}
 
-			return string.Empty;
+			return Unrecognised;
 		}
 
 		private static bool Is(string value, string dimension) =>
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);
+
+		private static string NoKey(BuildingCatalogEntry entry) => string.Empty;
+
+		private static GroupLabels NoLabels(
+			BuildingCatalogEntry entry,
+			IReadOnlyList<string>? milestoneNames,
+			IReadOnlyDictionary<int, string>? schoolTierNames) =>
+			new(Array.Empty<string>(), null);
+
+		private static GroupLabels Heading(string label) => new(new[] { label }, null);
+
+		/// <summary>The game's id for an entry's category, or null when it has none.</summary>
+		private static string? MenuCategoryId(BuildingCatalogEntry entry)
+		{
+			var id = (entry.UiCategory ?? string.Empty).Trim();
+
+			return id.Length == 0 ? null : id;
+		}
 
 		/// <summary>The menu whose tier is what an asset IS, not when it unlocks.</summary>
 		private static bool IsTransitMenu(string? menu) =>
 			menu is { Length: > 0 }
 			&& menu.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
 
-		/// <summary>
-		/// Second group level. Only Category has one — the subcategory beneath
-		/// it, which is what keeps Category useful once the player has already
-		/// navigated into a category and the outer heading says nothing.
-		/// </summary>
-		public static string SecondaryKey(BuildingCatalogEntry entry, string? groupBy)
+		/// <summary>The tier beneath the game's own category. It needs a KEY, not just a heading, so a
+		/// group cannot straddle a page boundary; three sources, prefixed so they cannot collide.</summary>
+		private static string MenuCategoryTierKey(BuildingCatalogEntry entry)
 		{
-			if (entry is null || !IsGrouped(groupBy))
+			// Signature is a marker, not a density: every signature building
+			// carries it, so taking it here would collapse all of them into
+			// one child and never reach the milestone that does vary.
+			if (entry.ZoneType != ZoneTypeFilter.Any && entry.ZoneType != ZoneTypeFilter.Signature)
 			{
-				return string.Empty;
+				return "d" + DensityRank(entry.ZoneType);
 			}
 
-			var dimension = groupBy.Trim();
-
-			if (Is(dimension, Category))
+			// Transit before the branch, because its branches divide nothing: they run
+			// one to one with its categories. What each asset is for is the real split.
+			// See docs/design-notes.md, "Transit tiers".
+			if (IsTransitMenu(entry.UiMenu))
 			{
-				return Normalize(entry.SubCategory);
+				var tier = TransitTier(entry);
+
+				// The ways keep their subcategory in the key: lanes, seaways and tracks are
+				// each their own heading, all ahead of the stations.
+				return tier switch
+				{
+					0 => "s0" + Normalize(entry.SubCategory),
+					> 0 => "s" + tier.ToString(CultureInfo.InvariantCulture),
+					_ => "s9" + Normalize(entry.SubCategory),
+				};
 			}
 
-			// The tier beneath the game's own category needs a KEY, not just a heading:
-			// grouping is a primary sort key precisely so a group cannot straddle a page
-			// boundary. Three sources, prefixed so they cannot collide.
-			if (Is(dimension, MenuCategory))
+			// Depth first, so the branches read in the order the game's own
+			// development tree lays them out rather than alphabetically.
+			if (!string.IsNullOrWhiteSpace(entry.DevTreeBranch))
 			{
-				// Signature is a marker, not a density: every signature building
-				// carries it, so taking it here would collapse all of them into
-				// one child and never reach the milestone that does vary.
-				if (entry.ZoneType != ZoneTypeFilter.Any && entry.ZoneType != ZoneTypeFilter.Signature)
-				{
-					return "d" + DensityRank(entry.ZoneType);
-				}
-
-				// Transit before the branch, because its branches divide nothing: they run
-				// one to one with its categories. What each asset is for is the real split.
-				// See docs/design-notes.md, "Transit tiers".
-				if (IsTransitMenu(entry.UiMenu))
-				{
-					var tier = TransitTier(entry);
-
-					// The ways keep their subcategory in the key: lanes, seaways and tracks are
-					// each their own heading, all ahead of the stations.
-					return tier switch
-					{
-						0 => "s0" + Normalize(entry.SubCategory),
-						> 0 => "s" + tier.ToString(CultureInfo.InvariantCulture),
-						_ => "s9" + Normalize(entry.SubCategory),
-					};
-				}
-
-				// Depth first, so the branches read in the order the game's own
-				// development tree lays them out rather than alphabetically.
-				if (!string.IsNullOrWhiteSpace(entry.DevTreeBranch))
-				{
-					return "b"
-						+ entry.DevTreeBranchDepth.ToString("D3", CultureInfo.InvariantCulture)
-						+ Normalize(entry.DevTreeBranch);
-				}
-
-				return "m" + entry.UnlockMilestone.ToString("D3", CultureInfo.InvariantCulture);
+				return "b"
+					+ entry.DevTreeBranchDepth.ToString("D3", CultureInfo.InvariantCulture)
+					+ Normalize(entry.DevTreeBranch);
 			}
 
-			return string.Empty;
+			return "m" + entry.UnlockMilestone.ToString("D3", CultureInfo.InvariantCulture);
 		}
 
 		/// <summary>
@@ -382,78 +434,12 @@ namespace BetterBuildingMenu.Domain
 
 		public readonly record struct GroupLabels(string[] Path, string? LabelId);
 
-		/// <summary>
-		/// The headings an entry files under, for the dimension the page is grouped by.
-		/// </summary>
-		/// <remarks>
-		/// The band edges, tier names and category words have one home here, so these labels and
-		/// the keys above agree by reading the same constants. LabelId carries the game's own
-		/// category id for a menu-category heading; every other label is final text.
-		/// </remarks>
-		/// <param name="schoolTierNames">The game's name for each school level, from
-		/// CatalogIndex.SchoolTierNames; English for a level it has none for.</param>
-		public static GroupLabels Labels(
-			BuildingCatalogEntry entry,
-			string? groupBy,
-			IReadOnlyList<string>? milestoneNames = null,
-			IReadOnlyDictionary<int, string>? schoolTierNames = null)
-		{
-			if (entry is null || !IsGrouped(groupBy))
-			{
-				return new GroupLabels(Array.Empty<string>(), null);
-			}
-
-			var dimension = groupBy.Trim();
-
-			if (Is(dimension, Category))
-			{
-				return new GroupLabels(new[]
-				{
-					Text(entry.CategoryLabel) ?? Text(entry.Category) ?? Other,
-					Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other,
-				}, null);
-			}
-
-			if (Is(dimension, MenuCategory))
-			{
-				var id = (entry.UiCategory ?? string.Empty).Trim();
-
-				return new GroupLabels(
-					new[] { MenuCategoryLabel(entry), CategoryTierLabel(entry, milestoneNames) },
-					id.Length == 0 ? null : id);
-			}
-
-			if (Is(dimension, SubCategory)) return new GroupLabels(new[] { Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other }, null);
-			if (Is(dimension, Role))
-			{
-				return new GroupLabels(new[] { entry.BuildingType?.Trim() is { Length: > 0 } role ? BuildingCatalogLabels.ForRole(role) : Other }, null);
-			}
-			if (Is(dimension, Progression)) return new GroupLabels(new[] { MilestoneLabel(entry.UnlockMilestone, milestoneNames) }, null);
-			if (Is(dimension, Development)) return new GroupLabels(new[] { Text(entry.DevTreeBranch) ?? Other }, null);
-			if (Is(dimension, SchoolTier))
-			{
-				if (SchoolTierLabel(entry.EducationLevel, schoolTierNames) is { } tier)
-				{
-					return new GroupLabels(new[] { tier }, null);
-				}
-
-				// Not a school, such as a research facility: its category's heading, with the
-				// game's id so the UI can say it in the game's language, as menuCategory's does.
-				var category = (entry.UiCategory ?? string.Empty).Trim();
-
-				return new GroupLabels(new[] { MenuCategoryLabel(entry) }, category.Length == 0 ? null : category);
-			}
-			if (Is(dimension, Theme))
-			{
-				return new GroupLabels(new[] { entry.Theme?.Trim() is { Length: > 0 } theme ? BuildingCatalogLabels.ForTheme(theme) : Other }, null);
-			}
-			if (Is(dimension, Source)) return new GroupLabels(new[] { Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other }, null);
-			if (Is(dimension, Density)) return new GroupLabels(new[] { DensityTierLabel(entry.ZoneType) }, null);
-			if (Is(dimension, Footprint)) return new GroupLabels(new[] { FootprintBandLabel(entry.LotWidth, entry.LotDepth) }, null);
-			if (Is(dimension, Cost)) return new GroupLabels(new[] { CostBandLabel(entry.ConstructionCost) }, null);
-
-			return new GroupLabels(Array.Empty<string>(), null);
-		}
+		/// <summary>A school's level; any other entry, such as a research facility, under its category's
+		/// heading, with the game's id so the UI can say it in the game's language, as menuCategory's does.</summary>
+		private static GroupLabels SchoolTierLabels(BuildingCatalogEntry entry, IReadOnlyDictionary<int, string>? schoolTierNames) =>
+			SchoolTierLabel(entry.EducationLevel, schoolTierNames) is { } tier
+				? Heading(tier)
+				: new GroupLabels(new[] { MenuCategoryLabel(entry) }, MenuCategoryId(entry));
 
 		/// <summary>The dimensions that can act on a set: two entries file under different keys.</summary>
 		/// <remarks>
@@ -465,11 +451,12 @@ namespace BetterBuildingMenu.Domain
 		{
 			var sample = entries as IReadOnlyList<BuildingCatalogEntry> ?? entries.ToList();
 
-			return Dimensions
-				.Where(dimension => educationMenu || !Is(dimension, SchoolTier))
-				.Where(dimension => Is(dimension, None)
+			return Table
+				.Where(dimension => educationMenu || !Is(dimension.Id, SchoolTier))
+				.Where(dimension => !dimension.IsGrouped
 					|| sample.Count == 0
-					|| sample.Select(entry => PrimaryKey(entry, dimension)).Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any())
+					|| sample.Select(dimension.PrimaryKey).Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any())
+				.Select(dimension => dimension.Id)
 				.ToArray();
 		}
 

@@ -1,5 +1,4 @@
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 
 using Xunit;
@@ -13,27 +12,9 @@ namespace BetterBuildingMenu.Tests
 	/// </summary>
 	public sealed class SupportedUpgradesTests
 	{
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "ServiceBuildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
-
 		private static BuildingCatalogEntry InMenu(int id, string name) =>
-			Base with
+			TestEntries.Make(id, name, $"P{id}") with
 			{
-				Id = id,
-				PrefabName = $"P{id}",
-				Name = name,
 				UiMenu = "Signatures",
 				UiCategory = "SignaturesResidential",
 			};

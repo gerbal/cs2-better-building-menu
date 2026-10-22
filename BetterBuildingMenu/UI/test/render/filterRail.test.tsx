@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
+import { beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestInstance } from "react-test-renderer";
 import "../harness/render";
 import { getModule } from "../harness/stubs/cs2-modding";
 import { Dropdown, DropdownItem, DropdownToggle, Tooltip } from "../harness/stubs/cs2-ui";
+import { mountEach } from "../harness/mount";
 import { FilterRail } from "../../src/mods/FilterRail/FilterRail";
 import { RAIL_SEARCH_THRESHOLD, type RailFacetState } from "../../src/domain/filterRail";
 
@@ -58,32 +59,25 @@ describe("the filter rail", () => {
     ],
   };
 
-  let tree: ReturnType<typeof create> | undefined;
+  const tree = mountEach();
   let toggled: Array<[string, string]> = [];
 
-  const render = (metricsActive = 0) => act(() => {
-    tree = create(
-      <FilterRail
-        facets={state}
-        metricsActive={metricsActive}
-        onToggleOption={(group, id) => toggled.push([group, id])}
-        renderMetrics={() => <div data-metrics="true" />}
-      />
-    );
-  });
-  const toggles = (): ReactTestInstance[] => tree!.root.findAllByType(DropdownToggle);
+  const render = (metricsActive = 0) => tree.mount(
+    <FilterRail
+      facets={state}
+      metricsActive={metricsActive}
+      onToggleOption={(group, id) => toggled.push([group, id])}
+      renderMetrics={() => <div data-metrics="true" />}
+    />
+  );
+  const toggles = (): ReactTestInstance[] => tree.root.findAllByType(DropdownToggle);
   const dropdown = (label: string): ReactTestInstance =>
-    tree!.root.findAllByType(Dropdown).find((node) => node.findAllByType(DropdownToggle)[0].props["aria-label"] === label)!;
+    tree.root.findAllByType(Dropdown).find((node) => node.findAllByType(DropdownToggle)[0].props["aria-label"] === label)!;
   // The stub draws a dropdown's content inline, open or not.
   const items = (label: string): ReactTestInstance[] => dropdown(label).findAllByType(DropdownItem);
 
   beforeEach(() => {
     toggled = [];
-  });
-
-  afterEach(() => {
-    act(() => tree?.unmount());
-    tree = undefined;
   });
 
   it("draws one icon per dimension with options, metrics last, and leaves the bank's dimension to the bank", () => {
@@ -94,7 +88,7 @@ describe("the filter rail", () => {
 
   it("counts what narrows, and names what survives in the tooltip", () => {
     render();
-    const tooltips = tree!.root.findAllByType(Tooltip).map((node) => node.props.tooltip);
+    const tooltips = tree.root.findAllByType(Tooltip).map((node) => node.props.tooltip);
 
     assert.deepEqual(tooltips, ["Theme: European", "Content", "Metric filters"]);
     assert.deepEqual(toggles().map((node) => node.props.className), ["icon iconActive", "icon", "icon"]);
@@ -132,15 +126,13 @@ describe("the filter rail", () => {
   });
 
   it("clears the search when a dimension's menu is opened again", () => {
-    act(() => {
-      tree = create(<FilterRail facets={facets} metricsActive={0} onToggleOption={() => undefined} renderMetrics={() => <div />} />);
-    });
-    act(() => tree!.root.findByType(TextInput).props.onChange({ target: { value: "wing" } }));
-    assert.ok(!labels(tree!.root).includes("Other 3"));
+    tree.mount(<FilterRail facets={facets} metricsActive={0} onToggleOption={() => undefined} renderMetrics={() => <div />} />);
+    act(() => tree.root.findByType(TextInput).props.onChange({ target: { value: "wing" } }));
+    assert.ok(!labels(tree.root).includes("Other 3"));
 
-    act(() => tree!.root.findAllByType(Dropdown)[0].props.onToggle(true));
+    act(() => tree.root.findAllByType(Dropdown)[0].props.onToggle(true));
 
-    assert.equal(tree!.root.findByType(TextInput).props.value, "");
-    assert.ok(labels(tree!.root).includes("Other 3"));
+    assert.equal(tree.root.findByType(TextInput).props.value, "");
+    assert.ok(labels(tree.root).includes("Other 3"));
   });
 });

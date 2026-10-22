@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using Xunit;
 
@@ -20,10 +19,8 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		private static BuildingCatalogEntry Entry(int id, string name, int cost) =>
-			new BuildingCatalogEntry(
-				Id: id, PrefabName: name, Name: name, Category: "Buildings", SubCategory: "Buildings_Residential",
-				Thumbnail: "", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsVanilla: true, PdxModsId: "") with { ConstructionCost = cost };
+			TestEntries.Make(id, name, category: "Buildings", subCategory: "Buildings_Residential", lotWidth: 2, lotDepth: 2)
+				with { ConstructionCost = cost };
 
 		[Fact]
 		public void QueryWalksItsInputOnce()

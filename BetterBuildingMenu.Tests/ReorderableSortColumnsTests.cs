@@ -1,5 +1,4 @@
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 
 using System;
@@ -19,29 +18,11 @@ namespace BetterBuildingMenu.Tests
 		private static readonly string[] Candidates =
 			{ "Name", "ConstructionCost", "Upkeep", "Workers", "HasParking" };
 
-		private static readonly BuildingCatalogEntry Base = new(
-			Id: 0,
-			PrefabName: "Base",
-			Name: "Base",
-			Category: "ServiceBuildings",
-			SubCategory: "Any",
-			Thumbnail: "",
-			LotWidth: 1,
-			LotDepth: 1,
-			BuildingLevel: 1,
-			ZoneType: ZoneTypeFilter.Any,
-			HasParking: false,
-			IsVanilla: true,
-			PdxModsId: "");
-
 		private static BuildingCatalogEntry Entry(
 			int id, string name, double? cost = null, double? upkeep = null,
 			double? workers = null, int parking = 0, string uiCategory = "Cat") =>
-			Base with
+			TestEntries.Make(id, name, $"P{id}") with
 			{
-				Id = id,
-				PrefabName = $"P{id}",
-				Name = name,
 				UiCategory = uiCategory,
 				ConstructionCost = cost,
 				Upkeep = upkeep,
@@ -181,7 +162,7 @@ namespace BetterBuildingMenu.Tests
 			};
 
 			var usable = BuildingCatalogQueryEngine.ReorderableSortColumns(
-				entries, Query("menuCategory"), BuildingCatalogQuery.OfferedSortColumns);
+				entries, Query("menuCategory"), BuildingCatalogSortColumns.Ids);
 
 			Assert.Contains("ConstructionCost", usable);
 			Assert.Contains("Name", usable);
