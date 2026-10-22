@@ -24,7 +24,7 @@ namespace BetterBuildingMenu.Domain
 		public static bool IsRoads(string? menu) =>
 			string.Equals(menu?.Trim(), Roads, StringComparison.OrdinalIgnoreCase);
 
-		/// <summary>The education menu, matched the way the UI's isEducationMenu matches it.</summary>
+		/// <summary>The education menu, matched the way the UI's isEducation matches it.</summary>
 		public static bool IsEducation(string? menu) =>
 			(menu ?? string.Empty).IndexOf("Education", StringComparison.OrdinalIgnoreCase) >= 0;
 	}

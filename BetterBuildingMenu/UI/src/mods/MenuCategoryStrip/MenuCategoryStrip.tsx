@@ -11,7 +11,7 @@ import {
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
 import { expandedTabsFor, branchTabTooltip, schoolTierTabs, romanNumeral } from "domain/menuProgression";
-import { isEducationMenu } from "domain/buildingGroups";
+import { isEducation } from "domain/buildingGroups";
 import { isScopedToMenu } from "domain/assetMenuScopeChips";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
@@ -64,7 +64,7 @@ export const MenuCategoryStrip = () => {
   // with several region packs the level is what has dozens behind it, and the
   // milestone they share cuts nothing.
   const schoolTiers = schoolTierTabs(schoolTierCounts);
-  const showSchoolTiers = scoped && isEducationMenu(menu) && schoolTiers.length > 1;
+  const showSchoolTiers = scoped && isEducation(menu) && schoolTiers.length > 1;
   // The fallback, and why the strip exists on a service menu at all: vanilla
   // gives some menus one category and no way to cut them. The development tree
   // is the axis those menus do have, so it stands in where categories cannot.
@@ -151,7 +151,7 @@ export const MenuCategoryStrip = () => {
           so the menu stays one row of choices. They partition that category
           exactly, so nothing is lost by drawing them instead of it. */}
       {visibleCategories(categories, counts).flatMap((category) =>
-        showSchoolTiers && isEducationMenu(category.id)
+        showSchoolTiers && isEducation(category.id)
           ? schoolTiers.map((tier) => (
               <ToolButton
                 key={`tier-${tier.level}`}
