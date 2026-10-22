@@ -1,5 +1,5 @@
 import { nextClaim, type MenuClaim, type OwnedAssetMenu } from "domain/menuOwnership";
-import { toolbarEntityIndex } from "domain/vanillaMenuWatch";
+import { toolbarEntityIndex } from "domain/toolbarEntity";
 import { OwnedAssetMenus$, SelectedAssetMenu$ } from "mods/bindings";
 
 /**

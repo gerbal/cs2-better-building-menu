@@ -10,3 +10,18 @@ export interface ToolbarEntityRef {
 }
 
 export type ToolbarEntity = number | string | ToolbarEntityRef;
+
+/**
+ * The entity index behind a toolbar selection, or null when nothing is
+ * selected. Index 0 is `Entity.Null`: treating it as a real selection would
+ * reopen the asset menu every time the player closes a menu.
+ */
+export function toolbarEntityIndex(entity: ToolbarEntity | null | undefined): number | null {
+  if (entity === null || entity === undefined) {
+    return null;
+  }
+
+  const index = typeof entity === "object" ? entity.index : Number(entity);
+
+  return Number.isFinite(index) && index > 0 ? (index as number) : null;
+}

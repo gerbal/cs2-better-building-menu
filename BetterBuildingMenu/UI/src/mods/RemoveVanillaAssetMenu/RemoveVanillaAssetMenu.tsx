@@ -4,7 +4,7 @@ import { ModuleRegistryExtend } from "cs2/modding";
 import { AssetMenuSlot, useKeptAssetMenuFailed } from "mods/BuildingMenu/KeptAssetMenu";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { ownedMenuName, ownsSelectedMenu } from "domain/menuOwnership";
-import { toolbarEntityIndex } from "domain/vanillaMenuWatch";
+import { toolbarEntityIndex } from "domain/toolbarEntity";
 import { currentMenuClaim } from "mods/menuClaim";
 import { FindItPanelShown$, OwnedAssetMenus$, OwnsCurrentMenu$, ReplaceVanillaBuildMenu$, SelectedAssetMenu$ } from "mods/bindings";
 

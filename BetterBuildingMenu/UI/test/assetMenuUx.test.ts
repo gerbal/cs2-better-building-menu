@@ -17,7 +17,7 @@ describe("Asset menu filter controls", () => {
 
 describe("Vanilla menu interception", () => {
   it("reads an entity index from every shape the toolbar binding uses", async () => {
-    const { toolbarEntityIndex } = await import("../src/domain/vanillaMenuWatch.ts");
+    const { toolbarEntityIndex } = await import("../src/domain/toolbarEntity.ts");
 
     // The toolbar binding hands back a bare number in some places and an
     // {index, version} ref in others; ToolbarEntity allows both plus a string.
@@ -27,7 +27,7 @@ describe("Vanilla menu interception", () => {
   });
 
   it("treats a missing or null selection as no menu rather than entity 0", async () => {
-    const { toolbarEntityIndex } = await import("../src/domain/vanillaMenuWatch.ts");
+    const { toolbarEntityIndex } = await import("../src/domain/toolbarEntity.ts");
 
     // Entity.Null is index 0, and firing the trigger for it would reopen the
     // asset menu every time the player closes a menu.

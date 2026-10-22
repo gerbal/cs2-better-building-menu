@@ -1,5 +1,5 @@
 import { ownsSelectedMenu } from "domain/menuOwnership";
-import { toolbarEntityIndex } from "domain/vanillaMenuWatch";
+import { toolbarEntityIndex } from "domain/toolbarEntity";
 import { currentMenuClaim } from "mods/menuClaim";
 import { OwnedAssetMenus$, OwnsCurrentMenu$, ReplaceVanillaBuildMenu$, SelectedAssetMenu$ } from "mods/bindings";
 
