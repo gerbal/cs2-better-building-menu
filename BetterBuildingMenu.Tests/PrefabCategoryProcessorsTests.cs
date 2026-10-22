@@ -143,6 +143,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData(typeof(FencePrefabCategoryProcessor), typeof(FencePrefab), PrefabCategory.Props, PrefabSubCategory.Props_Fences)]
 		[InlineData(typeof(IntersectionsPrefabCategoryProcessor), typeof(AssetStampPrefab), PrefabCategory.Networks, PrefabSubCategory.Networks_Intersections)]
 		[InlineData(typeof(PathsPrefabCategoryProcessor), typeof(PathwayPrefab), PrefabCategory.Networks, PrefabSubCategory.Networks_Paths)]
+		[InlineData(typeof(PillarPrefabCategoryProcessor), typeof(StaticObjectPrefab), PrefabCategory.Networks, PrefabSubCategory.Networks_Pillars)]
 		[InlineData(typeof(RoadsPrefabCategoryProcessor), typeof(RoadPrefab), PrefabCategory.Networks, PrefabSubCategory.Networks_Roads)]
 		[InlineData(typeof(ServiceBuildingPrefabCategoryProcessor), typeof(BuildingPrefab), PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Misc)]
 		[InlineData(typeof(ServiceBuildingPrefabCategoryProcessor), typeof(BuildingExtensionPrefab), PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Misc)]
