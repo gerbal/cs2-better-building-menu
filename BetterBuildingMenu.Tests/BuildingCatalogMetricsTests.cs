@@ -74,6 +74,27 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void EachMetricsRangeNarrowsTheQuery()
+		{
+			// The engine checks the ranges inline rather than through the table, so a row it
+			// forgets would leave that metric's range admitting everything.
+			BuildingCatalogEntry[] entries = { Valued(1, 1), Valued(2, 5), Valued(3, 9) };
+
+			Assert.Equal(
+				BuildingCatalogMetrics.All.Select(metric => metric.Id + ": 2"),
+				BuildingCatalogMetrics.All.Select(metric => metric.Id + ": " + string.Join(",", BuildingCatalogQueryEngine
+					.Query(entries, metric.QueryWith(new BuildingCatalogQuery(), 4, 6))
+					.Items.Select(entry => entry.Id))));
+		}
+
+		/// <summary>An entry carrying the same value for every metric.</summary>
+		private static BuildingCatalogEntry Valued(int id, int value) =>
+			TestEntries.Make(id, lotWidth: value, lotDepth: value) with
+			{
+				ConstructionCost = value, Upkeep = value, Workers = value, Capacity = value,
+			};
+
+		[Fact]
 		public void FindsAMetricByItsIdInAnyCase()
 		{
 			Assert.True(BuildingCatalogMetrics.TryFind(" LOTWIDTH ", out BuildingCatalogMetric? metric));
