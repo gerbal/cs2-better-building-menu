@@ -37,10 +37,9 @@ namespace BetterBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var unfiltered = BuildingCatalogFacetSelection.Clear(query);
-			var terms = SearchTerms.From(unfiltered.SearchText);
+			var terms = SearchTerms.From(query.SearchText);
 
-			return entries.Where(entry => Matches(entry, unfiltered, terms));
+			return entries.Where(entry => Matches(entry, query, terms, NoFacets));
 		}
 
 		/// <summary>How many entries <see cref="Query"/> would find, without ordering or paging them.</summary>
@@ -59,8 +58,9 @@ namespace BetterBuildingMenu.Services
 			}
 
 			var terms = SearchTerms.From(query.SearchText);
+			var facets = ActiveFacets(query);
 
-			return entries.Count(entry => Matches(entry, query, terms));
+			return entries.Count(entry => Matches(entry, query, terms, facets));
 		}
 
 		public static BuildingCatalogPage Query(
@@ -82,8 +82,9 @@ namespace BetterBuildingMenu.Services
 			// behind its own categories by a rewritten priority. Materialised once: Count,
 			// Order and ReorderableSortColumns all read this array.
 			var terms = SearchTerms.From(query.SearchText);
+			var facets = ActiveFacets(query);
 			var matching = entries
-				.Where(entry => Matches(entry, query, terms))
+				.Where(entry => Matches(entry, query, terms, facets))
 				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu))
 				.ToArray();
 			var totalCount = matching.Length;
@@ -173,7 +174,7 @@ namespace BetterBuildingMenu.Services
 			return offset > lastPopulatedPageStart ? lastPopulatedPageStart : offset;
 		}
 
-		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query, SearchTerms terms)
+		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query, SearchTerms terms, ActiveFacet[] facets)
 		{
 			if (!MatchesVanillaMenuTree(entry, query))
 			{
@@ -201,19 +202,12 @@ namespace BetterBuildingMenu.Services
 				return false;
 			}
 
-			if (!MatchesAny(AvailabilityOf(entry), query.Availability)
-				|| !MatchesAny(entry.BuildingType, query.BuildingTypes)
-				|| !MatchesAny(entry.Provenance, query.Provenance)
-				// DlcIds is deliberately absent: it is the Content facet's third mechanism,
-				// applied in the adapter's ContentVisible so that it UNIONS with the pack and
-				// base-game halves rather than intersecting them.
-				|| !MatchesAny(entry.Theme, query.Themes)
-				// Any, not all, the way every other facet reads: the rail draws them
-				// identically, and "road or water" is the question a player asks.
-				|| !MatchesAny(entry.PlacementFlags, query.PlacementFlags)
-				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes))
+			for (var i = 0; i < facets.Length; i++)
 			{
-				return false;
+				if (!facets[i].Admits(entry))
+				{
+					return false;
+				}
 			}
 
 			return (!query.MinLotWidth.HasValue || entry.LotWidth >= query.MinLotWidth.Value)
@@ -284,19 +278,6 @@ namespace BetterBuildingMenu.Services
 				? StripAxes.NetworkValue
 				: StripAxes.BuildingValue;
 
-		/// <summary>Which of the three availability states the entry is in.</summary>
-		/// <remarks>
-		/// Ordered so the partition holds: locked wins over already-built, because a locked
-		/// unique cannot have been built, and already-built wins over unlocked, because that is
-		/// the state answering "can I place this".
-		/// </remarks>
-		public static string AvailabilityOf(BuildingCatalogEntry entry) =>
-			entry.IsLocked
-				? BuildingCatalogFacetSelection.Availability.Locked
-				: entry.IsAlreadyBuilt
-					? BuildingCatalogFacetSelection.Availability.AlreadyBuilt
-					: BuildingCatalogFacetSelection.Availability.Unlocked;
-
 		/// <summary>
 		/// The only scope there is: the game's own menu placement.
 		/// </summary>
@@ -360,28 +341,6 @@ namespace BetterBuildingMenu.Services
 				&& (!maximum.HasValue || value.Value <= maximum.Value);
 		}
 
-		/// <summary>
-		/// Matches zone density by enum name. An unrecognised name matches nothing rather
-		/// than everything: a broken preset should look broken, not wide open.
-		/// </summary>
-		private static bool MatchesZoneType(ZoneTypeFilter value, IReadOnlyList<string>? selected)
-		{
-			if (selected is null || selected.Count == 0)
-			{
-				return true;
-			}
-
-			for (var i = 0; i < selected.Count; i++)
-			{
-				if (Enum.TryParse<ZoneTypeFilter>(selected[i], ignoreCase: true, out var parsed) && parsed == value)
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
 		private static bool MatchesAnyStripTab(BuildingCatalogEntry entry, IReadOnlyList<string> tabs)
 		{
 			for (var i = 0; i < tabs.Count; i++)
@@ -395,37 +354,39 @@ namespace BetterBuildingMenu.Services
 			return false;
 		}
 
-		private static bool MatchesAny(string? value, IReadOnlyList<string>? selected)
+		/// <summary>A facet with something selected, read once per query: its test and its selection.</summary>
+		private readonly struct ActiveFacet
 		{
-			if (selected is null || selected.Count == 0)
+			private readonly Func<BuildingCatalogEntry, IReadOnlyList<string>, bool> _matches;
+			private readonly IReadOnlyList<string> _selection;
+
+			public ActiveFacet(Func<BuildingCatalogEntry, IReadOnlyList<string>, bool> matches, IReadOnlyList<string> selection)
 			{
-				return true;
+				_matches = matches;
+				_selection = selection;
 			}
 
-			return value is not null && selected.ContainsIgnoreCase(value);
+			public bool Admits(BuildingCatalogEntry entry) => _matches(entry, _selection);
 		}
 
-		private static bool MatchesAny(IReadOnlyList<string>? values, IReadOnlyList<string>? selected)
+		private static readonly ActiveFacet[] NoFacets = Array.Empty<ActiveFacet>();
+
+		/// <summary>The facets this query narrows by: the ones the engine filters on, with something selected.</summary>
+		private static ActiveFacet[] ActiveFacets(BuildingCatalogQuery query)
 		{
-			if (selected is null || selected.Count == 0)
-			{
-				return true;
-			}
+			List<ActiveFacet>? active = null;
 
-			if (values is null)
+			for (var i = 0; i < BuildingCatalogFacetFields.All.Count; i++)
 			{
-				return false;
-			}
+				var facet = BuildingCatalogFacetFields.All[i];
 
-			for (var i = 0; i < values.Count; i++)
-			{
-				if (selected.ContainsIgnoreCase(values[i]))
+				if (facet.Matches is { } matches && facet.Selected(query) is { Count: > 0 } selection)
 				{
-					return true;
+					(active ??= new List<ActiveFacet>()).Add(new ActiveFacet(matches, selection));
 				}
 			}
 
-			return false;
+			return active?.ToArray() ?? NoFacets;
 		}
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> Order(

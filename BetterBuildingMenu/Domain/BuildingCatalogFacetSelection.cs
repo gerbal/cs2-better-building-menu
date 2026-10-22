@@ -21,26 +21,27 @@ namespace BetterBuildingMenu.Domain
 				return query;
 			}
 
-			string normalizedOption = optionId.Trim();
-			return facetId.Trim().ToLowerInvariant() switch
+			return BuildingCatalogFacetFields.TryFind(facetId, out var facet)
+				? Toggle(query, facet, optionId.Trim())
+				: query;
+		}
+
+		private static BuildingCatalogQuery Toggle(BuildingCatalogQuery query, BuildingCatalogFacetField facet, string option)
+		{
+			var value = facet.OptionValue(option);
+
+			// An option another owner acts on, such as the Content facet's packs.
+			if (value.Length == 0)
 			{
-				"buildingtype" => query with { BuildingTypes = ToggleValue(query.BuildingTypes, normalizedOption), Offset = 0 },
-				"provenance" => query with { Provenance = ToggleValue(query.Provenance, normalizedOption), Offset = 0 },
-				"availability" => query with { Availability = ToggleExhaustive(query.Availability, normalizedOption, Availability.All), Offset = 0 },
-				// The Content facet's DLC half. Its pack and base-game options
-				// never reach here — the rail sends those to the game's own
-				// triggers, because the game owns that state. See ContentOption.
-				"content" or "dlc" => ContentOption.DlcIdOf(normalizedOption) is { Length: > 0 } dlc
-					? query with { DlcIds = ToggleValue(query.DlcIds, dlc), Offset = 0 }
-					: query,
-				"theme" => query with { Themes = ToggleValue(query.Themes, normalizedOption), Offset = 0 },
-				// "assetpack" is deliberately absent. Packs are the GAME's selection: the
-				// rail writes them through toolbar.setSelectedAssetPacks and they filter
-				// through VanillaToolbarFilter, so there is no field here to toggle.
-				"placement" => query with { PlacementFlags = ToggleValue(query.PlacementFlags, normalizedOption), Offset = 0 },
-				"zone" or "zonetype" => query with { ZoneTypes = ToggleValue(query.ZoneTypes, normalizedOption), Offset = 0 },
-				_ => query,
-			};
+				return query;
+			}
+
+			var selected = facet.Selected(query);
+			var next = facet.Exhaustive is { } all
+				? ToggleExhaustive(selected, value, all)
+				: ToggleValue(selected, value);
+
+			return facet.With(query, next) with { Offset = 0 };
 		}
 
 		public static BuildingCatalogQuery Clear(BuildingCatalogQuery query)
@@ -50,19 +51,16 @@ namespace BetterBuildingMenu.Domain
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			return query with
+			// StripTabs is not a facet. It is the top bar's selection, which is navigation like
+			// UiCategory beside it, and the menu reset is what drops it.
+			var cleared = query;
+
+			for (var i = 0; i < BuildingCatalogFacetFields.All.Count; i++)
 			{
-				BuildingTypes = null,
-				Provenance = null,
-				Availability = null,
-				DlcIds = null,
-				Themes = null,
-				PlacementFlags = null,
-				ZoneTypes = null,
-				// StripTabs is deliberately absent. It is the top bar's selection, which is
-				// navigation like UiCategory beside it, and the menu reset is what drops it.
-				Offset = 0,
-			};
+				cleared = BuildingCatalogFacetFields.All[i].With(cleared, null);
+			}
+
+			return cleared with { Offset = 0 };
 		}
 
 		/// <summary>
@@ -88,6 +86,16 @@ namespace BetterBuildingMenu.Domain
 			/// options is generated from this.
 			/// </remarks>
 			public static readonly IReadOnlyList<string> All = new[] { Unlocked, Locked, AlreadyBuilt };
+
+			/// <summary>Which of the three states the entry is in.</summary>
+			/// <remarks>Locked wins over already-built, because a locked unique cannot have been built, and
+			/// already-built over unlocked, because that is the state answering "can I place this".</remarks>
+			public static string Of(BuildingCatalogEntry entry) =>
+				entry.IsLocked
+					? Locked
+					: entry.IsAlreadyBuilt
+						? AlreadyBuilt
+						: Unlocked;
 		}
 
 		/// <summary>

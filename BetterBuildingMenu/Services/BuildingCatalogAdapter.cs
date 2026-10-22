@@ -304,32 +304,25 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogEntry[] source = entries.ToArray();
 			var groups = new List<BuildingCatalogFacetGroup>();
 
-			AddValueGroup(groups, FacetIds.BuildingType, "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, BuildingCatalogLabels.ForRole);
-			AddValueGroup(groups, FacetIds.Provenance, "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
-			// Progression, which the vanilla menu shows only by greying an asset out.
-			AddAvailabilityGroup(groups, source, query.Availability);
+			// In BuildingCatalogFacetFields.Published's order, which is the UI's.
+			AddValueGroup(groups, BuildingCatalogFacetFields.BuildingType, source, query, BuildingCatalogLabels.ForRole);
+			AddValueGroup(groups, BuildingCatalogFacetFields.Provenance, source, query, FormatProvenanceLabel);
+			AddAvailabilityGroup(groups, source, query);
 			// Where it came from, next to who made it: one axis, one place.
 			// See AddContentGroup.
 			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query, vanillaSelected);
-			AddValueGroup(groups, FacetIds.Theme, "Theme", source.Select(entry => entry.Theme), query.Themes, BuildingCatalogLabels.ForTheme);
+			AddValueGroup(groups, BuildingCatalogFacetFields.Theme, source, query, BuildingCatalogLabels.ForTheme);
 			// Neither unlock modality is a facet. Development restates the strip's own
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
-			AddArrayGroup(groups, FacetIds.Placement, "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
+			AddValueGroup(groups, BuildingCatalogFacetFields.Placement, source, query, FormatFlagLabel);
 			// Upgrades are not a facet: most belong to a single building, so a filter by
 			// upgrade narrows to that building, which its hover card and the extension
 			// picker already show. Density is not a facet either: every type+density tier is a category with
 			// its own tab and icon in the top bar, so the rail would be a dropdown of the
 			// tabs above it. It stays reachable as a Group by dimension and as a sort.
 
-			bool hasSelection = HasValues(query.Availability)
-				|| HasValues(query.BuildingTypes)
-				|| HasValues(query.Provenance)
-				|| HasValues(query.DlcIds)
-				|| HasValues(query.Themes)
-				|| HasValues(query.PlacementFlags);
-
-			return new BuildingCatalogFacetState(groups.ToArray(), hasSelection);
+			return new BuildingCatalogFacetState(groups.ToArray(), HasSelection(query));
 		}
 
 		/// <summary>One view per refresh: every per-query answer comes from it.</summary>
@@ -783,8 +776,11 @@ namespace BetterBuildingMenu.Services
 		private static void AddAvailabilityGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
 			IReadOnlyCollection<BuildingCatalogEntry> source,
-			IReadOnlyList<string>? selected)
+			BuildingCatalogQuery query)
 		{
+			var facet = BuildingCatalogFacetFields.Availability;
+			var selected = facet.Selected(query);
+
 			// Resting state shows NOTHING selected, matching the vanilla pack row
 			// directly above: an exhaustive set where nothing picked means everything
 			// shows. Pairs with ToggleExhaustive, where a click narrows to what was clicked.
@@ -796,8 +792,8 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 
 			groups.Add(new BuildingCatalogFacetGroup(
-				FacetIds.Availability,
-				"Availability",
+				facet.Id,
+				facet.Label!,
 				options,
 				// Exhaustive, so a selection narrows only while it is partial.
 				// Nothing selected and everything selected both admit everything,
@@ -807,13 +803,13 @@ namespace BetterBuildingMenu.Services
 
 		private static void AddValueGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
-			string id,
-			string label,
-			IEnumerable<string?> values,
-			IReadOnlyList<string>? selected,
+			BuildingCatalogFacetField facet,
+			IEnumerable<BuildingCatalogEntry> source,
+			BuildingCatalogQuery query,
 			Func<string, string>? formatLabel = null)
 		{
-			string[] distinctValues = WithSelected(DistinctValues(values), selected);
+			var selected = facet.Selected(query);
+			string[] distinctValues = WithSelected(DistinctValues(facet.ValuesIn(source)), selected);
 			if (!IsWorthOffering(distinctValues, selected))
 			{
 				return;
@@ -822,8 +818,8 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogFacetOption[] options = CreateOptions(distinctValues, selected, formatLabel);
 
 			groups.Add(new BuildingCatalogFacetGroup(
-				id,
-				label,
+				facet.Id,
+				facet.Label!,
 				options,
 				// Excludes something iff at least one option is selected and at
 				// least one is not. All-selected and none-selected both admit
@@ -858,6 +854,8 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogQuery query,
 			bool vanillaSelected)
 		{
+			var facet = BuildingCatalogFacetFields.Content;
+			var selected = facet.Selected(query);
 			var options = new List<BuildingCatalogFacetOption>();
 
 			// Base game leads, the way it leads the game's own row.
@@ -887,13 +885,13 @@ namespace BetterBuildingMenu.Services
 				.Select(dlc => new BuildingCatalogFacetOption(
 					ContentOption.Dlc + dlc,
 					FormatDlcLabel(dlc),
-					query.DlcIds.ContainsIgnoreCase(dlc))));
+					selected.ContainsIgnoreCase(dlc))));
 
 			// Same rule as every other dimension: one value splits nothing, and
 			// a selection holds the group open so it can still be cleared.
 			if (options.Count > 1 || options.Any(option => option.Selected))
 			{
-				groups.Add(new BuildingCatalogFacetGroup(FacetIds.Content, "Content", options.ToArray()));
+				groups.Add(new BuildingCatalogFacetGroup(facet.Id, facet.Label!, options.ToArray()));
 			}
 		}
 
@@ -903,17 +901,6 @@ namespace BetterBuildingMenu.Services
 				entry.DlcId,
 				GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture),
 				StringComparison.Ordinal);
-
-		private static void AddArrayGroup(
-			ICollection<BuildingCatalogFacetGroup> groups,
-			string id,
-			string label,
-			IEnumerable<string[]?> values,
-			IReadOnlyList<string>? selected,
-			Func<string, string>? formatLabel = null)
-		{
-			AddValueGroup(groups, id, label, values.SelectMany(value => value ?? Array.Empty<string>()), selected, formatLabel);
-		}
 
 		private static BuildingCatalogFacetOption[] CreateOptions(
 			IEnumerable<string> values,
@@ -973,6 +960,20 @@ namespace BetterBuildingMenu.Services
 		private static bool HasValues(IReadOnlyList<string>? values)
 		{
 			return values is not null && values.Count > 0;
+		}
+
+		/// <summary>Whether any facet the rail draws has something selected.</summary>
+		private static bool HasSelection(BuildingCatalogQuery query)
+		{
+			for (var i = 0; i < BuildingCatalogFacetFields.Published.Count; i++)
+			{
+				if (HasValues(BuildingCatalogFacetFields.Published[i].Selected(query)))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static string FormatDlcLabel(string id)
