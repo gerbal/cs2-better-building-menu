@@ -32,7 +32,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			Of(dependencies => new LanesPrefabCategoryProcessor(dependencies.EntityManager)),
 			Of(dependencies => new MiscBuildingPrefabCategoryProcessor(dependencies.EntityManager)),
 			Of(_ => new PathsPrefabCategoryProcessor()),
-			Of(dependencies => new PillarPrefabCategoryProcessor(dependencies.EntityManager)),
+			Of(_ => new PillarPrefabCategoryProcessor()),
 			Of(dependencies => new PropPrefabCategoryProcessor(dependencies.EntityManager)),
 			Of(_ => new RoadsPrefabCategoryProcessor()),
 			Of(dependencies => new RoundaboutPrefabCategoryProcessor(dependencies.EntityManager)),
