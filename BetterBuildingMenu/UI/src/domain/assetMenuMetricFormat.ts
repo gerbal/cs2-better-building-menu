@@ -401,6 +401,8 @@ interface Tier<Unit extends string> {
   scale?: (value: number) => number;
   /** At most this many places, trailing zeros dropped; whole units when absent. */
   decimals?: number;
+  /** From this scaled value up, whole units even where `decimals` is set. */
+  wholeFrom?: number;
 }
 
 /**
@@ -416,9 +418,10 @@ function ladder<Unit extends string>(
   return measure((value, separators) => {
     const tier = tierFor(separators.unitSystem === UnitSystem.Freedom ? freedom : metric, value);
     const scaled = tier.scale ? tier.scale(value) : value;
-    const digits = tier.decimals === undefined
+    const places = tier.wholeFrom !== undefined && scaled >= tier.wholeFrom ? undefined : tier.decimals;
+    const digits = places === undefined
       ? groupDigits(Math.round(scaled), separators)
-      : roundedDigits(scaled, tier.decimals, separators);
+      : roundedDigits(scaled, places, separators);
 
     return applyMoneyTemplate(templatesOf(separators)[tier.unit], digits);
   });
@@ -437,22 +440,25 @@ const lengthOf = (separators: NumberSeparators): LengthTemplates => separators.l
 const weightOf = (separators: NumberSeparators): WeightTemplates => separators.weight ?? FALLBACK_WEIGHT;
 const powerOf = (separators: NumberSeparators): PowerTemplates => separators.power ?? FALLBACK_POWER;
 
+/** Vanilla's number formatter keeps its places only below 100 of a unit. */
+const LENGTH_PLACES = { decimals: 1, wholeFrom: 100 } as const;
+
 /**
  * A service radius, e.g. "480 m". Metres because that is what the simulation
- * works in; rounded because a tower's reach is not read to the centimetre.
+ * works in; one place below 100 of a unit and whole units above, as vanilla.
  */
 export const formatServiceRange = ladder(
   lengthOf,
-  // Vanilla's own Length rule, thresholds and divisors included, so a range
-  // agrees with the same distance stated anywhere else in the game.
+  // Vanilla's own Length rule, thresholds, divisors and places included, so a
+  // range agrees with the same distance stated anywhere else in the game.
   [
-    { below: METRIC_LONG, unit: "metre" },
-    { unit: "kilometre", scale: (metres) => Math.round(metres / 100) / 10, decimals: 1 },
+    { below: METRIC_LONG, unit: "metre", ...LENGTH_PLACES },
+    { unit: "kilometre", scale: (metres) => metres / 1000, ...LENGTH_PLACES },
   ],
   // Yards, not feet: feet are vanilla's Height unit, and a service radius is a Length.
   [
-    { below: FREEDOM_LONG, unit: "yard", scale: (metres) => metres / METRES_PER_YARD },
-    { unit: "mile", scale: (metres) => Math.round(metres / 1000 / KILOMETRES_PER_MILE * 10) / 10, decimals: 1 },
+    { below: FREEDOM_LONG, unit: "yard", scale: (metres) => metres / METRES_PER_YARD, ...LENGTH_PLACES },
+    { unit: "mile", scale: (metres) => metres / 1000 / KILOMETRES_PER_MILE, ...LENGTH_PLACES },
   ],
 );
 
@@ -474,7 +480,7 @@ export const formatSpeedLimit = measure((value, separators) => {
 });
 
 /**
- * How wide a network draws, e.g. "24 m" — whole metres, or yards under
+ * How wide a network draws, e.g. "24 m" or "7.5 m" — metres, or yards under
  * Freedom, because it goes through formatServiceRange like any other length.
  */
 export function formatNetworkWidth(
