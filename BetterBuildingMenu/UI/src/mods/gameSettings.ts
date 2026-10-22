@@ -14,7 +14,7 @@ export function useTextScale(): number {
   return textScaleOf(useValue(TextScale$));
 }
 
-export function useUnitSystem(): UnitSystem {
+function useUnitSystem(): UnitSystem {
   return unitSystemOf(useValue(UnitSettings$));
 }
 

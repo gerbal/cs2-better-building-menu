@@ -1,7 +1,6 @@
 import { trigger } from "cs2/api";
 import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
@@ -56,7 +55,6 @@ import styles from "./controlPane.module.scss";
  * catalog — what narrows it, how it is grouped and ordered, what shape it draws.
  */
 export const ControlPane = memo(function ControlPane() {
-  const { translate } = useLocalization();
   const label = useLabel();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
@@ -157,8 +155,8 @@ export const ControlPane = memo(function ControlPane() {
           one caption that does not restate something already in view. */}
       {currentSearch?.trim() && (
         <div className={styles.searchContext} title={currentSearch}>
-          {translate("Tooltip.LABEL[BetterBuildingMenu.AssetMenuSearchResults]", "Results for {0}")
-            ?.replace("{0}", currentSearch)}
+          {label("Tooltip.LABEL[BetterBuildingMenu.AssetMenuSearchResults]", "Results for {0}")
+            .replace("{0}", currentSearch)}
         </div>
       )}
 

@@ -1,10 +1,9 @@
 import { useValue } from "mods/panelValue";
 import { Button } from "cs2/ui";
-import { useLocalization } from "cs2/l10n";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import classNames from "classnames";
 import { tableLabelCharBudget } from "domain/tileLabel";
-import { useTextScale } from "mods/gameSettings";
+import { useNumberSeparators, useTextScale } from "mods/gameSettings";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   ASSET_MENU_CHROME_WIDTH,
@@ -21,7 +20,7 @@ import {
 } from "domain/assetMenuLayout";
 import type { AssetMenuColumnWidths, AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
 import { catalogWindowRemaining, loadMoreCount, rowsThatFit } from "domain/catalogWindow";
-import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
+import { groupDigits } from "domain/assetMenuMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
@@ -65,7 +64,6 @@ const densityClassNames: Record<AssetMenuDensityTier, string> = {
  * A width drag does re-render it, since the table's columns follow the width.
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
-  const { translate } = useLocalization();
   const label = useLabel();
   // The build menu as drawn, plus the pane: the row the table arithmetic was tuned
   // against, which subtracts the pane itself.
@@ -107,7 +105,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
 
-  const separators = useMemo(() => getNumberSeparators(translate), [translate]);
+  const separators = useNumberSeparators();
 
   // Names the constraints that actually emptied the table, rather than always
   // blaming search and category.
@@ -194,7 +192,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // notice, or the message naming the constraints that emptied it.
   const emptyState = status === "indexing"
     ? <div className={styles.empty}>
-        {translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}
+        {label("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}
       </div>
     : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>;
 
