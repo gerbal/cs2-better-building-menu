@@ -878,13 +878,12 @@
   white-space: nowrap;
 }
 
-// Where Load more would be, in the room it leaves: the window is at its ceiling,
-// so narrowing is the only way to the rest.
+// Where Load more would be: the window is at its ceiling, so narrowing is the
+// only way to the rest.
 .narrowHint {
   flex: 1 1 auto;
   min-width: 0;
   margin-left: 12rem;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
-  text-align: right;
 }
