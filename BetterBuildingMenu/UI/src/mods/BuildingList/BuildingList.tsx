@@ -9,7 +9,7 @@ import {
   formatLotDimensions,
   hasFootprint,
 } from "domain/assetMenuMetricFormat";
-import { entryLabel, entryStateAttributes, entryStateWordOf, sortedBadgeText } from "domain/buildingEntryView";
+import { entryLabel, entryStateAttributes, entryStateWordOf, isArmedEntry, sortedBadgeText } from "domain/buildingEntryView";
 import { canPlace } from "domain/buildingLockState";
 import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
@@ -17,7 +17,7 @@ import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entry
 import { useGuardedPlace } from "mods/useGuardedPlace";
 import { sortedMetricFor } from "domain/sortedMetric";
 import styles from "./buildingList.module.scss";
-import { BuildingCatalogSortColumn$ } from "mods/bindings";
+import { ActivePrefabId$, BuildingCatalogSortColumn$ } from "mods/bindings";
 
 const UNIQUE_BADGE: UniqueBadgeClasses = { badge: styles.uniqueAsset, unique: styles.uniqueMark, alreadyBuilt: styles.alreadyBuilt };
 // A card's larger picture takes a larger badge, at the same ratio.
@@ -35,10 +35,11 @@ interface BuildingListProps {
   onPlace: (entry: BuildingCatalogEntry) => void;
   variant?: BuildingListVariant;
   /**
-   * The entry whose tool is active, where the caller knows it — the extension
-   * menu does, from vanilla's own selectedUpgrade. The build menu passes none.
+   * The armed entry, where the caller knows it better than ActivePrefabId: the
+   * extension menu does, from vanilla's own selectedUpgrade. The build menu
+   * passes none and the list lights what the game has armed, as the grid does.
    */
-  selectedId?: number;
+  armedId?: number;
 }
 
 /**
@@ -46,13 +47,14 @@ interface BuildingListProps {
  * what a building is called among hundreds. Cards adds one line of constraints
  * (does it fit, can I afford it), never comparisons.
  */
-export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
+export const BuildingList = ({ entries, onPlace, variant = "compact", armedId }: BuildingListProps) => {
   // The same card the grid and the table show, so which facts a building
   // states does not depend on which view mode the player is in. The rows take
   // its separators and state words too, the game's own words where it has them.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const cards = variant === "cards";
+  const activePrefabId = useValue(ActivePrefabId$);
 
   // Locked assets are shown and refused, not hidden.
   const place = useGuardedPlace(onPlace);
@@ -65,7 +67,7 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
           key={entry.id}
           entry={entry}
           cards={cards}
-          selected={selectedId === entry.id}
+          armed={isArmedEntry(entry, armedId ?? activePrefabId)}
           sortedMetric={sortedMetric}
           hoverCard={hoverCard}
           onPlace={place}
@@ -78,7 +80,8 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
 interface BuildingListCardProps {
   entry: BuildingCatalogEntry;
   cards: boolean;
-  selected: boolean;
+  /** Whether the row is lit as the armed building; see isArmedEntry. */
+  armed: boolean;
   sortedMetric: ReturnType<typeof sortedMetricFor>;
   /** The hover card's context, whose separators and state words the row draws with too. */
   hoverCard: HoverCardContext;
@@ -92,7 +95,7 @@ interface BuildingListCardProps {
 const BuildingListCard = memo(function BuildingListCard({
   entry,
   cards,
-  selected,
+  armed,
   sortedMetric,
   hoverCard,
   onPlace,
@@ -117,10 +120,11 @@ const BuildingListCard = memo(function BuildingListCard({
   return (
     <BuildingHoverCard entry={entry} context={hoverCard}>
       <Button
-        className={classNames(styles.item, cards && styles.itemCard, selected && styles.itemSelected)}
+        className={classNames(styles.item, cards && styles.itemCard, armed && styles.itemArmed)}
         variant="icon"
         data-catalog-entry={entry.id}
-        data-selected={selected ? "true" : undefined}
+        // Announced as well as drawn, as the grid's tile is.
+        aria-current={armed ? "true" : undefined}
         onSelect={() => onPlace(entry)}
         // Both unplaceable states, not just locked: a row has no
         // thumbnail to silhouette, so the ground and this suffix carry

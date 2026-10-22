@@ -30,6 +30,8 @@ export interface TableRowLabels {
 export interface TableRowProps {
   entry: BuildingCatalogEntry;
   expanded: boolean;
+  /** Whether the row is lit as the armed building; see isArmedEntry. */
+  armed: boolean;
   /** Characters the name cell can show before the middle is elided. */
   nameBudget: number;
   labels: TableRowLabels;
@@ -54,6 +56,7 @@ export interface TableRowProps {
 export const TableRow = memo(function TableRow({
   entry,
   expanded,
+  armed,
   nameBudget,
   labels,
   hoverCard,
@@ -92,7 +95,9 @@ export const TableRow = memo(function TableRow({
           two tooltips on one control. */}
       <BuildingHoverCard entry={entry} context={hoverCard}>
         <Button
-          className={styles.rowSelect}
+          // The Place control is what lights, as the grid's tile is: the
+          // details chevron beside it is not this building's.
+          className={classNames(styles.rowSelect, armed && styles.rowSelectArmed)}
           variant="icon"
           // The row places, as a click in every other view does. NOT disabled
           // when the entry cannot be: onPlace refuses, and disabling takes the
@@ -101,6 +106,7 @@ export const TableRow = memo(function TableRow({
           aria-label={stateWord ? `${rowPlaceLabel} — ${stateWord}` : rowPlaceLabel}
           data-refused={canPlace(entry) ? undefined : "true"}
           data-expanded={expanded ? "true" : undefined}
+          aria-current={armed ? "true" : undefined}
         >
           <div className={styles.identityCell}>
             {/* The badge sits ON the picture here too, at the same ratio the

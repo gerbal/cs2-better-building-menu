@@ -7,13 +7,22 @@
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import { formatBuildingMetric, formatLotDimensions, hasFootprint, type NumberSeparators } from "./assetMenuMetricFormat";
-import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, type LockableEntry } from "./buildingLockState";
+import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, type LockableEntry } from "./buildingLockState";
 import type { HoverCardLabels } from "./hoverCardLines";
 import { sortedMetricValue } from "./sortedMetric";
 
 /** The name a view draws and announces: the prefab's own where the game gives none. */
 export function entryLabel(entry: Pick<BuildingCatalogEntry, "name" | "prefabName">): string {
   return entry.name || entry.prefabName;
+}
+
+/**
+ * Whether a view lights the entry as the armed building. `armedId` is ActivePrefabId,
+ * 0 when nothing is armed. Never one that cannot be placed, which is vanilla's answer:
+ * its asset tile draws no selection colour under a locked thumbnail.
+ */
+export function isArmedEntry(entry: LockableEntry & Pick<BuildingCatalogEntry, "id">, armedId: number): boolean {
+  return armedId !== 0 && entry.id === armedId && canPlace(entry);
 }
 
 /**

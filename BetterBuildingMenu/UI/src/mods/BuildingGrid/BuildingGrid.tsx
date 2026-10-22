@@ -5,7 +5,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { canPlace, isEntryLocked } from "domain/buildingLockState";
-import { entryLabel, entryStateAttributes, entryStateWordOf, sortedBadgeText } from "domain/buildingEntryView";
+import { entryLabel, entryStateAttributes, entryStateWordOf, isArmedEntry, sortedBadgeText } from "domain/buildingEntryView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { entryThumbnail, uniqueBadge, type UniqueBadgeClasses } from "mods/entryArtwork";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
@@ -95,7 +95,7 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
         <BuildingTile
           key={`grid-${entry.id}`}
           entry={entry}
-          armed={activePrefabId !== 0 && entry.id === activePrefabId}
+          armed={isArmedEntry(entry, activePrefabId)}
           sortedMetric={sortedMetric}
           tileSize={tileSize}
           textScale={textScale}
@@ -126,7 +126,7 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
 
 interface BuildingTileProps {
   entry: BuildingCatalogEntry;
-  /** Whether this tile's prefab is the armed one. ActivePrefabId is 0 when nothing is armed. */
+  /** Whether the tile is lit as the armed building; see isArmedEntry. */
   armed: boolean;
   sortedMetric: ReturnType<typeof sortedMetricFor>;
   tileSize: number;
