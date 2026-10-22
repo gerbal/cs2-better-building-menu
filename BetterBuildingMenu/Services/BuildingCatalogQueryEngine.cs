@@ -436,7 +436,7 @@ namespace BetterBuildingMenu.Services
 			// Grouping first, so every member of a group is contiguous and paging
 			// cuts cleanly. Without this a group splits across a page boundary
 			// and its heading describes something other than what follows it.
-			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, query);
+			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, BuildingCatalogGrouping.Resolve(query.GroupBy));
 			// Relevance decides within a group while a search is active; the chosen sort breaks
 			// ties. Shortest name next: "clinic" ties Medical Clinic with Additional Clinic
 			// Center, and the plain one is nearly always what was meant.
@@ -477,15 +477,16 @@ namespace BetterBuildingMenu.Services
 				columns[i] = BuildingCatalogSortColumns.Find(candidates[i]);
 			}
 
+			var dimension = BuildingCatalogGrouping.Resolve(query.GroupBy);
 			// group key -> column -> first value seen there.
 			var seen = new Dictionary<string, object?[]>(StringComparer.Ordinal);
 			var reorderable = new bool[candidates.Count];
 
 			foreach (var entry in entries)
 			{
-				var group = BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy)
+				var group = dimension.PrimaryKey(entry)
 					+ ""
-					+ BuildingCatalogGrouping.SecondaryKey(entry, query.GroupBy);
+					+ dimension.SecondaryKey(entry);
 
 				if (!seen.TryGetValue(group, out var first))
 				{
@@ -537,16 +538,16 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		private static IOrderedEnumerable<BuildingCatalogEntry> SeedByGroup(
 			IEnumerable<BuildingCatalogEntry> entries,
-			BuildingCatalogQuery query)
+			GroupDimension dimension)
 		{
-			if (!BuildingCatalogGrouping.IsGrouped(query.GroupBy))
+			if (!dimension.IsGrouped)
 			{
 				return entries.OrderBy(_ => 0);
 			}
 
 			return entries
-				.OrderBy(entry => BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy), StringComparer.OrdinalIgnoreCase)
-				.ThenBy(entry => BuildingCatalogGrouping.SecondaryKey(entry, query.GroupBy), StringComparer.OrdinalIgnoreCase);
+				.OrderBy(dimension.PrimaryKey, StringComparer.OrdinalIgnoreCase)
+				.ThenBy(dimension.SecondaryKey, StringComparer.OrdinalIgnoreCase);
 		}
 	}
 }
