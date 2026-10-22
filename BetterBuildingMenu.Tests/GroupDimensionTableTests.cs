@@ -68,7 +68,7 @@ namespace BetterBuildingMenu.Tests
 		/// <summary>Each row's keys and headings under one dimension, with and without the game's names.</summary>
 		internal static string KeysAndLabelsOf(string? dimension)
 		{
-			var grouping = BuildingCatalogGrouping.Resolve(dimension);
+			var grouping = BuildingCatalogGrouping.Find(dimension);
 
 			return string.Join("; ", Set.Select(entry =>
 			{

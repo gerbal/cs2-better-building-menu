@@ -77,7 +77,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("school tier", "", true)]
 		public void AGroupDimensionAnswersToItsIdInAnyCaseAndPaddingWithASentinelForTheRest(string? id, string expected, bool grouped)
 		{
-			var dimension = BuildingCatalogGrouping.Resolve(id);
+			var dimension = BuildingCatalogGrouping.Find(id);
 
 			Assert.Equal(expected, dimension.Id);
 			Assert.Equal(grouped, dimension.IsGrouped);
