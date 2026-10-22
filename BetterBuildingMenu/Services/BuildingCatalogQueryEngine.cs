@@ -88,7 +88,8 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 			var totalCount = matching.Length;
 			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
-			var items = Order(matching, query, terms)
+			var ordered = Order(matching, query, terms).ToArray();
+			var items = ordered
 				.Skip(offset)
 				.Take(limit)
 				.ToArray();
@@ -110,16 +111,16 @@ namespace BetterBuildingMenu.Services
 				limit,
 				HasMore: hasMore,
 				ReorderableSortColumns: usableColumns,
-				BestMatchId: FindBestMatchId(items, terms),
+				BestMatch: FindBestMatch(ordered, terms),
 				SearchText: query.SearchText ?? string.Empty);
 		}
 
 		/// <summary>
-		/// The best-scoring row of this window that can be placed: by relevance, then the shorter
-		/// name, then page order, as a group orders. Locked and already-built rows are skipped,
-		/// because Enter on them does nothing.
+		/// The best-scoring match that can be placed, from every match rather than this window:
+		/// by relevance, then the shorter name, then result order, as a group orders. Locked and
+		/// already-built rows are skipped, because Enter on them does nothing.
 		/// </summary>
-		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, SearchTerms terms)
+		private static BuildingCatalogEntry? FindBestMatch(IReadOnlyList<BuildingCatalogEntry> items, SearchTerms terms)
 		{
 			if (terms.IsEmpty)
 			{
@@ -148,7 +149,7 @@ namespace BetterBuildingMenu.Services
 				}
 			}
 
-			return best?.Id;
+			return best;
 		}
 
 		/// <summary>

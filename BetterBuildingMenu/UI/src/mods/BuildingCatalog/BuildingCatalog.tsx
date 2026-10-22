@@ -98,7 +98,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // while this kept menu stays built, and the open after that must draw its row.
   const anchoredId = getAssetMenuAnchor(anchorKey);
   const drawing = useMemo(() => ({ rows: tableRows, mustIncludeId: anchoredId }), [tableRows, anchoredId]);
-  const { items, pageItems, nextCount, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } =
+  const { items, pageItems, nextCount, totalCount, status, hasMore, bestMatch, searchText: pageSearch, loadMore } =
     useCatalogWindow(rootRef, { viewMode, groupBy }, shown, drawing);
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(AssetMenuFacets$);
@@ -236,7 +236,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     if (!shown) return;
     if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
 
-    const decision = enterDecision({ items: pageItems, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
+    const decision = enterDecision({ bestMatch, searchText: pageSearch }, currentSearch ?? "");
     pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
     if (decision && "arm" in decision) activate(decision.arm);
   });
@@ -250,12 +250,12 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       return;
     }
 
-    const decision = enterDecision({ items: pageItems, bestMatchId, searchText: pageSearch }, waiting);
+    const decision = enterDecision({ bestMatch, searchText: pageSearch }, waiting);
     if (decision && "wait" in decision) return;
 
     pendingEnter.current = null;
     if (decision) activate(decision.arm);
-  }, [pageItems, bestMatchId, pageSearch, currentSearch, activate]);
+  }, [bestMatch, pageSearch, currentSearch, activate]);
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element

@@ -341,7 +341,7 @@ public sealed class JsonWriteGoldenTests
                 "PropertyName:offset", "Write:Int32:0",
                 "PropertyName:limit", "Write:Int32:40",
                 "PropertyName:hasMore", "Write:Boolean:False",
-                "PropertyName:bestMatchId", "WriteNull",
+                "PropertyName:bestMatch", "WriteNull",
                 "PropertyName:searchText", "Write:String:",
                 "PropertyName:menu", "Write:String:",
                 "TypeEnd",
@@ -362,7 +362,7 @@ public sealed class JsonWriteGoldenTests
             Status: "Searching",
             HasMore: true,
             ReorderableSortColumns: new[] { "cost", "name" },
-            BestMatchId: 9,
+            BestMatch: second,
             SearchText: "coal",
             Menu: "Roads");
 
@@ -379,7 +379,11 @@ public sealed class JsonWriteGoldenTests
                     "PropertyName:offset", "Write:Int32:40",
                     "PropertyName:limit", "Write:Int32:20",
                     "PropertyName:hasMore", "Write:Boolean:True",
-                    "PropertyName:bestMatchId", "Write:Int32:9",
+                    "PropertyName:bestMatch",
+                },
+                Record(second),
+                new[]
+                {
                     "PropertyName:searchText", "Write:String:coal",
                     "PropertyName:menu", "Write:String:Roads",
                     "PropertyName:status", "Write:String:Searching",
@@ -408,7 +412,7 @@ public sealed class JsonWriteGoldenTests
                 "PropertyName:offset", "Write:Int32:0",
                 "PropertyName:limit", "Write:Int32:40",
                 "PropertyName:hasMore", "Write:Boolean:False",
-                "PropertyName:bestMatchId", "WriteNull",
+                "PropertyName:bestMatch", "WriteNull",
                 "PropertyName:searchText", "Write:String:",
                 "PropertyName:menu", "Write:String:",
                 "TypeEnd",

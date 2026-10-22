@@ -144,11 +144,11 @@ export interface BuildingCatalogPage {
   hasMore?: boolean;
 
   /**
-   * The row Enter arms while a search is active; null without a search or a
-   * result. C#'s answer, because only it scores, and a grouped page is ordered
-   * by group before relevance.
+   * The entry Enter arms while a search is active; null without a search or a
+   * result. C#'s answer from every match, sent whole because a grouped page is
+   * ordered by group first and the best match may not be in this window.
    */
-  bestMatchId?: number | null;
+  bestMatch?: BuildingCatalogEntry | null;
 
   /** The search this page answers; it trails the box by the search debounce. */
   searchText?: string;

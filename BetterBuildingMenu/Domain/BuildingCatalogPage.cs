@@ -27,13 +27,13 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		IReadOnlyList<string>? ReorderableSortColumns = null,
 		/// <summary>
-		/// The row Enter arms while a search is active; null without a search or a result.
+		/// The entry Enter arms while a search is active; null without a search or a result.
 		/// </summary>
 		/// <remarks>
-		/// Named here rather than inferred from the first row: grouping orders the page by
-		/// group first, so the best match can sit anywhere in it, and only this side scores.
+		/// Chosen from every match and sent whole: grouping orders by group first, so the best
+		/// match can sit in a group this window has not reached, and only this side scores.
 		/// </remarks>
-		int? BestMatchId = null,
+		BuildingCatalogEntry? BestMatch = null,
 		/// <summary>The search this page answers, as the query ran it.</summary>
 		/// <remarks>
 		/// The box echoes a keystroke at once and the page follows a debounce later, so Enter
@@ -49,6 +49,8 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		string? Menu = null) : IJsonWritable
 	{
+		public int? BestMatchId => BestMatch?.Id;
+
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
@@ -59,7 +61,16 @@ namespace BetterBuildingMenu.Domain
 			writer.Prop("offset", Offset);
 			writer.Prop("limit", Limit);
 			writer.Prop("hasMore", HasMore);
-			writer.Prop("bestMatchId", BestMatchId);
+			writer.PropertyName("bestMatch");
+			if (BestMatch is null)
+			{
+				writer.WriteNull();
+			}
+			else
+			{
+				BestMatch.Write(writer);
+			}
+
 			writer.Prop("searchText", SearchText ?? string.Empty);
 			writer.Prop("menu", Menu ?? string.Empty);
 			if (Status is not null)

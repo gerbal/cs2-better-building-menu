@@ -31,8 +31,8 @@ export interface CatalogWindow {
   limit: number;
   status: BuildingCatalogPageStatus;
   hasMore: boolean;
-  /** The row Enter arms while a search is active; see BuildingCatalogPage. */
-  bestMatchId: number | null;
+  /** The entry Enter arms while a search is active; see BuildingCatalogPage. */
+  bestMatch: BuildingCatalogEntry | null;
   /** The search this page answers, which trails the box by a debounce. */
   searchText: string;
   loadMore(): void;
@@ -76,7 +76,7 @@ export function useCatalogWindow(
   const status: BuildingCatalogPageStatus = page?.status
     ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
   const pageHasMore = page?.hasMore ?? false;
-  const bestMatchId = page?.bestMatchId ?? null;
+  const bestMatch = page?.bestMatch ?? null;
   const searchText = page?.searchText ?? "";
 
   // The rows drawn: a screen of the page to start, a screen more at a time as the
@@ -222,5 +222,5 @@ export function useCatalogWindow(
     // the page, not the rows drawn, and the poll stopped when it asked.
   }, [rootRef, shown, hasMore, items.length, pageItems.length, scope.viewMode, scope.groupBy]);
 
-  return { items, pageItems, nextCount, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
+  return { items, pageItems, nextCount, totalCount, offset, limit, status, hasMore, bestMatch, searchText, loadMore };
 }
