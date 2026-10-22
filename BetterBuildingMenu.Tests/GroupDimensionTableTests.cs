@@ -66,18 +66,22 @@ namespace BetterBuildingMenu.Tests
 		};
 
 		/// <summary>Each row's keys and headings under one dimension, with and without the game's names.</summary>
-		internal static string KeysAndLabelsOf(string? dimension) =>
-			string.Join("; ", Set.Select(entry =>
+		internal static string KeysAndLabelsOf(string? dimension)
+		{
+			var grouping = BuildingCatalogGrouping.Resolve(dimension);
+
+			return string.Join("; ", Set.Select(entry =>
 			{
-				var named = BuildingCatalogGrouping.Labels(entry, dimension, MilestoneNames, SchoolTierNames);
-				var plain = BuildingCatalogGrouping.Labels(entry, dimension);
+				var named = grouping.Labels(entry, MilestoneNames, SchoolTierNames);
+				var plain = grouping.Labels(entry);
 
 				return Escape(
-					BuildingCatalogGrouping.PrimaryKey(entry, dimension)
-					+ "|" + BuildingCatalogGrouping.SecondaryKey(entry, dimension)
+					grouping.PrimaryKey(entry)
+					+ "|" + grouping.SecondaryKey(entry)
 					+ "|" + string.Join("/", named.Path) + "|" + (named.LabelId ?? "null")
 					+ "|" + string.Join("/", plain.Path) + "|" + (plain.LabelId ?? "null"));
 			}));
+		}
 
 		/// <summary>The set's order grouped by one dimension, by name within each group.</summary>
 		internal static string OrderOf(string? dimension) =>

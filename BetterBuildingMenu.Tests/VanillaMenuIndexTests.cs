@@ -243,7 +243,7 @@ namespace BetterBuildingMenu.Tests
 			{
 				Assert.Single(view
 					.Where(item => item.UiCategory == "ModRoads")
-					.Select(item => BuildingCatalogGrouping.PrimaryKey(item, BuildingCatalogGrouping.MenuCategory))
+					.Select(item => BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.MenuCategory).PrimaryKey(item))
 					.Distinct());
 			}
 		}
@@ -310,7 +310,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(new[] { "TerraformingTools", "Pathways", "Pathways" }, items.Select(item => item.UiCategory));
 			Assert.Single(items
 				.Where(item => item.UiCategory == "Pathways")
-				.Select(item => BuildingCatalogGrouping.PrimaryKey(item, BuildingCatalogGrouping.MenuCategory))
+				.Select(item => BuildingCatalogGrouping.Resolve(BuildingCatalogGrouping.MenuCategory).PrimaryKey(item))
 				.Distinct());
 		}
 

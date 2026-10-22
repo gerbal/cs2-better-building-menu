@@ -195,7 +195,7 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		string[]? SupportedUpgrades = null,
 		// The headings this entry files under, set on the page by CatalogView from
-		// BuildingCatalogGrouping.Labels: the UI builds its group tree from consecutive runs
+		// GroupDimension.Labels: the UI builds its group tree from consecutive runs
 		// of these. LabelId is the game's category id, so the UI can localise that one.
 		string[]? GroupPath = null,
 		string? GroupLabelId = null) : IJsonWritable
