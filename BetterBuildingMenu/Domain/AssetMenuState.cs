@@ -157,12 +157,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>An unparsable bound changes nothing.</summary>
 		public AssetMenuState SetMetricRange(string metricId, string minText, string maxText)
 		{
-			if (!BuildingCatalogMetricRange.TryParse(metricId, minText, maxText, out _))
-			{
-				return this;
-			}
-
-			return this with { Query = Narrowed(BuildingCatalogMetricRange.Apply(Query, metricId, minText, maxText)) };
+			return BuildingCatalogMetricRange.TryApply(Query, metricId, minText, maxText, out var applied)
+				? this with { Query = Narrowed(applied) }
+				: this;
 		}
 
 		public AssetMenuState ClearMetricRanges() => this with { Query = Narrowed(BuildingCatalogMetricRange.Clear(Query)) };

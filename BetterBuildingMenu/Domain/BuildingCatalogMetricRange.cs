@@ -5,38 +5,30 @@ using System.Globalization;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// One normalized analytical range at the asset menu binding boundary.
+	/// A metric's range as the UI sends it, normalized at the asset menu binding boundary.
 	/// </summary>
-	public sealed record BuildingCatalogMetricRange(string MetricId, double? Min, double? Max)
+	public static class BuildingCatalogMetricRange
 	{
 		private const double AnalyticalMaximum = 1_000_000_000d;
 		private const double LotMaximum = 10_000d;
 
-		public static bool TryParse(
-			string? metricId,
-			string? minText,
-			string? maxText,
-			out BuildingCatalogMetricRange range)
-		{
-			if (!TryParse(metricId, minText, maxText, out BuildingCatalogMetric? metric, out double? min, out double? max))
-			{
-				range = new BuildingCatalogMetricRange(metric?.Id ?? string.Empty, null, null);
-				return false;
-			}
-
-			range = new BuildingCatalogMetricRange(metric.Id, min, max);
-			return true;
-		}
-
-		public static BuildingCatalogQuery Apply(
+		/// <summary>The query with the metric's range replaced and the window back at the start;
+		/// false, and the query unchanged, when the metric or a bound does not parse.</summary>
+		public static bool TryApply(
 			BuildingCatalogQuery query,
 			string? metricId,
 			string? minText,
-			string? maxText)
+			string? maxText,
+			out BuildingCatalogQuery applied)
 		{
-			return TryParse(metricId, minText, maxText, out BuildingCatalogMetric? metric, out double? min, out double? max)
-				? metric.QueryWith(query, min, max) with { Offset = 0 }
-				: query;
+			if (!TryParse(metricId, minText, maxText, out BuildingCatalogMetric? metric, out double? min, out double? max))
+			{
+				applied = query;
+				return false;
+			}
+
+			applied = metric.QueryWith(query, min, max) with { Offset = 0 };
+			return true;
 		}
 
 		public static BuildingCatalogQuery Clear(BuildingCatalogQuery query)

@@ -6,23 +6,26 @@ namespace BetterBuildingMenu.Tests;
 public sealed class BuildingCatalogMetricRangeTests
 {
     [Fact]
-    public void TryParse_NormalizesReversedAndInvalidMetricInput()
+    public void TryApply_NormalizesReversedAndInvalidMetricInput()
     {
-        Assert.True(BuildingCatalogMetricRange.TryParse("capacity", "500", "100", out BuildingCatalogMetricRange capacity));
-        Assert.Equal("capacity", capacity.MetricId);
-        Assert.Equal(100, capacity.Min);
-        Assert.Equal(500, capacity.Max);
+        BuildingCatalogQuery query = new();
 
-        Assert.True(BuildingCatalogMetricRange.TryParse("lotWidth", "3.8", "1.2", out BuildingCatalogMetricRange lotWidth));
-        Assert.Equal(1, lotWidth.Min);
-        Assert.Equal(4, lotWidth.Max);
+        Assert.True(BuildingCatalogMetricRange.TryApply(query, "capacity", "500", "100", out BuildingCatalogQuery capacity));
+        Assert.Equal(100, capacity.MinCapacity);
+        Assert.Equal(500, capacity.MaxCapacity);
 
-        Assert.False(BuildingCatalogMetricRange.TryParse("unsupported", "1", "2", out _));
-        Assert.False(BuildingCatalogMetricRange.TryParse("cost", "not-a-number", "", out _));
+        Assert.True(BuildingCatalogMetricRange.TryApply(query, "lotWidth", "3.8", "1.2", out BuildingCatalogQuery lotWidth));
+        Assert.Equal(1, lotWidth.MinLotWidth);
+        Assert.Equal(4, lotWidth.MaxLotWidth);
+
+        Assert.False(BuildingCatalogMetricRange.TryApply(query, "unsupported", "1", "2", out BuildingCatalogQuery unsupported));
+        Assert.Same(query, unsupported);
+        Assert.False(BuildingCatalogMetricRange.TryApply(query, "cost", "not-a-number", "", out BuildingCatalogQuery unparsed));
+        Assert.Same(query, unparsed);
     }
 
     [Fact]
-    public void Apply_UpdatesOnlySelectedRangeAndResetsOffset()
+    public void TryApply_UpdatesOnlySelectedRangeAndResetsOffset()
     {
         BuildingCatalogQuery query = new(
             SearchText: "school",
@@ -35,7 +38,7 @@ public sealed class BuildingCatalogMetricRangeTests
             MaxWorkers: 40,
             BuildingTypes: new[] { "School" });
 
-        BuildingCatalogQuery applied = BuildingCatalogMetricRange.Apply(query, "capacity", "500", "100");
+        Assert.True(BuildingCatalogMetricRange.TryApply(query, "capacity", "500", "100", out BuildingCatalogQuery applied));
 
         Assert.Equal(0, applied.Offset);
         Assert.Equal(100, applied.MinCapacity);
@@ -98,8 +101,8 @@ public sealed class BuildingCatalogMetricRangeTests
             BuildingType = "School",
         };
         BuildingCatalogEntry missing = school with { Id = 2, PrefabName = "Missing", Capacity = null };
-        BuildingCatalogQuery query = BuildingCatalogMetricRange.Apply(
-            new BuildingCatalogQuery(BuildingTypes: new[] { "School" }), "capacity", "500", "500");
+        Assert.True(BuildingCatalogMetricRange.TryApply(
+            new BuildingCatalogQuery(BuildingTypes: new[] { "School" }), "capacity", "500", "500", out BuildingCatalogQuery query));
 
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(new[] { school, missing }, query);
 
