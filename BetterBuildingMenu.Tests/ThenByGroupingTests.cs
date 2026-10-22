@@ -76,19 +76,32 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void AutoNamesTheDimensionsItsSecondLevelUses()
+		public void AutoNamesOnlyTheDimensionsWhoseSubHeadingsAreDrawn()
 		{
 			var signature = Signature();
-			var branch = signature with { ZoneType = ZoneTypeFilter.Any, DevTreeBranch = "Hospital" };
-			var zoned = signature with { ZoneType = ZoneTypeFilter.Low };
-			var transit = signature with { UiMenu = "Transportation", ZoneType = ZoneTypeFilter.Any };
+			var later = signature with { Id = 2, UnlockMilestone = 1 };
 
-			Assert.Equal(new[] { "progression" }, BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { signature, signature }));
-			Assert.Equal(new[] { "density", "development", "progression" }, BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { signature, branch, zoned }));
-			Assert.Equal(new[] { "role" }, BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { transit }));
-			Assert.Equal(new[] { "subCategory" }, BuildingCatalogGrouping.AutoThenBy("category", new[] { signature }));
-			Assert.Empty(BuildingCatalogGrouping.AutoThenBy("theme", new[] { signature }));
-			Assert.Empty(BuildingCatalogGrouping.AutoThenBy("none", new[] { signature }));
+			// Two milestones under one category: both sub-headings draw.
+			Assert.Equal(new[] { "progression" }, BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { signature, later }, Milestones));
+			// One milestone: a level of one group draws no heading, so Auto shows nothing.
+			Assert.Empty(BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { signature, signature with { Id = 2 } }, Milestones));
+
+			// Roads: a branch named as its category repeats the heading and is dropped, so only
+			// the differently named branch (Grand Bridge) is something the player sees.
+			var road = TestEntries.Make(3, "Avenue") with { UiMenu = "Roads", UiCategory = "RoadsMediumRoads", DevTreeBranch = "Medium Roads" };
+			var bridge = road with { Id = 4, Name = "Grand Bridge", DevTreeBranch = "Grand Bridge" };
+			var parentLabel = BuildingCatalogGrouping.Find("menuCategory").Labels(road).Path[0];
+			Assert.Equal(new[] { "development" }, BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { road with { DevTreeBranch = parentLabel }, bridge }));
+			Assert.Empty(BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { road with { DevTreeBranch = parentLabel } }));
+
+			// Kinds that draw are named in the order the tier rule tries them.
+			var zoned = signature with { Id = 5, ZoneType = ZoneTypeFilter.Low };
+			Assert.Equal(new[] { "density", "progression" }, BuildingCatalogGrouping.AutoThenBy("menuCategory", new[] { signature, later, zoned }, Milestones));
+
+			Assert.Equal(new[] { "subCategory" }, BuildingCatalogGrouping.AutoThenBy("category", new[] { signature, signature with { Id = 6, SubCategory = "ServiceBuildings_Health", SubCategoryLabel = "Health" } }));
+			Assert.Empty(BuildingCatalogGrouping.AutoThenBy("category", new[] { signature }));
+			Assert.Empty(BuildingCatalogGrouping.AutoThenBy("theme", new[] { signature, later }));
+			Assert.Empty(BuildingCatalogGrouping.AutoThenBy("none", new[] { signature, later }));
 		}
 
 		[Fact]

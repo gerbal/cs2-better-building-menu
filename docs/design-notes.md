@@ -422,8 +422,9 @@ Stations, Stops, Depots, Cargo Stations, then the lines and anything else by sub
 - **The second grouping is the player's.** Beside Group by, a second picker sets the level under
   its groups (`BuildingCatalogQuery.ThenBy`; `BuildingCatalogGrouping.Find(groupBy, thenBy)`). Auto,
   the default, is the first choice's own second level, the tier above for Category; the picker shows
-  it by the names of what it draws from in this menu (`AutoThenBy`: Density, Role for transit,
-  Development, Progression), and leaves it out where it adds no level, which None already says. The
+  it by the names of the sub-headings it draws in this menu (`AutoThenBy`: Density, Role for
+  transit, Development, Progression, counted only where the grid would draw them, so Roads reads
+  Development, from Grand Bridge), and leaves it out where it draws none, which None already says. The
   two pickers split the row evenly and cut a long name to fit (`FittedLabel`), since Cohtml draws no
   CSS ellipsis. None keeps one level; a dimension keys and heads each group's children by its own
   outer level. Parking's lone-branch fold runs under Auto only. Every group of a headed level

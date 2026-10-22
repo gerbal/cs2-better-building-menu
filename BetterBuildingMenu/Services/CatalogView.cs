@@ -59,8 +59,14 @@ namespace BetterBuildingMenu.Services
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
 		public string[] GroupDimensions => _dimensions ??= BuildingCatalogGrouping.OfferedDimensions(MenuSet, _educationMenu);
 
-		/// <summary>What the second picker's Auto groups by here, so it can say so.</summary>
-		public string[] AutoThenBy => _autoThenBy ??= BuildingCatalogGrouping.AutoThenBy(EffectiveGroupBy, ViewSet);
+		/// <summary>What the second picker's Auto draws here, so it can say so: this view's scope, folded
+		/// as Auto groups it (Parking's lone branches), whichever second level is picked now.</summary>
+		public string[] AutoThenBy => _autoThenBy ??= BuildingCatalogGrouping.AutoThenBy(
+			EffectiveGroupBy,
+			string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
+				? BuildingCatalogQueryEngine.InScope(RoadsLoneBranches.Fold(MenuSet, _query.UiMenu), _query)
+				: ViewSet,
+			_milestoneNames);
 
 		/// <summary>The grouping the page is ordered by: the player's choice, or the menu's default.</summary>
 		/// <remarks>

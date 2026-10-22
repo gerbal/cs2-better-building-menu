@@ -296,29 +296,78 @@ namespace BetterBuildingMenu.Domain
 				});
 		}
 
-		/// <summary>The dimensions Auto's second level draws from in this set, in the order the tier rule
-		/// tries them; none
-		/// for a first choice with no second level of its own. The picker names Auto by them.</summary>
-		public static string[] AutoThenBy(string? groupBy, IEnumerable<BuildingCatalogEntry> entries)
+		/// <summary>
+		/// The dimensions whose sub-headings Auto's second level draws in this set, in the order
+		/// the tier rule tries them; none for a first choice with no second level of its own, or
+		/// whose second level draws nothing here. The picker names Auto by them.
+		/// </summary>
+		/// <remarks>
+		/// Drawn as the grid draws it: a parent whose entries share one sub-group heads none, and a
+		/// sub-heading repeating its parent's is dropped. So Roads, whose branches mostly share
+		/// their category's name, names only the branch that shows (Grand Bridge's).
+		/// </remarks>
+		public static string[] AutoThenBy(
+			string? groupBy,
+			IEnumerable<BuildingCatalogEntry> entries,
+			IReadOnlyList<string>? milestoneNames = null)
 		{
-			if (Is(groupBy?.Trim() ?? string.Empty, Category))
-			{
-				return new[] { SubCategory };
-			}
+			var id = groupBy?.Trim() ?? string.Empty;
+			var subCategories = Is(id, Category);
 
-			if (!Is(groupBy?.Trim() ?? string.Empty, MenuCategory))
+			if (!subCategories && !Is(id, MenuCategory))
 			{
 				return Array.Empty<string>();
 			}
 
-			var used = new HashSet<string>(StringComparer.Ordinal);
+			var dimension = Find(id);
+			// Parent heading -> sub-heading -> the tier kinds filed under it.
+			var parents = new Dictionary<string, Dictionary<string, HashSet<string>>>(StringComparer.Ordinal);
 
 			foreach (var entry in entries)
 			{
-				used.Add(CategoryTierDimension(entry));
+				var path = dimension.Labels(entry, milestoneNames).Path;
+
+				if (path.Length < 2)
+				{
+					continue;
+				}
+
+				if (!parents.TryGetValue(path[0], out var children))
+				{
+					children = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+					parents[path[0]] = children;
+				}
+
+				if (!children.TryGetValue(path[1], out var kinds))
+				{
+					kinds = new HashSet<string>(StringComparer.Ordinal);
+					children[path[1]] = kinds;
+				}
+
+				kinds.Add(subCategories ? SubCategory : CategoryTierDimension(entry));
 			}
 
-			return CategoryTierOrder.Where(used.Contains).ToArray();
+			var drawn = new HashSet<string>(StringComparer.Ordinal);
+
+			foreach (var parent in parents)
+			{
+				if (parent.Value.Count < 2)
+				{
+					continue;
+				}
+
+				foreach (var child in parent.Value)
+				{
+					if (!string.Equals(child.Key, parent.Key, StringComparison.Ordinal))
+					{
+						drawn.UnionWith(child.Value);
+					}
+				}
+			}
+
+			return subCategories
+				? (drawn.Count > 0 ? new[] { SubCategory } : Array.Empty<string>())
+				: CategoryTierOrder.Where(drawn.Contains).ToArray();
 		}
 
 		private static bool Is(string value, string dimension) =>
