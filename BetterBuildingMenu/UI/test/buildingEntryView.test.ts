@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { entryLabel, entryStateAttributes, sortedBadgeText } from "../src/domain/buildingEntryView.ts";
+import { entryLabel, entryStateAttributes, entryStateWordOf, sortedBadgeText } from "../src/domain/buildingEntryView.ts";
 import { FALLBACK_SEPARATORS, formatBuildingMetric, formatLotDimensions } from "../src/domain/assetMenuMetricFormat.ts";
 import { entry } from "./harness/entries.ts";
 
@@ -8,6 +8,17 @@ describe("an entry's name", () => {
   it("is its display name, or its prefab name when it has none", () => {
     assert.equal(entryLabel(entry(1, { name: "Clinic", prefabName: "Clinic01" })), "Clinic");
     assert.equal(entryLabel(entry(1, { name: "", prefabName: "Clinic01" })), "Clinic01");
+  });
+});
+
+describe("the word for why an entry cannot be placed", () => {
+  // The hover card's labels carry "Requires" as well, heading the lock conditions.
+  const labels = { locked: "Requires", lockedValue: "Locked", alreadyBuilt: "Already built" };
+
+  it("is the hover card's state words, never the conditions' heading", () => {
+    assert.equal(entryStateWordOf(entry(1, { isLocked: true }), labels), "Locked");
+    assert.equal(entryStateWordOf(entry(1, { isAlreadyBuilt: true }), labels), "Already built");
+    assert.equal(entryStateWordOf(entry(1), labels), null);
   });
 });
 

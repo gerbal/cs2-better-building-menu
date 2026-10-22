@@ -7,12 +7,25 @@
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import { formatBuildingMetric, formatLotDimensions, hasFootprint, type NumberSeparators } from "./assetMenuMetricFormat";
-import { hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked } from "./buildingLockState";
+import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, type LockableEntry } from "./buildingLockState";
+import type { HoverCardLabels } from "./hoverCardLines";
 import { sortedMetricValue } from "./sortedMetric";
 
 /** The name a view draws and announces: the prefab's own where the game gives none. */
 export function entryLabel(entry: Pick<BuildingCatalogEntry, "name" | "prefabName">): string {
   return entry.name || entry.prefabName;
+}
+
+/**
+ * Why an entry cannot be placed, in the hover card's words, or null when it can. Takes
+ * the labels whole, so a row cannot pass `locked`, which heads the conditions, for
+ * `lockedValue`, the state.
+ */
+export function entryStateWordOf(
+  entry: LockableEntry | null | undefined,
+  labels: Pick<HoverCardLabels, "lockedValue" | "alreadyBuilt">,
+): string | null {
+  return entryStateWord(entry, labels.lockedValue, labels.alreadyBuilt);
 }
 
 /**
