@@ -50,7 +50,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("Cost", "ConstructionCost")]
 		[InlineData("cost", "ConstructionCost")]
 		[InlineData("lotdepth", "LotDepth")]
-		// The Kelvin sign lowers to a plain k.
+		// The Kelvin sign lowers to a plain k on the test runtime; the game's casing tables may differ.
 		[InlineData("HasParKing", "HasParking")]
 		// Unlike the other tables, padding is not trimmed: a padded id names no column.
 		[InlineData(" Cost ", "Name")]
