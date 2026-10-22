@@ -1,6 +1,35 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.6",
+    "Date": "2026-10-22",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "Transportation: each mode is split into tracks, stations, stops, depots and cargo stations, and Role is offered as a filter and as a grouping.",
+          "Search finds each word you type in any order, and ignores accents.",
+          "Enter arms the best match of everything the search found, not only the rows already shown.",
+          "Menus open faster, and switching between menus costs no more than reopening one."
+        ]
+      },
+      {
+        "Name": "Fixed",
+        "Changes": [
+          "One Escape closes the menu without also opening the pause menu.",
+          "List and Table light up the building you are placing, as the grid does.",
+          "A list longer than the menu can show says so at the bottom, instead of just ending.",
+          "Lengths, weights, power and energy are rounded as the game rounds them: 7.5 m, 123 t.",
+          "An asset whose icon file is missing no longer leaves every menu vanilla; it shows its category's icon.",
+          "List view fills the menu, and no longer loads a second page every time it opens.",
+          "In Table, a building alone in its group gets its own heading, so it is not read as part of the group above.",
+          "Road Zones and Sound Barrier stay in the groups that unlock them."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.5",
     "Date": "2026-10-08",
     "ChangeGroups": [
