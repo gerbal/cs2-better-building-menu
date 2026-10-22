@@ -232,7 +232,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				if (prefabIndex.Prefab is not null
 					&& _prefabSystem.TryGetEntity(prefabIndex.Prefab, out var entity)
-					&& EntityManager.HasEnabledComponent<Locked>(entity) != prefabIndex.IsLocked)
+					&& IsLocked(entity) != prefabIndex.IsLocked)
 				{
 					drift++;
 				}
@@ -381,20 +381,12 @@ namespace BetterBuildingMenu.Systems
 
 				// Read the component rather than assuming the event means unlocked,
 				// so this reports what the game holds even if an unlock is undone.
-				var locked = EntityManager.HasEnabledComponent<Locked>(entity);
-
-				if (prefabIndex.IsLocked == locked)
+				if (prefabIndex.IsLocked == IsLocked(entity))
 				{
 					continue;
 				}
 
-				prefabIndex.IsLocked = locked;
-
-				// The MILESTONE is a permanent property of the asset and is kept
-				// whatever the lock state; the REQUIREMENTS answer "what is this
-				// waiting on", which an unlocked asset does not have.
-				(prefabIndex.UnlockMilestone, var requirements) = GetUnlockRequirements(entity);
-				prefabIndex.UnlockRequirements = locked ? requirements : Array.Empty<string>();
+				(prefabIndex.IsLocked, prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = ReadLock(entity);
 
 				changed++;
 			}
@@ -872,16 +864,10 @@ namespace BetterBuildingMenu.Systems
 			// Roads menu is a network, and parking is the whole point of one.
 			prefabIndex.ParkingSlots = GetParkingSlots(prefab);
 			prefabIndex.HasParking = prefabIndex.ParkingSlots > 0;
-			// Enableable: presence alone would mark every unlockable asset
-			// locked forever, including the ones already earned.
-			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
 			prefabIndex.Bonuses = GetBonuses(DetailsSource(entity));
 
-			// Milestone kept whatever the lock state; requirements only while
-			// locked. See the matching note in ApplyUnlocks.
 			var required = CollectRequirements(entity);
-			(prefabIndex.UnlockMilestone, var unlockRequirements) = UnlockRequirementsOf(required);
-			prefabIndex.UnlockRequirements = prefabIndex.IsLocked ? unlockRequirements : Array.Empty<string>();
+			(prefabIndex.IsLocked, prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = ReadLock(entity, required);
 
 			// The other half of the progression, and the half that splits a service
 			// menu. After UiMenuName above: an asset the tree never gated falls into
