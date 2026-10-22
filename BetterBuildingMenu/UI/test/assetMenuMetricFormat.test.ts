@@ -574,8 +574,8 @@ describe("weight follows the game's own rule", () => {
   });
 
   it("imperial: pounds and short tons with vanilla's constants", () => {
-    assert.equal(formatWeight(50, imperial), "110.2 lb");
-    assert.equal(formatWeight(500000, imperial), "551.16 tn");
+    assert.equal(formatWeight(50, imperial), "110 lb");
+    assert.equal(formatWeight(500000, imperial), "551 tn");
     assert.match(formatWeight(10000000, imperial), /^11\.02 /);
   });
 
@@ -583,7 +583,7 @@ describe("weight follows the game's own rule", () => {
     // GarbageFacilityData.m_GarbageCapacity is bound by vanilla with the same
     // "weight" unit as cargo, not as raw kilograms under a "t" label.
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility"), "500 t");
-    assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility", imperial), "551.16 tn");
+    assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility", imperial), "551 tn");
   });
 
   it("a post facility's mail capacity is a count, not a weight", () => {
@@ -605,8 +605,8 @@ describe("rates follow the game's own per-month rules", () => {
   it("weight per month", () => {
     assert.equal(formatWeightPerMonth(50), "50 kg/mo.");
     assert.equal(formatWeightPerMonth(100000), "100 t/mo.");
-    assert.equal(formatWeightPerMonth(50, imperial), "110.2 lb/mo.");
-    assert.equal(formatWeightPerMonth(100000, imperial), "110.23 tn/mo.");
+    assert.equal(formatWeightPerMonth(50, imperial), "110 lb/mo.");
+    assert.equal(formatWeightPerMonth(100000, imperial), "110 tn/mo.");
     assert.equal(formatWeightPerMonth(0), "");
   });
 
@@ -779,7 +779,7 @@ describe("every measured formatter", () => {
     assert.equal(formatWeight(100, metric), "0.1 t");
     assert.equal(formatWeight(999_999, metric), "1 000 t");
     assert.equal(formatWeight(1_000_000, metric), "1 kt");
-    assert.equal(formatWeight(99, imperial), "218.3 lb");
+    assert.equal(formatWeight(99, imperial), "218 lb");
     assert.equal(formatWeight(100, imperial), "0.11 tn");
     assert.equal(formatWeight(9_071_847, imperial), "10 000 tn");
     assert.equal(formatWeight(9_071_847.4, imperial), "10 ktn");
@@ -788,12 +788,25 @@ describe("every measured formatter", () => {
   it("changes weight-a-month units at a hundred kilograms in both systems", () => {
     assert.equal(formatWeightPerMonth(99.94, metric), "99.9 kg/mo.");
     assert.equal(formatWeightPerMonth(100, metric), "0.1 t/mo.");
-    assert.equal(formatWeightPerMonth(99, imperial), "218.3 lb/mo.");
+    assert.equal(formatWeightPerMonth(99, imperial), "218 lb/mo.");
     assert.equal(formatWeightPerMonth(100, imperial), "0.11 tn/mo.");
   });
 
+  it("keeps places only below 100 of a unit, as the game's number formatter does", () => {
+    assert.equal(formatWeight(99_994, metric), "99.99 t");
+    assert.equal(formatWeight(123_456, metric), "123 t");
+    assert.equal(formatWeight(123_456_789, metric), "123 kt");
+    assert.equal(formatWeightPerMonth(123_456, metric), "123 t/mo.");
+    assert.equal(formatPower(999, metric), "99.9 kW");
+    assert.equal(formatPower(1_234_567, metric), "123 MW");
+    assert.equal(formatEnergy(1_234_567, metric), "123 MWh");
+    assert.equal(formatEnergy(994_000, metric), "99.4 MWh");
+    assert.equal(formatDataRate(123.45, metric), "123 Gbit/s");
+    assert.equal(formatDataRate(12.34, metric), "12.3 Gbit/s");
+  });
+
   it("changes power units at ten thousand, the same in both systems", () => {
-    assert.equal(formatPower(9999, metric), "999.9 kW");
+    assert.equal(formatPower(9999, metric), "1 000 kW");
     assert.equal(formatPower(10_000, metric), "1 MW");
     assert.equal(formatPower(10_000, imperial), "1 MW");
   });

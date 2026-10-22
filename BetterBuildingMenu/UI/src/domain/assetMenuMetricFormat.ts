@@ -441,7 +441,8 @@ const weightOf = (separators: NumberSeparators): WeightTemplates => separators.w
 const powerOf = (separators: NumberSeparators): PowerTemplates => separators.power ?? FALLBACK_POWER;
 
 /** Vanilla's number formatter keeps its places only below 100 of a unit. */
-const LENGTH_PLACES = { decimals: 1, wholeFrom: 100 } as const;
+const vanillaPlaces = (decimals: number) => ({ decimals, wholeFrom: 100 }) as const;
+const LENGTH_PLACES = vanillaPlaces(1);
 
 /**
  * A service radius, e.g. "480 m". Metres because that is what the simulation
@@ -741,14 +742,14 @@ export function roundedDigits(value: number, decimals: number, separators: Numbe
 export const formatWeight = ladder(
   weightOf,
   [
-    { below: WEIGHT_SMALL_KG, unit: "kilogram", decimals: 1 },
-    { below: METRIC_KILOTON_KG, unit: "ton", scale: toTonnes, decimals: 2 },
-    { unit: "kiloton", scale: (kilograms) => kilograms / METRIC_KILOTON_KG, decimals: 2 },
+    { below: WEIGHT_SMALL_KG, unit: "kilogram", ...vanillaPlaces(1) },
+    { below: METRIC_KILOTON_KG, unit: "ton", scale: toTonnes, ...vanillaPlaces(2) },
+    { unit: "kiloton", scale: (kilograms) => kilograms / METRIC_KILOTON_KG, ...vanillaPlaces(2) },
   ],
   [
-    { below: WEIGHT_SMALL_KG, unit: "pound", scale: toPounds, decimals: 1 },
-    { below: FREEDOM_SHORT_KILOTON_KG, unit: "shortTon", scale: toShortTons, decimals: 2 },
-    { unit: "shortKiloton", scale: (kilograms) => kilograms / KILOGRAMS_PER_SHORT_TON / 1000, decimals: 2 },
+    { below: WEIGHT_SMALL_KG, unit: "pound", scale: toPounds, ...vanillaPlaces(1) },
+    { below: FREEDOM_SHORT_KILOTON_KG, unit: "shortTon", scale: toShortTons, ...vanillaPlaces(2) },
+    { unit: "shortKiloton", scale: (kilograms) => kilograms / KILOGRAMS_PER_SHORT_TON / 1000, ...vanillaPlaces(2) },
   ],
 );
 
@@ -760,12 +761,12 @@ export const formatWeight = ladder(
 export const formatWeightPerMonth = ladder(
   weightOf,
   [
-    { below: WEIGHT_SMALL_KG, unit: "kilogramPerMonth", decimals: 1 },
-    { unit: "tonPerMonth", scale: toTonnes, decimals: 2 },
+    { below: WEIGHT_SMALL_KG, unit: "kilogramPerMonth", ...vanillaPlaces(1) },
+    { unit: "tonPerMonth", scale: toTonnes, ...vanillaPlaces(2) },
   ],
   [
-    { below: WEIGHT_SMALL_KG, unit: "poundPerMonth", scale: toPounds, decimals: 1 },
-    { unit: "shortTonPerMonth", scale: toShortTons, decimals: 2 },
+    { below: WEIGHT_SMALL_KG, unit: "poundPerMonth", scale: toPounds, ...vanillaPlaces(1) },
+    { unit: "shortTonPerMonth", scale: toShortTons, ...vanillaPlaces(2) },
   ],
 );
 
@@ -779,17 +780,15 @@ export const formatPerMonth = measure((value, separators) =>
 const POWER_KILOWATT_LIMIT = 10_000;
 
 export const formatPower = ladder(powerOf, [
-  { below: POWER_KILOWATT_LIMIT, unit: "kilowatt", scale: (raw) => raw / 10, decimals: 1 },
-  { unit: "megawatt", scale: (raw) => raw / 10_000, decimals: 2 },
+  { below: POWER_KILOWATT_LIMIT, unit: "kilowatt", scale: (raw) => raw / 10, ...vanillaPlaces(1) },
+  { unit: "megawatt", scale: (raw) => raw / 10_000, ...vanillaPlaces(2) },
 ]);
 
-export const formatEnergy = measure((value, separators) =>
-  applyMoneyTemplate(powerOf(separators).megawattHours, roundedDigits(value / 10_000, 1, separators)));
+export const formatEnergy = ladder(powerOf, [{ unit: "megawattHours", scale: (raw) => raw / 10_000, ...vanillaPlaces(1) }]);
 
 /**
- * A data rate, by vanilla's DataRate rule: gigabits a second to one decimal,
+ * A data rate, by vanilla's DataRate rule: gigabits a second, one place below 100,
  * the same in both unit systems — the unit it binds TelecomFacilityData's
  * NETWORK_CAPACITY with.
  */
-export const formatDataRate = measure((value, separators) =>
-  applyMoneyTemplate(powerOf(separators).gigabitPerSecond, roundedDigits(value, 1, separators)));
+export const formatDataRate = ladder(powerOf, [{ unit: "gigabitPerSecond", ...vanillaPlaces(1) }]);
