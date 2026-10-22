@@ -99,7 +99,7 @@ namespace BetterBuildingMenu.Services
 		/// <summary>Stamps the page's items with their headings. The page only — a hundred entries, not the set.</summary>
 		private BuildingCatalogPage WithGroupLabels(BuildingCatalogPage page)
 		{
-			var dimension = BuildingCatalogGrouping.Resolve(EffectiveGroupBy);
+			var dimension = BuildingCatalogGrouping.Find(EffectiveGroupBy);
 
 			if (!dimension.IsGrouped)
 			{

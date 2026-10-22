@@ -6,9 +6,9 @@ namespace BetterBuildingMenu.Domain
 {
 	/// <summary>One field the asset menu can be sorted by: the ids that name it, how it orders
 	/// entries, and the value two entries tie on.</summary>
-	public sealed class BuildingCatalogSortColumn
+	public sealed class BuildingCatalogSortColumn : IDescriptor
 	{
-		private readonly string[] _keys;
+		private readonly DescriptorIds _ids;
 
 		internal BuildingCatalogSortColumn(
 			string id,
@@ -19,7 +19,7 @@ namespace BetterBuildingMenu.Domain
 			Id = id;
 			ThenBy = thenBy;
 			TieValue = tieValue;
-			_keys = new[] { id }.Concat(aliases).Select(key => key.ToLowerInvariant()).ToArray();
+			_ids = new DescriptorIds(id, aliases);
 		}
 
 		/// <summary>The id the picker sends.</summary>
@@ -33,8 +33,7 @@ namespace BetterBuildingMenu.Domain
 		/// entries tie is a weaker question, which equality alone settles.</remarks>
 		public Func<BuildingCatalogEntry, object?> TieValue { get; }
 
-		/// <summary>Whether a lower-cased id names this column, by its id or an alias.</summary>
-		internal bool Answers(string lowered) => Array.IndexOf(_keys, lowered) >= 0;
+		DescriptorIds IDescriptor.Ids => _ids;
 	}
 
 	/// <summary>The columns the picker offers, in its order; any other id sorts by <see cref="Name"/>.</summary>
@@ -60,12 +59,12 @@ namespace BetterBuildingMenu.Domain
 			Default,
 			Name,
 			Text("Category", entry => entry.Category),
-			Measure("ConstructionCost", entry => entry.ConstructionCost, "Cost"),
-			Measure("Upkeep", entry => entry.Upkeep),
-			Measure("Workers", entry => entry.Workers),
-			Measure("Capacity", entry => entry.Capacity),
-			Whole("LotWidth", entry => entry.LotWidth),
-			Whole("LotDepth", entry => entry.LotDepth),
+			Measure("ConstructionCost", BuildingCatalogMetrics.Cost, "Cost"),
+			Measure("Upkeep", BuildingCatalogMetrics.Upkeep),
+			Measure("Workers", BuildingCatalogMetrics.Workers),
+			Measure("Capacity", BuildingCatalogMetrics.Capacity),
+			Measure("LotWidth", BuildingCatalogMetrics.LotWidth),
+			Measure("LotDepth", BuildingCatalogMetrics.LotDepth),
 			Whole("BuildingLevel", entry => entry.BuildingLevel),
 			// By bay count, not by the flag: sorting on a flag leaves the order inside each of its two
 			// buckets untouched.
@@ -76,20 +75,8 @@ namespace BetterBuildingMenu.Domain
 		public static readonly IReadOnlyList<string> Ids = All.Select(column => column.Id).ToArray();
 
 		/// <summary>The column an id names, ignoring case; <see cref="Name"/> when it names none.</summary>
-		public static BuildingCatalogSortColumn Find(string? id)
-		{
-			var lowered = (id ?? string.Empty).ToLowerInvariant();
-
-			for (var i = 0; i < All.Count; i++)
-			{
-				if (All[i].Answers(lowered))
-				{
-					return All[i];
-				}
-			}
-
-			return Name;
-		}
+		/// <remarks>Untrimmed, unlike the other tables: a padded id names no column.</remarks>
+		public static BuildingCatalogSortColumn Find(string? id) => DescriptorIds.Find(All, id) ?? Name;
 
 		private static BuildingCatalogSortColumn Text(string id, Func<BuildingCatalogEntry, string> key) =>
 			new(
@@ -105,9 +92,13 @@ namespace BetterBuildingMenu.Domain
 				(seed, descending) => descending ? seed.ThenByDescending(key) : seed.ThenBy(key),
 				entry => key(entry));
 
-		/// <summary>A metric an entry may not carry: those that do come first, whichever way it runs.</summary>
-		private static BuildingCatalogSortColumn Measure(string id, Func<BuildingCatalogEntry, double?> key, params string[] aliases) =>
-			new(
+		/// <summary>A range metric, read from its own row. An entry may not carry it: those that do
+		/// come first, whichever way it runs.</summary>
+		private static BuildingCatalogSortColumn Measure(string id, BuildingCatalogMetric metric, params string[] aliases)
+		{
+			var key = metric.EntryValue;
+
+			return new(
 				id,
 				(seed, descending) =>
 				{
@@ -116,5 +107,6 @@ namespace BetterBuildingMenu.Domain
 				},
 				entry => key(entry),
 				aliases);
+		}
 	}
 }

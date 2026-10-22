@@ -87,7 +87,11 @@ namespace BetterBuildingMenu.Tests
 			// The Zones menu's tabs, as vanilla titles them in every language.
 			Assert.Equal("Services.NAME[Zones]", GameLocaleKeys.For(nameof(PrefabCategory.Zones)));
 			Assert.Equal("SubServices.NAME[ZonesResidential]", GameLocaleKeys.For(nameof(PrefabSubCategory.Zones_Residential)));
+			Assert.Equal("SubServices.NAME[ZonesCommercial]", GameLocaleKeys.For(nameof(PrefabSubCategory.Zones_Commercial)));
+			Assert.Equal("SubServices.NAME[ZonesIndustrial]", GameLocaleKeys.For(nameof(PrefabSubCategory.Zones_Industrial)));
+			Assert.Equal("SubServices.NAME[ZonesOffice]", GameLocaleKeys.For(nameof(PrefabSubCategory.Zones_Office)));
 			Assert.Equal("SubServices.NAME[ZonesExtractors]", GameLocaleKeys.For(nameof(PrefabSubCategory.Zones_Extractors)));
+			Assert.Null(GameLocaleKeys.For(nameof(PrefabSubCategory.Zones_Misc)));
 		}
 
 		[Fact]

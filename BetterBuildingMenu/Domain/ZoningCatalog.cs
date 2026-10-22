@@ -121,6 +121,9 @@ public static class ZoningCatalog
 
 	public static readonly string[] Families = Array.ConvertAll(Table, family => family.Id);
 
+	/// <summary>Every zoning family, in the table's order.</summary>
+	internal static IReadOnlyList<ZoningFamily> All => Table;
+
 	/// <summary>Family stems, matched anywhere in a zone's name.</summary>
 	private static readonly (string Stem, string Family)[] FamilyStems =
 	{

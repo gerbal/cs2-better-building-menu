@@ -45,15 +45,15 @@ namespace BetterBuildingMenu.Domain
 		public const string Development = "development";
 
 		/// <summary>No grouping: what none, a blank id and no choice all mean.</summary>
-		private static readonly GroupDimension Ungrouped = new(None, NoKey, NoKey, NoLabels, isGrouped: false);
+		private static readonly BuildingCatalogGroupDimension Ungrouped = new(None, NoKey, NoKey, NoLabels, isGrouped: false);
 
 		/// <summary>An id that names no dimension: grouped, but under one empty key and no heading.</summary>
-		private static readonly GroupDimension Unrecognised = new(string.Empty, NoKey, NoKey, NoLabels);
+		private static readonly BuildingCatalogGroupDimension Unrecognised = new(string.Empty, NoKey, NoKey, NoLabels);
 
 		/// <summary>Every dimension the picker offers, in its order. Band edges, tier names and category
 		/// words have one home in this class, so each row's keys and headings agree. LabelId carries the
 		/// game's category id for a menu-category heading; every other label is final text.</summary>
-		private static readonly GroupDimension[] Table =
+		private static readonly BuildingCatalogGroupDimension[] Table =
 		{
 			// The game's own categories, the split the tab strip shows: first, because it
 			// is the division the player already has in mind.
@@ -195,7 +195,7 @@ namespace BetterBuildingMenu.Domain
 
 		public static bool IsDimension([NotNullWhen(true)] string? value) =>
 			value?.Trim() is { Length: > 0 } trimmed
-			&& Dimensions.ContainsIgnoreCase(trimmed);
+			&& DescriptorIds.Find(Table, trimmed) is not null;
 
 		/// <summary>
 		/// What a menu opens grouped by when the player has not chosen.
@@ -256,25 +256,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The dimension a grouping id names, ignoring case and surrounding space.</summary>
 		/// <remarks>Blank and "none" group nothing. Any other id that names no dimension groups everything
 		/// under one empty key with no heading, which leaves the order to the chosen sort.</remarks>
-		public static GroupDimension Resolve(string? groupBy)
-		{
-			if (!IsGrouped(groupBy))
-			{
-				return Ungrouped;
-			}
-
-			var dimension = groupBy.Trim();
-
-			for (var i = 0; i < Table.Length; i++)
-			{
-				if (Is(dimension, Table[i].Id))
-				{
-					return Table[i];
-				}
-			}
-
-			return Unrecognised;
-		}
+		public static BuildingCatalogGroupDimension Find(string? groupBy) =>
+			!IsGrouped(groupBy) ? Ungrouped
+			: DescriptorIds.Find(Table, groupBy.Trim()) ?? Unrecognised;
 
 		private static bool Is(string value, string dimension) =>
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);

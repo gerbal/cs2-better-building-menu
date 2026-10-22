@@ -9,9 +9,9 @@ namespace BetterBuildingMenu.Domain
 {
 	/// <summary>One filter facet: the ids a toggle answers to, where its selection sits on the query,
 	/// and what an entry answers with.</summary>
-	public sealed class BuildingCatalogFacetField
+	public sealed class BuildingCatalogFacetField : IDescriptor
 	{
-		private readonly string[] _keys;
+		private readonly DescriptorIds _ids;
 		private readonly Func<BuildingCatalogEntry, string?>? _value;
 		private readonly Func<BuildingCatalogEntry, IReadOnlyList<string>?>? _values;
 
@@ -19,7 +19,7 @@ namespace BetterBuildingMenu.Domain
 			string id,
 			string? label,
 			Func<BuildingCatalogQuery, IReadOnlyList<string>?> selected,
-			Func<BuildingCatalogQuery, IReadOnlyList<string>?, BuildingCatalogQuery> with,
+			Func<BuildingCatalogQuery, IReadOnlyList<string>?, BuildingCatalogQuery> queryWith,
 			Func<BuildingCatalogEntry, IReadOnlyList<string>, bool>? matches,
 			Func<BuildingCatalogEntry, string?>? value = null,
 			Func<BuildingCatalogEntry, IReadOnlyList<string>?>? values = null,
@@ -30,13 +30,13 @@ namespace BetterBuildingMenu.Domain
 			Id = id;
 			Label = label;
 			Selected = selected;
-			With = with;
+			QueryWith = queryWith;
 			Matches = matches;
 			_value = value;
 			_values = values;
 			Exhaustive = exhaustive;
 			OptionValue = optionValue ?? (option => option);
-			_keys = (alias is null ? new[] { id } : new[] { id, alias }).Select(key => key.ToLowerInvariant()).ToArray();
+			_ids = alias is null ? new DescriptorIds(id) : new DescriptorIds(id, alias);
 		}
 
 		/// <summary>The id the UI sends back.</summary>
@@ -49,7 +49,7 @@ namespace BetterBuildingMenu.Domain
 		public Func<BuildingCatalogQuery, IReadOnlyList<string>?> Selected { get; }
 
 		/// <summary>The query with this facet's selection replaced.</summary>
-		public Func<BuildingCatalogQuery, IReadOnlyList<string>?, BuildingCatalogQuery> With { get; }
+		public Func<BuildingCatalogQuery, IReadOnlyList<string>?, BuildingCatalogQuery> QueryWith { get; }
 
 		/// <summary>Whether an entry answers to a non-empty selection; null where the engine does not filter.</summary>
 		public Func<BuildingCatalogEntry, IReadOnlyList<string>, bool>? Matches { get; }
@@ -66,8 +66,7 @@ namespace BetterBuildingMenu.Domain
 			: _values is not null ? entries.SelectMany(entry => (IEnumerable<string>?)_values(entry) ?? Array.Empty<string>())
 			: Enumerable.Empty<string?>();
 
-		/// <summary>Whether a lower-cased id names this facet, by its id or an alias.</summary>
-		internal bool Answers(string lowered) => Array.IndexOf(_keys, lowered) >= 0;
+		DescriptorIds IDescriptor.Ids => _ids;
 	}
 
 	/// <summary>The facets a query can filter on.</summary>
@@ -134,19 +133,8 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The facet an id names, ignoring case and surrounding space.</summary>
 		public static bool TryFind(string? id, [NotNullWhen(true)] out BuildingCatalogFacetField? facet)
 		{
-			var lowered = (id ?? string.Empty).Trim().ToLowerInvariant();
-
-			for (var i = 0; i < All.Count; i++)
-			{
-				if (All[i].Answers(lowered))
-				{
-					facet = All[i];
-					return true;
-				}
-			}
-
-			facet = null;
-			return false;
+			facet = DescriptorIds.Find(All, id?.Trim());
+			return facet is not null;
 		}
 
 		/// <summary>A facet each entry answers with one value, matched ignoring case.</summary>
@@ -154,10 +142,10 @@ namespace BetterBuildingMenu.Domain
 			string id,
 			string label,
 			Func<BuildingCatalogQuery, IReadOnlyList<string>?> selected,
-			Func<BuildingCatalogQuery, IReadOnlyList<string>?, BuildingCatalogQuery> with,
+			Func<BuildingCatalogQuery, IReadOnlyList<string>?, BuildingCatalogQuery> queryWith,
 			Func<BuildingCatalogEntry, string?> value,
 			IReadOnlyList<string>? exhaustive = null) =>
-			new(id, label, selected, with, (entry, selection) => MatchesAny(value(entry), selection), value: value, exhaustive: exhaustive);
+			new(id, label, selected, queryWith, (entry, selection) => MatchesAny(value(entry), selection), value: value, exhaustive: exhaustive);
 
 		private static bool MatchesAny(string? value, IReadOnlyList<string> selected) =>
 			value is not null && selected.ContainsIgnoreCase(value);

@@ -42,7 +42,7 @@ namespace BetterBuildingMenu.Domain
 			return keys;
 		}
 
-		private static readonly Dictionary<string, string> Keys = new(ServiceKeys(), StringComparer.Ordinal)
+		private static readonly Dictionary<string, string> Keys = WithZoneTabs(new(ServiceKeys(), StringComparer.Ordinal)
 		{
 			// Zoned building groups.
 			[nameof(PrefabSubCategory.Buildings_Residential)] = Title("Buildings/Residential"),
@@ -85,15 +85,21 @@ namespace BetterBuildingMenu.Domain
 			[nameof(PrefabSubCategory.Trees_Shrubs)] = Title("Foliage/Bushes"),
 			[nameof(PrefabSubCategory.Trees_Spawners)] = Title("Locations/Spawners"),
 
-			// Zones, which are the Zones menu and its tabs. Extractors is the tab
-			// vanilla calls Specialized Industry.
+			// Zones, which are the Zones menu; its tabs follow.
 			[nameof(PrefabCategory.Zones)] = Service("Zones"),
-			[nameof(PrefabSubCategory.Zones_Residential)] = SubService("ZonesResidential"),
-			[nameof(PrefabSubCategory.Zones_Commercial)] = SubService("ZonesCommercial"),
-			[nameof(PrefabSubCategory.Zones_Industrial)] = SubService("ZonesIndustrial"),
-			[nameof(PrefabSubCategory.Zones_Office)] = SubService("ZonesOffice"),
-			[nameof(PrefabSubCategory.Zones_Extractors)] = SubService("ZonesExtractors"),
-		};
+		});
+
+		// The Zones menu's tabs, one per zoning family, by the UI group the game files its
+		// zones under. Extractors is the tab vanilla calls Specialized Industry.
+		private static Dictionary<string, string> WithZoneTabs(Dictionary<string, string> keys)
+		{
+			foreach (var family in ZoningCatalog.All)
+			{
+				keys[family.SubCategory.ToString()] = SubService(family.Group);
+			}
+
+			return keys;
+		}
 
 		/// <summary>
 		/// The game's key for one of our identifiers, or null when the game has

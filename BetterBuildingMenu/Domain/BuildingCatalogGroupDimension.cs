@@ -4,15 +4,16 @@ using System.Collections.Generic;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>One way to group the asset menu: the keys its groups order by and the headings they
-	/// file under. Resolved once per query with <see cref="BuildingCatalogGrouping.Resolve"/>, since
+	/// file under. Resolved once per query with <see cref="BuildingCatalogGrouping.Find"/>, since
 	/// the keys run for every entry and the headings for every row of a page.</summary>
-	public sealed class GroupDimension
+	public sealed class BuildingCatalogGroupDimension : IDescriptor
 	{
+		private readonly DescriptorIds _ids;
 		private readonly Func<BuildingCatalogEntry, string> _primaryKey;
 		private readonly Func<BuildingCatalogEntry, string> _secondaryKey;
 		private readonly Func<BuildingCatalogEntry, IReadOnlyList<string>?, IReadOnlyDictionary<int, string>?, BuildingCatalogGrouping.GroupLabels> _labels;
 
-		internal GroupDimension(
+		internal BuildingCatalogGroupDimension(
 			string id,
 			Func<BuildingCatalogEntry, string> primaryKey,
 			Func<BuildingCatalogEntry, string> secondaryKey,
@@ -20,6 +21,7 @@ namespace BetterBuildingMenu.Domain
 			bool isGrouped = true)
 		{
 			Id = id;
+			_ids = new DescriptorIds(id);
 			IsGrouped = isGrouped;
 			_primaryKey = primaryKey;
 			_secondaryKey = secondaryKey;
@@ -37,6 +39,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The key of the group beneath, for a dimension that has one; otherwise empty.</summary>
 		public string SecondaryKey(BuildingCatalogEntry entry) => entry is null ? string.Empty : _secondaryKey(entry);
+
+		DescriptorIds IDescriptor.Ids => _ids;
 
 		/// <summary>The headings an entry files under.</summary>
 		/// <param name="schoolTierNames">The game's name for each school level, from

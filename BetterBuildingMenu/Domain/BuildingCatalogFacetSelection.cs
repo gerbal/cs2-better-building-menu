@@ -41,7 +41,7 @@ namespace BetterBuildingMenu.Domain
 				? ToggleExhaustive(selected, value, all)
 				: ToggleValue(selected, value);
 
-			return facet.With(query, next) with { Offset = 0 };
+			return facet.QueryWith(query, next) with { Offset = 0 };
 		}
 
 		public static BuildingCatalogQuery Clear(BuildingCatalogQuery query)
@@ -57,7 +57,7 @@ namespace BetterBuildingMenu.Domain
 
 			for (var i = 0; i < BuildingCatalogFacetFields.All.Count; i++)
 			{
-				cleared = BuildingCatalogFacetFields.All[i].With(cleared, null);
+				cleared = BuildingCatalogFacetFields.All[i].QueryWith(cleared, null);
 			}
 
 			return cleared with { Offset = 0 };
