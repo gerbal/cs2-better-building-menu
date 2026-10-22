@@ -34,8 +34,8 @@ export type EnterDecision<T> = { arm: T } | { wait: string } | null;
  * grouped page's first row need not be it. The page trails the box by a
  * debounce, so until it answers the search in the box, Enter waits for it.
  */
-export function enterDecision<T extends { id: number }>(
-  page: { items: readonly T[]; bestMatchId?: number | null; searchText?: string | null },
+export function enterDecision<T>(
+  page: { bestMatch?: T | null; searchText?: string | null },
   rawQuery: string
 ): EnterDecision<T> {
   const query = rawQuery.trim();
@@ -47,8 +47,7 @@ export function enterDecision<T extends { id: number }>(
     return { wait: query };
   }
 
-  const target = page.bestMatchId == null ? undefined : page.items.find((item) => item.id === page.bestMatchId);
-  return target ? { arm: target } : null;
+  return page.bestMatch ? { arm: page.bestMatch } : null;
 }
 
 /** Enter, by code: Cohtml leaves `key` empty for some keys. */

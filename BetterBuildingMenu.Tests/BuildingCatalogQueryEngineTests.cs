@@ -709,7 +709,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(
             new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText", "menu" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatch", "searchText", "menu" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -884,6 +884,24 @@ public sealed class BuildingCatalogQueryEngineTests
 
         Assert.Equal(2, page.Items[0].Id);
         Assert.Equal(1, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_BestMatchIsTheBestOfEveryMatchNotJustTheWindow()
+    {
+        // 120 weaker matches fill the first group past the window; the exact match
+        // sits in a later group that the first page never reaches.
+        var weaker = Enumerable.Range(100, 120)
+            .Select(id => SampleEntries[0] with { Id = id, Name = $"Parking Lot {id}", Category = "Buildings" });
+        var exact = SampleEntries[0] with { Id = 1, Name = "Parking", Category = "ServiceBuildings" };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            weaker.Append(exact),
+            new BuildingCatalogQuery(SearchText: "parking", GroupBy: "category", Limit: 100));
+
+        Assert.DoesNotContain(page.Items, e => e.Id == 1);
+        Assert.Equal(1, page.BestMatchId);
+        Assert.Equal("Parking", page.BestMatch?.Name);
     }
 
     [Fact]

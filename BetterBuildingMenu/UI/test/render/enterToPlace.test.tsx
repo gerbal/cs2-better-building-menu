@@ -43,13 +43,12 @@ const armed = () => triggers.filter((call) => call.name === "SetCurrentPrefab").
 // Two groups, the weaker match first: grouping orders the page by group before
 // relevance, which is exactly when the first row is not the one to arm.
 const groupedPage = (searchText: string, bestMatchId: number | null) => {
-  seed(BuildingCatalog$, catalogPage(
-    [
-      entry(2, { name: "Old Clinic", groupPath: ["Buildings"] }),
-      entry(1, { name: "Clinic", groupPath: ["ServiceBuildings"] }),
-    ],
-    { bestMatchId, searchText }
-  ));
+  const items = [
+    entry(2, { name: "Old Clinic", groupPath: ["Buildings"] }),
+    entry(1, { name: "Clinic", groupPath: ["ServiceBuildings"] }),
+  ];
+  const bestMatch = items.find((item) => item.id === bestMatchId) ?? null;
+  seed(BuildingCatalog$, catalogPage(items, { bestMatch, searchText }));
   seed(BuildingCatalogGroupBy$, "category");
 };
 const typed = (text: string) => seed(CurrentSearch$, text);
@@ -81,6 +80,21 @@ describe("Enter in the catalog", () => {
       assert.deepEqual(armed(), [1]);
     });
   }
+
+  it("arms the best match when it lies past the rows loaded so far", () => {
+    // The window ends inside the first group; the exact match is in a later one.
+    seed(BuildingCatalog$, catalogPage(
+      [entry(2, { name: "Old Clinic", groupPath: ["Buildings"] })],
+      { bestMatch: entry(1, { name: "Clinic", groupPath: ["ServiceBuildings"] }), searchText: "clinic", totalCount: 2, hasMore: true }
+    ));
+    seed(BuildingCatalogGroupBy$, "category");
+    typed("clinic");
+    mount();
+
+    enter();
+
+    assert.deepEqual(armed(), [1]);
+  });
 
   it("arms on Enter reported by keyCode alone", () => {
     // Cohtml leaves `key` empty for some keys and fills `keyCode`.
