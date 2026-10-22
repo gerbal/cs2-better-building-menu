@@ -13,7 +13,7 @@ namespace BetterBuildingMenu.Domain
 		// cannot be independent, or a group splits across a page boundary and its
 		// heading lies. Empty means the menu's default, from BuildingCatalogGrouping.
 		string GroupBy = "",
-		// "Locked" / "Unlocked". Empty means both.
+		// "Unlocked" / "Locked" / "AlreadyBuilt". Empty means all three.
 		IReadOnlyList<string>? Availability = null,
 		bool Descending = false,
 		int Offset = 0,

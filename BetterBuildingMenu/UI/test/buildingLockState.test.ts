@@ -144,8 +144,9 @@ describe("one state word for all four view modes", () => {
   });
 
   it("prefers locked when both somehow read true", () => {
-    // Same ordering as AvailabilityOf. A locked unique cannot have been built,
-    // so if both are set the data is wrong and Locked is the safer claim.
+    // Same ordering as BuildingCatalogFacetSelection.Availability.Of. A locked unique
+    // cannot have been built, so if both are set the data is wrong and Locked is the
+    // safer claim.
     assert.equal(entryStateWord({ isLocked: true, isAlreadyBuilt: true }, "Locked", "Built"), "Locked");
   });
 });

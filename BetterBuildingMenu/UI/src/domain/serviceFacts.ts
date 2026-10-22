@@ -5,9 +5,8 @@
  */
 
 /**
- * The number formatter is INJECTED rather than imported: this folder
- * cross-imports types only, so every module can load on its own under Node's
- * type stripping. The caller already holds the separators.
+ * The number formatter is INJECTED rather than imported: the caller already holds
+ * the player's separators and unit system, and this module imports nothing at runtime.
  */
 export type FormatNumber = (value: number) => string;
 
