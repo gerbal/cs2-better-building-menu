@@ -268,9 +268,19 @@ namespace BetterBuildingMenu.Systems
 			return collected;
 		}
 
-		/// <summary>What the game still wants before this asset can be built.</summary>
-		private (int Milestone, string[] Requirements) GetUnlockRequirements(Entity entity) =>
-			UnlockRequirementsOf(CollectRequirements(entity));
+		/// <summary>The asset's lock as the game holds it, by the one rule LockState keeps.</summary>
+		private LockState ReadLock(Entity entity) => ReadLock(entity, CollectRequirements(entity));
+
+		/// <remarks>For a caller that walks the requirements for something else too.</remarks>
+		private LockState ReadLock(Entity entity, IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required)
+		{
+			var (milestone, requirements) = UnlockRequirementsOf(required);
+			return LockState.Of(IsLocked(entity), milestone, requirements);
+		}
+
+		/// <summary>Enableable: presence alone would mark every unlockable asset
+		/// locked forever, including the ones already earned.</summary>
+		private bool IsLocked(Entity entity) => EntityManager.HasEnabledComponent<Locked>(entity);
 
 		/// <summary>The highest milestone the requirements need, and a line for each of the rest.</summary>
 		/// <remarks>Mirrors PrefabUISystem.GetRequirements: take the highest milestone, and let

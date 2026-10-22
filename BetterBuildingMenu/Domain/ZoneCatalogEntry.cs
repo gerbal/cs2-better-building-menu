@@ -43,7 +43,7 @@ namespace BetterBuildingMenu.Domain
 		/// same source the building index uses.
 		/// </summary>
 		bool IsLocked = false,
-		/// <summary>Milestone index it unlocks at, 0 when not locked.</summary>
+		/// <summary>Milestone index it unlocks at, kept once unlocked as a building's is; 0 for none.</summary>
 		int UnlockMilestone = 0,
 		/// <summary>Everything standing between the player and this zone.</summary>
 		string[]? UnlockRequirements = null,

@@ -139,10 +139,7 @@ namespace BetterBuildingMenu.Systems
 					continue;
 				}
 
-				var isZoneLocked = EntityManager.HasEnabledComponent<Locked>(zone);
-				var (zoneMilestone, zoneRequirements) = isZoneLocked
-					? GetUnlockRequirements(zone)
-					: (0, Array.Empty<string>());
+				var zoneLock = ReadLock(zone);
 
 				catalog.Add(new ZoneCatalogEntry(
 					Id: zone.Index,
@@ -174,12 +171,10 @@ namespace BetterBuildingMenu.Systems
 					MaxLotDepth: zoneLots?.MaxDepth ?? 0,
 					Footprints: zoneLots?.Footprints,
 					FootprintOverflow: zoneLots?.FootprintOverflow ?? 0,
-					// Same source as the building index: the enableable Locked
-					// component, not its mere presence, which would mark every
-					// unlockable zone locked forever including the earned ones.
-					IsLocked: isZoneLocked,
-					UnlockMilestone: zoneMilestone,
-					UnlockRequirements: zoneRequirements));
+					// Same read and rule as the building index.
+					IsLocked: zoneLock.IsLocked,
+					UnlockMilestone: zoneLock.Milestone,
+					UnlockRequirements: zoneLock.Requirements));
 			}
 
 			// The menu is the authority: it lists the specialised industries the
@@ -225,10 +220,7 @@ namespace BetterBuildingMenu.Systems
 
 				var family = ZoningCatalog.ResolveFamilyFromGroup(placement.Category)
 					?? ZoningFamilies.Extractors;
-				var locked = EntityManager.HasEnabledComponent<Locked>(placement.Entity);
-				var (milestone, requirements) = locked
-					? GetUnlockRequirements(placement.Entity)
-					: (0, Array.Empty<string>());
+				var (locked, milestone, requirements) = ReadLock(placement.Entity);
 				var feature = EntityManager.TryGetComponent<ExtractorAreaData>(placement.Entity, out var extractor)
 					? extractor.m_MapFeature.ToString()
 					: null;
@@ -294,10 +286,7 @@ namespace BetterBuildingMenu.Systems
 					continue;
 				}
 
-				var locked = EntityManager.HasEnabledComponent<Locked>(area);
-				var (milestone, requirements) = locked
-					? GetUnlockRequirements(area)
-					: (0, Array.Empty<string>());
+				var (locked, milestone, requirements) = ReadLock(area);
 
 				catalog.Add(new ZoneCatalogEntry(
 					Id: area.Index,
