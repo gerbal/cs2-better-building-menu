@@ -16,6 +16,7 @@ const row = (over: Partial<TableRowProps> = {}) =>
     <TableRowInTable
       entry={entry(7, { name: "Clinic" })}
       expanded={false}
+      armed={false}
       nameBudget={40}
       labels={labels}
       columnStyle={() => ({})}

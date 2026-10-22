@@ -100,7 +100,7 @@ const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, on
         <BuildingList
           entries={rows.map((row) => row.entry)}
           variant="cards"
-          selectedId={selectedId}
+          armedId={selectedId}
           onPlace={(entry) => {
             const row = byId.get(entry.id);
             if (row) onPlace(row);

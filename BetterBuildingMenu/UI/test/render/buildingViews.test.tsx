@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { act } from "react-test-renderer";
+import { act, type ReactTestInstance } from "react-test-renderer";
 import { renderHtml, entry } from "../harness/render";
 import { installFakeBrowser, type FakeBrowser } from "../harness/fakeBrowser";
 import { mountEach } from "../harness/mount";
@@ -11,14 +11,17 @@ import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { BuildingGrid } from "../../src/mods/BuildingGrid/BuildingGrid";
 import { BuildingList } from "../../src/mods/BuildingList/BuildingList";
 import { TableRow } from "../../src/mods/BuildingCatalog/TableRow";
+import { TableView } from "../../src/mods/BuildingCatalog/TableView";
+import { ASSET_MENU_TABLE_METRICS } from "../../src/domain/assetMenuLayout";
 import { useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
-import { BuildingCatalogSortColumn$ } from "../../src/mods/bindings";
+import { ActivePrefabId$, BuildingCatalogSortColumn$ } from "../../src/mods/bindings";
 
 // The table reads the hover card's context once and hands it to every row.
 const TableRowInTable = ({ entry: rowEntry }: { entry: BuildingCatalogEntry }) => (
   <TableRow
     entry={rowEntry}
     expanded={false}
+    armed={false}
     nameBudget={40}
     labels={{ place: "Place", inspect: "Details" }}
     hoverCard={useHoverCardContext()}
@@ -187,6 +190,94 @@ describe("placing from the grid and the list", () => {
       assert.equal(placeProp(), before);
       assert.deepEqual(first, []);
       assert.deepEqual(second, [1]);
+    });
+  }
+});
+
+// The whole table, not one row: the table reads the armed building for its rows.
+const TableOf = ({ entries }: { entries: BuildingCatalogEntry[] }) => (
+  <TableView
+    items={entries}
+    emptyState={null}
+    density="default"
+    metrics={ASSET_MENU_TABLE_METRICS}
+    columnStyle={() => ({})}
+    nameBudget={40}
+    resolveFacetLabel={() => null}
+    sortColumn="Name"
+    descending={false}
+    onSort={() => {}}
+    expandedId={null}
+    onToggleExpanded={() => {}}
+    onPlace={() => {}}
+    footer={null}
+  />
+);
+
+// Each view's own class for the lit control.
+const ARMED_VIEWS = [
+  { name: "grid", armedClass: "tileArmed", View: ({ entries }: { entries: BuildingCatalogEntry[] }) => <BuildingGrid entries={entries} onPlace={() => {}} /> },
+  { name: "list", armedClass: "itemArmed", View: ({ entries }: { entries: BuildingCatalogEntry[] }) => <BuildingList entries={entries} onPlace={() => {}} /> },
+  { name: "cards", armedClass: "itemArmed", View: ({ entries }: { entries: BuildingCatalogEntry[] }) => <BuildingList entries={entries} variant="cards" onPlace={() => {}} /> },
+  { name: "table", armedClass: "rowSelectArmed", View: TableOf },
+] as const;
+
+describe("the armed building in every view", () => {
+  const tree = mountEach();
+  let browser: FakeBrowser;
+
+  beforeEach(() => {
+    resetBindings();
+    browser = installFakeBrowser({ frames: "none" });
+  });
+  afterEach(() => browser.restore());
+
+  const entries = [entry(1), entry(2), entry(3, { isUnique: true, isAlreadyBuilt: true })];
+
+  /** The entry a lit element belongs to: its own anchor, or the row it sits in. */
+  const ownerId = (node: ReactTestInstance): number => {
+    let at: ReactTestInstance | null = node;
+    while (at && at.props["data-catalog-entry"] === undefined) at = at.parent;
+    assert.ok(at, "a lit element outside any entry");
+    return at.props["data-catalog-entry"] as number;
+  };
+
+  for (const { name, armedClass, View } of ARMED_VIEWS) {
+    /** The entries the view lights and announces as the current one. */
+    const armed = (): number[] => {
+      const lit = tree.root.findAll((node) => typeof node.type === "string" && String(node.props.className ?? "").split(" ").includes(armedClass));
+      const current = tree.root.findAll((node) => typeof node.type === "string" && node.props["aria-current"] === "true");
+      assert.deepEqual(current, lit, `${name}: what is lit is what is announced`);
+      return lit.map(ownerId);
+    };
+
+    it(`${name}: marks the building the game has armed, and no other`, () => {
+      seed(ActivePrefabId$, 2);
+      tree.mount(<View entries={entries} />);
+
+      assert.deepEqual(armed(), [2]);
+    });
+
+    it(`${name}: marks nothing while nothing is armed`, () => {
+      tree.mount(<View entries={entries} />);
+
+      assert.deepEqual(armed(), []);
+    });
+
+    it(`${name}: follows the game when it arms another`, () => {
+      seed(ActivePrefabId$, 2);
+      tree.mount(<View entries={entries} />);
+
+      act(() => seed(ActivePrefabId$, 1));
+
+      assert.deepEqual(armed(), [1]);
+    });
+
+    it(`${name}: does not mark an armed building that cannot be placed`, () => {
+      seed(ActivePrefabId$, 3);
+      tree.mount(<View entries={entries} />);
+
+      assert.deepEqual(armed(), []);
     });
   }
 });

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { entryLabel, entryStateAttributes, entryStateWordOf, sortedBadgeText } from "../src/domain/buildingEntryView.ts";
+import { entryLabel, entryStateAttributes, entryStateWordOf, isArmedEntry, sortedBadgeText } from "../src/domain/buildingEntryView.ts";
 import { FALLBACK_SEPARATORS, formatBuildingMetric, formatLotDimensions } from "../src/domain/assetMenuMetricFormat.ts";
 import { entry } from "./harness/entries.ts";
 
@@ -64,5 +64,21 @@ describe("the markers an entry's stylesheet keys off", () => {
 
   it("hands every row in the same state the same object, so a row allocates none", () => {
     assert.equal(entryStateAttributes(entry(1, { isLocked: true })), entryStateAttributes(entry(2, { isLocked: true })));
+  });
+});
+
+describe("whether a view marks an entry as armed", () => {
+  it("marks the prefab the game has armed, and no other", () => {
+    assert.equal(isArmedEntry(entry(7), 7), true);
+    assert.equal(isArmedEntry(entry(8), 7), false);
+  });
+
+  it("marks nothing while nothing is armed, which the game states as 0", () => {
+    assert.equal(isArmedEntry(entry(0), 0), false);
+  });
+
+  it("marks no entry that cannot be placed, as vanilla's tile does not", () => {
+    assert.equal(isArmedEntry(entry(7, { isLocked: true }), 7), false);
+    assert.equal(isArmedEntry(entry(7, { isUnique: true, isAlreadyBuilt: true }), 7), false);
   });
 });

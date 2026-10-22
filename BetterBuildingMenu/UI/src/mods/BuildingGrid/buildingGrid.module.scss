@@ -177,28 +177,6 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-// Locked wins over armed, which is vanilla's answer rather than a choice: the
-// asset tile never draws a selection colour under a locked thumbnail. Stated
-// defensively in case `canPlace` ever lets a locked entry arm.
-.tile[data-locked="true"].tileArmed,
-.tile[data-locked="true"].tileArmed:active,
-.tile[data-already-built="true"].tileArmed,
-.tile[data-already-built="true"].tileArmed:active {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-// Rasters only, for the same reason as the rule above.
-.tile[data-locked="true"][data-vector-thumb="false"].tileArmed .thumb,
-.tile[data-locked="true"][data-vector-thumb="false"].tileArmed:active .thumb,
-.tile[data-already-built="true"][data-vector-thumb="false"].tileArmed .thumb,
-.tile[data-already-built="true"][data-vector-thumb="false"].tileArmed:active .thumb {
-  filter: grayscale(100%) contrast(80%) brightness(0%);
-}
-
-.tile[data-locked="true"].tileArmed:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-}
-
 // The figure the grid is currently ordered by: its own row under the name, not
 // a pill over the thumbnail, because recognising the thumbnail is what this
 // view is for. One name for the row's height; three rules depend on it.

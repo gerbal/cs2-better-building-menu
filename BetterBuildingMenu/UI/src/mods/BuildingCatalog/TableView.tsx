@@ -2,6 +2,7 @@ import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { useValue } from "mods/panelValue";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuMetricLabel } from "domain/assetMenuLayout";
@@ -11,9 +12,11 @@ import {
   getAssetMenuColumnSortIndicator,
 } from "domain/assetMenuSortPresentation";
 import { flattenGroupedRows, takeRows } from "domain/buildingGroups";
+import { isArmedEntry } from "domain/buildingEntryView";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { useLabel } from "mods/useLabel";
+import { ActivePrefabId$ } from "mods/bindings";
 import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";
 
@@ -90,6 +93,8 @@ export const TableView = ({
   // separators are the player's own marks, so our columns agree with the
   // numbers the game is drawing elsewhere on the same screen.
   const hoverCard = useHoverCardContext();
+  // Read once for every row too, as the grid does for its tiles.
+  const activePrefabId = useValue(ActivePrefabId$);
   // Memoised so the rows' props hold still between renders.
   const labels: TableRowLabels = useMemo(() => ({
     place: label("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place"),
@@ -170,6 +175,7 @@ export const TableView = ({
               key={line.entry.id}
               entry={line.entry}
               expanded={expandedId === line.entry.id}
+              armed={isArmedEntry(line.entry, activePrefabId)}
               nameBudget={nameBudget}
               labels={labels}
               hoverCard={hoverCard}

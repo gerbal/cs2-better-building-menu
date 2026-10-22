@@ -435,6 +435,16 @@
   background-color: rgba(255, 255, 255, 0.08);
 }
 
+// The armed building, in the grid's hue and vanilla's hover shade for it; see
+// .tileArmed there.
+.rowSelectArmed {
+  background-color: var(--selectedColor);
+}
+
+.rowSelectArmed:hover {
+  background-color: var(--selectedColor-hover);
+}
+
 .identityCell {
   display: flex;
   flex-direction: row;

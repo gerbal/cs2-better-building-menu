@@ -86,8 +86,8 @@ describe("the extension picker", () => {
     setBinding("upgradeMenu", "selectedUpgrade", { index: 8, version: 1 });
 
     const html = render();
-    assert.match(rowTag(html, 8), /data-selected="true"/);
-    assert.doesNotMatch(rowTag(html, 7), /data-selected/);
+    assert.match(rowTag(html, 8), /aria-current="true"/);
+    assert.doesNotMatch(rowTag(html, 7), /aria-current/);
   });
 
   it("does not state a capacity of zero as a fact", () => {

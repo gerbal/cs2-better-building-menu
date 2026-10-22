@@ -428,3 +428,20 @@ describe("a lone last row keeps its column", () => {
     assert.equal(card(".cardLineWide").flex, "1 1 100%");
   });
 });
+
+describe("every view lights the armed building as the grid does", () => {
+  // Vanilla's selected hue and its own shades for hover; a held hover look
+  // would read as the pointer resting there.
+  const ARMED = [
+    ["grid", GRID, ".tileArmed"],
+    ["list", LIST, ".itemArmed"],
+    ["table", CATALOG, ".rowSelectArmed"],
+  ] as const;
+
+  for (const [name, sheet, selector] of ARMED) {
+    it(`${name}: in the selected colour, and its hover shade`, () => {
+      assert.equal(declarationsOf(sheet, selector)["background-color"], "var(--selectedColor)");
+      assert.equal(declarationsOf(sheet, `${selector}:hover`)["background-color"], "var(--selectedColor-hover)");
+    });
+  }
+});
