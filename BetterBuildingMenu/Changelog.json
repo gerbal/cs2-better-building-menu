@@ -17,6 +17,7 @@
         "Name": "Fixed",
         "Changes": [
           "One Escape closes the menu without also opening the pause menu.",
+          "Closing the menu no longer leaves an empty bar above the toolbar.",
           "List and Table light up the building you are placing, as the grid does.",
           "A list longer than the menu can show says so at the bottom, instead of just ending.",
           "Lengths, weights, power and energy are rounded as the game rounds them: 7.5 m, 123 t.",
