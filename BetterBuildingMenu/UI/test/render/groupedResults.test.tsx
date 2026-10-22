@@ -79,9 +79,9 @@ describe("grouped results", () => {
     assert.equal(found.filter((g) => g.heading === "Medium Roads").length, 1, "the name appears once");
   });
 
-  it("draws no sub-heading over a one-building branch, and leaves it in place", () => {
-    // The card names the one building, so a sub-heading over it says it twice
-    // and costs the row a heading's height. A branch of two or more still heads.
+  it("draws a sub-heading over a one-building branch as over any other, in place", () => {
+    // Left bare, a lone building read as part of the branch before it (Vesuvius
+    // Place among the Signatures), so every branch of a headed level heads.
     const html = render(
       [
         ["Healthcare", "Hospital"],
@@ -95,9 +95,9 @@ describe("grouped results", () => {
 
     assert.ok(found.some((g) => g.heading === "Hospital"), "a two-building branch keeps its heading");
     for (const name of ["Disease Control Center", "Health Research Institute"]) {
-      assert.ok(!found.some((g) => g.heading === name), `${name} draws none`);
+      assert.ok(found.some((g) => g.heading === name), `${name} heads its one building`);
     }
-    // In place: the bare branches still follow Hospital, in the backend's order.
+    // In place: the one-building branches still follow Hospital, in the backend's order.
     assert.ok(html.indexOf("Hospital 2") < html.indexOf("Disease Control Center"));
     assert.ok(html.indexOf("Disease Control Center") < html.indexOf("Health Research Institute"));
   });

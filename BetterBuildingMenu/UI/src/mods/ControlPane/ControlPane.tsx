@@ -4,7 +4,13 @@ import { Button } from "cs2/ui";
 import classNames from "classnames";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
-import { groupDimensionsFor, groupDimensionLabel } from "domain/buildingGroups";
+import {
+  autoThenByLabel,
+  groupDimensionsFor,
+  groupDimensionLabel,
+  thenByOptionsFor,
+  type GroupDimensionId,
+} from "domain/buildingGroups";
 import { ChipRow } from "mods/ChipRow/ChipRow";
 import { FilterRail } from "mods/FilterRail/FilterRail";
 import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
@@ -17,6 +23,7 @@ import {
   resetAssetMenuCommand,
   setAssetMenuViewModeCommand,
   setBuildingCatalogGroupByCommand,
+  setBuildingCatalogThenByCommand,
   toggleAssetMenuFacetCommand,
   type Command,
 } from "domain/commands";
@@ -41,6 +48,8 @@ import {
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
   AssetMenuGroupDimensions$,
+  AssetMenuAutoThenBy$,
+  BuildingCatalogThenBy$,
   CurrentSearch$,
   SelectedAssetPacks$,
   VanillaSelected$,
@@ -63,6 +72,8 @@ export const ControlPane = memo(function ControlPane() {
   // The dimension ids that can act on the current menu. C# judges it over the
   // whole menu set; an empty list means it has not said yet.
   const offeredDimensions = useValue(AssetMenuGroupDimensions$) ?? [];
+  const thenBy = (useValue(BuildingCatalogThenBy$) ?? "") as GroupDimensionId | "";
+  const autoThenBy = useValue(AssetMenuAutoThenBy$) ?? [];
   // The fields that can actually reorder these results. The picker drops the
   // rest rather than offering a control that cannot act.
   const reorderableSortColumns = catalogPage?.reorderableSortColumns ?? [];
@@ -74,6 +85,7 @@ export const ControlPane = memo(function ControlPane() {
   const vanillaSelected = useValue(VanillaSelected$) ?? false;
 
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [thenByPickerOpen, setThenByPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
 
   const { viewMode: viewModeChoice, groupBy } = useViewShape();
@@ -88,7 +100,18 @@ export const ControlPane = memo(function ControlPane() {
     { column: sortColumn, descending },
     reorderableSortColumns
   );
-  const groupByLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy));
+  const dimensionLabel = (id: GroupDimensionId): string =>
+    label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${id}]`, groupDimensionLabel(id));
+  const groupByLabel = dimensionLabel(groupBy);
+  // Auto names what it groups by here, so the player can tell it from the others.
+  const thenByChoiceLabel = (id: GroupDimensionId | ""): string =>
+    id === ""
+      ? autoThenByLabel(
+        autoThenBy.map((dimension) => dimensionLabel(dimension as GroupDimensionId)),
+        label("Tooltip.LABEL[BetterBuildingMenu.GroupBy_auto]", "Auto"),
+        dimensionLabel("none")
+      )
+      : dimensionLabel(id);
 
   const fire = send;
 
@@ -221,47 +244,39 @@ export const ControlPane = memo(function ControlPane() {
             <span className={styles.rowLabel}>
               {label("Tooltip.LABEL[BetterBuildingMenu.GroupBy]", "Group by")}
             </span>
+            {/* The first grouping, then the level beneath its groups. The second stays
+                on screen under None, disabled, so the row keeps its shape. */}
             <div className={styles.rowValue}>
-              <div className={styles.picker}>
-                <Button
-                  className={styles.pickerSummary}
-                  variant="icon"
-                  onSelect={() => setGroupPickerOpen((open) => !open)}
-                  aria-expanded={groupPickerOpen}
-                  title={groupByLabel}
-                >
-                  <span className={styles.pickerLabel}>{groupByLabel}</span>
-                  {/* U+25BC, not the small U+25BE: the game's font stack has no
-                      small triangles, so the one mark saying this control opens
-                      would be the one glyph that would not render. */}
-                  <span className={styles.caret} aria-hidden="true">▼</span>
-                </Button>
-                {groupPickerOpen && (
-                  <div className={styles.pickerOptions}>
-                    {groupDimensionsFor(offeredDimensions).map((dimension) => {
-                      const optionLabel = label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${dimension.id}]`, dimension.label);
-
-                      return (
-                        <Button
-                          key={dimension.id}
-                          className={classNames(
-                            styles.pickerOption,
-                            dimension.id === groupBy && styles.pickerOptionSelected
-                          )}
-                          variant="icon"
-                          onSelect={() => {
-                            send(setBuildingCatalogGroupByCommand(dimension.id));
-                            setGroupPickerOpen(false);
-                          }}
-                          aria-label={optionLabel}
-                        >
-                          <span>{optionLabel}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <Picker
+                summary={groupByLabel}
+                open={groupPickerOpen}
+                onToggle={() => setGroupPickerOpen((open) => !open)}
+                options={groupDimensionsFor(offeredDimensions).map((dimension) => ({
+                  key: dimension.id,
+                  label: dimensionLabel(dimension.id),
+                  selected: dimension.id === groupBy,
+                  onSelect: () => {
+                    send(setBuildingCatalogGroupByCommand(dimension.id));
+                    setGroupPickerOpen(false);
+                  },
+                }))}
+              />
+              <Picker
+                className={styles.thenBy}
+                summary={thenByChoiceLabel(thenBy)}
+                open={thenByPickerOpen && groupBy !== "none"}
+                disabled={groupBy === "none"}
+                onToggle={() => setThenByPickerOpen((open) => !open)}
+                options={thenByOptionsFor(offeredDimensions, groupBy).map((id) => ({
+                  key: id || "auto",
+                  label: thenByChoiceLabel(id),
+                  selected: id === thenBy,
+                  onSelect: () => {
+                    send(setBuildingCatalogThenByCommand(id));
+                    setThenByPickerOpen(false);
+                  },
+                }))}
+              />
             </div>
           </div>
 
@@ -356,3 +371,61 @@ export const ControlPane = memo(function ControlPane() {
     </div>
   );
 });
+
+interface PickerOption {
+  key: string;
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}
+
+/** A summary button naming the choice, opening a list of the others upward. */
+function Picker({
+  summary,
+  open,
+  onToggle,
+  options,
+  disabled = false,
+  className,
+}: {
+  summary: string;
+  open: boolean;
+  onToggle: () => void;
+  options: readonly PickerOption[];
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={classNames(styles.picker, disabled && styles.pickerDisabled, className)}>
+      <Button
+        className={styles.pickerSummary}
+        variant="icon"
+        onSelect={onToggle}
+        disabled={disabled}
+        aria-expanded={open}
+        title={summary}
+      >
+        <span className={styles.pickerLabel}>{summary}</span>
+        {/* U+25BC, not the small U+25BE: the game's font stack has no
+            small triangles, so the one mark saying this control opens
+            would be the one glyph that would not render. */}
+        <span className={styles.caret} aria-hidden="true">▼</span>
+      </Button>
+      {open && (
+        <div className={styles.pickerOptions}>
+          {options.map((option) => (
+            <Button
+              key={option.key}
+              className={classNames(styles.pickerOption, option.selected && styles.pickerOptionSelected)}
+              variant="icon"
+              onSelect={option.onSelect}
+              aria-label={option.label}
+            >
+              <span>{option.label}</span>
+            </Button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

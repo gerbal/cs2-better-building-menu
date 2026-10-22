@@ -60,6 +60,8 @@ namespace BetterBuildingMenu.Systems
 		private int? _appliedMenuFrame;
 		private int _appliedMenuIndex;
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
+		private ValueBindingHelper<string> _BuildingCatalogThenBy = null!;
+		private ValueBindingHelper<string[]> _AssetMenuAutoThenBy = null!;
 		// The grouping dimensions that can act on the current menu set; the picker lists these.
 		private ValueBindingHelper<string[]> _AssetMenuGroupDimensions = null!;
 		// Whether the menu the toolbar currently has open is one the asset menu takes
@@ -236,6 +238,12 @@ namespace BetterBuildingMenu.Systems
 				"SetBuildingCatalogGroupBy",
 				_assetMenu.Query.GroupBy,
 				SetBuildingCatalogGroupBy);
+			_AssetMenuAutoThenBy = CreateBinding("AssetMenuAutoThenBy", Array.Empty<string>());
+			_BuildingCatalogThenBy = CreateBinding(
+				"BuildingCatalogThenBy",
+				"SetBuildingCatalogThenBy",
+				_assetMenu.Query.ThenBy,
+				SetBuildingCatalogThenBy);
 			_BuildingCatalogSortDescending = CreateBinding(
 				"BuildingCatalogSortDescending",
 				"SetBuildingCatalogSortDescending",

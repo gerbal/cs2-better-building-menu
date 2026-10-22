@@ -114,7 +114,25 @@ namespace BetterBuildingMenu.Domain
 
 			return string.Equals(Query.GroupBy, next, StringComparison.Ordinal)
 				? this
-				: this with { Query = ResetWindow(Query with { GroupBy = next }) };
+				: this with
+				{
+					Query = ResetWindow(Query with
+					{
+						GroupBy = next,
+						// A second level the first now names would split each group by itself.
+						ThenBy = string.Equals(Query.ThenBy, next, StringComparison.OrdinalIgnoreCase) ? string.Empty : Query.ThenBy,
+					}),
+				};
+		}
+
+		/// <summary>The player's second grouping choice; empty means Auto.</summary>
+		public AssetMenuState SetThenBy(string? thenBy)
+		{
+			var next = (thenBy ?? string.Empty).Trim();
+
+			return string.Equals(Query.ThenBy, next, StringComparison.Ordinal)
+				? this
+				: this with { Query = ResetWindow(Query with { ThenBy = next }) };
 		}
 
 		/// <summary>One more chunk, up to the ceiling. At the ceiling, nothing.</summary>
@@ -194,6 +212,7 @@ namespace BetterBuildingMenu.Domain
 				SortColumn = string.Empty,
 				Descending = false,
 				GroupBy = string.Empty,
+				ThenBy = string.Empty,
 			}),
 		};
 

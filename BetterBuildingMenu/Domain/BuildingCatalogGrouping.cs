@@ -260,6 +260,67 @@ namespace BetterBuildingMenu.Domain
 			!IsGrouped(groupBy) ? Ungrouped
 			: DescriptorIds.Find(Table, groupBy.Trim()) ?? Unrecognised;
 
+		/// <summary>
+		/// The first choice with the second picked beside it: empty for Auto (the first as it is),
+		/// none for its outer level alone, else the first's outer level split by the second's.
+		/// </summary>
+		/// <remarks>The outer heading keeps the first's label id, so a menu category still reads in
+		/// the game's language; the inner is the second's outer heading.</remarks>
+		public static BuildingCatalogGroupDimension Find(string? groupBy, string? thenBy)
+		{
+			var first = Find(groupBy);
+
+			if (!first.IsGrouped || thenBy?.Trim() is not { Length: > 0 } then)
+			{
+				return first;
+			}
+
+			var second = IsGrouped(then) ? Find(then) : null;
+
+			return new BuildingCatalogGroupDimension(
+				first.Id,
+				first.PrimaryKey,
+				second is null ? NoKey : second.PrimaryKey,
+				(entry, milestoneNames, schoolTierNames) =>
+				{
+					var outer = first.Labels(entry, milestoneNames, schoolTierNames);
+					var path = outer.Path.Length == 0 ? new[] { Other } : new[] { outer.Path[0] };
+
+					if (second is not null)
+					{
+						var inner = second.Labels(entry, milestoneNames, schoolTierNames).Path;
+						path = new[] { path[0], inner.Length == 0 ? Other : inner[0] };
+					}
+
+					return new GroupLabels(path, outer.LabelId);
+				});
+		}
+
+		/// <summary>The dimensions Auto's second level draws from in this set, in the order the tier rule
+		/// tries them; none
+		/// for a first choice with no second level of its own. The picker names Auto by them.</summary>
+		public static string[] AutoThenBy(string? groupBy, IEnumerable<BuildingCatalogEntry> entries)
+		{
+			if (Is(groupBy?.Trim() ?? string.Empty, Category))
+			{
+				return new[] { SubCategory };
+			}
+
+			if (!Is(groupBy?.Trim() ?? string.Empty, MenuCategory))
+			{
+				return Array.Empty<string>();
+			}
+
+			var used = new HashSet<string>(StringComparer.Ordinal);
+
+			foreach (var entry in entries)
+			{
+				used.Add(CategoryTierDimension(entry));
+			}
+
+			return CategoryTierOrder.Where(used.Contains).ToArray();
+		}
+
 		private static bool Is(string value, string dimension) =>
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);
 
@@ -653,31 +714,36 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>The second level under a menu category: density tier, transit type, branch, or milestone.</summary>
-		public static string CategoryTierLabel(BuildingCatalogEntry entry, IReadOnlyList<string>? milestoneNames = null)
-		{
-			if (entry.ZoneType != ZoneTypeFilter.Any && entry.ZoneType != ZoneTypeFilter.Signature)
+		public static string CategoryTierLabel(BuildingCatalogEntry entry, IReadOnlyList<string>? milestoneNames = null) =>
+			CategoryTierDimension(entry) switch
 			{
-				var density = DensityTierLabel(entry.ZoneType);
+				Density => DensityTierLabel(entry.ZoneType),
+				Role => TransitTierLabel(entry),
+				Development => Text(entry.DevTreeBranch)!,
+				_ => MilestoneLabel(entry.UnlockMilestone, milestoneNames),
+			};
 
-				if (density != Other)
-				{
-					return density;
-				}
+		/// <summary>The dimensions <see cref="CategoryTierDimension"/> answers, in the order it tries them.</summary>
+		private static readonly string[] CategoryTierOrder = { Density, Role, Development, Progression };
+
+		/// <summary>The dimension whose heading <see cref="CategoryTierLabel"/> gives an entry: density
+		/// for a zoned building, role (tracks, stops, stations, depots) in transit, else its branch,
+		/// else its milestone.</summary>
+		public static string CategoryTierDimension(BuildingCatalogEntry entry)
+		{
+			if (entry.ZoneType != ZoneTypeFilter.Any
+				&& entry.ZoneType != ZoneTypeFilter.Signature
+				&& DensityTierLabel(entry.ZoneType) != Other)
+			{
+				return Density;
 			}
 
 			if (IsTransitMenu(entry.UiMenu))
 			{
-				return TransitTierLabel(entry);
+				return Role;
 			}
 
-			var branch = Text(entry.DevTreeBranch);
-
-			if (branch is not null)
-			{
-				return branch;
-			}
-
-			return MilestoneLabel(entry.UnlockMilestone, milestoneNames);
+			return Text(entry.DevTreeBranch) is not null ? Development : Progression;
 		}
 
 		/// <summary>The density tier's heading; "Other" for a zone with no tier.</summary>

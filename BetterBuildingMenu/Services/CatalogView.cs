@@ -25,6 +25,7 @@ namespace BetterBuildingMenu.Services
 		private readonly bool _vanillaSelected;
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
+		private string[]? _autoThenBy;
 
 		private BuildingCatalogEntry[]? _menuSet, _viewSet, _tabSet, _tierSet, _wholeMenu;
 		private BuildingCatalogPage? _page;
@@ -58,6 +59,9 @@ namespace BetterBuildingMenu.Services
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
 		public string[] GroupDimensions => _dimensions ??= BuildingCatalogGrouping.OfferedDimensions(MenuSet, _educationMenu);
 
+		/// <summary>What the second picker's Auto groups by here, so it can say so.</summary>
+		public string[] AutoThenBy => _autoThenBy ??= BuildingCatalogGrouping.AutoThenBy(EffectiveGroupBy, ViewSet);
+
 		/// <summary>The grouping the page is ordered by: the player's choice, or the menu's default.</summary>
 		/// <remarks>
 		/// Resolved here rather than by the UI. The resolver may read this view's own strip axis;
@@ -89,17 +93,19 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>
 		/// The menu set the page is grouped from: Parking's lone branches folded where the category
-		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else.
+		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else. Only under
+		/// Auto, the second level whose branches the fold rewrites.
 		/// </summary>
 		private IReadOnlyList<BuildingCatalogEntry> GroupedSet =>
 			string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
+			&& string.IsNullOrWhiteSpace(_query.ThenBy)
 				? RoadsLoneBranches.Fold(MenuSet, _query.UiMenu)
 				: MenuSet;
 
 		/// <summary>Stamps the page's items with their headings. The page only — a hundred entries, not the set.</summary>
 		private BuildingCatalogPage WithGroupLabels(BuildingCatalogPage page)
 		{
-			var dimension = BuildingCatalogGrouping.Find(EffectiveGroupBy);
+			var dimension = BuildingCatalogGrouping.Find(EffectiveGroupBy, _query.ThenBy);
 
 			if (!dimension.IsGrouped)
 			{

@@ -7,8 +7,6 @@ import {
   fitGroupLabel,
   fitLabelToWidth,
   headingBands,
-  headsGroup,
-  levelDrawsHeading,
   shouldShowHeading,
   type GroupNode,
 } from "domain/buildingGroups";
@@ -333,7 +331,7 @@ export const GroupedResults = memo(function GroupedResults({
     // GroupBox equalises that within a row but not ACROSS rows, so where some
     // siblings' children are headed, the rest keep the reserve too.
     const someChildRowIsHeaded = nodes.some(
-      (node) => node.children.length > 0 && levelDrawsHeading(node.children, depth + 1)
+      (node) => node.children.length > 0 && shouldShowHeading(node.children)
     );
 
     const boxes = nodes.map((node) => {
@@ -341,13 +339,12 @@ export const GroupedResults = memo(function GroupedResults({
       // sits alone and its children's on the next. One sub-group draws no
       // heading, so that group reads as a leaf and flows like one.
       const band = node.children.length > 1;
-      // No heading, so no row reserved for one. Three cases: an only child, whose
-      // heading shouldShowHeading already hides; a sub-group of one building
-      // (headsGroup); and a nested name repeating its parent's, which the dev
-      // tree produces for a category's base branch.
+      // No heading, so no row reserved for one. Two cases: an only child, whose
+      // heading shouldShowHeading already hides, and a nested name repeating its
+      // parent's, which the dev tree produces for a category's base branch. A
+      // sub-group of one building heads: bare, it read as part of the one before.
       const unlabeled =
         !showHeadings
-        || !headsGroup(node, depth)
         || (depth > 0 && parentLabel !== null && node.label === parentLabel);
       // Drawing no heading is not the same as reserving no row for one: when
       // the parent row says a neighbour reserves, this one matches or the two
@@ -371,7 +368,7 @@ export const GroupedResults = memo(function GroupedResults({
             node.children,
             depth + 1,
             node.label,
-            someChildRowIsHeaded && !levelDrawsHeading(node.children, depth + 1)
+            someChildRowIsHeaded && !shouldShowHeading(node.children)
           )
           : renderLeaf(node.entries),
       };

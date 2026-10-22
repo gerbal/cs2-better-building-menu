@@ -15,7 +15,9 @@ import {
   AssetMenuGroupDimensions$,
   AssetMenuViewMode$,
   BuildingCatalog$,
+  AssetMenuAutoThenBy$,
   BuildingCatalogGroupBy$,
+  BuildingCatalogThenBy$,
   BuildingCatalogMetricRanges$,
   BuildingCatalogSortColumn$,
   BuildingCatalogSortDescending$,
@@ -31,6 +33,8 @@ const seed = (menu = "Roads") => {
   seedBinding(AssetMenu$, menu);
   seedBinding(BuildingCatalogGroupBy$, "menuCategory");
   seedBinding(AssetMenuGroupDimensions$, GROUP_DIMENSIONS.map((d) => d.id));
+  seedBinding(BuildingCatalogThenBy$, "");
+  seedBinding(AssetMenuAutoThenBy$, ["progression"]);
   seedBinding(BuildingCatalogSortColumn$, "Name");
   seedBinding(BuildingCatalogSortDescending$, false);
   seedBinding(CurrentSearch$, "");
@@ -60,7 +64,7 @@ describe("the control pane", () => {
     // player needs them most.
     const html = render();
 
-    assert.equal(count(html, /class="pickerSummary"/), 2, "a group picker and a sort picker");
+    assert.equal(count(html, /class="pickerSummary"/), 3, "two group pickers and a sort picker");
     assert.match(html, /class="pickerLabel">Category</);
     assert.match(html, /Sort by/);
     for (const mode of ["Grid", "List", "Cards", "Table"]) {
@@ -181,3 +185,40 @@ describe("the control pane's view", () => {
     assert.deepEqual(sent(), [[""]]);
   });
 });
+
+describe("the control pane's second grouping", () => {
+  const tree = mountEach();
+  const sent = () => triggers.filter((call) => call.name === "SetBuildingCatalogThenBy").map((call) => call.args);
+  const summary = (title: string) => tree.root.find((node) => node.props.title === title && typeof node.props.onSelect === "function");
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    seed();
+  });
+
+  it("sits beside the first, with Auto naming what it groups by", () => {
+    const html = render();
+
+    assert.match(html, /class="pickerLabel">Category<\/span>[\s\S]*class="pickerLabel">Auto \(Progression\)</);
+  });
+
+  it("sends the dimension the player picks", () => {
+    tree.mount(<ControlPane />);
+    act(() => summary("Auto (Progression)").props.onSelect());
+    act(() => tree.root.find((node) => node.props["aria-label"] === "Theme" && typeof node.props.onSelect === "function").props.onSelect());
+
+    assert.deepEqual(sent(), [["theme"]]);
+  });
+
+  it("names a picked dimension, and stays shown but disabled while nothing is grouped", () => {
+    seedBinding(BuildingCatalogThenBy$, "theme");
+    tree.mount(<ControlPane />);
+    assert.equal(summary("Theme").props.disabled, false);
+
+    act(() => seedBinding(BuildingCatalogGroupBy$, "none"));
+    tree.mount(<ControlPane />);
+    assert.equal(summary("Theme").props.disabled, true);
+  });
+});
+

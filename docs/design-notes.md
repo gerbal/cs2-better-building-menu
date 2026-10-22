@@ -419,6 +419,13 @@ Stations, Stops, Depots, Cargo Stations, then the lines and anything else by sub
   stop with no role with the stops. Stations, Depots and Cargo Stations are our English, as the
   density tiers are (see "Labels in the game's words"); a way and Stops read the subcategory's
   label.
+- **The second grouping is the player's.** Beside Group by, a second picker sets the level under
+  its groups (`BuildingCatalogQuery.ThenBy`; `BuildingCatalogGrouping.Find(groupBy, thenBy)`). Auto,
+  the default, is the first choice's own second level, the tier above for Category, and the picker
+  names what Auto draws from in this menu (`AutoThenBy`: Density, Role for transit, Development,
+  Progression). None keeps one level; a dimension keys and heads each group's children by its own
+  outer level. Parking's lone-branch fold runs under Auto only. Every group of a headed level
+  heads, one building's included: left bare, Vesuvius Place read as part of the milestone before it.
 
 ## Opening a menu
 

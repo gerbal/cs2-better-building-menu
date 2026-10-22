@@ -10,7 +10,8 @@
           "Transportation: each mode is split into tracks, stations, stops, depots and cargo stations, and Role is offered as a filter and as a grouping.",
           "Search finds each word you type in any order, and ignores accents.",
           "Enter arms the best match of everything the search found, not only the rows already shown.",
-          "Menus open faster, and switching between menus costs no more than reopening one."
+          "Menus open faster, and switching between menus costs no more than reopening one.",
+          "The Group by row has a second picker for the level under each group, such as Progression under Category. Auto, the default, keeps the menu's usual split and names it."
         ]
       },
       {
@@ -24,7 +25,8 @@
           "An asset whose icon file is missing no longer leaves every menu vanilla; it shows its category's icon.",
           "List view fills the menu, and no longer loads a second page every time it opens.",
           "In Table, a building alone in its group gets its own heading, so it is not read as part of the group above.",
-          "Road Zones and Sound Barrier stay in the groups that unlock them."
+          "Road Zones and Sound Barrier stay in the groups that unlock them.",
+          "A group of one building has its heading again, so it no longer reads as part of the group before it."
         ]
       }
     ]

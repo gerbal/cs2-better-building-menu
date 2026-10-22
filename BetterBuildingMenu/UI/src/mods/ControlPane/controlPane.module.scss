@@ -100,6 +100,16 @@
   min-width: 0;
 }
 
+// The second grouping, beside the first: the row's own inset between them.
+.thenBy {
+  margin-left: 6rem;
+}
+
+// A choice with nothing to act on: under no grouping there is no level to split.
+.pickerDisabled {
+  opacity: 0.5;
+}
+
 .pickerSummary {
   @include _base.transparentButton(false, true);
 

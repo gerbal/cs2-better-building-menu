@@ -86,6 +86,8 @@ namespace BetterBuildingMenu.Systems
 			_BuildingCatalogSortDescending.Value = _assetMenu.Query.Descending;
 			_BuildingCatalogGroupBy.Value = view.EffectiveGroupBy;
 			_AssetMenuGroupDimensions.Value = view.GroupDimensions;
+			_BuildingCatalogThenBy.Value = _assetMenu.Query.ThenBy;
+			_AssetMenuAutoThenBy.Value = view.AutoThenBy;
 			_BuildingCatalogMetricRanges.Value = _assetMenu.MetricRanges;
 			// Recomputed with the catalog so the bounds follow the menu. They come
 			// from InScope, which drops the metric selections, so narrowing a range

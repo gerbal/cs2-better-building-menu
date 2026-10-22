@@ -97,6 +97,7 @@ export interface TriggerArgs {
   SetBuildingCatalogMetricRange: [string, string, string];
   SetBuildingCatalogSortColumn: [string];
   SetBuildingCatalogSortDescending: [boolean];
+  SetBuildingCatalogThenBy: [string];
   SetControlPaneShown: [boolean];
   SetCurrentPrefab: [number];
   SetVanillaToolbarSelection: [string, string, boolean, boolean];
