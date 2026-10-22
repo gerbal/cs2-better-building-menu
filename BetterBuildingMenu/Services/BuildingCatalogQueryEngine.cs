@@ -101,7 +101,7 @@ namespace BetterBuildingMenu.Services
 			// Over `matching`, not over `items`: the question is whether the sort can order
 			// these RESULTS, and a page that happens to tie says nothing about the rest.
 			var usableColumns = ReorderableSortColumns(
-				matching, query, BuildingCatalogQuery.OfferedSortColumns);
+				matching, query, BuildingCatalogSortColumns.Ids);
 
 			return new BuildingCatalogPage(
 				items,
@@ -447,90 +447,10 @@ namespace BetterBuildingMenu.Services
 					.ThenBy(entry => (entry.Name ?? string.Empty).Length);
 			}
 
-			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
-			{
-				// The game's own order, and the only sort here that is not a field the
-				// player can see. Name second, so two assets vanilla gave the same
-				// priority do not swap under the cursor.
-				"default" => query.Descending
-					? seed.ThenByDescending(x => x.UIOrder).ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.UIOrder).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
-				"category" => query.Descending
-					? seed.ThenByDescending(x => x.Category, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.Category, StringComparer.OrdinalIgnoreCase),
-				"subcategory" => query.Descending
-					? seed.ThenByDescending(x => x.SubCategory, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.SubCategory, StringComparer.OrdinalIgnoreCase),
-				"lotwidth" => query.Descending
-					? seed.ThenByDescending(x => x.LotWidth)
-					: seed.ThenBy(x => x.LotWidth),
-				"lotdepth" => query.Descending
-					? seed.ThenByDescending(x => x.LotDepth)
-					: seed.ThenBy(x => x.LotDepth),
-				"buildinglevel" => query.Descending
-					? seed.ThenByDescending(x => x.BuildingLevel)
-					: seed.ThenBy(x => x.BuildingLevel),
-				"hasparking" => query.Descending
-					// By count, not by the boolean: sorting on a flag leaves the order
-					// inside each of the two buckets untouched.
-					? seed.ThenByDescending(x => x.ParkingSlots)
-					: seed.ThenBy(x => x.ParkingSlots),
-				"zonetype" => query.Descending
-					? seed.ThenByDescending(x => x.ZoneType)
-					: seed.ThenBy(x => x.ZoneType),
-				"constructioncost" or "cost" => ThenNullable(seed, x => x.ConstructionCost, query.Descending),
-				"upkeep" => ThenNullable(seed, x => x.Upkeep, query.Descending),
-				"workers" => ThenNullable(seed, x => x.Workers, query.Descending),
-				"capacity" => ThenNullable(seed, x => x.Capacity, query.Descending),
-				"electricity" or "electricityconsumption" => ThenNullable(seed, x => x.ElectricityConsumption, query.Descending),
-				"water" or "waterconsumption" => ThenNullable(seed, x => x.WaterConsumption, query.Descending),
-				"garbage" or "garbageaccumulation" => ThenNullable(seed, x => x.GarbageAccumulation, query.Descending),
-				"watercapacity" => ThenNullable(seed, x => x.WaterCapacity, query.Descending),
-				"sewagecapacity" or "sewage" => ThenNullable(seed, x => x.SewageCapacity, query.Descending),
-				"groundpollution" => ThenNullable(seed, x => x.GroundPollution, query.Descending),
-				"airpollution" => ThenNullable(seed, x => x.AirPollution, query.Descending),
-				"noisepollution" or "noise" => ThenNullable(seed, x => x.NoisePollution, query.Descending),
-				_ => query.Descending
-					? seed.ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
-			};
-
-			return ordered.ThenBy(x => x.Id);
+			return BuildingCatalogSortColumns.Find(query.EffectiveSortColumn)
+				.ThenBy(seed, query.Descending)
+				.ThenBy(x => x.Id);
 		}
-
-		/// <summary>
-		/// The value a column orders by, or null when the entry has none.
-		/// </summary>
-		/// <remarks>
-		/// Deliberately NOT the selector <see cref="Order"/> uses: that one is typed per column
-		/// so each field keeps its own comparer. This answers the weaker question "are these two
-		/// entries tied on this column", which equality alone settles.
-		/// </remarks>
-		/// </remarks>
-		public static object? SortValueOf(BuildingCatalogEntry entry, string? column) =>
-			(column ?? string.Empty).ToLowerInvariant() switch
-			{
-				"category" => entry.Category,
-				"subcategory" => entry.SubCategory,
-				"lotwidth" => entry.LotWidth,
-				"lotdepth" => entry.LotDepth,
-				"buildinglevel" => entry.BuildingLevel,
-				"hasparking" => entry.ParkingSlots,
-				"zonetype" => entry.ZoneType,
-				"constructioncost" or "cost" => entry.ConstructionCost,
-				"upkeep" => entry.Upkeep,
-				"workers" => entry.Workers,
-				"capacity" => entry.Capacity,
-				"electricity" or "electricityconsumption" => entry.ElectricityConsumption,
-				"water" or "waterconsumption" => entry.WaterConsumption,
-				"garbage" or "garbageaccumulation" => entry.GarbageAccumulation,
-				"watercapacity" => entry.WaterCapacity,
-				"sewagecapacity" or "sewage" => entry.SewageCapacity,
-				"groundpollution" => entry.GroundPollution,
-				"airpollution" => entry.AirPollution,
-				"noisepollution" or "noise" => entry.NoisePollution,
-				_ => entry.Name,
-			};
 
 		/// <summary>
 		/// Which of the offered sort columns could actually move a row.
@@ -550,6 +470,13 @@ namespace BetterBuildingMenu.Services
 				return Array.Empty<string>();
 			}
 
+			var columns = new BuildingCatalogSortColumn[candidates.Count];
+
+			for (var i = 0; i < candidates.Count; i++)
+			{
+				columns[i] = BuildingCatalogSortColumns.Find(candidates[i]);
+			}
+
 			// group key -> column -> first value seen there.
 			var seen = new Dictionary<string, object?[]>(StringComparer.Ordinal);
 			var reorderable = new bool[candidates.Count];
@@ -566,7 +493,7 @@ namespace BetterBuildingMenu.Services
 
 					for (var i = 0; i < candidates.Count; i++)
 					{
-						first[i] = SortValueOf(entry, candidates[i]);
+						first[i] = columns[i].TieValue(entry);
 					}
 
 					seen[group] = first;
@@ -580,7 +507,7 @@ namespace BetterBuildingMenu.Services
 						continue;
 					}
 
-					if (!Equals(first[i], SortValueOf(entry, candidates[i])))
+					if (!Equals(first[i], columns[i].TieValue(entry)))
 					{
 						reorderable[i] = true;
 					}
@@ -598,17 +525,6 @@ namespace BetterBuildingMenu.Services
 			}
 
 			return usable;
-		}
-
-		private static IOrderedEnumerable<BuildingCatalogEntry> ThenNullable(
-			IOrderedEnumerable<BuildingCatalogEntry> seed,
-			Func<BuildingCatalogEntry, double?> selector,
-			bool descending)
-		{
-			var presentFirst = seed.ThenBy(entry => selector(entry).HasValue ? 0 : 1);
-			return descending
-				? presentFirst.ThenByDescending(selector)
-				: presentFirst.ThenBy(selector);
 		}
 
 		/// <summary>

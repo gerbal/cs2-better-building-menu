@@ -162,7 +162,7 @@ namespace BetterBuildingMenu.Tests
 			};
 
 			var usable = BuildingCatalogQueryEngine.ReorderableSortColumns(
-				entries, Query("menuCategory"), BuildingCatalogQuery.OfferedSortColumns);
+				entries, Query("menuCategory"), BuildingCatalogSortColumns.Ids);
 
 			Assert.Contains("ConstructionCost", usable);
 			Assert.Contains("Name", usable);

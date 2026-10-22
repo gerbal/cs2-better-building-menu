@@ -50,23 +50,6 @@ namespace BetterBuildingMenu.Domain
 		// upgrade with no tier) and cannot be the sentinel.
 		int SchoolTier = -1)
 	{
-		/// <summary>
-		/// The sort fields the picker offers, in its order.
-		/// </summary>
-		/// <remarks>
-		/// Here rather than in the UI because the backend has to answer which of them
-		/// can actually reorder the current set. The UI's copy is generated from this.
-		/// </remarks>
-		public static readonly IReadOnlyList<string> OfferedSortColumns = new[]
-		{
-			// First, and the default. It is the game's own order — see
-			// BuildingCatalogEntry.UIOrder — which no other column reproduces,
-			// so it is named for what it is rather than for a field.
-			"Default",
-			"Name", "Category", "ConstructionCost", "Upkeep", "Workers",
-			"Capacity", "LotWidth", "LotDepth", "BuildingLevel", "HasParking",
-		};
-
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 
 		/// <summary>
