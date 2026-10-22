@@ -137,8 +137,8 @@ namespace BetterBuildingMenu.Tests
 			ts.Append("//   CS2_WRITE_CONTRACTS=1 ./build.sh test\n");
 			ts.Append("// and commit the result. CI fails while this file and the C# disagree.\n");
 
-			ts.Append("\n/** BuildingCatalogQuery.OfferedSortColumns, in the picker's order. */\n");
-			AppendArray(ts, "SORT_COLUMNS", BuildingCatalogQuery.OfferedSortColumns);
+			ts.Append("\n/** BuildingCatalogSortColumns.Ids, in the picker's order. */\n");
+			AppendArray(ts, "SORT_COLUMNS", BuildingCatalogSortColumns.Ids);
 			ts.Append("\nexport type SortColumn = (typeof SORT_COLUMNS)[number];\n");
 
 			ts.Append("\n/** BuildingCatalogGrouping.Dimensions, in the picker's order. */\n");

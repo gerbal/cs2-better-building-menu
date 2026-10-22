@@ -3,7 +3,7 @@
 //   CS2_WRITE_CONTRACTS=1 ./build.sh test
 // and commit the result. CI fails while this file and the C# disagree.
 
-/** BuildingCatalogQuery.OfferedSortColumns, in the picker's order. */
+/** BuildingCatalogSortColumns.Ids, in the picker's order. */
 export const SORT_COLUMNS = [
   "Default",
   "Name",

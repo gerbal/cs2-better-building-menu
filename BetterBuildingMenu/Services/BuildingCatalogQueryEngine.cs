@@ -37,10 +37,9 @@ namespace BetterBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var unfiltered = BuildingCatalogFacetSelection.Clear(query);
-			var terms = SearchTerms.From(unfiltered.SearchText);
+			var terms = SearchTerms.From(query.SearchText);
 
-			return entries.Where(entry => Matches(entry, unfiltered, terms));
+			return entries.Where(entry => Matches(entry, query, terms, NoFacets));
 		}
 
 		/// <summary>How many entries <see cref="Query"/> would find, without ordering or paging them.</summary>
@@ -59,8 +58,9 @@ namespace BetterBuildingMenu.Services
 			}
 
 			var terms = SearchTerms.From(query.SearchText);
+			var facets = ActiveFacets(query);
 
-			return entries.Count(entry => Matches(entry, query, terms));
+			return entries.Count(entry => Matches(entry, query, terms, facets));
 		}
 
 		public static BuildingCatalogPage Query(
@@ -82,8 +82,9 @@ namespace BetterBuildingMenu.Services
 			// behind its own categories by a rewritten priority. Materialised once: Count,
 			// Order and ReorderableSortColumns all read this array.
 			var terms = SearchTerms.From(query.SearchText);
+			var facets = ActiveFacets(query);
 			var matching = entries
-				.Where(entry => Matches(entry, query, terms))
+				.Where(entry => Matches(entry, query, terms, facets))
 				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu))
 				.ToArray();
 			var totalCount = matching.Length;
@@ -101,7 +102,7 @@ namespace BetterBuildingMenu.Services
 			// Over `matching`, not over `items`: the question is whether the sort can order
 			// these RESULTS, and a page that happens to tie says nothing about the rest.
 			var usableColumns = ReorderableSortColumns(
-				matching, query, BuildingCatalogQuery.OfferedSortColumns);
+				matching, query, BuildingCatalogSortColumns.Ids);
 
 			return new BuildingCatalogPage(
 				items,
@@ -173,7 +174,7 @@ namespace BetterBuildingMenu.Services
 			return offset > lastPopulatedPageStart ? lastPopulatedPageStart : offset;
 		}
 
-		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query, SearchTerms terms)
+		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query, SearchTerms terms, ActiveFacet[] facets)
 		{
 			if (!MatchesVanillaMenuTree(entry, query))
 			{
@@ -201,19 +202,12 @@ namespace BetterBuildingMenu.Services
 				return false;
 			}
 
-			if (!MatchesAny(AvailabilityOf(entry), query.Availability)
-				|| !MatchesAny(entry.BuildingType, query.BuildingTypes)
-				|| !MatchesAny(entry.Provenance, query.Provenance)
-				// DlcIds is deliberately absent: it is the Content facet's third mechanism,
-				// applied in the adapter's ContentVisible so that it UNIONS with the pack and
-				// base-game halves rather than intersecting them.
-				|| !MatchesAny(entry.Theme, query.Themes)
-				// Any, not all, the way every other facet reads: the rail draws them
-				// identically, and "road or water" is the question a player asks.
-				|| !MatchesAny(entry.PlacementFlags, query.PlacementFlags)
-				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes))
+			for (var i = 0; i < facets.Length; i++)
 			{
-				return false;
+				if (!facets[i].Admits(entry))
+				{
+					return false;
+				}
 			}
 
 			return (!query.MinLotWidth.HasValue || entry.LotWidth >= query.MinLotWidth.Value)
@@ -284,19 +278,6 @@ namespace BetterBuildingMenu.Services
 				? StripAxes.NetworkValue
 				: StripAxes.BuildingValue;
 
-		/// <summary>Which of the three availability states the entry is in.</summary>
-		/// <remarks>
-		/// Ordered so the partition holds: locked wins over already-built, because a locked
-		/// unique cannot have been built, and already-built wins over unlocked, because that is
-		/// the state answering "can I place this".
-		/// </remarks>
-		public static string AvailabilityOf(BuildingCatalogEntry entry) =>
-			entry.IsLocked
-				? BuildingCatalogFacetSelection.Availability.Locked
-				: entry.IsAlreadyBuilt
-					? BuildingCatalogFacetSelection.Availability.AlreadyBuilt
-					: BuildingCatalogFacetSelection.Availability.Unlocked;
-
 		/// <summary>
 		/// The only scope there is: the game's own menu placement.
 		/// </summary>
@@ -360,28 +341,6 @@ namespace BetterBuildingMenu.Services
 				&& (!maximum.HasValue || value.Value <= maximum.Value);
 		}
 
-		/// <summary>
-		/// Matches zone density by enum name. An unrecognised name matches nothing rather
-		/// than everything: a broken preset should look broken, not wide open.
-		/// </summary>
-		private static bool MatchesZoneType(ZoneTypeFilter value, IReadOnlyList<string>? selected)
-		{
-			if (selected is null || selected.Count == 0)
-			{
-				return true;
-			}
-
-			for (var i = 0; i < selected.Count; i++)
-			{
-				if (Enum.TryParse<ZoneTypeFilter>(selected[i], ignoreCase: true, out var parsed) && parsed == value)
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
 		private static bool MatchesAnyStripTab(BuildingCatalogEntry entry, IReadOnlyList<string> tabs)
 		{
 			for (var i = 0; i < tabs.Count; i++)
@@ -395,37 +354,39 @@ namespace BetterBuildingMenu.Services
 			return false;
 		}
 
-		private static bool MatchesAny(string? value, IReadOnlyList<string>? selected)
+		/// <summary>A facet with something selected, read once per query: its test and its selection.</summary>
+		private readonly struct ActiveFacet
 		{
-			if (selected is null || selected.Count == 0)
+			private readonly Func<BuildingCatalogEntry, IReadOnlyList<string>, bool> _matches;
+			private readonly IReadOnlyList<string> _selection;
+
+			public ActiveFacet(Func<BuildingCatalogEntry, IReadOnlyList<string>, bool> matches, IReadOnlyList<string> selection)
 			{
-				return true;
+				_matches = matches;
+				_selection = selection;
 			}
 
-			return value is not null && selected.ContainsIgnoreCase(value);
+			public bool Admits(BuildingCatalogEntry entry) => _matches(entry, _selection);
 		}
 
-		private static bool MatchesAny(IReadOnlyList<string>? values, IReadOnlyList<string>? selected)
+		private static readonly ActiveFacet[] NoFacets = Array.Empty<ActiveFacet>();
+
+		/// <summary>The facets this query narrows by: the ones the engine filters on, with something selected.</summary>
+		private static ActiveFacet[] ActiveFacets(BuildingCatalogQuery query)
 		{
-			if (selected is null || selected.Count == 0)
-			{
-				return true;
-			}
+			List<ActiveFacet>? active = null;
 
-			if (values is null)
+			for (var i = 0; i < BuildingCatalogFacetFields.All.Count; i++)
 			{
-				return false;
-			}
+				var facet = BuildingCatalogFacetFields.All[i];
 
-			for (var i = 0; i < values.Count; i++)
-			{
-				if (selected.ContainsIgnoreCase(values[i]))
+				if (facet.Matches is { } matches && facet.Selected(query) is { Count: > 0 } selection)
 				{
-					return true;
+					(active ??= new List<ActiveFacet>()).Add(new ActiveFacet(matches, selection));
 				}
 			}
 
-			return false;
+			return active?.ToArray() ?? NoFacets;
 		}
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> Order(
@@ -436,7 +397,7 @@ namespace BetterBuildingMenu.Services
 			// Grouping first, so every member of a group is contiguous and paging
 			// cuts cleanly. Without this a group splits across a page boundary
 			// and its heading describes something other than what follows it.
-			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, query);
+			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, BuildingCatalogGrouping.Resolve(query.GroupBy));
 			// Relevance decides within a group while a search is active; the chosen sort breaks
 			// ties. Shortest name next: "clinic" ties Medical Clinic with Additional Clinic
 			// Center, and the plain one is nearly always what was meant.
@@ -447,90 +408,10 @@ namespace BetterBuildingMenu.Services
 					.ThenBy(entry => (entry.Name ?? string.Empty).Length);
 			}
 
-			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
-			{
-				// The game's own order, and the only sort here that is not a field the
-				// player can see. Name second, so two assets vanilla gave the same
-				// priority do not swap under the cursor.
-				"default" => query.Descending
-					? seed.ThenByDescending(x => x.UIOrder).ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.UIOrder).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
-				"category" => query.Descending
-					? seed.ThenByDescending(x => x.Category, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.Category, StringComparer.OrdinalIgnoreCase),
-				"subcategory" => query.Descending
-					? seed.ThenByDescending(x => x.SubCategory, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.SubCategory, StringComparer.OrdinalIgnoreCase),
-				"lotwidth" => query.Descending
-					? seed.ThenByDescending(x => x.LotWidth)
-					: seed.ThenBy(x => x.LotWidth),
-				"lotdepth" => query.Descending
-					? seed.ThenByDescending(x => x.LotDepth)
-					: seed.ThenBy(x => x.LotDepth),
-				"buildinglevel" => query.Descending
-					? seed.ThenByDescending(x => x.BuildingLevel)
-					: seed.ThenBy(x => x.BuildingLevel),
-				"hasparking" => query.Descending
-					// By count, not by the boolean: sorting on a flag leaves the order
-					// inside each of the two buckets untouched.
-					? seed.ThenByDescending(x => x.ParkingSlots)
-					: seed.ThenBy(x => x.ParkingSlots),
-				"zonetype" => query.Descending
-					? seed.ThenByDescending(x => x.ZoneType)
-					: seed.ThenBy(x => x.ZoneType),
-				"constructioncost" or "cost" => ThenNullable(seed, x => x.ConstructionCost, query.Descending),
-				"upkeep" => ThenNullable(seed, x => x.Upkeep, query.Descending),
-				"workers" => ThenNullable(seed, x => x.Workers, query.Descending),
-				"capacity" => ThenNullable(seed, x => x.Capacity, query.Descending),
-				"electricity" or "electricityconsumption" => ThenNullable(seed, x => x.ElectricityConsumption, query.Descending),
-				"water" or "waterconsumption" => ThenNullable(seed, x => x.WaterConsumption, query.Descending),
-				"garbage" or "garbageaccumulation" => ThenNullable(seed, x => x.GarbageAccumulation, query.Descending),
-				"watercapacity" => ThenNullable(seed, x => x.WaterCapacity, query.Descending),
-				"sewagecapacity" or "sewage" => ThenNullable(seed, x => x.SewageCapacity, query.Descending),
-				"groundpollution" => ThenNullable(seed, x => x.GroundPollution, query.Descending),
-				"airpollution" => ThenNullable(seed, x => x.AirPollution, query.Descending),
-				"noisepollution" or "noise" => ThenNullable(seed, x => x.NoisePollution, query.Descending),
-				_ => query.Descending
-					? seed.ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
-					: seed.ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
-			};
-
-			return ordered.ThenBy(x => x.Id);
+			return BuildingCatalogSortColumns.Find(query.EffectiveSortColumn)
+				.ThenBy(seed, query.Descending)
+				.ThenBy(x => x.Id);
 		}
-
-		/// <summary>
-		/// The value a column orders by, or null when the entry has none.
-		/// </summary>
-		/// <remarks>
-		/// Deliberately NOT the selector <see cref="Order"/> uses: that one is typed per column
-		/// so each field keeps its own comparer. This answers the weaker question "are these two
-		/// entries tied on this column", which equality alone settles.
-		/// </remarks>
-		/// </remarks>
-		public static object? SortValueOf(BuildingCatalogEntry entry, string? column) =>
-			(column ?? string.Empty).ToLowerInvariant() switch
-			{
-				"category" => entry.Category,
-				"subcategory" => entry.SubCategory,
-				"lotwidth" => entry.LotWidth,
-				"lotdepth" => entry.LotDepth,
-				"buildinglevel" => entry.BuildingLevel,
-				"hasparking" => entry.ParkingSlots,
-				"zonetype" => entry.ZoneType,
-				"constructioncost" or "cost" => entry.ConstructionCost,
-				"upkeep" => entry.Upkeep,
-				"workers" => entry.Workers,
-				"capacity" => entry.Capacity,
-				"electricity" or "electricityconsumption" => entry.ElectricityConsumption,
-				"water" or "waterconsumption" => entry.WaterConsumption,
-				"garbage" or "garbageaccumulation" => entry.GarbageAccumulation,
-				"watercapacity" => entry.WaterCapacity,
-				"sewagecapacity" or "sewage" => entry.SewageCapacity,
-				"groundpollution" => entry.GroundPollution,
-				"airpollution" => entry.AirPollution,
-				"noisepollution" or "noise" => entry.NoisePollution,
-				_ => entry.Name,
-			};
 
 		/// <summary>
 		/// Which of the offered sort columns could actually move a row.
@@ -550,15 +431,23 @@ namespace BetterBuildingMenu.Services
 				return Array.Empty<string>();
 			}
 
+			var columns = new BuildingCatalogSortColumn[candidates.Count];
+
+			for (var i = 0; i < candidates.Count; i++)
+			{
+				columns[i] = BuildingCatalogSortColumns.Find(candidates[i]);
+			}
+
+			var dimension = BuildingCatalogGrouping.Resolve(query.GroupBy);
 			// group key -> column -> first value seen there.
 			var seen = new Dictionary<string, object?[]>(StringComparer.Ordinal);
 			var reorderable = new bool[candidates.Count];
 
 			foreach (var entry in entries)
 			{
-				var group = BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy)
+				var group = dimension.PrimaryKey(entry)
 					+ ""
-					+ BuildingCatalogGrouping.SecondaryKey(entry, query.GroupBy);
+					+ dimension.SecondaryKey(entry);
 
 				if (!seen.TryGetValue(group, out var first))
 				{
@@ -566,7 +455,7 @@ namespace BetterBuildingMenu.Services
 
 					for (var i = 0; i < candidates.Count; i++)
 					{
-						first[i] = SortValueOf(entry, candidates[i]);
+						first[i] = columns[i].TieValue(entry);
 					}
 
 					seen[group] = first;
@@ -580,7 +469,7 @@ namespace BetterBuildingMenu.Services
 						continue;
 					}
 
-					if (!Equals(first[i], SortValueOf(entry, candidates[i])))
+					if (!Equals(first[i], columns[i].TieValue(entry)))
 					{
 						reorderable[i] = true;
 					}
@@ -600,17 +489,6 @@ namespace BetterBuildingMenu.Services
 			return usable;
 		}
 
-		private static IOrderedEnumerable<BuildingCatalogEntry> ThenNullable(
-			IOrderedEnumerable<BuildingCatalogEntry> seed,
-			Func<BuildingCatalogEntry, double?> selector,
-			bool descending)
-		{
-			var presentFirst = seed.ThenBy(entry => selector(entry).HasValue ? 0 : 1);
-			return descending
-				? presentFirst.ThenByDescending(selector)
-				: presentFirst.ThenBy(selector);
-		}
-
 		/// <summary>
 		/// The ordering the chosen sort is applied on top of.
 		/// </summary>
@@ -621,16 +499,16 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		private static IOrderedEnumerable<BuildingCatalogEntry> SeedByGroup(
 			IEnumerable<BuildingCatalogEntry> entries,
-			BuildingCatalogQuery query)
+			GroupDimension dimension)
 		{
-			if (!BuildingCatalogGrouping.IsGrouped(query.GroupBy))
+			if (!dimension.IsGrouped)
 			{
 				return entries.OrderBy(_ => 0);
 			}
 
 			return entries
-				.OrderBy(entry => BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy), StringComparer.OrdinalIgnoreCase)
-				.ThenBy(entry => BuildingCatalogGrouping.SecondaryKey(entry, query.GroupBy), StringComparer.OrdinalIgnoreCase);
+				.OrderBy(dimension.PrimaryKey, StringComparer.OrdinalIgnoreCase)
+				.ThenBy(dimension.SecondaryKey, StringComparer.OrdinalIgnoreCase);
 		}
 	}
 }

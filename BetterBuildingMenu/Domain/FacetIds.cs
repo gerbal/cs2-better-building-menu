@@ -15,9 +15,6 @@ namespace BetterBuildingMenu.Domain
 		public const string Placement = "placement";
 
 		/// <summary>Every facet the adapter can emit, in the order it emits them.</summary>
-		public static readonly IReadOnlyList<string> All = new[]
-		{
-			BuildingType, Provenance, Availability, Content, Theme, Placement,
-		};
+		public static readonly IReadOnlyList<string> All = BuildingCatalogFacetFields.Published.Select(facet => facet.Id).ToArray();
 	}
 }

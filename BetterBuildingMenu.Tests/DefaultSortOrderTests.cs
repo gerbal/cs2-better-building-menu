@@ -78,7 +78,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void DefaultIsOfferedFirst()
 		{
-			Assert.Equal("Default", BuildingCatalogQuery.OfferedSortColumns[0]);
+			Assert.Equal("Default", BuildingCatalogSortColumns.Ids[0]);
 			Assert.Equal("Default", new BuildingCatalogQuery().EffectiveSortColumn);
 			Assert.Equal("Default", new BuildingCatalogQuery(SortColumn: "  ").EffectiveSortColumn);
 		}
