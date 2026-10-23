@@ -78,6 +78,7 @@ Fixed
 * List view fills the menu, and no longer loads a second page every time it opens.
 * In Table, a building alone in its group gets its own heading, so it is not read as part of the group above.
 * Road Zones and Sound Barrier stay in the groups that unlock them.
+* Roads: quays and piers each have their own tab instead of sitting under Bridges, and the hydroelectric dam stays in Electricity.
 * A group of one building has its heading again, so it no longer reads as part of the group before it.
 </ChangeLog>
 </Publish>

@@ -38,6 +38,8 @@
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Highways]": "Highways",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Tracks]": "Tracks",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Bridges]": "Bridges",
+  "Tooltip.LABEL[BetterBuildingMenu.Networks_Quays]": "Quays",
+  "Tooltip.LABEL[BetterBuildingMenu.Networks_Piers]": "Piers",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Intersections]": "Intersections",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Paths]": "Paths",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Stops]": "Transit Stops",

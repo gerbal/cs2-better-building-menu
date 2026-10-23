@@ -67,7 +67,21 @@ namespace BetterBuildingMenu.Domain
 			IsExtended(menu)
 			&& string.Equals(entryCategory?.Trim(), NetworksCategory, StringComparison.OrdinalIgnoreCase)
 			&& !VanillaMenus.IsRoads(entryMenu)
+			&& !KeptByTheirMenu.Contains(entryMenu?.Trim() ?? string.Empty)
 			&& IsGathered(entrySubCategory);
+
+		/// <summary>
+		/// Menus whose networks stay where the game files them, whatever their subcategory.
+		/// </summary>
+		/// <remarks>
+		/// The hydroelectric dam is a bridge-type net placed from Electricity: it answers to the
+		/// utility that owns it, as power lines and pipes do.
+		/// </remarks>
+		private static readonly HashSet<string> KeptByTheirMenu = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"Electricity",
+			"Water & Sewage",
+		};
 
 		/// <summary>
 		/// The heading an extra network sits under: its subcategory, without the

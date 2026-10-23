@@ -747,6 +747,13 @@ namespace BetterBuildingMenu.Systems
 
 							if (processor.TryCreatePrefabIndex(prefab, entity, target, out prefabIndex))
 							{
+								// One line per bridge-type net, so BridgeNets' split can be checked against
+								// the game's own build style and UI category.
+								if (processor is BridgesPrefabCategoryProcessor)
+								{
+									Mod.Log.Debug($"[BRIDGE-NET] {prefab.name} style={(prefab.TryGet<Bridge>(out var bridge) ? bridge.m_BuildStyle.ToString() : "none")} uiCategory={(prefab.TryGet<UIObject>(out var bridgeUi) ? bridgeUi.m_Group?.name : null) ?? "none"} -> {prefabIndex.SubCategory}");
+								}
+
 								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && overrides is not null)
 								{
 									var categoryOverride = FindItCategoryOverride.Read(overrides.m_IncludeCategories, overrides.m_ExcludeCategories);
