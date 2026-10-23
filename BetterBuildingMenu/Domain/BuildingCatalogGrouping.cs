@@ -123,7 +123,7 @@ namespace BetterBuildingMenu.Domain
 				Source,
 				entry => Normalize(string.IsNullOrWhiteSpace(entry.DlcId) ? entry.Provenance : entry.DlcId),
 				NoKey,
-				(entry, _, _) => Heading(Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other)),
+				(entry, _, _) => Heading(entry.SourceLabel?.Trim() is { Length: > 0 } source ? source : Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other)),
 			new(
 				Density,
 				entry => DensityRank(entry.ZoneType),

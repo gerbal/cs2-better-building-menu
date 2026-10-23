@@ -222,6 +222,11 @@ namespace BetterBuildingMenu.Domain
 
 		internal string SearchPdxModsId => _searchPdxModsId;
 
+		/// <summary>What the Source grouping heads it under: its DLC's name, or Base game / Custom
+		/// content where it needs no DLC. Resolved by the adapter, which can ask the game; the key
+		/// stays <see cref="DlcId"/>.</summary>
+		public string? SourceLabel { get; init; }
+
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);

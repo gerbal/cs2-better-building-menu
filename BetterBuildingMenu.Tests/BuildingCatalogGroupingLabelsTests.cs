@@ -215,5 +215,17 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(BuildingCatalogGrouping.Dimensions, BuildingCatalogGrouping.OfferedDimensions(System.Array.Empty<BuildingCatalogEntry>(), educationMenu: true));
 			Assert.DoesNotContain("schoolTier", BuildingCatalogGrouping.OfferedDimensions(System.Array.Empty<BuildingCatalogEntry>(), educationMenu: false));
 		}
+
+		[Fact]
+		public void SourceHeadsADlcByItsNameNotItsNumber()
+		{
+			// The adapter resolves the name, as the Content filter does; the key stays the id.
+			var dlc = Entry() with { DlcId = "1000", SourceLabel = "Bridges & Ports" };
+
+			Assert.Equal(new[] { "Bridges & Ports" }, Path(dlc, "source"));
+			Assert.Equal(
+				BuildingCatalogGrouping.Find("source").PrimaryKey(Entry() with { DlcId = "1000" }),
+				BuildingCatalogGrouping.Find("source").PrimaryKey(dlc));
+		}
 	}
 }

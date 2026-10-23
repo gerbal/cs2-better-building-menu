@@ -760,7 +760,10 @@ namespace BetterBuildingMenu.Services
 				SewageCapacity: prefab.SewageCapacity,
 				GroundPollution: prefab.GroundPollution,
 				AirPollution: prefab.AirPollution,
-				NoisePollution: prefab.NoisePollution);
+				NoisePollution: prefab.NoisePollution)
+			{
+				SourceLabel = SourceLabelOf(prefab),
+			};
 		}
 
 		/// <summary>
@@ -1010,8 +1013,43 @@ namespace BetterBuildingMenu.Services
 				// localization service. Keep the deterministic fallback below.
 			}
 
-			return $"Unresolved DLC content (ID {numericId})";
+			return $"{UnresolvedDlcPrefix}{numericId})";
 		}
+
+		/// <summary>The Source grouping's heading: the DLC's name, as the Content filter names it, or
+		/// Base game / Custom content where it needs none.</summary>
+		/// <remarks>Cached by id: the name is a platform and locale lookup, and every entry of a DLC asks.</remarks>
+		private static string SourceLabelOf(PrefabIndex prefab)
+		{
+			var id = prefab.DlcId.id;
+
+			if (id == GameDlcIds.Invalid || id == GameDlcIds.BaseGame)
+			{
+				return FormatProvenanceLabel(prefab.IsVanilla ? "Vanilla" : "Custom");
+			}
+
+			lock (DlcLabels)
+			{
+				if (DlcLabels.TryGetValue(id, out var cached))
+				{
+					return cached;
+				}
+
+				var label = FormatDlcLabel(id.ToString(CultureInfo.InvariantCulture));
+
+				// Not the fallback: a name the platform could not give yet is asked again next time.
+				if (!label.StartsWith(UnresolvedDlcPrefix, StringComparison.Ordinal))
+				{
+					DlcLabels[id] = label;
+				}
+
+				return label;
+			}
+		}
+
+		private static readonly Dictionary<int, string> DlcLabels = new();
+
+		private const string UnresolvedDlcPrefix = "Unresolved DLC content (ID ";
 
 		private static string FormatProvenanceLabel(string value)
 		{
