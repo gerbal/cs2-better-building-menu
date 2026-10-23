@@ -15,7 +15,6 @@ import {
   AssetMenuGroupDimensions$,
   AssetMenuViewMode$,
   BuildingCatalog$,
-  AssetMenuAutoThenBy$,
   BuildingCatalogGroupBy$,
   BuildingCatalogThenBy$,
   BuildingCatalogMetricRanges$,
@@ -33,8 +32,8 @@ const seed = (menu = "Roads") => {
   seedBinding(AssetMenu$, menu);
   seedBinding(BuildingCatalogGroupBy$, "menuCategory");
   seedBinding(AssetMenuGroupDimensions$, GROUP_DIMENSIONS.map((d) => d.id));
-  seedBinding(BuildingCatalogThenBy$, "");
-  seedBinding(AssetMenuAutoThenBy$, ["progression"]);
+  // C#'s resolution for this menu: here the menu's default.
+  seedBinding(BuildingCatalogThenBy$, "progression");
   seedBinding(BuildingCatalogSortColumn$, "Name");
   seedBinding(BuildingCatalogSortDescending$, false);
   seedBinding(CurrentSearch$, "");
@@ -197,21 +196,21 @@ describe("the control pane's second grouping", () => {
     seed();
   });
 
-  it("sits beside the first, naming what Auto groups by", () => {
+  it("sits beside the first, naming the level the menu groups by", () => {
     const html = render();
 
     assert.match(html, /class="pickerLabel">Category<\/span>[\s\S]*class="pickerLabel">Progression</);
     assert.doesNotMatch(html, /Auto/);
   });
 
-  it("reads None, not an empty Auto, under a first choice with no second level", () => {
-    seedBinding(AssetMenuAutoThenBy$, []);
+  it("lists that level once, chosen, among the others", () => {
     tree.mount(<ControlPane />);
-    act(() => summary("None").props.onSelect());
+    act(() => summary("Progression").props.onSelect());
 
     const options = tree.root.findAll((node) => node.props.className?.includes?.("pickerOption") && typeof node.props.onSelect === "function");
-    assert.equal(options.filter((node) => node.props["aria-label"] === "None").length, 1, "one None");
-    assert.ok(options.find((node) => node.props["aria-label"] === "None")!.props.className.includes("pickerOptionSelected"));
+    const progression = options.filter((node) => node.props["aria-label"] === "Progression");
+    assert.equal(progression.length, 1, "Progression once");
+    assert.ok(progression[0].props.className.includes("pickerOptionSelected"));
   });
 
   it("sends the dimension the player picks", () => {

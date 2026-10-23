@@ -66,7 +66,7 @@ Changes
 * Search finds each word you type in any order, and ignores accents.
 * Enter arms the best match of everything the search found, not only the rows already shown.
 * Menus open faster, and switching between menus costs no more than reopening one.
-* The Group by row has a second picker for the level under each group, such as Progression under Category. It starts on the menu's usual split, shown by name.
+* The Group by row has a second picker for the level under each group, such as Progression under Category. Each menu starts on its usual split and remembers your pick.
 
 Fixed
 * One Escape closes the menu without also opening the pause menu.

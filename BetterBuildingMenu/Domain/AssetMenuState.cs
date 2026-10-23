@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace BetterBuildingMenu.Domain
 {
@@ -60,14 +61,14 @@ namespace BetterBuildingMenu.Domain
 
 			return this with
 			{
-				Query = ResetWindow(Query with { UiMenu = trimmed, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null }),
+				Query = ResetWindow(Query with { UiMenu = trimmed, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null, ThenBy = ThenByFor(trimmed) }),
 			};
 		}
 
 		/// <summary>No menu: the whole catalog, with category, tab and tier forgotten.</summary>
 		public AssetMenuState ClearMenuScope() => this with
 		{
-			Query = ResetWindow(Query with { UiMenu = string.Empty, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null }),
+			Query = ResetWindow(Query with { UiMenu = string.Empty, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null, ThenBy = ThenByFor(string.Empty) }),
 		};
 
 		/// <summary>One of the menu's categories. Excludes a strip tab and a school tier.</summary>
@@ -114,26 +115,49 @@ namespace BetterBuildingMenu.Domain
 
 			return string.Equals(Query.GroupBy, next, StringComparison.Ordinal)
 				? this
-				: this with
-				{
-					Query = ResetWindow(Query with
-					{
-						GroupBy = next,
-						// A second level the first now names would split each group by itself.
-						ThenBy = string.Equals(Query.ThenBy, next, StringComparison.OrdinalIgnoreCase) ? string.Empty : Query.ThenBy,
-					}),
-				};
+				: this with { Query = ResetWindow(Query with { GroupBy = next }) };
 		}
 
-		/// <summary>The player's second grouping choice; empty means Auto.</summary>
+		/// <summary>The player's second grouping choice for this menu; empty means the menu's default.
+		/// Kept per menu (<see cref="ThenByByMenu"/>), so each menu opens on its own.</summary>
 		public AssetMenuState SetThenBy(string? thenBy)
 		{
 			var next = (thenBy ?? string.Empty).Trim();
 
 			return string.Equals(Query.ThenBy, next, StringComparison.Ordinal)
 				? this
-				: this with { Query = ResetWindow(Query with { ThenBy = next }) };
+				: this with
+				{
+					Query = ResetWindow(Query with { ThenBy = next }),
+					ThenByByMenu = WithThenBy(ThenByByMenu, Query.UiMenu, next),
+				};
 		}
+
+		/// <summary>Each menu's second grouping pick, by menu name. A menu with none opens on its default.</summary>
+		public IReadOnlyDictionary<string, string> ThenByByMenu { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+		private static IReadOnlyDictionary<string, string> WithThenBy(IReadOnlyDictionary<string, string> picks, string menu, string thenBy)
+		{
+			var next = new Dictionary<string, string>(picks.Count + 1, StringComparer.Ordinal);
+
+			foreach (var pick in picks)
+			{
+				next[pick.Key] = pick.Value;
+			}
+
+			if (thenBy.Length == 0)
+			{
+				next.Remove(menu);
+			}
+			else
+			{
+				next[menu] = thenBy;
+			}
+
+			return next;
+		}
+
+		private string ThenByFor(string menu) => ThenByByMenu.TryGetValue(menu, out var pick) ? pick : string.Empty;
 
 		/// <summary>One more chunk, up to the ceiling. At the ceiling, nothing.</summary>
 		public AssetMenuState LoadMore() => LoadMoreTo(Query.Limit + BuildingCatalogQuery.WindowStep);
@@ -202,6 +226,7 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		public AssetMenuState ResetMenu() => this with
 		{
+			ThenByByMenu = WithThenBy(ThenByByMenu, Query.UiMenu, string.Empty),
 			SearchText = string.Empty,
 			Query = ResetWindow(BuildingCatalogMetricRange.Clear(BuildingCatalogFacetSelection.Clear(Query)) with
 			{

@@ -5,7 +5,6 @@ import classNames from "classnames";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getAssetMenuSortPresentation } from "domain/assetMenuSortPresentation";
 import {
-  autoThenByLabel,
   fitLabelToWidth,
   groupDimensionsFor,
   groupDimensionLabel,
@@ -49,7 +48,6 @@ import {
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
   AssetMenuGroupDimensions$,
-  AssetMenuAutoThenBy$,
   BuildingCatalogThenBy$,
   CurrentSearch$,
   SelectedAssetPacks$,
@@ -73,8 +71,8 @@ export const ControlPane = memo(function ControlPane() {
   // The dimension ids that can act on the current menu. C# judges it over the
   // whole menu set; an empty list means it has not said yet.
   const offeredDimensions = useValue(AssetMenuGroupDimensions$) ?? [];
-  const thenBy = (useValue(BuildingCatalogThenBy$) ?? "") as GroupDimensionId | "";
-  const autoThenBy = useValue(AssetMenuAutoThenBy$) ?? [];
+  // What C# grouped this menu's second level by: its pick here, or the menu's default.
+  const thenBy = (useValue(BuildingCatalogThenBy$) || "none") as GroupDimensionId;
   // The fields that can actually reorder these results. The picker drops the
   // rest rather than offering a control that cannot act.
   const reorderableSortColumns = catalogPage?.reorderableSortColumns ?? [];
@@ -104,12 +102,6 @@ export const ControlPane = memo(function ControlPane() {
   const dimensionLabel = (id: GroupDimensionId): string =>
     label(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${id}]`, groupDimensionLabel(id));
   const groupByLabel = dimensionLabel(groupBy);
-  // Auto reads as what it groups by here; where it adds no level it is None, and says so.
-  const thenByChoice: GroupDimensionId | "" = thenBy === "" && autoThenBy.length === 0 ? "none" : thenBy;
-  const thenByChoiceLabel = (id: GroupDimensionId | ""): string =>
-    id === ""
-      ? autoThenByLabel(autoThenBy.map((dimension) => dimensionLabel(dimension as GroupDimensionId)))
-      : dimensionLabel(id);
 
   const fire = send;
 
@@ -262,14 +254,14 @@ export const ControlPane = memo(function ControlPane() {
               />
               <Picker
                 className={classNames(styles.groupPicker, styles.thenBy)}
-                summary={thenByChoiceLabel(thenByChoice)}
+                summary={dimensionLabel(thenBy)}
                 open={thenByPickerOpen && groupBy !== "none"}
                 disabled={groupBy === "none"}
                 onToggle={() => setThenByPickerOpen((open) => !open)}
-                options={thenByOptionsFor(offeredDimensions, groupBy, autoThenBy).map((id) => ({
-                  key: id || "auto",
-                  label: thenByChoiceLabel(id),
-                  selected: id === thenByChoice,
+                options={thenByOptionsFor(offeredDimensions, groupBy).map((id) => ({
+                  key: id,
+                  label: dimensionLabel(id),
+                  selected: id === thenBy,
                   onSelect: () => {
                     send(setBuildingCatalogThenByCommand(id));
                     setThenByPickerOpen(false);

@@ -81,25 +81,18 @@ export function groupDimensionsFor(
 }
 
 /**
- * The second picker's choices: Auto ("", the first's own second level), every dimension
- * the first picker offers except the first choice, then None. Auto is left out where it
- * adds no level (`autoThenBy` empty), since None already says that.
+ * The second picker's choices: every dimension the first picker offers except the first
+ * choice, then None. The menu's default is one of them; C# says which is in force.
  */
 export function thenByOptionsFor(
   offeredIds: readonly string[] | null | undefined,
-  groupBy: string,
-  autoThenBy: readonly string[]
-): readonly (GroupDimensionId | "")[] {
+  groupBy: string
+): readonly GroupDimensionId[] {
   const dimensions = groupDimensionsFor(offeredIds)
     .map((dimension) => dimension.id)
     .filter((id) => id !== groupBy && id !== "none");
 
-  return [...(autoThenBy.length > 0 ? [""] : []), ...dimensions, "none"] as (GroupDimensionId | "")[];
-}
-
-/** Auto's name in the second picker: the dimensions it draws from here, by their labels. */
-export function autoThenByLabel(autoLabels: readonly string[]): string {
-  return autoLabels.join(", ");
+  return [...dimensions, "none"];
 }
 
 /** What C# files an entry under when the dimension has no value for it. */

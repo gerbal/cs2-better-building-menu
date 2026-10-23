@@ -25,7 +25,7 @@ namespace BetterBuildingMenu.Services
 		private readonly bool _vanillaSelected;
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
-		private string[]? _autoThenBy;
+		private string? _effectiveThenBy;
 
 		private BuildingCatalogEntry[]? _menuSet, _viewSet, _tabSet, _tierSet, _wholeMenu;
 		private BuildingCatalogPage? _page;
@@ -59,14 +59,19 @@ namespace BetterBuildingMenu.Services
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
 		public string[] GroupDimensions => _dimensions ??= BuildingCatalogGrouping.OfferedDimensions(MenuSet, _educationMenu);
 
-		/// <summary>What the second picker's Auto draws here, so it can say so: this view's scope, folded
-		/// as Auto groups it (Parking's lone branches), whichever second level is picked now.</summary>
-		public string[] AutoThenBy => _autoThenBy ??= BuildingCatalogGrouping.AutoThenBy(
+		/// <summary>The level under the first grouping's groups: this menu's pick where it can act here,
+		/// else the menu's default (<see cref="BuildingCatalogGrouping.DefaultThenBy"/>), judged on this
+		/// view's scope folded as a branch level groups it (Parking's lone branches).</summary>
+		public string EffectiveThenBy => _effectiveThenBy ??= BuildingCatalogGrouping.EffectiveThenBy(
+			_query.ThenBy,
 			EffectiveGroupBy,
-			string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
-				? BuildingCatalogQueryEngine.InScope(RoadsLoneBranches.Fold(MenuSet, _query.UiMenu), _query)
-				: ViewSet,
-			_milestoneNames);
+			GroupDimensions,
+			BuildingCatalogGrouping.DefaultThenBy(
+				EffectiveGroupBy,
+				string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
+					? BuildingCatalogQueryEngine.InScope(RoadsLoneBranches.Fold(MenuSet, _query.UiMenu), _query)
+					: ViewSet,
+				_milestoneNames));
 
 		/// <summary>The grouping the page is ordered by: the player's choice, or the menu's default.</summary>
 		/// <remarks>
@@ -88,30 +93,32 @@ namespace BetterBuildingMenu.Services
 		/// <summary>Menu and strip tab, no category or tier — what the school tiers count.</summary>
 		public BuildingCatalogEntry[] TierSet => _tierSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query with { SchoolTier = -1, UiCategory = string.Empty }).ToArray();
 
-		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(GroupedSet, _query with { GroupBy = EffectiveGroupBy }));
+		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(GroupedSet, GroupedQuery));
+
+		/// <summary>The query with the grouping this view resolved, both levels.</summary>
+		private BuildingCatalogQuery GroupedQuery => _query with { GroupBy = EffectiveGroupBy, ThenBy = EffectiveThenBy };
 
 		/// <summary>The page's <see cref="BuildingCatalogPage.TotalCount"/>, counted without building the page
 		/// when nothing else has.</summary>
 		/// <remarks>For a count of another scope, such as the "matches elsewhere" notice, which would
 		/// otherwise order and label a whole page of the entire catalog on every keystroke.</remarks>
 		public int TotalCount => _page?.TotalCount
-			?? BuildingCatalogQueryEngine.Count(GroupedSet, _query with { GroupBy = EffectiveGroupBy });
+			?? BuildingCatalogQueryEngine.Count(GroupedSet, GroupedQuery);
 
 		/// <summary>
 		/// The menu set the page is grouped from: Parking's lone branches folded where the category
-		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else. Only under
-		/// Auto, the second level whose branches the fold rewrites.
+		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else. Whatever level
+		/// is beneath: the default is judged on the folded set, so it must be the set the page shows.
 		/// </summary>
 		private IReadOnlyList<BuildingCatalogEntry> GroupedSet =>
 			string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
-			&& string.IsNullOrWhiteSpace(_query.ThenBy)
 				? RoadsLoneBranches.Fold(MenuSet, _query.UiMenu)
 				: MenuSet;
 
 		/// <summary>Stamps the page's items with their headings. The page only — a hundred entries, not the set.</summary>
 		private BuildingCatalogPage WithGroupLabels(BuildingCatalogPage page)
 		{
-			var dimension = BuildingCatalogGrouping.Find(EffectiveGroupBy, _query.ThenBy);
+			var dimension = BuildingCatalogGrouping.Find(EffectiveGroupBy, EffectiveThenBy);
 
 			if (!dimension.IsGrouped)
 			{

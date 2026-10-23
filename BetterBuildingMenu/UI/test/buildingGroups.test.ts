@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   GROUP_DIMENSIONS,
-  autoThenByLabel,
   UNGROUPED_LABEL,
   fitGroupLabel,
   fitLabelToWidth,
@@ -412,29 +411,19 @@ describe("Heading bands", () => {
 });
 
 describe("The second grouping choice", () => {
-  it("offers Auto, every offered dimension but the first choice, then None", () => {
+  it("offers every offered dimension but the first choice, once each, then None", () => {
     assert.deepEqual(
-      thenByOptionsFor(["menuCategory", "role", "progression", "none"], "menuCategory", ["progression"]),
-      ["", "role", "progression", "none"]
+      thenByOptionsFor(["menuCategory", "role", "progression", "development", "none"], "menuCategory"),
+      ["role", "progression", "development", "none"]
     );
   });
 
-  it("leaves Auto out where it would add no level, which None already says", () => {
-    assert.deepEqual(thenByOptionsFor(["theme", "role", "none"], "theme", []), ["role", "none"]);
-  });
-
   it("offers every dimension while C# has not said which act", () => {
-    const options = thenByOptionsFor([], "role", ["progression"]);
+    const options = thenByOptionsFor([], "role");
 
-    assert.equal(options[0], "");
-    assert.equal(options[options.length - 1], "none");
     assert.ok(!options.includes("role"));
+    assert.equal(options[options.length - 1], "none");
     assert.equal(options.filter((id) => id === "none").length, 1);
-  });
-
-  it("names Auto by what it groups by", () => {
-    assert.equal(autoThenByLabel(["Progression"]), "Progression");
-    assert.equal(autoThenByLabel(["Density", "Progression"]), "Density, Progression");
+    assert.equal(new Set(options).size, options.length, "no dimension twice");
   });
 });
-
