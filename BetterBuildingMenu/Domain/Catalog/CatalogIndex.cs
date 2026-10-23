@@ -195,8 +195,10 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// in it draws no tab. Ids match what NetworkMenuExtension.Reframe writes onto the entries.</remarks>
 		private IEnumerable<VanillaMenuCategory> ExtraNetworkCategories()
 		{
-			// Subcategories that share a tab (paths, piers, path bridges) yield it once.
-			var yielded = new HashSet<string>(StringComparer.Ordinal);
+			// One tab per id, from the members the extension actually gathers, so subcategories
+			// that share a tab (paths, piers, path bridges) or split by the game's category (Ports,
+			// Transit lanes) each draw once, and a net it does not gather (the dam) draws none.
+			var tabs = new Dictionary<string, VanillaMenuCategory>(StringComparer.Ordinal);
 
 			foreach (var pair in ListsIn(PrefabCategory.Networks).OrderBy(pair => (int)pair.Key))
 			{
@@ -205,34 +207,29 @@ namespace BetterBuildingMenu.Domain.Catalog
 					continue;
 				}
 
-				// Only the ones that arrive through the extension. A subcategory whose
-				// members are all in the Roads menu already has vanilla tabs covering
-				// them, and a second tab over the same assets would split the roads.
-				if (!pair.Value.Any(prefab => !string.Equals(
-						prefab.UiMenuName,
-						NetworkMenuExtension.RoadsMenu,
-						StringComparison.OrdinalIgnoreCase)))
-				{
-					continue;
-				}
-
 				var name = pair.Key.ToString();
-				var id = NetworkMenuExtension.GroupId(name);
 
-				if (!yielded.Add(id))
+				foreach (var prefab in pair.Value)
 				{
-					continue;
+					if (!NetworkMenuExtension.IsExtraNetwork(nameof(PrefabCategory.Networks), prefab.UiMenuName, NetworkMenuExtension.RoadsMenu, name))
+					{
+						continue;
+					}
+
+					var id = NetworkMenuExtension.TabIdOf(name, prefab.UiCategoryName);
+
+					if (!tabs.ContainsKey(id))
+					{
+						tabs[id] = new VanillaMenuCategory(
+							Id: id,
+							Name: id,
+							Icon: NetworkMenuExtension.TabIconOf(name, prefab.UiCategoryName),
+							Priority: NetworkMenuExtension.TabPriorityOf(name, prefab.UiCategoryName));
+					}
 				}
-
-				// The tab's own subcategory's icon, whichever member arrived first.
-				var tab = Enum.TryParse<PrefabSubCategory>(NetworkMenuExtension.TabOf(name), out var owner) ? owner : pair.Key;
-
-				yield return new VanillaMenuCategory(
-					Id: id,
-					Name: id,
-					Icon: CategoryIconAttribute.GetAttribute(tab).Icon ?? string.Empty,
-					Priority: NetworkMenuExtension.GroupPriority(name));
 			}
+
+			return tabs.Values.OrderBy(tab => tab.Priority).ThenBy(tab => tab.Id, StringComparer.Ordinal);
 		}
 
 		/// <summary>Files an entry in the two lists it belongs to: everything, and its own subcategory's.</summary>

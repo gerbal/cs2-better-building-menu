@@ -171,16 +171,17 @@ namespace BetterBuildingMenu.Tests
 		{
 			// The strip's counts and the tab's selection have to agree on the
 			// category, and for an extra network the entry's own differs from it.
-			var seaway = Network("Medium Seaway", "Networks_Ship", "Transportation", "TransportationShip");
+			var track = Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram");
 
-			var tab = NetworkMenuExtension.EffectiveCategory(seaway, NetworkMenuExtension.RoadsMenu);
+			var tab = NetworkMenuExtension.EffectiveCategory(track, NetworkMenuExtension.RoadsMenu);
 
-			Assert.Equal(NetworkMenuExtension.GroupId("Networks_Ship"), tab);
-			Assert.NotEqual(seaway.UiCategory, tab);
+			Assert.Equal(NetworkMenuExtension.GroupId("Networks_Tracks"), tab);
+			Assert.Equal(tab, NetworkMenuExtension.Reframe(track, NetworkMenuExtension.RoadsMenu).UiCategory);
+			Assert.NotEqual(track.UiCategory, tab);
 
 			// And in its own menu it keeps the game's answer, so this cannot
-			// move a seaway out of the Transportation tab it really belongs to.
-			Assert.Equal(seaway.UiCategory, NetworkMenuExtension.EffectiveCategory(seaway, "Transportation"));
+			// move a track out of the Transportation tab it really belongs to.
+			Assert.Equal(track.UiCategory, NetworkMenuExtension.EffectiveCategory(track, "Transportation"));
 		}
 
 		[Fact]

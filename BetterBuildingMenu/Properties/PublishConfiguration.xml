@@ -82,7 +82,7 @@ Fixed
 * Road Zones and Sound Barrier stay in the groups that unlock them.
 * A building another service's tree unlocks no longer opens a tab of its own: Transportation's Large Parks tab is gone, and City Center Bus Station sits with the buses.
 * Grouped by Source, a DLC's buildings are headed by its name, not a number.
-* Roads: piers, bike and pedestrian bridges, and quays that are paths sit with the paths, and the harbor quay has its own tab, instead of all under Bridges; the hydroelectric dam stays in Electricity. Each Roads tab is split by type by default, roads first.
+* Roads: piers, bike and pedestrian bridges, and quays that are paths sit with the paths instead of under Bridges, port roads and the port quay have a Ports tab, public transport lanes a Transit lanes tab, and the hydroelectric dam stays in Electricity. Each Roads tab is split by type by default, roads first.
 * A group of one building has its heading again, so it no longer reads as part of the group before it.
 </ChangeLog>
 </Publish>

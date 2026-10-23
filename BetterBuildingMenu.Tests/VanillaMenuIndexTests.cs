@@ -513,5 +513,25 @@ namespace BetterBuildingMenu.Tests
 			var pierOnly = ReadyIndex(menus, pier, road).GetMenuCategories(NetworkMenuExtension.RoadsMenu);
 			Assert.Equal(pathsIcon, pierOnly.Single(tab => tab.Id == "Paths").Icon);
 		}
+
+		[Fact]
+		public void PortNetworksAndTransitLanesGetATabEach()
+		{
+			var portRoad = TestPrefabs.Entry(51, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			var portQuay = TestPrefabs.Entry(52, PrefabCategory.Networks, PrefabSubCategory.Networks_Quays);
+			var lane = TestPrefabs.Entry(53, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			var road = TestPrefabs.Entry(54, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			portRoad.UiMenuName = portQuay.UiMenuName = lane.UiMenuName = "Transportation";
+			portRoad.UiCategoryName = portQuay.UiCategoryName = "TransportationShip";
+			lane.UiCategoryName = "TransportationRoad";
+			road.UiMenuName = NetworkMenuExtension.RoadsMenu;
+			var menus = Menus(
+				System.Array.Empty<(int, string, string)>(),
+				new() { [NetworkMenuExtension.RoadsMenu] = new() { Tab("RoadsSmall") } });
+
+			var tabs = ReadyIndex(menus, portRoad, portQuay, lane, road).GetMenuCategories(NetworkMenuExtension.RoadsMenu).Select(tab => tab.Id).ToArray();
+
+			Assert.Equal(new[] { "RoadsSmall", NetworkMenuExtension.TransitLanes, NetworkMenuExtension.Ports }, tabs);
+		}
 	}
 }
