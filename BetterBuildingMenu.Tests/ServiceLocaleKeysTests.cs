@@ -36,7 +36,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void KeepsEveryKeyTheTableHolds()
 		{
-			Assert.Equal(44, GameLocaleKeys.All.Count);
+			Assert.Equal(45, GameLocaleKeys.All.Count);
 		}
 	}
 }

@@ -27,7 +27,7 @@ namespace BetterBuildingMenu.Domain
 		{
 			if (isQuayStyle)
 			{
-				return PrefabSubCategory.Networks_Quays;
+				return isPathway ? PrefabSubCategory.Networks_PathQuays : PrefabSubCategory.Networks_Quays;
 			}
 
 			if (string.Equals(uiCategory?.Trim(), PiersAndQuaysCategory, StringComparison.Ordinal)
@@ -44,6 +44,7 @@ namespace BetterBuildingMenu.Domain
 			subCategory?.Trim() is nameof(PrefabSubCategory.Networks_Bridges)
 				or nameof(PrefabSubCategory.Networks_Quays)
 				or nameof(PrefabSubCategory.Networks_Piers)
-				or nameof(PrefabSubCategory.Networks_PathBridges);
+				or nameof(PrefabSubCategory.Networks_PathBridges)
+				or nameof(PrefabSubCategory.Networks_PathQuays);
 	}
 }

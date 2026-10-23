@@ -105,17 +105,21 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>The subcategory whose tab a gathered network shares: its own, except a pier (a
-		/// walkway on stilts) and a bike or pedestrian bridge, which file with the paths. Each keeps
-		/// its own subcategory, so a Type grouping still tells them apart there.</summary>
-		private static string TabOf(string? subCategory)
+		/// walkway on stilts), a bike or pedestrian bridge and a quay that is a path, which file with
+		/// the paths. Each keeps its own subcategory, so a Type grouping still tells them apart there.</summary>
+		public static string TabOf(string? subCategory)
 		{
 			var name = subCategory?.Trim() ?? string.Empty;
 
-			return string.Equals(name, nameof(PrefabSubCategory.Networks_Piers), StringComparison.OrdinalIgnoreCase)
-				|| string.Equals(name, nameof(PrefabSubCategory.Networks_PathBridges), StringComparison.OrdinalIgnoreCase)
-				? nameof(PrefabSubCategory.Networks_Paths)
-				: name;
+			return PathsTab.Contains(name) ? nameof(PrefabSubCategory.Networks_Paths) : name;
 		}
+
+		private static readonly HashSet<string> PathsTab = new(StringComparer.OrdinalIgnoreCase)
+		{
+			nameof(PrefabSubCategory.Networks_Piers),
+			nameof(PrefabSubCategory.Networks_PathBridges),
+			nameof(PrefabSubCategory.Networks_PathQuays),
+		};
 
 		/// <summary>
 		/// The rank that keeps the extras in a stable order behind the roads.

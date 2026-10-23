@@ -195,6 +195,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// in it draws no tab. Ids match what NetworkMenuExtension.Reframe writes onto the entries.</remarks>
 		private IEnumerable<VanillaMenuCategory> ExtraNetworkCategories()
 		{
+			// Subcategories that share a tab (paths, piers, path bridges) yield it once.
+			var yielded = new HashSet<string>(StringComparer.Ordinal);
+
 			foreach (var pair in ListsIn(PrefabCategory.Networks).OrderBy(pair => (int)pair.Key))
 			{
 				if (pair.Key == PrefabSubCategory.Any || pair.Value.Count == 0)
@@ -214,11 +217,20 @@ namespace BetterBuildingMenu.Domain.Catalog
 				}
 
 				var name = pair.Key.ToString();
+				var id = NetworkMenuExtension.GroupId(name);
+
+				if (!yielded.Add(id))
+				{
+					continue;
+				}
+
+				// The tab's own subcategory's icon, whichever member arrived first.
+				var tab = Enum.TryParse<PrefabSubCategory>(NetworkMenuExtension.TabOf(name), out var owner) ? owner : pair.Key;
 
 				yield return new VanillaMenuCategory(
-					Id: NetworkMenuExtension.GroupId(name),
-					Name: NetworkMenuExtension.GroupId(name),
-					Icon: CategoryIconAttribute.GetAttribute(pair.Key).Icon ?? string.Empty,
+					Id: id,
+					Name: id,
+					Icon: CategoryIconAttribute.GetAttribute(tab).Icon ?? string.Empty,
 					Priority: NetworkMenuExtension.GroupPriority(name));
 			}
 		}

@@ -41,6 +41,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Quays]": "Quays",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Piers]": "Piers",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_PathBridges]": "Path bridges",
+  "Tooltip.LABEL[BetterBuildingMenu.Networks_PathQuays]": "Quays",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Intersections]": "Intersections",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Paths]": "Paths",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Stops]": "Transit Stops",

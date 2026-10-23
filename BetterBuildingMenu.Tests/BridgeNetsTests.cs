@@ -13,7 +13,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AQuayStyleNetIsAQuay()
 		{
-			Assert.Equal(PrefabSubCategory.Networks_Quays, BridgeNets.SubCategoryOf(isQuayStyle: true, uiCategory: "PiersAndQuays", prefabName: "QuaySmall01", isPathway: false));
+			Assert.Equal(PrefabSubCategory.Networks_Quays, BridgeNets.SubCategoryOf(isQuayStyle: true, uiCategory: "RoadsSmallRoads", prefabName: "QuayMedium01", isPathway: false));
 			Assert.Equal(PrefabSubCategory.Networks_Quays, BridgeNets.SubCategoryOf(isQuayStyle: true, uiCategory: "TransportationShip", prefabName: "HarborQuay01", isPathway: false));
 		}
 
@@ -80,8 +80,10 @@ namespace BetterBuildingMenu.Tests
 			// Bike and pedestrian bridges are pathways the game raises with its Bridge component.
 			Assert.Equal(PrefabSubCategory.Networks_PathBridges, BridgeNets.SubCategoryOf(isQuayStyle: false, uiCategory: "Pathways", prefabName: "Arc Pedestrian Bridge", isPathway: true));
 			Assert.Equal(PrefabSubCategory.Networks_PathBridges, BridgeNets.SubCategoryOf(isQuayStyle: false, uiCategory: "BikePaths", prefabName: "Cable Stayed Bike Bridge", isPathway: true));
-			// A quay with bike lanes is still a quay.
-			Assert.Equal(PrefabSubCategory.Networks_Quays, BridgeNets.SubCategoryOf(isQuayStyle: true, uiCategory: "BikePaths", prefabName: "QuaySmallWithBikeLanes01", isPathway: true));
+			// A quay that is a path (QuaySmall, the ones with bike lanes) files with the paths too.
+			Assert.Equal(PrefabSubCategory.Networks_PathQuays, BridgeNets.SubCategoryOf(isQuayStyle: true, uiCategory: "BikePaths", prefabName: "QuaySmallWithBikeLanes01", isPathway: true));
+			Assert.Equal(PrefabSubCategory.Networks_PathQuays, BridgeNets.SubCategoryOf(isQuayStyle: true, uiCategory: "PiersAndQuays", prefabName: "QuaySmall01", isPathway: true));
+			Assert.Equal("Paths", NetworkMenuExtension.GroupId(nameof(PrefabSubCategory.Networks_PathQuays)));
 			Assert.Equal("Paths", NetworkMenuExtension.GroupId(nameof(PrefabSubCategory.Networks_PathBridges)));
 		}
 	}

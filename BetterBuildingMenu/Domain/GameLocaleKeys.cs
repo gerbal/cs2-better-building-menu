@@ -62,6 +62,7 @@ namespace BetterBuildingMenu.Domain
 			[nameof(PrefabSubCategory.Networks_Quays)] = Title("Quays"),
 			[nameof(PrefabSubCategory.Networks_Piers)] = Title("Piers"),
 			[nameof(PrefabSubCategory.Networks_PathBridges)] = Title("Path bridges"),
+			[nameof(PrefabSubCategory.Networks_PathQuays)] = Title("Quays"),
 			[nameof(PrefabSubCategory.Networks_Tracks)] = Title("Tracks"),
 
 			// Network subcategories that are a vanilla Roads tab. Highways are the
