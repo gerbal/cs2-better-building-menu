@@ -40,6 +40,15 @@ namespace BetterBuildingMenu.Domain
 				or PrefabCategory.Props;
 
 		/// <summary>Sets an entry's figures and adds its facts from what its prefab holds.</summary>
+		/// <summary>What a prefab parks: its facility's answer, or, for one the game files in Roads'
+		/// Parking with no facility (the bicycle stands), what its parking lanes park. Outside Parking a
+		/// car park is not what a building is for, so the lanes say nothing there.</summary>
+		public static string[]? ParkingVehiclesOf(string[]? facility, string? uiCategory, Game.Net.RoadTypes laneRoadTypes) =>
+			facility
+			?? (string.Equals(uiCategory?.Trim(), RoadsLoneBranches.ParkingCategory, StringComparison.Ordinal)
+				? ParkingVehiclesOf(laneRoadTypes)
+				: null);
+
 		/// <summary>The vehicles a parking facility's road types park, in the order Vehicle heads them.</summary>
 		public static string[]? ParkingVehiclesOf(Game.Net.RoadTypes roadTypes)
 		{

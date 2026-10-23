@@ -947,6 +947,13 @@ namespace BetterBuildingMenu.Systems
 
 			PopulateAnalyticalData(entity, prefabIndex, target.Zones);
 
+			// A parking stop with no facility (the bicycle stands) parks what its lanes park.
+			if (prefabIndex.ParkingVehicles is null
+				&& string.Equals(prefabIndex.UiCategoryName, RoadsLoneBranches.ParkingCategory, StringComparison.Ordinal))
+			{
+				prefabIndex.ParkingVehicles = PrefabFacts.ParkingVehiclesOf(null, prefabIndex.UiCategoryName, GetParkingRoadTypes(prefab));
+			}
+
 			target.File(prefabIndex);
 		}
 

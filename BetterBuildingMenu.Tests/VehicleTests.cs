@@ -56,5 +56,17 @@ namespace BetterBuildingMenu.Tests
 			Assert.False(facet.Matches!(TestEntries.Make(4, "Avenue"), new[] { "Bicycles" }));
 			Assert.Equal(new[] { "Bicycles" }, facet.Selected(facet.QueryWith(new BuildingCatalogQuery(), new[] { "Bicycles" })));
 		}
+
+		[Fact]
+		public void ParkingWithNoFacilityParksWhatItsLanesPark()
+		{
+			// Bicycle Stand, Bicycle Stands, Bicycle Shelter: stops in Roads' Parking category with
+			// bicycle parking lanes and no ParkingFacility (read in game, 2026-10-22).
+			Assert.Equal(new[] { "Bicycles" }, PrefabFacts.ParkingVehiclesOf(null, "RoadsParking", RoadTypes.Bicycle));
+			// A facility's answer stands.
+			Assert.Equal(new[] { "Vehicles" }, PrefabFacts.ParkingVehiclesOf(new[] { "Vehicles" }, "RoadsParking", RoadTypes.Bicycle));
+			// Outside Parking a car park is not what a building is for: a hospital's lot says nothing.
+			Assert.Null(PrefabFacts.ParkingVehiclesOf(null, "HealthcareHospital", RoadTypes.Car));
+		}
 	}
 }

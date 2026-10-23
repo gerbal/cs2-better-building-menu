@@ -445,6 +445,36 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>How many cars the asset can park, its sub-objects' included. See
 		/// <see cref="ParkingSlots.Own"/>.</summary>
+		/// <summary>The road types its parking lanes park, its sub-objects' included.</summary>
+		private Game.Net.RoadTypes GetParkingRoadTypes(PrefabBase prefab)
+		{
+			var types = Game.Net.RoadTypes.None;
+
+			if (prefab.TryGet<ObjectSubLanes>(out var subLanes) && subLanes.m_SubLanes is not null)
+			{
+				foreach (var lane in subLanes.m_SubLanes)
+				{
+					if (lane?.m_LanePrefab is not null && lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
+					{
+						types |= parkingLane.m_RoadType;
+					}
+				}
+			}
+
+			if (prefab.TryGet<ObjectSubObjects>(out var subObjects) && subObjects.m_SubObjects is not null)
+			{
+				foreach (var obj in subObjects.m_SubObjects)
+				{
+					if (obj.m_Object is not null)
+					{
+						types |= GetParkingRoadTypes(obj.m_Object);
+					}
+				}
+			}
+
+			return types;
+		}
+
 		private int GetParkingSlots(PrefabBase prefab)
 		{
 			var garageCapacity = prefab.TryGet<ParkingFacility>(out var parkingFacility)
