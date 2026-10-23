@@ -34,6 +34,9 @@ export const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "Buildin
 export const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending", false);
 export const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
 export const AssetMenuGroupDimensions$ = bindValue<string[]>(mod.id, "AssetMenuGroupDimensions", []);
+// The level under the first grouping's groups as C# resolved it for this menu: the menu's
+// own pick, or its default. "none", or a dimension id.
+export const BuildingCatalogThenBy$ = bindValue<string>(mod.id, "BuildingCatalogThenBy", "none");
 export const AssetMenuFacets$ = bindValue<AssetMenuFacetState | null>(mod.id, "AssetMenuFacets", null);
 export const BuildingCatalogMetricRanges$ = bindValue<AssetMenuMetricRangeState | null>(mod.id, "BuildingCatalogMetricRanges", null);
 /** The spread each metric has in the current view, in the selection's shape. */

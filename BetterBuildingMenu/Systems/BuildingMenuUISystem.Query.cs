@@ -102,6 +102,8 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_assetMenu.SetGroupBy(groupBy));
 
+		private void SetBuildingCatalogThenBy(string thenBy) => Apply(_assetMenu.SetThenBy(thenBy));
+
 		/// <remarks>Same idempotence guard as the group-by above.</remarks>
 		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_assetMenu.SetDescending(descending));
 

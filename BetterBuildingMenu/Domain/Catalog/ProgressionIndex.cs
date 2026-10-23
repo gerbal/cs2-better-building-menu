@@ -85,8 +85,20 @@ namespace BetterBuildingMenu.Domain.Catalog
 		public (string Label, string Icon, int Depth) BranchOf(
 			IEnumerable<(int Requirement, bool Needed)> required,
 			string? service,
-			string? menu)
+			string? menu) =>
+			BranchOf(required, service, menu, out _);
+
+		/// <inheritdoc cref="BranchOf(IEnumerable{ValueTuple{int, bool}}, string?, string?)"/>
+		/// <param name="foreign">Whether the branch is a node in another service's tree: no node of
+		/// the asset's own gates it (City Center Bus Station, which the Parks tree unlocks).</param>
+		public (string Label, string Icon, int Depth) BranchOf(
+			IEnumerable<(int Requirement, bool Needed)> required,
+			string? service,
+			string? menu,
+			out bool foreign)
 		{
+			foreign = false;
+
 			var gates = new List<DevTreeGates.Gate>();
 			var otherWaysIn = false;
 
@@ -106,6 +118,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 			if (DevTreeGates.Pick(gates, service ?? menu, otherWaysIn) is { } gate)
 			{
+				foreign = gate.Service.Length > 0 && !string.Equals(gate.Service, service ?? menu, StringComparison.Ordinal);
 				return (gate.Label, gate.Icon, gate.Depth);
 			}
 

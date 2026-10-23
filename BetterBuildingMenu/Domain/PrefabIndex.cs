@@ -82,6 +82,10 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public int DevTreeBranchDepth { get; set; }
 
+		/// <summary>Whether <see cref="DevTreeBranch"/> is a node in another service's tree. The strip then
+		/// files it with its category's own buildings (BuildingCatalogEntry.StripBranch).</summary>
+		public bool DevTreeBranchIsForeign { get; set; }
+
 		/// <summary>
 		/// Everything else the asset is waiting on, already localized.
 		/// </summary>
@@ -214,6 +218,10 @@ namespace BetterBuildingMenu.Domain
 		public int? LeisureEfficiency { get; set; }
 
 		public bool HasParking { get; set; }
+
+		/// <summary>What a parking building parks, from ParkingFacility's road types: Vehicles, Bicycles,
+		/// or both; null for anything else. The game has no motorcycle type.</summary>
+		public string[]? ParkingVehicles { get; set; }
 
 		/// <summary>
 		/// Parking bays, matching what the building has once placed, its sub-objects' included:

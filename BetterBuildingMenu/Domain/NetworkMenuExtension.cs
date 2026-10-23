@@ -67,7 +67,24 @@ namespace BetterBuildingMenu.Domain
 			IsExtended(menu)
 			&& string.Equals(entryCategory?.Trim(), NetworksCategory, StringComparison.OrdinalIgnoreCase)
 			&& !VanillaMenus.IsRoads(entryMenu)
+			&& !KeptByTheirMenu.Contains(entryMenu?.Trim() ?? string.Empty)
+			// A bridge-type net no menu offers is part of a building or a bridge (Fishing Pier,
+			// "LiftBridge03 Train Track"): the game never offers it alone, so Roads does not.
+			&& !(string.IsNullOrWhiteSpace(entryMenu) && BridgeNets.IsBridgeType(entrySubCategory))
 			&& IsGathered(entrySubCategory);
+
+		/// <summary>
+		/// Menus whose networks stay where the game files them, whatever their subcategory.
+		/// </summary>
+		/// <remarks>
+		/// The hydroelectric dam is a bridge-type net placed from Electricity: it answers to the
+		/// utility that owns it, as power lines and pipes do.
+		/// </remarks>
+		private static readonly HashSet<string> KeptByTheirMenu = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"Electricity",
+			"Water & Sewage",
+		};
 
 		/// <summary>
 		/// The heading an extra network sits under: its subcategory, without the
@@ -80,12 +97,29 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static string GroupId(string? subCategory)
 		{
-			var name = subCategory?.Trim() ?? string.Empty;
+			var name = TabOf(subCategory);
 
 			return name.StartsWith(SubCategoryPrefix, StringComparison.OrdinalIgnoreCase)
 				? name.Substring(SubCategoryPrefix.Length)
 				: name;
 		}
+
+		/// <summary>The subcategory whose tab a gathered network shares: its own, except a pier (a
+		/// walkway on stilts), a bike or pedestrian bridge and a quay that is a path, which file with
+		/// the paths. Each keeps its own subcategory, so a Type grouping still tells them apart there.</summary>
+		public static string TabOf(string? subCategory)
+		{
+			var name = subCategory?.Trim() ?? string.Empty;
+
+			return PathsTab.Contains(name) ? nameof(PrefabSubCategory.Networks_Paths) : name;
+		}
+
+		private static readonly HashSet<string> PathsTab = new(StringComparer.OrdinalIgnoreCase)
+		{
+			nameof(PrefabSubCategory.Networks_Piers),
+			nameof(PrefabSubCategory.Networks_PathBridges),
+			nameof(PrefabSubCategory.Networks_PathQuays),
+		};
 
 		/// <summary>
 		/// The rank that keeps the extras in a stable order behind the roads.
@@ -96,7 +130,7 @@ namespace BetterBuildingMenu.Domain
 		/// lines and pipes, which is roughly how often they are reached for.
 		/// </remarks>
 		public static int GroupPriority(string? subCategory) =>
-			Enum.TryParse<PrefabSubCategory>(subCategory?.Trim(), out var parsed)
+			Enum.TryParse<PrefabSubCategory>(TabOf(subCategory), out var parsed)
 				? ExtraGroupPriorityBase + (int)parsed
 				: ExtraGroupPriorityBase;
 
@@ -112,8 +146,62 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static string? EffectiveCategory(BuildingCatalogEntry entry, string? menu) =>
 			IsExtraNetwork(entry.Category, entry.UiMenu, menu, entry.SubCategory)
-				? GroupId(entry.SubCategory)
+				? TabIdOf(entry.SubCategory, entry.UiCategory)
 				: entry.UiCategory;
+
+		/// <summary>The Roads tab Transportation's Ship networks share: port roads and the port quay.</summary>
+		public const string Ports = "Ports";
+
+		/// <summary>The Roads tab for the bus category's roads: its public transport lanes.</summary>
+		public const string TransitLanes = "TransitLanes";
+
+		/// <summary>
+		/// The tab a gathered network files under: Ports for what the game files under Transportation's
+		/// Ship (port roads, the port quay), Transit lanes for the bus category's roads, else its
+		/// subcategory's tab (<see cref="GroupId"/>).
+		/// </summary>
+		/// <remarks>By the game's own category, so the split follows where the game puts them: read in
+		/// game, 2026-10-22, the port roads and the port quay sit in Transportation's Ship tab.</remarks>
+		public static string TabIdOf(string? subCategory, string? uiCategory)
+		{
+			var category = uiCategory?.Trim() ?? string.Empty;
+
+			if (string.Equals(category, ShipCategory, StringComparison.Ordinal))
+			{
+				return Ports;
+			}
+
+			if (string.Equals(category, BusCategory, StringComparison.Ordinal)
+				&& string.Equals(subCategory?.Trim(), nameof(PrefabSubCategory.Networks_Roads), StringComparison.OrdinalIgnoreCase))
+			{
+				return TransitLanes;
+			}
+
+			return GroupId(subCategory);
+		}
+
+		/// <summary>The rank of a gathered network's tab: Ports with the quays, Transit lanes with the lanes.</summary>
+		public static int TabPriorityOf(string? subCategory, string? uiCategory) =>
+			TabIdOf(subCategory, uiCategory) switch
+			{
+				Ports => GroupPriority(nameof(PrefabSubCategory.Networks_Quays)),
+				TransitLanes => GroupPriority(nameof(PrefabSubCategory.Networks_Lanes)),
+				_ => GroupPriority(subCategory),
+			};
+
+		/// <summary>The icon of a gathered network's tab.</summary>
+		public static string TabIconOf(string? subCategory, string? uiCategory) =>
+			TabIdOf(subCategory, uiCategory) switch
+			{
+				Ports => "Media/Game/Icons/HarborRoad01.svg",
+				TransitLanes => "Media/Game/Icons/DoublePublicTransportLane.svg",
+				_ => Enum.TryParse<PrefabSubCategory>(TabOf(subCategory), out var owner)
+					? CategoryIconAttribute.GetAttribute(owner).Icon ?? string.Empty
+					: string.Empty,
+			};
+
+		private const string ShipCategory = "TransportationShip";
+		private const string BusCategory = "TransportationRoad";
 
 		/// <summary>
 		/// The entry as this menu should show it.
@@ -134,8 +222,8 @@ namespace BetterBuildingMenu.Domain
 			return entry with
 			{
 				UiMenu = RoadsMenu,
-				UiCategory = GroupId(entry.SubCategory),
-				UiCategoryPriority = GroupPriority(entry.SubCategory),
+				UiCategory = TabIdOf(entry.SubCategory, entry.UiCategory),
+				UiCategoryPriority = TabPriorityOf(entry.SubCategory, entry.UiCategory),
 				// Its tab is one of ours, ordered by the priority above; the position
 				// it had in its own menu's strip means nothing here.
 				UiCategoryTab = int.MaxValue,

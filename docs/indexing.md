@@ -357,7 +357,11 @@ matches the order the player buys nodes in only along one chain: siblings in a c
 different ranks, and nodes on separate branches have no fixed order.
 
 **Gates.** The asset's own service is its `ServiceObject`'s, or failing that the one its menu is
-named after. With no gate in that service, the rule runs over every service's gates.
+named after. With no gate in that service, the rule runs over every service's gates. Such a
+branch is another service's node (`BranchOf`'s `foreign`): City Center Bus Station, which only the
+Parks tree unlocks, reads "Large Parks" grouped by development, but the strip files it with its
+category's root buildings (`BuildingCatalogEntry.StripBranch`), so a menu never draws a tab of one
+for another service's node (owner, 2026-10-22).
 
 The requirements the rule sees come from `ProgressionUtils.CollectSubRequirements`, which stops at
 each dev-tree node, so a node's ancestors are never among them. It also flattens the

@@ -25,6 +25,7 @@ namespace BetterBuildingMenu.Services
 		private readonly bool _vanillaSelected;
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
+		private string? _effectiveThenBy;
 
 		private BuildingCatalogEntry[]? _menuSet, _viewSet, _tabSet, _tierSet, _wholeMenu;
 		private BuildingCatalogPage? _page;
@@ -58,6 +59,45 @@ namespace BetterBuildingMenu.Services
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
 		public string[] GroupDimensions => _dimensions ??= BuildingCatalogGrouping.OfferedDimensions(MenuSet, _educationMenu);
 
+		/// <summary>The level under the first grouping's groups: this menu's pick where it can act here,
+		/// else the menu's default (<see cref="BuildingCatalogGrouping.DefaultThenBy"/>), judged on this
+		/// view's scope folded as a branch level groups it (Parking's lone branches).</summary>
+		public string EffectiveThenBy => _effectiveThenBy ??= BuildingCatalogGrouping.EffectiveThenBy(
+			_query.ThenBy,
+			EffectiveGroupBy,
+			GroupDimensions,
+			MenuDefaultThenBy());
+
+		/// <summary>The menu's own second level. Roads reads by Type (roads, then bridges, quays, paths
+		/// and the rest it gathers) wherever that splits anything, and by Vehicle in a tab Vehicle
+		/// splits (Parking); every other menu by the kind most of its buildings draw under.</summary>
+		private string MenuDefaultThenBy()
+		{
+			var scope = string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
+				? BuildingCatalogQueryEngine.InScope(RoadsLoneBranches.Fold(MenuSet, _query.UiMenu), _query).ToArray()
+				: ViewSet;
+
+			if (VanillaMenus.IsRoads(_query.UiMenu))
+			{
+				// One tab open whose buildings Vehicle splits (Parking): what each parks is the
+				// split there, where Type would read Roads and Transit Stops (owner, 2026-10-22).
+				if (!string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.Vehicle, StringComparison.OrdinalIgnoreCase)
+					&& scope.Select(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty).Distinct(StringComparer.Ordinal).Count() == 1
+					&& BuildingCatalogGrouping.Draws(EffectiveGroupBy, BuildingCatalogGrouping.Vehicle, scope, _milestoneNames))
+				{
+					return BuildingCatalogGrouping.Vehicle;
+				}
+
+				if (!string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, StringComparison.OrdinalIgnoreCase)
+					&& BuildingCatalogGrouping.Draws(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, scope, _milestoneNames))
+				{
+					return BuildingCatalogGrouping.SubCategory;
+				}
+			}
+
+			return BuildingCatalogGrouping.DefaultThenBy(EffectiveGroupBy, scope, _milestoneNames);
+		}
+
 		/// <summary>The grouping the page is ordered by: the player's choice, or the menu's default.</summary>
 		/// <remarks>
 		/// Resolved here rather than by the UI. The resolver may read this view's own strip axis;
@@ -78,18 +118,22 @@ namespace BetterBuildingMenu.Services
 		/// <summary>Menu and strip tab, no category or tier — what the school tiers count.</summary>
 		public BuildingCatalogEntry[] TierSet => _tierSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query with { SchoolTier = -1, UiCategory = string.Empty }).ToArray();
 
-		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(GroupedSet, _query with { GroupBy = EffectiveGroupBy }));
+		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(GroupedSet, GroupedQuery));
+
+		/// <summary>The query with the grouping this view resolved, both levels.</summary>
+		private BuildingCatalogQuery GroupedQuery => _query with { GroupBy = EffectiveGroupBy, ThenBy = EffectiveThenBy };
 
 		/// <summary>The page's <see cref="BuildingCatalogPage.TotalCount"/>, counted without building the page
 		/// when nothing else has.</summary>
 		/// <remarks>For a count of another scope, such as the "matches elsewhere" notice, which would
 		/// otherwise order and label a whole page of the entire catalog on every keystroke.</remarks>
 		public int TotalCount => _page?.TotalCount
-			?? BuildingCatalogQueryEngine.Count(GroupedSet, _query with { GroupBy = EffectiveGroupBy });
+			?? BuildingCatalogQueryEngine.Count(GroupedSet, GroupedQuery);
 
 		/// <summary>
 		/// The menu set the page is grouped from: Parking's lone branches folded where the category
-		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else.
+		/// heads the branches (RoadsLoneBranches), the menu set itself everywhere else. Whatever level
+		/// is beneath: the default is judged on the folded set, so it must be the set the page shows.
 		/// </summary>
 		private IReadOnlyList<BuildingCatalogEntry> GroupedSet =>
 			string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
@@ -99,7 +143,7 @@ namespace BetterBuildingMenu.Services
 		/// <summary>Stamps the page's items with their headings. The page only — a hundred entries, not the set.</summary>
 		private BuildingCatalogPage WithGroupLabels(BuildingCatalogPage page)
 		{
-			var dimension = BuildingCatalogGrouping.Find(EffectiveGroupBy);
+			var dimension = BuildingCatalogGrouping.Find(EffectiveGroupBy, EffectiveThenBy);
 
 			if (!dimension.IsGrouped)
 			{
@@ -153,11 +197,13 @@ namespace BetterBuildingMenu.Services
 				return string.Empty;
 			}
 
+			// The strip's branch, so a building another service's tree unlocks does not split its
+			// category on its own.
 			return MenuSet
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty)
 				.Where(group => group.Key.Length > 0
-					&& group.Select(entry => entry.DevTreeBranch).Distinct(StringComparer.Ordinal).Count() > 1)
+					&& group.Select(entry => BuildingCatalogQueryEngine.StripValue(entry, StripAxes.Development)).Distinct(StringComparer.Ordinal).Count() > 1)
 				.OrderByDescending(group => group.Count())
 				.ThenBy(group => group.Key, StringComparer.Ordinal)
 				.Select(group => group.Key)

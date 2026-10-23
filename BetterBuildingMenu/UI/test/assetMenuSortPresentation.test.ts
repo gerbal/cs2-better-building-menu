@@ -90,6 +90,8 @@ describe("Asset menu sort presentation", () => {
         ["LotDepth", "Lot depth"],
         ["BuildingLevel", "Level"],
         ["HasParking", "Parking"],
+        ["Recreation", "Recreation"],
+        ["Attractiveness", "Attractiveness"],
       ].map(([key, label]) => ({
         key,
         label,

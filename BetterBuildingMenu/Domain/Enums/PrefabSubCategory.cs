@@ -92,6 +92,18 @@ namespace BetterBuildingMenu.Domain.Enums
 		// network rather than being part of it.
 		[CategoryIcon("Media/Game/Icons/TransportationOverview.svg")]
 		Networks_Routes,
+		// The game builds both with its Bridge component (quays with the Quay build style),
+		// so they are split off Bridges: see BridgeNets.
+		[CategoryIcon("coui://uil/Colored/RoadUpgradeQuay.svg")]
+		Networks_Quays,
+		[CategoryIcon("Media/Game/Icons/LeisurePier01Large.svg")]
+		Networks_Piers,
+		// Bike and pedestrian bridges: pathways the game raises with its Bridge component.
+		[CategoryIcon("Media/Game/Icons/ArcBikeBridge.svg")]
+		Networks_PathBridges,
+		// Quays that are paths (QuaySmall, the ones with bike lanes): with the paths, as "Quays".
+		[CategoryIcon("coui://uil/Colored/RoadUpgradeQuay.svg")]
+		Networks_PathQuays,
 
 		[Obsolete("Use PrefabCategory", true)]
 		Trees = PrefabCategory.Trees,

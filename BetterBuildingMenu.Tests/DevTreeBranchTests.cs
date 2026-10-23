@@ -88,5 +88,20 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(("Gas Power Plant", "Gas.svg", 2), Progression.BranchOf(required, null, "Electricity"));
 			Assert.Equal(("Parks", "Parks.svg", 9), Progression.BranchOf(required, "Parks & Recreation", "Electricity"));
 		}
+
+		[Fact]
+		public void SaysWhenTheBranchIsInAnotherServicesTree()
+		{
+			// City Center Bus Station: a Transportation building only the Parks tree unlocks.
+			Progression.BranchOf(new[] { Needs(ParkNode) }, "Transportation", "Transportation", out var foreign);
+			Assert.True(foreign);
+
+			Progression.BranchOf(new[] { Needs(GasNode) }, "Electricity", "Electricity", out foreign);
+			Assert.False(foreign);
+
+			// No node at all: its own root, which is no other service's.
+			Progression.BranchOf(System.Array.Empty<(int, bool)>(), "Electricity", "Electricity", out foreign);
+			Assert.False(foreign);
+		}
 	}
 }

@@ -11,9 +11,9 @@ import {
   groupTreeFromPaths,
   headingBands,
   isEducation,
-  levelDrawsHeading,
   shouldShowHeading,
   takeRows,
+  thenByOptionsFor,
   type GroupedEntry,
 } from "../src/domain/buildingGroups.ts";
 
@@ -139,13 +139,14 @@ describe("Grouped tree from the page's paths", () => {
     assert.equal(shouldShowHeading(groupTreeFromPaths(rows)[0].children), true);
   });
 
-  it("counts a level of one-building sub-groups as drawing no heading", () => {
-    // Its neighbours then reserve no heading row on its account.
+  it("counts a level of one-building sub-groups as drawing headings", () => {
+    // A lone building under no heading read as part of the group before it
+    // (Vesuvius Place among the Signatures), so groups of one head too.
     const children = (paths: string[][]) => groupTreeFromPaths(paths.map((path, i) => item(i + 1, path)))[0].children;
-    assert.equal(levelDrawsHeading(children([["Fire", "Tower"], ["Fire", "Depot"]]), 1), false);
-    assert.equal(levelDrawsHeading(children([["Fire", "Tower"], ["Fire", "Depot"], ["Fire", "Depot"]]), 1), true);
+    assert.equal(shouldShowHeading(children([["Fire", "Tower"], ["Fire", "Depot"]])), true);
+    assert.equal(shouldShowHeading(children([["Fire", "Tower"], ["Fire", "Depot"], ["Fire", "Depot"]])), true);
     // A top-level group of one still heads.
-    assert.equal(levelDrawsHeading(groupTreeFromPaths([item(1, ["Fire"]), item(2, ["Police"])]), 0), true);
+    assert.equal(shouldShowHeading(groupTreeFromPaths([item(1, ["Fire"]), item(2, ["Police"])])), true);
   });
 });
 
@@ -406,5 +407,23 @@ describe("Heading bands", () => {
 
   it("has no band anywhere when nothing is headed", () => {
     assert.deepEqual(headingBands([at("a", 0, null), at("b", 120, null)]), { a: null, b: null });
+  });
+});
+
+describe("The second grouping choice", () => {
+  it("offers every offered dimension but the first choice, once each, then None", () => {
+    assert.deepEqual(
+      thenByOptionsFor(["menuCategory", "role", "progression", "development", "none"], "menuCategory"),
+      ["role", "progression", "development", "none"]
+    );
+  });
+
+  it("offers every dimension while C# has not said which act", () => {
+    const options = thenByOptionsFor([], "role");
+
+    assert.ok(!options.includes("role"));
+    assert.equal(options[options.length - 1], "none");
+    assert.equal(options.filter((id) => id === "none").length, 1);
+    assert.equal(new Set(options).size, options.length, "no dimension twice");
   });
 });

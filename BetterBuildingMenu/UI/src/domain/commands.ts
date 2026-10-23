@@ -40,6 +40,9 @@ export const setSortDescendingCommand = (descending: boolean): Command =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
 export const setBuildingCatalogGroupByCommand = (dimension: GroupDimensionId): Command =>
   createTriggerCommand("SetBuildingCatalogGroupBy", dimension);
+/** The second grouping, kept for the open menu. */
+export const setBuildingCatalogThenByCommand = (dimension: GroupDimensionId): Command =>
+  createTriggerCommand("SetBuildingCatalogThenBy", dimension);
 
 // --- Filters ----------------------------------------------------------------
 

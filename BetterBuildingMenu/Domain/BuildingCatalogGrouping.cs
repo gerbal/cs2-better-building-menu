@@ -43,6 +43,9 @@ namespace BetterBuildingMenu.Domain
 		public const string Cost = "cost";
 		public const string Progression = "progression";
 		public const string Development = "development";
+		public const string Vehicle = "vehicle";
+		public const string Vehicles = "Vehicles";
+		public const string Bicycles = "Bicycles";
 
 		/// <summary>No grouping: what none, a blank id and no choice all mean.</summary>
 		private static readonly BuildingCatalogGroupDimension Ungrouped = new(None, NoKey, NoKey, NoLabels, isGrouped: false);
@@ -69,7 +72,7 @@ namespace BetterBuildingMenu.Domain
 			new(
 				Category,
 				entry => Normalize(entry.Category),
-				entry => Normalize(entry.SubCategory),
+				SubCategoryRank,
 				(entry, _, _) => new GroupLabels(
 					new[]
 					{
@@ -79,14 +82,26 @@ namespace BetterBuildingMenu.Domain
 					null)),
 			new(
 				SubCategory,
-				entry => Normalize(entry.SubCategory),
+				SubCategoryRank,
 				NoKey,
 				(entry, _, _) => Heading(Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other)),
+			// In transit, the transit split: a way (tracks, lanes, seaways) has no role of its own,
+			// and would otherwise file under Other.
 			new(
 				Role,
-				entry => Normalize(entry.BuildingType),
+				entry => IsTransitMenu(entry.UiMenu) ? TransitTierKey(entry) : Normalize(entry.BuildingType),
 				NoKey,
-				(entry, _, _) => Heading(entry.BuildingType?.Trim() is { Length: > 0 } role ? BuildingCatalogLabels.ForRole(role) : Other)),
+				(entry, _, _) => Heading(
+					IsTransitMenu(entry.UiMenu) ? TransitTierLabel(entry)
+					: entry.BuildingType?.Trim() is { Length: > 0 } role ? BuildingCatalogLabels.ForRole(role)
+					: Other)),
+			// What a parking building parks. Only parking answers, so it is offered only where
+			// parking is.
+			new(
+				Vehicle,
+				entry => entry.ParkingVehicles is { Length: > 0 } vehicles ? VehicleRank(vehicles) : UnnamedKey,
+				NoKey,
+				(entry, _, _) => Heading(VehicleLabel(entry.ParkingVehicles))),
 			// Directly under Role, because it is the level below it: Role answers
 			// "school", School tier answers "which one".
 			new(
@@ -118,7 +133,7 @@ namespace BetterBuildingMenu.Domain
 				Source,
 				entry => Normalize(string.IsNullOrWhiteSpace(entry.DlcId) ? entry.Provenance : entry.DlcId),
 				NoKey,
-				(entry, _, _) => Heading(Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other)),
+				(entry, _, _) => Heading(entry.SourceLabel?.Trim() is { Length: > 0 } source ? source : Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other)),
 			new(
 				Density,
 				entry => DensityRank(entry.ZoneType),
@@ -260,6 +275,209 @@ namespace BetterBuildingMenu.Domain
 			!IsGrouped(groupBy) ? Ungrouped
 			: DescriptorIds.Find(Table, groupBy.Trim()) ?? Unrecognised;
 
+		/// <summary>Vehicles, then bicycles, then a building that parks both.</summary>
+		private static string VehicleRank(string[] vehicles) =>
+			vehicles.Length > 1 ? "2" : string.Equals(vehicles[0], Bicycles, StringComparison.Ordinal) ? "1" : "0";
+
+		private static string VehicleLabel(string[]? vehicles) =>
+			vehicles is not { Length: > 0 } ? Other
+			: vehicles.Length > 1 ? "Vehicles and bicycles"
+			: vehicles[0];
+
+		/// <summary>A subcategory's key: our declaration order (Roads before Bridges and Quays), not the
+		/// alphabet; a subcategory that is none of ours after them, by name.</summary>
+		private static string SubCategoryRank(BuildingCatalogEntry entry) =>
+			Enum.TryParse<PrefabSubCategory>(entry.SubCategory?.Trim(), out var subCategory)
+				? ((int)subCategory).ToString("D5", CultureInfo.InvariantCulture)
+				: "~" + Normalize(entry.SubCategory);
+
+		/// <summary>Whether this second level would draw a sub-heading over this set, as the grid draws
+		/// it: some parent with two sub-groups, one named other than the parent.</summary>
+		public static bool Draws(string? groupBy, string? thenBy, IEnumerable<BuildingCatalogEntry> entries, IReadOnlyList<string>? milestoneNames = null)
+		{
+			var dimension = Find(groupBy, thenBy);
+			var parents = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+
+			foreach (var entry in entries)
+			{
+				var path = dimension.Labels(entry, milestoneNames).Path;
+
+				if (path.Length < 2)
+				{
+					continue;
+				}
+
+				if (!parents.TryGetValue(path[0], out var children))
+				{
+					children = new HashSet<string>(StringComparer.Ordinal);
+					parents[path[0]] = children;
+				}
+
+				children.Add(path[1]);
+			}
+
+			return parents.Any(parent => parent.Value.Count > 1 && parent.Value.Any(child => !string.Equals(child, parent.Key, StringComparison.Ordinal)));
+		}
+
+		/// <summary>
+		/// The first choice with the second picked beside it: empty for Auto (the first as it is),
+		/// none for its outer level alone, else the first's outer level split by the second's.
+		/// </summary>
+		/// <remarks>The outer heading keeps the first's label id, so a menu category still reads in
+		/// the game's language; the inner is the second's outer heading.</remarks>
+		public static BuildingCatalogGroupDimension Find(string? groupBy, string? thenBy)
+		{
+			var first = Find(groupBy);
+
+			if (!first.IsGrouped || thenBy?.Trim() is not { Length: > 0 } then)
+			{
+				return first;
+			}
+
+			var second = IsGrouped(then) ? Find(then) : null;
+
+			return new BuildingCatalogGroupDimension(
+				first.Id,
+				first.PrimaryKey,
+				second is null ? NoKey : second.PrimaryKey,
+				(entry, milestoneNames, schoolTierNames) =>
+				{
+					var outer = first.Labels(entry, milestoneNames, schoolTierNames);
+
+					// A first that heads nothing (an id naming no dimension) heads nothing here either.
+					if (outer.Path.Length == 0)
+					{
+						return outer;
+					}
+
+					if (second is null)
+					{
+						return new GroupLabels(new[] { outer.Path[0] }, outer.LabelId);
+					}
+
+					var inner = second.Labels(entry, milestoneNames, schoolTierNames).Path;
+
+					return new GroupLabels(new[] { outer.Path[0], inner.Length == 0 ? Other : inner[0] }, outer.LabelId);
+				});
+		}
+
+		/// <summary>
+		/// A menu's second level when the player has picked none for it: the kind whose sub-headings
+		/// most of its buildings draw under (subCategory under Asset type), or none where nothing
+		/// would draw. Always a dimension the picker lists, so the picker shows it as chosen.
+		/// </summary>
+		/// <remarks>
+		/// Drawn as the grid draws it: a parent whose entries share one sub-group heads none, and a
+		/// sub-heading repeating its parent's is dropped. So Roads, whose branches mostly share
+		/// their category's name, defaults to Development for the branch that shows (Grand Bridge's).
+		/// The kinds are those of the tier rule (<see cref="CategoryTierDimension"/>); a tie goes to
+		/// the one it tries first.
+		/// </remarks>
+		public static string DefaultThenBy(
+			string? groupBy,
+			IEnumerable<BuildingCatalogEntry> entries,
+			IReadOnlyList<string>? milestoneNames = null)
+		{
+			var id = groupBy?.Trim() ?? string.Empty;
+			var subCategories = Is(id, Category);
+
+			if (!subCategories && !Is(id, MenuCategory))
+			{
+				return None;
+			}
+
+			var dimension = Find(id);
+			// Parent heading -> sub-heading -> the entries' tier kinds, one per entry.
+			var parents = new Dictionary<string, Dictionary<string, List<string>>>(StringComparer.Ordinal);
+
+			foreach (var entry in entries)
+			{
+				var path = dimension.Labels(entry, milestoneNames).Path;
+
+				if (path.Length < 2)
+				{
+					continue;
+				}
+
+				if (!parents.TryGetValue(path[0], out var children))
+				{
+					children = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+					parents[path[0]] = children;
+				}
+
+				if (!children.TryGetValue(path[1], out var kinds))
+				{
+					kinds = new List<string>();
+					children[path[1]] = kinds;
+				}
+
+				kinds.Add(subCategories ? SubCategory : CategoryTierDimension(entry));
+			}
+
+			var drawn = new Dictionary<string, int>(StringComparer.Ordinal);
+
+			foreach (var parent in parents)
+			{
+				if (parent.Value.Count < 2)
+				{
+					continue;
+				}
+
+				foreach (var child in parent.Value)
+				{
+					if (string.Equals(child.Key, parent.Key, StringComparison.Ordinal))
+					{
+						continue;
+					}
+
+					foreach (var kind in child.Value)
+					{
+						drawn[kind] = drawn.TryGetValue(kind, out var count) ? count + 1 : 1;
+					}
+				}
+			}
+
+			if (subCategories)
+			{
+				return drawn.Count > 0 ? SubCategory : None;
+			}
+
+			// The most drawn kind; the tier rule's order breaks a tie.
+			return CategoryTierOrder
+				.Where(drawn.ContainsKey)
+				.OrderByDescending(kind => drawn[kind])
+				.FirstOrDefault() ?? None;
+		}
+
+		/// <summary>
+		/// The second level a menu groups by: the player's pick where this menu offers it and it is
+		/// not the first level itself, else the menu's default. None when nothing is grouped first.
+		/// </summary>
+		public static string EffectiveThenBy(
+			string? choice,
+			string effectiveGroupBy,
+			IReadOnlyCollection<string> offered,
+			string menuDefault)
+		{
+			if (!IsGrouped(effectiveGroupBy))
+			{
+				return None;
+			}
+
+			var pick = choice?.Trim() ?? string.Empty;
+
+			if (Is(pick, None))
+			{
+				return None;
+			}
+
+			return IsDimension(pick)
+				&& !Is(pick, effectiveGroupBy)
+				&& (offered.Count == 0 || offered.Contains(pick, StringComparer.OrdinalIgnoreCase))
+				? Find(pick).Id
+				: menuDefault;
+		}
+
 		private static bool Is(string value, string dimension) =>
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);
 
@@ -288,6 +506,16 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The tier beneath the game's own category. It needs a KEY, not just a heading, so a
 		/// group cannot straddle a page boundary; three sources, prefixed so they cannot collide.</summary>
+		/// <summary>A transit asset's tier key: the ways keep their subcategory in it, so lanes,
+		/// seaways and tracks are each their own heading, all ahead of the stations.</summary>
+		private static string TransitTierKey(BuildingCatalogEntry entry) =>
+			TransitTier(entry) switch
+			{
+				0 => "s0" + Normalize(entry.SubCategory),
+				> 0 and var tier => "s" + tier.ToString(CultureInfo.InvariantCulture),
+				_ => "s9" + Normalize(entry.SubCategory),
+			};
+
 		private static string MenuCategoryTierKey(BuildingCatalogEntry entry)
 		{
 			// Signature is a marker, not a density: every signature building
@@ -303,16 +531,7 @@ namespace BetterBuildingMenu.Domain
 			// See docs/design-notes.md, "Transit tiers".
 			if (IsTransitMenu(entry.UiMenu))
 			{
-				var tier = TransitTier(entry);
-
-				// The ways keep their subcategory in the key: lanes, seaways and tracks are
-				// each their own heading, all ahead of the stations.
-				return tier switch
-				{
-					0 => "s0" + Normalize(entry.SubCategory),
-					> 0 => "s" + tier.ToString(CultureInfo.InvariantCulture),
-					_ => "s9" + Normalize(entry.SubCategory),
-				};
+				return TransitTierKey(entry);
 			}
 
 			// Depth first, so the branches read in the order the game's own
@@ -653,31 +872,36 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>The second level under a menu category: density tier, transit type, branch, or milestone.</summary>
-		public static string CategoryTierLabel(BuildingCatalogEntry entry, IReadOnlyList<string>? milestoneNames = null)
-		{
-			if (entry.ZoneType != ZoneTypeFilter.Any && entry.ZoneType != ZoneTypeFilter.Signature)
+		public static string CategoryTierLabel(BuildingCatalogEntry entry, IReadOnlyList<string>? milestoneNames = null) =>
+			CategoryTierDimension(entry) switch
 			{
-				var density = DensityTierLabel(entry.ZoneType);
+				Density => DensityTierLabel(entry.ZoneType),
+				Role => TransitTierLabel(entry),
+				Development => Text(entry.DevTreeBranch)!,
+				_ => MilestoneLabel(entry.UnlockMilestone, milestoneNames),
+			};
 
-				if (density != Other)
-				{
-					return density;
-				}
+		/// <summary>The dimensions <see cref="CategoryTierDimension"/> answers, in the order it tries them.</summary>
+		private static readonly string[] CategoryTierOrder = { Density, Role, Development, Progression };
+
+		/// <summary>The dimension whose heading <see cref="CategoryTierLabel"/> gives an entry: density
+		/// for a zoned building, role (tracks, stops, stations, depots) in transit, else its branch,
+		/// else its milestone.</summary>
+		public static string CategoryTierDimension(BuildingCatalogEntry entry)
+		{
+			if (entry.ZoneType != ZoneTypeFilter.Any
+				&& entry.ZoneType != ZoneTypeFilter.Signature
+				&& DensityTierLabel(entry.ZoneType) != Other)
+			{
+				return Density;
 			}
 
 			if (IsTransitMenu(entry.UiMenu))
 			{
-				return TransitTierLabel(entry);
+				return Role;
 			}
 
-			var branch = Text(entry.DevTreeBranch);
-
-			if (branch is not null)
-			{
-				return branch;
-			}
-
-			return MilestoneLabel(entry.UnlockMilestone, milestoneNames);
+			return Text(entry.DevTreeBranch) is not null ? Development : Progression;
 		}
 
 		/// <summary>The density tier's heading; "Other" for a zone with no tier.</summary>

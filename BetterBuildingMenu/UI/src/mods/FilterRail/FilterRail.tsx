@@ -58,6 +58,7 @@ const DIMENSION_ICONS: Readonly<Record<RailIconId, string>> = {
   content: "coui://uil/Colored/StarFilled.svg",
   theme: "coui://uil/Colored/HouseAlternative.svg",
   placement: "coui://uil/Colored/Road.svg",
+  vehicle: "Media/Game/Icons/Parking.svg",
   [RAIL_METRICS_ID]: "coui://uil/Standard/StarAll.svg",
 };
 

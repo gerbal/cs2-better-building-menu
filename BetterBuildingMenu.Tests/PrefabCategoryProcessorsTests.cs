@@ -139,7 +139,8 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Theory]
-		[InlineData(typeof(BridgesPrefabCategoryProcessor), typeof(RoadPrefab), PrefabCategory.Networks, PrefabSubCategory.Networks_Bridges)]
+		// Not Bridges: it reads the prefab's name to tell a pier, which only the game can answer.
+		// BridgeNetsTests holds its split.
 		[InlineData(typeof(FencePrefabCategoryProcessor), typeof(FencePrefab), PrefabCategory.Props, PrefabSubCategory.Props_Fences)]
 		[InlineData(typeof(IntersectionsPrefabCategoryProcessor), typeof(AssetStampPrefab), PrefabCategory.Networks, PrefabSubCategory.Networks_Intersections)]
 		[InlineData(typeof(PathsPrefabCategoryProcessor), typeof(PathwayPrefab), PrefabCategory.Networks, PrefabSubCategory.Networks_Paths)]

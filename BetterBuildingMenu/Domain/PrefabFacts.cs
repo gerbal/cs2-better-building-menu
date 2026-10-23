@@ -40,6 +40,30 @@ namespace BetterBuildingMenu.Domain
 				or PrefabCategory.Props;
 
 		/// <summary>Sets an entry's figures and adds its facts from what its prefab holds.</summary>
+		/// <summary>What a prefab parks: its facility's answer, or, for one the game files in Roads'
+		/// Parking with no facility (the bicycle stands), what its parking lanes park. Outside Parking a
+		/// car park is not what a building is for, so the lanes say nothing there.</summary>
+		public static string[]? ParkingVehiclesOf(string[]? facility, string? uiCategory, Game.Net.RoadTypes laneRoadTypes) =>
+			facility
+			?? (string.Equals(uiCategory?.Trim(), RoadsLoneBranches.ParkingCategory, StringComparison.Ordinal)
+				? ParkingVehiclesOf(laneRoadTypes)
+				: null);
+
+		/// <summary>The vehicles a parking facility's road types park, in the order Vehicle heads them.</summary>
+		public static string[]? ParkingVehiclesOf(Game.Net.RoadTypes roadTypes)
+		{
+			var cars = (roadTypes & Game.Net.RoadTypes.Car) != 0;
+			var bicycles = (roadTypes & Game.Net.RoadTypes.Bicycle) != 0;
+
+			return (cars, bicycles) switch
+			{
+				(true, true) => new[] { BuildingCatalogGrouping.Vehicles, BuildingCatalogGrouping.Bicycles },
+				(true, false) => new[] { BuildingCatalogGrouping.Vehicles },
+				(false, true) => new[] { BuildingCatalogGrouping.Bicycles },
+				_ => null,
+			};
+		}
+
 		public static void Apply(PrefabSnapshot snapshot, PrefabIndex prefabIndex)
 		{
 			if (snapshot.PlaceableObjectData is { } placeableData)
@@ -538,6 +562,7 @@ namespace BetterBuildingMenu.Domain
 			if (snapshot.ParkingFacilityData is { } parkingData)
 			{
 				ComfortFact(prefabIndex, parkingData.m_ComfortFactor);
+				prefabIndex.ParkingVehicles = ParkingVehiclesOf(parkingData.m_RoadTypes);
 			}
 			if (snapshot.TransportStopData is { } transportStopData)
 			{

@@ -69,6 +69,10 @@ namespace BetterBuildingMenu.Domain
 			// By bay count, not by the flag: sorting on a flag leaves the order inside each of its two
 			// buckets untouched.
 			Whole("HasParking", entry => entry.ParkingSlots),
+			// What a park gives, as its hover card says it: the leisure it provides and the game's
+			// attractiveness. Only parks carry them, so the picker offers them only where parks are.
+			Optional("Recreation", entry => entry.LeisureEfficiency),
+			Optional("Attractiveness", entry => FactOf(entry, "attractiveness")),
 		};
 
 		/// <summary>The ids of <see cref="All"/>, in the picker's order.</summary>
@@ -94,11 +98,12 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>A range metric, read from its own row. An entry may not carry it: those that do
 		/// come first, whichever way it runs.</summary>
-		private static BuildingCatalogSortColumn Measure(string id, BuildingCatalogMetric metric, params string[] aliases)
-		{
-			var key = metric.EntryValue;
+		private static BuildingCatalogSortColumn Measure(string id, BuildingCatalogMetric metric, params string[] aliases) =>
+			Optional(id, metric.EntryValue, aliases);
 
-			return new(
+		/// <summary>A figure an entry may not carry: those that do come first, whichever way it runs.</summary>
+		private static BuildingCatalogSortColumn Optional(string id, Func<BuildingCatalogEntry, double?> key, params string[] aliases) =>
+			new(
 				id,
 				(seed, descending) =>
 				{
@@ -107,6 +112,22 @@ namespace BetterBuildingMenu.Domain
 				},
 				entry => key(entry),
 				aliases);
+
+		/// <summary>One of the entry's service facts, by key; null where it has none.</summary>
+		private static double? FactOf(BuildingCatalogEntry entry, string key)
+		{
+			if (entry.ServiceFacts is { } facts)
+			{
+				foreach (var fact in facts)
+				{
+					if (string.Equals(fact.Key, key, StringComparison.Ordinal))
+					{
+						return fact.Value;
+					}
+				}
+			}
+
+			return null;
 		}
 	}
 }

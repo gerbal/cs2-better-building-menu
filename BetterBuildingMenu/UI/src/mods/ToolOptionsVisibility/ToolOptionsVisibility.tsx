@@ -18,15 +18,16 @@ export type ToolOptionsVisibleHook = () => boolean;
  * domain/menuOwnership), so the bank shows in the frame the asset menu does.
  */
 export const ToolOptionsVisibility = (vanillaHook: ToolOptionsVisibleHook): ToolOptionsVisibleHook => {
-  return () => {
-    const ownsMenu = ownsSelectedMenu({
-      replaceEnabled: ReplaceVanillaBuildMenu$.value,
-      ownsCurrentMenu: OwnsCurrentMenu$.value,
-      selectedIndex: toolbarEntityIndex(SelectedAssetMenu$.value),
-      owned: OwnedAssetMenus$.value,
-      claim: currentMenuClaim(),
-    });
-
-    return vanillaHook() || ownsMenu;
-  };
+  return () => vanillaHook() || assetMenuOwnsMenu();
 };
+
+/** Whether the asset menu holds the toolbar's open menu now, read from the bindings without a hook. */
+export function assetMenuOwnsMenu(): boolean {
+  return ownsSelectedMenu({
+    replaceEnabled: ReplaceVanillaBuildMenu$.value,
+    ownsCurrentMenu: OwnsCurrentMenu$.value,
+    selectedIndex: toolbarEntityIndex(SelectedAssetMenu$.value),
+    owned: OwnedAssetMenus$.value,
+    claim: currentMenuClaim(),
+  });
+}

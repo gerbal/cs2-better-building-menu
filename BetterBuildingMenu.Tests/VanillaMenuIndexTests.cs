@@ -489,5 +489,49 @@ namespace BetterBuildingMenu.Tests
 			Assert.Empty(ReadyIndex(Menus(System.Array.Empty<(int, string, string)>()), tram)
 				.GetMenuCategories(NetworkMenuExtension.RoadsMenu));
 		}
+
+		[Fact]
+		public void NetworksThatShareATabMakeOneTabWithThatTabsIcon()
+		{
+			// Paths, piers and bike or pedestrian bridges all file under Paths: one tab, not three.
+			var path = TestPrefabs.Entry(41, PrefabCategory.Networks, PrefabSubCategory.Networks_Paths);
+			var pier = TestPrefabs.Entry(42, PrefabCategory.Networks, PrefabSubCategory.Networks_Piers);
+			var bridge = TestPrefabs.Entry(43, PrefabCategory.Networks, PrefabSubCategory.Networks_PathBridges);
+			var road = TestPrefabs.Entry(44, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			path.UiMenuName = pier.UiMenuName = bridge.UiMenuName = "Landscaping";
+			road.UiMenuName = NetworkMenuExtension.RoadsMenu;
+			var menus = Menus(
+				System.Array.Empty<(int, string, string)>(),
+				new() { [NetworkMenuExtension.RoadsMenu] = new() { Tab("RoadsSmall") } });
+			var pathsIcon = CategoryIconAttribute.GetAttribute(PrefabSubCategory.Networks_Paths).Icon;
+
+			var tabs = ReadyIndex(menus, path, pier, bridge, road).GetMenuCategories(NetworkMenuExtension.RoadsMenu);
+			Assert.Equal(new[] { "RoadsSmall", "Paths" }, tabs.Select(tab => tab.Id));
+			Assert.Equal(pathsIcon, tabs.Single(tab => tab.Id == "Paths").Icon);
+
+			// Only a pier gathered: still the paths' tab and icon.
+			var pierOnly = ReadyIndex(menus, pier, road).GetMenuCategories(NetworkMenuExtension.RoadsMenu);
+			Assert.Equal(pathsIcon, pierOnly.Single(tab => tab.Id == "Paths").Icon);
+		}
+
+		[Fact]
+		public void PortNetworksAndTransitLanesGetATabEach()
+		{
+			var portRoad = TestPrefabs.Entry(51, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			var portQuay = TestPrefabs.Entry(52, PrefabCategory.Networks, PrefabSubCategory.Networks_Quays);
+			var lane = TestPrefabs.Entry(53, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			var road = TestPrefabs.Entry(54, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			portRoad.UiMenuName = portQuay.UiMenuName = lane.UiMenuName = "Transportation";
+			portRoad.UiCategoryName = portQuay.UiCategoryName = "TransportationShip";
+			lane.UiCategoryName = "TransportationRoad";
+			road.UiMenuName = NetworkMenuExtension.RoadsMenu;
+			var menus = Menus(
+				System.Array.Empty<(int, string, string)>(),
+				new() { [NetworkMenuExtension.RoadsMenu] = new() { Tab("RoadsSmall") } });
+
+			var tabs = ReadyIndex(menus, portRoad, portQuay, lane, road).GetMenuCategories(NetworkMenuExtension.RoadsMenu).Select(tab => tab.Id).ToArray();
+
+			Assert.Equal(new[] { "RoadsSmall", NetworkMenuExtension.TransitLanes, NetworkMenuExtension.Ports }, tabs);
+		}
 	}
 }

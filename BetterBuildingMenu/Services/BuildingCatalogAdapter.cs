@@ -316,6 +316,8 @@ namespace BetterBuildingMenu.Services
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
 			AddValueGroup(groups, BuildingCatalogFacetFields.Placement, source, query, FormatFlagLabel);
+			// Only parking answers, so the group shows only where cars and bicycles both park.
+			AddValueGroup(groups, BuildingCatalogFacetFields.Vehicle, source, query);
 			// Upgrades are not a facet: most belong to a single building, so a filter by
 			// upgrade narrows to that building, which its hover card and the extension
 			// picker already show. Density is not a facet either: every type+density tier is a category with
@@ -620,7 +622,9 @@ namespace BetterBuildingMenu.Services
 
 			return entries.Select(entry =>
 			{
-				if (!string.Equals(entry.DevTreeBranch, root, StringComparison.Ordinal))
+				var isRoot = string.Equals(entry.DevTreeBranch, root, StringComparison.Ordinal);
+
+				if (!isRoot && !entry.DevTreeBranchIsForeign)
 				{
 					return entry;
 				}
@@ -631,7 +635,14 @@ namespace BetterBuildingMenu.Services
 				var category = NetworkMenuExtension.EffectiveCategory(entry, menu) ?? string.Empty;
 				var label = VanillaServiceLabel(category.Length > 0 ? category : menu ?? string.Empty);
 
-				return label.Length == 0 ? entry : entry with { DevTreeBranch = label };
+				if (label.Length == 0)
+				{
+					return entry;
+				}
+
+				// Another service's node keeps its name for Group by Development, and strips with
+				// the root's buildings beside it.
+				return isRoot ? entry with { DevTreeBranch = label } : entry with { StripBranch = label };
 			});
 		}
 
@@ -760,7 +771,12 @@ namespace BetterBuildingMenu.Services
 				SewageCapacity: prefab.SewageCapacity,
 				GroundPollution: prefab.GroundPollution,
 				AirPollution: prefab.AirPollution,
-				NoisePollution: prefab.NoisePollution);
+				NoisePollution: prefab.NoisePollution)
+			{
+				SourceLabel = SourceLabelOf(prefab),
+				ParkingVehicles = prefab.ParkingVehicles,
+				DevTreeBranchIsForeign = prefab.DevTreeBranchIsForeign,
+			};
 		}
 
 		/// <summary>
@@ -1010,8 +1026,43 @@ namespace BetterBuildingMenu.Services
 				// localization service. Keep the deterministic fallback below.
 			}
 
-			return $"Unresolved DLC content (ID {numericId})";
+			return $"{UnresolvedDlcPrefix}{numericId})";
 		}
+
+		/// <summary>The Source grouping's heading: the DLC's name, as the Content filter names it, or
+		/// Base game / Custom content where it needs none.</summary>
+		/// <remarks>Cached by id: the name is a platform and locale lookup, and every entry of a DLC asks.</remarks>
+		private static string SourceLabelOf(PrefabIndex prefab)
+		{
+			var id = prefab.DlcId.id;
+
+			if (id == GameDlcIds.Invalid || id == GameDlcIds.BaseGame)
+			{
+				return FormatProvenanceLabel(prefab.IsVanilla ? "Vanilla" : "Custom");
+			}
+
+			lock (DlcLabels)
+			{
+				if (DlcLabels.TryGetValue(id, out var cached))
+				{
+					return cached;
+				}
+
+				var label = FormatDlcLabel(id.ToString(CultureInfo.InvariantCulture));
+
+				// Not the fallback: a name the platform could not give yet is asked again next time.
+				if (!label.StartsWith(UnresolvedDlcPrefix, StringComparison.Ordinal))
+				{
+					DlcLabels[id] = label;
+				}
+
+				return label;
+			}
+		}
+
+		private static readonly Dictionary<int, string> DlcLabels = new();
+
+		private const string UnresolvedDlcPrefix = "Unresolved DLC content (ID ";
 
 		private static string FormatProvenanceLabel(string value)
 		{

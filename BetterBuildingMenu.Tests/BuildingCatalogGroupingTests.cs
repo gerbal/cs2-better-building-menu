@@ -101,7 +101,10 @@ namespace BetterBuildingMenu.Tests
 		public void CategoryGroupsByCategoryThenSubCategory()
 		{
 			Assert.Equal("ServiceBuildings", BuildingCatalogGrouping.Find(BuildingCatalogGrouping.Category).PrimaryKey(Entry(1)));
-			Assert.Equal("Health", BuildingCatalogGrouping.Find(BuildingCatalogGrouping.Category).SecondaryKey(Entry(1)));
+			// Keyed as Type is, so the subcategories under a category read in the same order.
+			Assert.Equal(
+				BuildingCatalogGrouping.Find(BuildingCatalogGrouping.SubCategory).PrimaryKey(Entry(1)),
+				BuildingCatalogGrouping.Find(BuildingCatalogGrouping.Category).SecondaryKey(Entry(1)));
 		}
 
 		[Fact]

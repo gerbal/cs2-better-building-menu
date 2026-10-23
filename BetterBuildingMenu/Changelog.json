@@ -1,6 +1,43 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.6",
+    "Date": "2026-10-22",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "Transportation: each mode is split into tracks, stations, stops, depots and cargo stations, and Role is offered as a filter and as a grouping.",
+          "Search finds each word you type in any order, and ignores accents.",
+          "Parks & Recreation can be sorted by Recreation and by Attractiveness.",
+          "Parking can be grouped and filtered by Vehicle: vehicles, bicycles, or both. Roads' Parking tab is split that way by default.",
+          "Enter arms the best match of everything the search found, not only the rows already shown.",
+          "Menus open faster, and switching between menus costs no more than reopening one.",
+          "The Group by row has a second picker for the level under each group, such as Progression under Category. Each tab starts on its usual split and keeps the grouping you pick there."
+        ]
+      },
+      {
+        "Name": "Fixed",
+        "Changes": [
+          "One Escape closes the menu without also opening the pause menu.",
+          "Closing the menu no longer leaves an empty bar above the toolbar.",
+          "List and Table light up the building you are placing, as the grid does.",
+          "A list longer than the menu can show says so at the bottom, instead of just ending.",
+          "Lengths, weights, power and energy are rounded as the game rounds them: 7.5 m, 123 t.",
+          "An asset whose icon file is missing no longer leaves every menu vanilla; it shows its category's icon.",
+          "List view fills the menu, and no longer loads a second page every time it opens.",
+          "In Table, a building alone in its group gets its own heading, so it is not read as part of the group above.",
+          "Road Zones and Sound Barrier stay in the groups that unlock them.",
+          "A building another service's tree unlocks no longer opens a tab of its own: Transportation's Large Parks tab is gone, and City Center Bus Station sits with the buses.",
+          "Grouped by Source, a DLC's buildings are headed by its name, not a number.",
+          "Roads: piers, bike and pedestrian bridges, and quays that are paths sit with the paths instead of under Bridges, port roads and the port quay have a Ports tab, public transport lanes a Transit lanes tab, and the hydroelectric dam stays in Electricity. Each Roads tab is split by type by default, roads first.",
+          "A group of one building has its heading again, so it no longer reads as part of the group before it."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.5",
     "Date": "2026-10-08",
     "ChangeGroups": [

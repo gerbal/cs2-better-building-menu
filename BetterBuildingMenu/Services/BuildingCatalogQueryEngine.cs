@@ -228,7 +228,7 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		public static string StripValue(BuildingCatalogEntry entry, string? axis) => axis?.Trim() switch
 		{
-			StripAxes.Development => entry.DevTreeBranch ?? string.Empty,
+			StripAxes.Development => entry.StripBranch ?? entry.DevTreeBranch ?? string.Empty,
 			StripAxes.AssetType => AssetTypeOf(entry),
 			_ => string.Empty,
 		};
@@ -242,7 +242,7 @@ namespace BetterBuildingMenu.Services
 		/// rather than by an axis threaded through every tab, since the value spaces do not overlap.
 		/// </remarks>
 		public static bool StripMatches(BuildingCatalogEntry entry, string tab) =>
-			string.Equals(entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
+			string.Equals(entry.StripBranch ?? entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(AssetTypeOf(entry), tab, StringComparison.OrdinalIgnoreCase)
 			|| DensityMatches(entry, tab);
 
@@ -397,7 +397,7 @@ namespace BetterBuildingMenu.Services
 			// Grouping first, so every member of a group is contiguous and paging
 			// cuts cleanly. Without this a group splits across a page boundary
 			// and its heading describes something other than what follows it.
-			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, BuildingCatalogGrouping.Find(query.GroupBy));
+			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, BuildingCatalogGrouping.Find(query.GroupBy, query.ThenBy));
 			// Relevance decides within a group while a search is active; the chosen sort breaks
 			// ties. Shortest name next: "clinic" ties Medical Clinic with Additional Clinic
 			// Center, and the plain one is nearly always what was meant.
@@ -438,7 +438,7 @@ namespace BetterBuildingMenu.Services
 				columns[i] = BuildingCatalogSortColumns.Find(candidates[i]);
 			}
 
-			var dimension = BuildingCatalogGrouping.Find(query.GroupBy);
+			var dimension = BuildingCatalogGrouping.Find(query.GroupBy, query.ThenBy);
 			// group key -> column -> first value seen there.
 			var seen = new Dictionary<string, object?[]>(StringComparer.Ordinal);
 			var reorderable = new bool[candidates.Count];

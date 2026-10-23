@@ -25,6 +25,8 @@ const GROUP_DIMENSION_PRESENTATION: Readonly<Record<GroupDimensionId, Omit<Group
   category: { label: "Asset type", depth: 2 },
   subCategory: { label: "Type", depth: 1 },
   role: { label: "Role", depth: 1 },
+  // What a parking building parks; offered only where parking is.
+  vehicle: { label: "Vehicle", depth: 1 },
   // Narrow on purpose, but so is Role outside a service menu, and the picker
   // is opened deliberately.
   schoolTier: { label: "School tier", depth: 1 },
@@ -78,6 +80,21 @@ export function groupDimensionsFor(
   }
 
   return GROUP_DIMENSIONS.filter((dimension) => offered.includes(dimension.id));
+}
+
+/**
+ * The second picker's choices: every dimension the first picker offers except the first
+ * choice, then None. The menu's default is one of them; C# says which is in force.
+ */
+export function thenByOptionsFor(
+  offeredIds: readonly string[] | null | undefined,
+  groupBy: string
+): readonly GroupDimensionId[] {
+  const dimensions = groupDimensionsFor(offeredIds)
+    .map((dimension) => dimension.id)
+    .filter((id) => id !== groupBy && id !== "none");
+
+  return [...dimensions, "none"];
 }
 
 /** What C# files an entry under when the dimension has no value for it. */
@@ -171,19 +188,6 @@ export function shouldShowHeading(nodes: readonly GroupNode<unknown>[]): boolean
   return nodes.length > 1;
 }
 
-/**
- * Whether one group of a headed level draws its own heading in the grid. A
- * sub-group of one building names nothing its card does not, so only a
- * top-level group heads a single building. The table heads them all.
- */
-export function headsGroup(node: GroupNode<unknown>, depth: number): boolean {
-  return depth === 0 || node.count > 1;
-}
-
-/** Whether a level draws any heading at all, once groups of one are left bare. */
-export function levelDrawsHeading(nodes: readonly GroupNode<unknown>[], depth: number): boolean {
-  return shouldShowHeading(nodes) && nodes.some((node) => headsGroup(node, depth));
-}
 
 /** One group of a row: the line it wrapped onto (its top) and its heading's height. */
 export interface GroupPlacement {
@@ -270,9 +274,8 @@ export function flattenGroupedRows<T extends GroupedEntry>(
     const withHeadings = shouldShowHeading(level);
 
     for (const node of level) {
-      // Every group of a headed level, a single building's included: unlike
-      // the grid's tiles, a row has no box of its own, so a bare one reads as
-      // part of the group headed above it. headsGroup is the grid's rule.
+      // Every group of a headed level, a single building's included: a bare
+      // row reads as part of the group headed above it. The grid's rule too.
       if (withHeadings) {
         out.push({
           kind: "heading",
