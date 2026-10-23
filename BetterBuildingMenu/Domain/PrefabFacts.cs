@@ -48,8 +48,8 @@ namespace BetterBuildingMenu.Domain
 
 			return (cars, bicycles) switch
 			{
-				(true, true) => new[] { BuildingCatalogGrouping.Cars, BuildingCatalogGrouping.Bicycles },
-				(true, false) => new[] { BuildingCatalogGrouping.Cars },
+				(true, true) => new[] { BuildingCatalogGrouping.Vehicles, BuildingCatalogGrouping.Bicycles },
+				(true, false) => new[] { BuildingCatalogGrouping.Vehicles },
 				(false, true) => new[] { BuildingCatalogGrouping.Bicycles },
 				_ => null,
 			};

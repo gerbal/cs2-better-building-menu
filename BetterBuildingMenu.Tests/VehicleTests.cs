@@ -22,24 +22,24 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AParkingBuildingSaysWhatItParks()
 		{
-			Assert.Equal(new[] { "Cars" }, Facts(RoadTypes.Car).ParkingVehicles);
+			Assert.Equal(new[] { "Vehicles" }, Facts(RoadTypes.Car).ParkingVehicles);
 			Assert.Equal(new[] { "Bicycles" }, Facts(RoadTypes.Bicycle).ParkingVehicles);
-			Assert.Equal(new[] { "Cars", "Bicycles" }, Facts(RoadTypes.Car | RoadTypes.Bicycle).ParkingVehicles);
+			Assert.Equal(new[] { "Vehicles", "Bicycles" }, Facts(RoadTypes.Car | RoadTypes.Bicycle).ParkingVehicles);
 			Assert.Null(Facts(RoadTypes.None).ParkingVehicles);
 		}
 
 		[Fact]
-		public void VehicleHeadsCarsThenBicyclesThenBoth()
+		public void VehicleHeadsVehiclesThenBicyclesThenBoth()
 		{
-			var car = TestEntries.Make(1, "Parking Lot") with { ParkingVehicles = new[] { "Cars" } };
+			var car = TestEntries.Make(1, "Parking Lot") with { ParkingVehicles = new[] { "Vehicles" } };
 			var bike = TestEntries.Make(2, "Bicycle Parking") with { ParkingVehicles = new[] { "Bicycles" } };
-			var both = TestEntries.Make(3, "Parking Hall") with { ParkingVehicles = new[] { "Cars", "Bicycles" } };
+			var both = TestEntries.Make(3, "Parking Hall") with { ParkingVehicles = new[] { "Vehicles", "Bicycles" } };
 			var road = TestEntries.Make(4, "Avenue");
 			var vehicle = BuildingCatalogGrouping.Find("vehicle");
 
-			Assert.Equal(new[] { "Cars" }, vehicle.Labels(car).Path);
+			Assert.Equal(new[] { "Vehicles" }, vehicle.Labels(car).Path);
 			Assert.Equal(new[] { "Bicycles" }, vehicle.Labels(bike).Path);
-			Assert.Equal(new[] { "Cars and bicycles" }, vehicle.Labels(both).Path);
+			Assert.Equal(new[] { "Vehicles and bicycles" }, vehicle.Labels(both).Path);
 			Assert.Equal(new[] { "Other" }, vehicle.Labels(road).Path);
 			Assert.Equal(
 				new[] { car, bike, both, road }.Select(e => e.Id),
@@ -50,7 +50,7 @@ namespace BetterBuildingMenu.Tests
 		public void VehicleFiltersOnAnyVehiclePicked()
 		{
 			Assert.True(BuildingCatalogFacetFields.TryFind("vehicle", out var facet));
-			var both = TestEntries.Make(3, "Parking Hall") with { ParkingVehicles = new[] { "Cars", "Bicycles" } };
+			var both = TestEntries.Make(3, "Parking Hall") with { ParkingVehicles = new[] { "Vehicles", "Bicycles" } };
 
 			Assert.True(facet!.Matches!(both, new[] { "Bicycles" }));
 			Assert.False(facet.Matches!(TestEntries.Make(4, "Avenue"), new[] { "Bicycles" }));

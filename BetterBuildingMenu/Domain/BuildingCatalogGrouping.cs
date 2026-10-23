@@ -44,7 +44,7 @@ namespace BetterBuildingMenu.Domain
 		public const string Progression = "progression";
 		public const string Development = "development";
 		public const string Vehicle = "vehicle";
-		public const string Cars = "Cars";
+		public const string Vehicles = "Vehicles";
 		public const string Bicycles = "Bicycles";
 
 		/// <summary>No grouping: what none, a blank id and no choice all mean.</summary>
@@ -275,13 +275,13 @@ namespace BetterBuildingMenu.Domain
 			!IsGrouped(groupBy) ? Ungrouped
 			: DescriptorIds.Find(Table, groupBy.Trim()) ?? Unrecognised;
 
-		/// <summary>Cars, then bicycles, then a building that parks both.</summary>
+		/// <summary>Vehicles, then bicycles, then a building that parks both.</summary>
 		private static string VehicleRank(string[] vehicles) =>
 			vehicles.Length > 1 ? "2" : string.Equals(vehicles[0], Bicycles, StringComparison.Ordinal) ? "1" : "0";
 
 		private static string VehicleLabel(string[]? vehicles) =>
 			vehicles is not { Length: > 0 } ? Other
-			: vehicles.Length > 1 ? "Cars and bicycles"
+			: vehicles.Length > 1 ? "Vehicles and bicycles"
 			: vehicles[0];
 
 		/// <summary>A subcategory's key: our declaration order (Roads before Bridges and Quays), not the
