@@ -68,6 +68,9 @@ namespace BetterBuildingMenu.Domain
 			&& string.Equals(entryCategory?.Trim(), NetworksCategory, StringComparison.OrdinalIgnoreCase)
 			&& !VanillaMenus.IsRoads(entryMenu)
 			&& !KeptByTheirMenu.Contains(entryMenu?.Trim() ?? string.Empty)
+			// A bridge-type net no menu offers is part of a building or a bridge (Fishing Pier,
+			// "LiftBridge03 Train Track"): the game never offers it alone, so Roads does not.
+			&& !(string.IsNullOrWhiteSpace(entryMenu) && BridgeNets.IsBridgeType(entrySubCategory))
 			&& IsGathered(entrySubCategory);
 
 		/// <summary>

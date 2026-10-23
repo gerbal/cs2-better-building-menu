@@ -27,7 +27,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 
 			var style = prefab.TryGet<Bridge>(out var bridge) ? bridge.m_BuildStyle : (BridgeBuildStyle?)null;
 			var uiCategory = prefab.TryGet<UIObject>(out var uiObject) ? uiObject.m_Group?.name : null;
-			var subCategory = BridgeNets.SubCategoryOf(style == BridgeBuildStyle.Quay, uiCategory);
+			var subCategory = BridgeNets.SubCategoryOf(style == BridgeBuildStyle.Quay, uiCategory, prefab.name);
 
 			prefabIndex = new PrefabIndex(prefab)
 			{
