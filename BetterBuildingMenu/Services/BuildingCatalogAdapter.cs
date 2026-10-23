@@ -622,7 +622,9 @@ namespace BetterBuildingMenu.Services
 
 			return entries.Select(entry =>
 			{
-				if (!string.Equals(entry.DevTreeBranch, root, StringComparison.Ordinal))
+				var isRoot = string.Equals(entry.DevTreeBranch, root, StringComparison.Ordinal);
+
+				if (!isRoot && !entry.DevTreeBranchIsForeign)
 				{
 					return entry;
 				}
@@ -633,7 +635,14 @@ namespace BetterBuildingMenu.Services
 				var category = NetworkMenuExtension.EffectiveCategory(entry, menu) ?? string.Empty;
 				var label = VanillaServiceLabel(category.Length > 0 ? category : menu ?? string.Empty);
 
-				return label.Length == 0 ? entry : entry with { DevTreeBranch = label };
+				if (label.Length == 0)
+				{
+					return entry;
+				}
+
+				// Another service's node keeps its name for Group by Development, and strips with
+				// the root's buildings beside it.
+				return isRoot ? entry with { DevTreeBranch = label } : entry with { StripBranch = label };
 			});
 		}
 
@@ -766,6 +775,7 @@ namespace BetterBuildingMenu.Services
 			{
 				SourceLabel = SourceLabelOf(prefab),
 				ParkingVehicles = prefab.ParkingVehicles,
+				DevTreeBranchIsForeign = prefab.DevTreeBranchIsForeign,
 			};
 		}
 

@@ -224,7 +224,8 @@ namespace BetterBuildingMenu.Systems
 			Entity asset,
 			IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required,
 			string? menu,
-			ProgressionIndex progression)
+			ProgressionIndex progression,
+			out bool foreign)
 		{
 			var service = EntityManager.TryGetComponent<ServiceObjectData>(asset, out var serviceObject)
 				&& _prefabSystem.TryGetPrefab<PrefabBase>(serviceObject.m_Service, out var servicePrefab)
@@ -234,7 +235,8 @@ namespace BetterBuildingMenu.Systems
 			return progression.BranchOf(
 				required.Select(pair => (pair.Requirement.Index, (pair.Flags & UnlockFlags.RequireAll) != 0)),
 				service,
-				menu);
+				menu,
+				out foreign);
 		}
 
 		/// <summary>An asset's transitive unlock requirements, or none when nothing gates it.</summary>

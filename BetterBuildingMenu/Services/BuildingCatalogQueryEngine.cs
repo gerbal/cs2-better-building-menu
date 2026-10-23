@@ -228,7 +228,7 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		public static string StripValue(BuildingCatalogEntry entry, string? axis) => axis?.Trim() switch
 		{
-			StripAxes.Development => entry.DevTreeBranch ?? string.Empty,
+			StripAxes.Development => entry.StripBranch ?? entry.DevTreeBranch ?? string.Empty,
 			StripAxes.AssetType => AssetTypeOf(entry),
 			_ => string.Empty,
 		};
@@ -242,7 +242,7 @@ namespace BetterBuildingMenu.Services
 		/// rather than by an axis threaded through every tab, since the value spaces do not overlap.
 		/// </remarks>
 		public static bool StripMatches(BuildingCatalogEntry entry, string tab) =>
-			string.Equals(entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
+			string.Equals(entry.StripBranch ?? entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(AssetTypeOf(entry), tab, StringComparison.OrdinalIgnoreCase)
 			|| DensityMatches(entry, tab);
 

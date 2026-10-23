@@ -186,11 +186,13 @@ namespace BetterBuildingMenu.Services
 				return string.Empty;
 			}
 
+			// The strip's branch, so a building another service's tree unlocks does not split its
+			// category on its own.
 			return MenuSet
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty)
 				.Where(group => group.Key.Length > 0
-					&& group.Select(entry => entry.DevTreeBranch).Distinct(StringComparer.Ordinal).Count() > 1)
+					&& group.Select(entry => BuildingCatalogQueryEngine.StripValue(entry, StripAxes.Development)).Distinct(StringComparer.Ordinal).Count() > 1)
 				.OrderByDescending(group => group.Count())
 				.ThenBy(group => group.Key, StringComparer.Ordinal)
 				.Select(group => group.Key)

@@ -227,6 +227,14 @@ namespace BetterBuildingMenu.Domain
 		/// stays <see cref="DlcId"/>.</summary>
 		public string? SourceLabel { get; init; }
 
+		/// <summary>Whether its dev-tree branch is a node in another service's tree.</summary>
+		public bool DevTreeBranchIsForeign { get; init; }
+
+		/// <summary>The branch the strip files it under when that is not its own: a building another
+		/// service's tree unlocks sits with its category's root buildings, not in a tab of one. Null
+		/// otherwise; Group by Development reads <see cref="DevTreeBranch"/> either way.</summary>
+		public string? StripBranch { get; init; }
+
 		/// <summary>What a parking building parks: Vehicles, Bicycles, or both; null otherwise.</summary>
 		public string[]? ParkingVehicles { get; init; }
 
