@@ -227,6 +227,9 @@ namespace BetterBuildingMenu.Domain
 		/// stays <see cref="DlcId"/>.</summary>
 		public string? SourceLabel { get; init; }
 
+		/// <summary>What a parking building parks: Cars, Bicycles, or both; null otherwise.</summary>
+		public string[]? ParkingVehicles { get; init; }
+
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);

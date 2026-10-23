@@ -64,6 +64,7 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
 Changes
 * Transportation: each mode is split into tracks, stations, stops, depots and cargo stations, and Role is offered as a filter and as a grouping.
 * Search finds each word you type in any order, and ignores accents.
+* Parking can be grouped and filtered by Vehicle: cars, bicycles, or both. The game has no separate motorcycle parking.
 * Enter arms the best match of everything the search found, not only the rows already shown.
 * Menus open faster, and switching between menus costs no more than reopening one.
 * The Group by row has a second picker for the level under each group, such as Progression under Category. Each menu starts on its usual split and remembers your pick.

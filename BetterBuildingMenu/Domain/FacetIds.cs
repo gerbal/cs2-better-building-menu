@@ -13,6 +13,7 @@ namespace BetterBuildingMenu.Domain
 		public const string Content = "content";
 		public const string Theme = "theme";
 		public const string Placement = "placement";
+		public const string Vehicle = "vehicle";
 
 		/// <summary>Every facet the adapter can emit, in the order it emits them.</summary>
 		public static readonly IReadOnlyList<string> All = BuildingCatalogFacetFields.Published.Select(facet => facet.Id).ToArray();

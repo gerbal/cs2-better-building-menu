@@ -114,6 +114,13 @@ namespace BetterBuildingMenu.Domain
 			(entry, selection) => MatchesAny(entry.PlacementFlags, selection),
 			values: entry => entry.PlacementFlags);
 
+		/// <summary>What a parking building parks; the game has no motorcycle type.</summary>
+		public static readonly BuildingCatalogFacetField Vehicle = new(
+			FacetIds.Vehicle, "Vehicle",
+			query => query.ParkingVehicles, (query, selection) => query with { ParkingVehicles = selection },
+			(entry, selection) => entry.ParkingVehicles is { } vehicles && vehicles.Any(vehicle => MatchesAny(vehicle, selection)),
+			values: entry => entry.ParkingVehicles);
+
 		/// <summary>Zone density by enum name. Not published: the density tiers are the top bar's tabs.</summary>
 		public static readonly BuildingCatalogFacetField Zone = new(
 			"zone", label: null,
@@ -124,7 +131,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>Every facet, the ones the adapter publishes first in its order.</summary>
 		public static readonly IReadOnlyList<BuildingCatalogFacetField> All = new[]
 		{
-			BuildingType, Provenance, Availability, Content, Theme, Placement, Zone,
+			BuildingType, Provenance, Availability, Content, Theme, Placement, Vehicle, Zone,
 		};
 
 		/// <summary>The facets the adapter publishes, in the order it emits them.</summary>

@@ -316,6 +316,8 @@ namespace BetterBuildingMenu.Services
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
 			AddValueGroup(groups, BuildingCatalogFacetFields.Placement, source, query, FormatFlagLabel);
+			// Only parking answers, so the group shows only where cars and bicycles both park.
+			AddValueGroup(groups, BuildingCatalogFacetFields.Vehicle, source, query);
 			// Upgrades are not a facet: most belong to a single building, so a filter by
 			// upgrade narrows to that building, which its hover card and the extension
 			// picker already show. Density is not a facet either: every type+density tier is a category with
@@ -763,6 +765,7 @@ namespace BetterBuildingMenu.Services
 				NoisePollution: prefab.NoisePollution)
 			{
 				SourceLabel = SourceLabelOf(prefab),
+				ParkingVehicles = prefab.ParkingVehicles,
 			};
 		}
 

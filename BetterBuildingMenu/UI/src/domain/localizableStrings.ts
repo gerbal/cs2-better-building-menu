@@ -53,6 +53,8 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("GroupBy_category"), english: "Asset type", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_subCategory"), english: "Type", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_role"), english: "Role", source: "buildingGroups", plumbed: true },
+  // What a parking building parks: cars, bicycles, or both.
+  { key: key("GroupBy_vehicle"), english: "Vehicle", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_schoolTier"), english: "School tier", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_progression"), english: "Progression", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_development"), english: "Development", source: "buildingGroups", plumbed: true },

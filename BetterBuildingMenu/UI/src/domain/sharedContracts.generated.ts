@@ -26,6 +26,7 @@ export const GROUP_DIMENSION_IDS = [
   "category",
   "subCategory",
   "role",
+  "vehicle",
   "schoolTier",
   "progression",
   "development",
@@ -40,7 +41,7 @@ export const GROUP_DIMENSION_IDS = [
 export type GroupDimensionId = (typeof GROUP_DIMENSION_IDS)[number];
 
 /** FacetIds.All: every filter dimension the backend can emit. */
-export type FacetId = "buildingType" | "provenance" | "availability" | "content" | "theme" | "placement";
+export type FacetId = "buildingType" | "provenance" | "availability" | "content" | "theme" | "placement" | "vehicle";
 
 /** BuildingCatalogFacetSelection.Availability.All: the states every asset is in one of. */
 export type AvailabilityOption = "Unlocked" | "Locked" | "AlreadyBuilt";

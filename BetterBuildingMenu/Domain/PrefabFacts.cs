@@ -40,6 +40,21 @@ namespace BetterBuildingMenu.Domain
 				or PrefabCategory.Props;
 
 		/// <summary>Sets an entry's figures and adds its facts from what its prefab holds.</summary>
+		/// <summary>The vehicles a parking facility's road types park, in the order Vehicle heads them.</summary>
+		public static string[]? ParkingVehiclesOf(Game.Net.RoadTypes roadTypes)
+		{
+			var cars = (roadTypes & Game.Net.RoadTypes.Car) != 0;
+			var bicycles = (roadTypes & Game.Net.RoadTypes.Bicycle) != 0;
+
+			return (cars, bicycles) switch
+			{
+				(true, true) => new[] { BuildingCatalogGrouping.Cars, BuildingCatalogGrouping.Bicycles },
+				(true, false) => new[] { BuildingCatalogGrouping.Cars },
+				(false, true) => new[] { BuildingCatalogGrouping.Bicycles },
+				_ => null,
+			};
+		}
+
 		public static void Apply(PrefabSnapshot snapshot, PrefabIndex prefabIndex)
 		{
 			if (snapshot.PlaceableObjectData is { } placeableData)
@@ -538,6 +553,7 @@ namespace BetterBuildingMenu.Domain
 			if (snapshot.ParkingFacilityData is { } parkingData)
 			{
 				ComfortFact(prefabIndex, parkingData.m_ComfortFactor);
+				prefabIndex.ParkingVehicles = ParkingVehiclesOf(parkingData.m_RoadTypes);
 			}
 			if (snapshot.TransportStopData is { } transportStopData)
 			{

@@ -139,6 +139,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_category]": "Asset type",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_subCategory]": "Type",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_role]": "Role",
+  "Tooltip.LABEL[BetterBuildingMenu.GroupBy_vehicle]": "Vehicle",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_schoolTier]": "School tier",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_progression]": "Progression",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_development]": "Development",

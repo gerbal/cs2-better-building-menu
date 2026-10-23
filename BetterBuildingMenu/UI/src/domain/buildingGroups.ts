@@ -25,6 +25,8 @@ const GROUP_DIMENSION_PRESENTATION: Readonly<Record<GroupDimensionId, Omit<Group
   category: { label: "Asset type", depth: 2 },
   subCategory: { label: "Type", depth: 1 },
   role: { label: "Role", depth: 1 },
+  // What a parking building parks; offered only where parking is.
+  vehicle: { label: "Vehicle", depth: 1 },
   // Narrow on purpose, but so is Role outside a service menu, and the picker
   // is opened deliberately.
   schoolTier: { label: "School tier", depth: 1 },

@@ -49,9 +49,11 @@ namespace BetterBuildingMenu.Domain
 		// SchoolData.m_EducationLevel is 1-based, so 0 is a real value (a capacity
 		// upgrade with no tier) and cannot be the sentinel.
 		int SchoolTier = -1,
-		// The level under GroupBy's groups, picked beside it: empty for Auto (GroupBy's own
-		// second level, if it has one), none for one level, else a dimension id.
-		string ThenBy = "")
+		// The level under GroupBy's groups, picked beside it: empty for the menu's default, none
+		// for one level, else a dimension id.
+		string ThenBy = "",
+		// What a parking building parks, as the Vehicle facet picks it.
+		IReadOnlyList<string>? ParkingVehicles = null)
 	{
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 

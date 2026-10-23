@@ -215,6 +215,10 @@ namespace BetterBuildingMenu.Domain
 
 		public bool HasParking { get; set; }
 
+		/// <summary>What a parking building parks, from ParkingFacility's road types: Cars, Bicycles,
+		/// or both; null for anything else. The game has no motorcycle type.</summary>
+		public string[]? ParkingVehicles { get; set; }
+
 		/// <summary>
 		/// Parking bays, matching what the building has once placed, its sub-objects' included:
 		/// PrefabIndexingSystem.GetParkingSlots sums <see cref="Domain.ParkingSlots.Own"/> over the

@@ -43,6 +43,9 @@ namespace BetterBuildingMenu.Domain
 		public const string Cost = "cost";
 		public const string Progression = "progression";
 		public const string Development = "development";
+		public const string Vehicle = "vehicle";
+		public const string Cars = "Cars";
+		public const string Bicycles = "Bicycles";
 
 		/// <summary>No grouping: what none, a blank id and no choice all mean.</summary>
 		private static readonly BuildingCatalogGroupDimension Ungrouped = new(None, NoKey, NoKey, NoLabels, isGrouped: false);
@@ -92,6 +95,13 @@ namespace BetterBuildingMenu.Domain
 					IsTransitMenu(entry.UiMenu) ? TransitTierLabel(entry)
 					: entry.BuildingType?.Trim() is { Length: > 0 } role ? BuildingCatalogLabels.ForRole(role)
 					: Other)),
+			// What a parking building parks. Only parking answers, so it is offered only where
+			// parking is.
+			new(
+				Vehicle,
+				entry => entry.ParkingVehicles is { Length: > 0 } vehicles ? VehicleRank(vehicles) : UnnamedKey,
+				NoKey,
+				(entry, _, _) => Heading(VehicleLabel(entry.ParkingVehicles))),
 			// Directly under Role, because it is the level below it: Role answers
 			// "school", School tier answers "which one".
 			new(
@@ -264,6 +274,15 @@ namespace BetterBuildingMenu.Domain
 		public static BuildingCatalogGroupDimension Find(string? groupBy) =>
 			!IsGrouped(groupBy) ? Ungrouped
 			: DescriptorIds.Find(Table, groupBy.Trim()) ?? Unrecognised;
+
+		/// <summary>Cars, then bicycles, then a building that parks both.</summary>
+		private static string VehicleRank(string[] vehicles) =>
+			vehicles.Length > 1 ? "2" : string.Equals(vehicles[0], Bicycles, StringComparison.Ordinal) ? "1" : "0";
+
+		private static string VehicleLabel(string[]? vehicles) =>
+			vehicles is not { Length: > 0 } ? Other
+			: vehicles.Length > 1 ? "Cars and bicycles"
+			: vehicles[0];
 
 		/// <summary>A subcategory's key: our declaration order (Roads before Bridges and Quays), not the
 		/// alphabet; a subcategory that is none of ours after them, by name.</summary>
