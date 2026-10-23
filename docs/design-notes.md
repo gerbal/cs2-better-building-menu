@@ -419,16 +419,19 @@ Stations, Stops, Depots, Cargo Stations, then the lines and anything else by sub
   stop with no role with the stops. Stations, Depots and Cargo Stations are our English, as the
   density tiers are (see "Labels in the game's words"); a way and Stops read the subcategory's
   label.
-- **The second grouping is the player's, per menu.** Beside Group by, a second picker sets the level
-  under its groups (`BuildingCatalogQuery.ThenBy`, kept per menu in `AssetMenuState.ThenByByMenu`;
-  `BuildingCatalogGrouping.Find(groupBy, thenBy)`). It lists each dimension once, plus None. C#
-  resolves it (`EffectiveThenBy`): the menu's pick where the menu offers it and it is not the first
-  level, else the menu's default (`DefaultThenBy`), the tier kind (Density, Role, Development,
-  Progression) whose sub-headings most of the menu's buildings draw under, counted as the grid
-  draws them, so Roads defaults to Development from Grand Bridge; None where none would draw. In
-  transit Role is the transit split, tracks headed by their way. Parking's lone-branch fold runs
-  under Category whatever is beneath. Every group of a headed level heads, one building's included:
-  left bare, Vesuvius Place read as part of the milestone before it.
+- **The groupings are the player's, per tab.** Beside Group by, a second picker sets the level
+  under its groups (`BuildingCatalogQuery.ThenBy`; `BuildingCatalogGrouping.Find(groupBy, thenBy)`).
+  Both picks are kept per tab in `AssetMenuState.Picks` (a menu's All, each category, strip tab and
+  school tier), so a grouping only changes where the player changed it (owner, 2026-10-22); Reset
+  menu clears every tab of the menu. The second picker lists each dimension once, plus None. C#
+  resolves it (`EffectiveThenBy`): the tab's pick where the menu offers it and it is not the first
+  level, else the tab's default (`CatalogView.MenuDefaultThenBy`), judged on what the tab shows:
+  Roads reads by Type, or by Vehicle in a tab Vehicle splits (Parking); every other menu by the tier
+  kind (Density, Role, Development, Progression) whose sub-headings most of its buildings draw
+  under, counted as the grid draws them; None where none would draw. In transit Role is the transit
+  split, tracks headed by their way. Parking's lone-branch fold runs under Category whatever is
+  beneath. Every group of a headed level heads, one building's included: left bare, Vesuvius Place
+  read as part of the milestone before it.
 
 ## Opening a menu
 

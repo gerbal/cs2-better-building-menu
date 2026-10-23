@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BetterBuildingMenu.Domain
 {
@@ -59,39 +60,39 @@ namespace BetterBuildingMenu.Domain
 				return ClearMenuScope();
 			}
 
-			return this with
-			{
-				Query = ResetWindow(Query with { UiMenu = trimmed, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null, ThenBy = ThenByFor(trimmed) }),
-			};
+			return InScope(Query with { UiMenu = trimmed, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null });
 		}
 
 		/// <summary>No menu: the whole catalog, with category, tab and tier forgotten.</summary>
-		public AssetMenuState ClearMenuScope() => this with
-		{
-			Query = ResetWindow(Query with { UiMenu = string.Empty, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null, ThenBy = ThenByFor(string.Empty) }),
-		};
+		public AssetMenuState ClearMenuScope() =>
+			InScope(Query with { UiMenu = string.Empty, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null });
 
 		/// <summary>One of the menu's categories. Excludes a strip tab and a school tier.</summary>
-		public AssetMenuState SelectCategory(string? id) => this with
-		{
-			Query = ResetWindow(Query with { UiCategory = id ?? string.Empty, SchoolTier = -1, StripTabs = null }),
-		};
+		public AssetMenuState SelectCategory(string? id) =>
+			InScope(Query with { UiCategory = id ?? string.Empty, SchoolTier = -1, StripTabs = null });
 
 		/// <summary>One strip tab. Excludes a category; blank clears the tabs.</summary>
-		public AssetMenuState SelectStripTab(string? tab) => this with
-		{
-			Query = ResetWindow(Query with
+		public AssetMenuState SelectStripTab(string? tab) =>
+			InScope(Query with
 			{
 				UiCategory = string.Empty,
 				StripTabs = tab is { Length: > 0 } ? new[] { tab } : null,
-			}),
-		};
+			});
 
 		/// <summary>One school tier (1–4); anything below zero is "all". Excludes a category.</summary>
-		public AssetMenuState SelectSchoolTier(int tier) => this with
+		public AssetMenuState SelectSchoolTier(int tier) =>
+			InScope(Query with { UiCategory = string.Empty, SchoolTier = tier < 0 ? -1 : tier });
+
+		/// <summary>The query moved to another tab, carrying the grouping the player left there.</summary>
+		private AssetMenuState InScope(BuildingCatalogQuery scoped)
 		{
-			Query = ResetWindow(Query with { UiCategory = string.Empty, SchoolTier = tier < 0 ? -1 : tier }),
-		};
+			var pick = Picks.TryGetValue(TabKey(scoped), out var kept) ? kept : default;
+
+			return this with
+			{
+				Query = ResetWindow(scoped with { GroupBy = pick.GroupBy ?? string.Empty, ThenBy = pick.ThenBy ?? string.Empty }),
+			};
+		}
 
 		// --- Order, grouping, window ------------------------------------------
 
@@ -108,56 +109,67 @@ namespace BetterBuildingMenu.Domain
 		public AssetMenuState SetDescending(bool descending) =>
 			Query.Descending == descending ? this : this with { Query = ResetWindow(Query with { Descending = descending }) };
 
-		/// <summary>The player's grouping choice; empty means the menu's default.</summary>
+		/// <summary>The player's grouping choice for this tab; empty means the tab's default.</summary>
 		public AssetMenuState SetGroupBy(string? groupBy)
 		{
 			var next = (groupBy ?? string.Empty).Trim();
 
 			return string.Equals(Query.GroupBy, next, StringComparison.Ordinal)
 				? this
-				: this with { Query = ResetWindow(Query with { GroupBy = next }) };
+				: Kept(Query with { GroupBy = next });
 		}
 
-		/// <summary>The player's second grouping choice for this menu; empty means the menu's default.
-		/// Kept per menu (<see cref="ThenByByMenu"/>), so each menu opens on its own.</summary>
+		/// <summary>The player's second grouping choice for this tab; empty means the tab's default.</summary>
 		public AssetMenuState SetThenBy(string? thenBy)
 		{
 			var next = (thenBy ?? string.Empty).Trim();
 
 			return string.Equals(Query.ThenBy, next, StringComparison.Ordinal)
 				? this
-				: this with
-				{
-					Query = ResetWindow(Query with { ThenBy = next }),
-					ThenByByMenu = WithThenBy(ThenByByMenu, Query.UiMenu, next),
-				};
+				: Kept(Query with { ThenBy = next });
 		}
 
-		/// <summary>Each menu's second grouping pick, by menu name. A menu with none opens on its default.</summary>
-		public IReadOnlyDictionary<string, string> ThenByByMenu { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+		/// <summary>One tab's two grouping picks; empty for its default.</summary>
+		public readonly record struct GroupingPick(string? GroupBy, string? ThenBy);
 
-		private static IReadOnlyDictionary<string, string> WithThenBy(IReadOnlyDictionary<string, string> picks, string menu, string thenBy)
+		/// <summary>
+		/// Each tab's grouping picks, by <see cref="TabKey"/>: a menu's All, each category, strip tab
+		/// and school tier keeps its own, so a grouping only changes where the player changed it
+		/// (owner, 2026-10-22). A tab with none opens on its defaults.
+		/// </summary>
+		public IReadOnlyDictionary<string, GroupingPick> Picks { get; init; } = new Dictionary<string, GroupingPick>(StringComparer.Ordinal);
+
+		/// <summary>The query with a new pick, kept for its tab.</summary>
+		private AssetMenuState Kept(BuildingCatalogQuery query)
 		{
-			var next = new Dictionary<string, string>(picks.Count + 1, StringComparer.Ordinal);
+			var next = new Dictionary<string, GroupingPick>(Picks.Count + 1, StringComparer.Ordinal);
 
-			foreach (var pick in picks)
+			foreach (var pick in Picks)
 			{
 				next[pick.Key] = pick.Value;
 			}
 
-			if (thenBy.Length == 0)
+			var key = TabKey(query);
+
+			if (string.IsNullOrEmpty(query.GroupBy) && string.IsNullOrEmpty(query.ThenBy))
 			{
-				next.Remove(menu);
+				next.Remove(key);
 			}
 			else
 			{
-				next[menu] = thenBy;
+				next[key] = new GroupingPick(query.GroupBy, query.ThenBy);
 			}
 
-			return next;
+			return this with { Query = ResetWindow(query), Picks = next };
 		}
 
-		private string ThenByFor(string menu) => ThenByByMenu.TryGetValue(menu, out var pick) ? pick : string.Empty;
+		/// <summary>Which tab a query shows: its menu, then its category, strip tab or school tier.</summary>
+		private static string TabKey(BuildingCatalogQuery query) =>
+			query.UiMenu + TabSeparator + query.UiCategory
+			+ TabSeparator + (query.StripTabs is { Count: > 0 } tabs ? string.Join(",", tabs) : string.Empty)
+			+ TabSeparator + query.SchoolTier.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+		private const string TabSeparator = "\u001f";
 
 		/// <summary>One more chunk, up to the ceiling. At the ceiling, nothing.</summary>
 		public AssetMenuState LoadMore() => LoadMoreTo(Query.Limit + BuildingCatalogQuery.WindowStep);
@@ -226,7 +238,10 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		public AssetMenuState ResetMenu() => this with
 		{
-			ThenByByMenu = WithThenBy(ThenByByMenu, Query.UiMenu, string.Empty),
+			// Every tab of this menu forgets its picks; other menus keep theirs.
+			Picks = Picks
+				.Where(pick => !pick.Key.StartsWith(Query.UiMenu + TabSeparator, StringComparison.Ordinal))
+				.ToDictionary(pick => pick.Key, pick => pick.Value, StringComparer.Ordinal),
 			SearchText = string.Empty,
 			Query = ResetWindow(BuildingCatalogMetricRange.Clear(BuildingCatalogFacetSelection.Clear(Query)) with
 			{

@@ -13,7 +13,7 @@
           "Parking can be grouped and filtered by Vehicle: vehicles, bicycles, or both. Roads' Parking tab is split that way by default.",
           "Enter arms the best match of everything the search found, not only the rows already shown.",
           "Menus open faster, and switching between menus costs no more than reopening one.",
-          "The Group by row has a second picker for the level under each group, such as Progression under Category. Each menu starts on its usual split and remembers your pick."
+          "The Group by row has a second picker for the level under each group, such as Progression under Category. Each tab starts on its usual split and keeps the grouping you pick there."
         ]
       },
       {

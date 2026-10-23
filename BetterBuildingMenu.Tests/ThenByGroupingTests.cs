@@ -141,24 +141,35 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void EachMenuRemembersItsOwnSecondPick()
+		public void EachTabRemembersItsOwnPicks()
 		{
-			var roads = AssetMenuState.Initial.SelectMenu("Roads").SetThenBy(" theme ");
-			Assert.Equal("theme", roads.Query.ThenBy);
-			Assert.Same(roads, roads.SetThenBy("theme"));
+			// Per tab, so a grouping only changes where the player changed it (owner, 2026-10-22).
+			var parking = AssetMenuState.Initial.SelectMenu("Roads").SelectCategory("RoadsParking").SetGroupBy("theme").SetThenBy(" role ");
+			Assert.Equal("theme", parking.Query.GroupBy);
+			Assert.Equal("role", parking.Query.ThenBy);
+			Assert.Same(parking, parking.SetThenBy("role"));
 
-			var zones = roads.SelectMenu("Zones");
+			// Another tab of the same menu, and the menu's All, keep their own: none here.
+			var small = parking.SelectCategory("RoadsSmall");
+			Assert.Equal(string.Empty, small.Query.GroupBy);
+			Assert.Equal(string.Empty, small.Query.ThenBy);
+			Assert.Equal(string.Empty, parking.SelectCategory("").Query.ThenBy);
+
+			// Another menu too; and coming back finds the tab as it was left.
+			var zones = small.SetThenBy("progression").SelectMenu("Zones");
 			Assert.Equal(string.Empty, zones.Query.ThenBy);
+			var back = zones.SelectMenu("Roads").SelectCategory("RoadsParking");
+			Assert.Equal("theme", back.Query.GroupBy);
+			Assert.Equal("role", back.Query.ThenBy);
+			Assert.Equal("progression", back.SelectCategory("RoadsSmall").Query.ThenBy);
 
-			var back = zones.SetThenBy("progression").SelectMenu("Roads");
-			Assert.Equal("theme", back.Query.ThenBy);
-			Assert.Equal("progression", back.SelectMenu("Zones").Query.ThenBy);
-
-			// The first pick moving does not drop it; Reset menu forgets this menu's only.
-			Assert.Equal("theme", back.SetGroupBy("theme").Query.ThenBy);
-			var reset = back.ResetMenu();
-			Assert.Equal(string.Empty, reset.Query.ThenBy);
-			Assert.Equal("progression", reset.SelectMenu("Zones").Query.ThenBy);
+			// Reset menu forgets every tab of this menu, and no other menu's.
+			var elsewhere = back.SelectMenu("Zones").SetThenBy("density").SelectMenu("Roads").SelectCategory("RoadsParking");
+			var reset = elsewhere.ResetMenu();
+			Assert.Equal(string.Empty, reset.Query.GroupBy);
+			Assert.Equal(string.Empty, reset.SelectCategory("RoadsParking").Query.ThenBy);
+			Assert.Equal(string.Empty, reset.SelectCategory("RoadsSmall").Query.ThenBy);
+			Assert.Equal("density", reset.SelectMenu("Zones").Query.ThenBy);
 		}
 
 		[Fact]
