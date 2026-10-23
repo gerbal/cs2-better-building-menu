@@ -186,5 +186,27 @@ namespace BetterBuildingMenu.Tests
 			var single = new BetterBuildingMenu.Services.CatalogView(new[] { road, road with { Id = 32, DevTreeBranch = "Grand Bridge" } }, new BuildingCatalogQuery(UiMenu: "Roads", GroupBy: "menuCategory"));
 			Assert.NotEqual("subCategory", single.EffectiveThenBy);
 		}
+
+		[Fact]
+		public void RoadsParkingTabDefaultsToVehicle()
+		{
+			var lot = TestEntries.Make(40, "Small Parking Lot", category: "Networks", subCategory: "Networks_Roads") with
+			{
+				UiMenu = "Roads", UiCategory = "RoadsParking", ParkingVehicles = new[] { "Vehicles" },
+			};
+			var bikes = lot with { Id = 41, Name = "Bicycle Parking Hall", ParkingVehicles = new[] { "Bicycles" } };
+			var stand = lot with { Id = 42, Name = "Bicycle Stand", SubCategory = "Networks_Stops", ParkingVehicles = new[] { "Bicycles" } };
+			var road = TestEntries.Make(43, "Avenue", category: "Networks", subCategory: "Networks_Roads") with { UiMenu = "Roads", UiCategory = "RoadsMediumRoads" };
+			var bridge = road with { Id = 44, SubCategory = "Networks_Bridges" };
+			var set = new[] { lot, bikes, stand, road, bridge };
+
+			// The Parking tab open: what each building parks is the split there.
+			var parking = new BetterBuildingMenu.Services.CatalogView(set, new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsParking", GroupBy: "menuCategory"));
+			Assert.Equal("vehicle", parking.EffectiveThenBy);
+
+			// All of Roads, or another tab: Type, as before.
+			Assert.Equal("subCategory", new BetterBuildingMenu.Services.CatalogView(set, new BuildingCatalogQuery(UiMenu: "Roads", GroupBy: "menuCategory")).EffectiveThenBy);
+			Assert.Equal("subCategory", new BetterBuildingMenu.Services.CatalogView(set, new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsMediumRoads", GroupBy: "menuCategory")).EffectiveThenBy);
+		}
 	}
 }

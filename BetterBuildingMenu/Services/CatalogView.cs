@@ -69,19 +69,30 @@ namespace BetterBuildingMenu.Services
 			MenuDefaultThenBy());
 
 		/// <summary>The menu's own second level. Roads reads by Type (roads, then bridges, quays, paths
-		/// and the rest it gathers) wherever that splits anything; every other menu by the kind most of
-		/// its buildings draw under.</summary>
+		/// and the rest it gathers) wherever that splits anything, and by Vehicle in a tab Vehicle
+		/// splits (Parking); every other menu by the kind most of its buildings draw under.</summary>
 		private string MenuDefaultThenBy()
 		{
 			var scope = string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
 				? BuildingCatalogQueryEngine.InScope(RoadsLoneBranches.Fold(MenuSet, _query.UiMenu), _query).ToArray()
 				: ViewSet;
 
-			if (VanillaMenus.IsRoads(_query.UiMenu)
-				&& !string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, StringComparison.OrdinalIgnoreCase)
-				&& BuildingCatalogGrouping.Draws(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, scope, _milestoneNames))
+			if (VanillaMenus.IsRoads(_query.UiMenu))
 			{
-				return BuildingCatalogGrouping.SubCategory;
+				// One tab open whose buildings Vehicle splits (Parking): what each parks is the
+				// split there, where Type would read Roads and Transit Stops (owner, 2026-10-22).
+				if (!string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.Vehicle, StringComparison.OrdinalIgnoreCase)
+					&& scope.Select(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty).Distinct(StringComparer.Ordinal).Count() == 1
+					&& BuildingCatalogGrouping.Draws(EffectiveGroupBy, BuildingCatalogGrouping.Vehicle, scope, _milestoneNames))
+				{
+					return BuildingCatalogGrouping.Vehicle;
+				}
+
+				if (!string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, StringComparison.OrdinalIgnoreCase)
+					&& BuildingCatalogGrouping.Draws(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, scope, _milestoneNames))
+				{
+					return BuildingCatalogGrouping.SubCategory;
+				}
 			}
 
 			return BuildingCatalogGrouping.DefaultThenBy(EffectiveGroupBy, scope, _milestoneNames);
