@@ -104,14 +104,15 @@ namespace BetterBuildingMenu.Domain
 				: name;
 		}
 
-		/// <summary>The subcategory whose tab a gathered network shares: its own, except a pier, a
-		/// walkway on stilts, which files with the paths. It keeps its own subcategory, so a Type
-		/// grouping still tells it apart there.</summary>
+		/// <summary>The subcategory whose tab a gathered network shares: its own, except a pier (a
+		/// walkway on stilts) and a bike or pedestrian bridge, which file with the paths. Each keeps
+		/// its own subcategory, so a Type grouping still tells them apart there.</summary>
 		private static string TabOf(string? subCategory)
 		{
 			var name = subCategory?.Trim() ?? string.Empty;
 
 			return string.Equals(name, nameof(PrefabSubCategory.Networks_Piers), StringComparison.OrdinalIgnoreCase)
+				|| string.Equals(name, nameof(PrefabSubCategory.Networks_PathBridges), StringComparison.OrdinalIgnoreCase)
 				? nameof(PrefabSubCategory.Networks_Paths)
 				: name;
 		}

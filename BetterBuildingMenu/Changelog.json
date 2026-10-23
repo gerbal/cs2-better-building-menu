@@ -29,7 +29,7 @@
           "In Table, a building alone in its group gets its own heading, so it is not read as part of the group above.",
           "Road Zones and Sound Barrier stay in the groups that unlock them.",
           "Grouped by Source, a DLC's buildings are headed by its name, not a number.",
-          "Roads: quays have their own tab and piers sit with the paths, instead of under Bridges; the hydroelectric dam stays in Electricity. Each Roads tab is split by type by default, roads first.",
+          "Roads: quays have their own tab, and piers and bike and pedestrian bridges sit with the paths, instead of under Bridges; the hydroelectric dam stays in Electricity. Each Roads tab is split by type by default, roads first.",
           "A group of one building has its heading again, so it no longer reads as part of the group before it."
         ]
       }

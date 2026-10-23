@@ -98,6 +98,9 @@ namespace BetterBuildingMenu.Domain.Enums
 		Networks_Quays,
 		[CategoryIcon("Media/Game/Icons/LeisurePier01Large.svg")]
 		Networks_Piers,
+		// Bike and pedestrian bridges: pathways the game raises with its Bridge component.
+		[CategoryIcon("Media/Game/Icons/ArcBikeBridge.svg")]
+		Networks_PathBridges,
 
 		[Obsolete("Use PrefabCategory", true)]
 		Trees = PrefabCategory.Trees,
