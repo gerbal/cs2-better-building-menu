@@ -36,6 +36,9 @@ const SORT_LABELS: Readonly<Record<SortColumn, string>> = {
   LotDepth: "Lot depth",
   BuildingLevel: "Level",
   HasParking: "Parking",
+  // What a park gives, as its hover card says it.
+  Recreation: "Recreation",
+  Attractiveness: "Attractiveness",
 };
 
 /** In C#'s order, Default first: the one the asset menu opens on, and the fallback below. */

@@ -16,6 +16,8 @@ export const SORT_COLUMNS = [
   "LotDepth",
   "BuildingLevel",
   "HasParking",
+  "Recreation",
+  "Attractiveness",
 ] as const;
 
 export type SortColumn = (typeof SORT_COLUMNS)[number];

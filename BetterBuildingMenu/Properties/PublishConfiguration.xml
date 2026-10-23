@@ -64,6 +64,7 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
 Changes
 * Transportation: each mode is split into tracks, stations, stops, depots and cargo stations, and Role is offered as a filter and as a grouping.
 * Search finds each word you type in any order, and ignores accents.
+* Parks &amp; Recreation can be sorted by Recreation and by Attractiveness.
 * Parking can be grouped and filtered by Vehicle: cars, bicycles, or both. The game has no separate motorcycle parking.
 * Enter arms the best match of everything the search found, not only the rows already shown.
 * Menus open faster, and switching between menus costs no more than reopening one.
