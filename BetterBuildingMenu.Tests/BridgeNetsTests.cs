@@ -40,12 +40,16 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void RoadsGathersQuaysAndPiersUnderTheirOwnHeadings()
+		public void RoadsGathersQuaysUnderTheirOwnHeadingAndPiersWithThePaths()
 		{
 			Assert.True(NetworkMenuExtension.IsExtraNetwork("Networks", "Landscaping", "Roads", nameof(PrefabSubCategory.Networks_Quays)));
 			Assert.True(NetworkMenuExtension.IsExtraNetwork("Networks", "Landscaping", "Roads", nameof(PrefabSubCategory.Networks_Piers)));
 			Assert.Equal("Quays", NetworkMenuExtension.GroupId(nameof(PrefabSubCategory.Networks_Quays)));
-			Assert.Equal("Piers", NetworkMenuExtension.GroupId(nameof(PrefabSubCategory.Networks_Piers)));
+			// A pier is a walkway on stilts: it shares the Paths tab, and keeps its own subcategory.
+			Assert.Equal("Paths", NetworkMenuExtension.GroupId(nameof(PrefabSubCategory.Networks_Piers)));
+			Assert.Equal(
+				NetworkMenuExtension.GroupPriority(nameof(PrefabSubCategory.Networks_Paths)),
+				NetworkMenuExtension.GroupPriority(nameof(PrefabSubCategory.Networks_Piers)));
 		}
 
 		[Fact]

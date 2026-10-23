@@ -751,7 +751,7 @@ namespace BetterBuildingMenu.Systems
 								// the game's own build style and UI category.
 								if (processor is BridgesPrefabCategoryProcessor)
 								{
-									Mod.Log.Debug($"[BRIDGE-NET] {prefab.name} style={(prefab.TryGet<Bridge>(out var bridge) ? bridge.m_BuildStyle.ToString() : "none")} uiCategory={(prefab.TryGet<UIObject>(out var bridgeUi) ? bridgeUi.m_Group?.name : null) ?? "none"} -> {prefabIndex.SubCategory}");
+									Mod.Log.Debug($"[BRIDGE-NET] {prefab.name} type={prefab.GetType().Name} style={(prefab.TryGet<Bridge>(out var bridge) ? bridge.m_BuildStyle.ToString() : "none")} uiCategory={(prefab.TryGet<UIObject>(out var bridgeUi) ? bridgeUi.m_Group?.name : null) ?? "none"} -> {prefabIndex.SubCategory}");
 								}
 
 								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && overrides is not null)

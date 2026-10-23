@@ -160,5 +160,31 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(string.Empty, reset.Query.ThenBy);
 			Assert.Equal("progression", reset.SelectMenu("Zones").Query.ThenBy);
 		}
+
+		[Fact]
+		public void TypeGroupsReadInTheSubcategoriesOrderSoRoadsLead()
+		{
+			var road = TestEntries.Make(20, "Avenue", category: "Networks", subCategory: "Networks_Roads");
+			var bridge = road with { Id = 21, SubCategory = "Networks_Bridges" };
+			var quay = road with { Id = 22, SubCategory = "Networks_Quays" };
+			var key = BuildingCatalogGrouping.Find("subCategory");
+
+			Assert.True(string.CompareOrdinal(key.PrimaryKey(road), key.PrimaryKey(bridge)) < 0);
+			Assert.True(string.CompareOrdinal(key.PrimaryKey(bridge), key.PrimaryKey(quay)) < 0);
+		}
+
+		[Fact]
+		public void RoadsDefaultsToTypeWhereItSplitsAnything()
+		{
+			var road = TestEntries.Make(30, "Avenue", category: "Networks", subCategory: "Networks_Roads") with { UiMenu = "Roads", UiCategory = "RoadsMediumRoads" };
+			var bridge = road with { Id = 31, SubCategory = "Networks_Bridges", DevTreeBranch = "Grand Bridge" };
+
+			var view = new BetterBuildingMenu.Services.CatalogView(new[] { road, bridge }, new BuildingCatalogQuery(UiMenu: "Roads", GroupBy: "menuCategory"));
+			Assert.Equal("subCategory", view.EffectiveThenBy);
+
+			// One type only: Type would draw nothing, so the usual default applies.
+			var single = new BetterBuildingMenu.Services.CatalogView(new[] { road, road with { Id = 32, DevTreeBranch = "Grand Bridge" } }, new BuildingCatalogQuery(UiMenu: "Roads", GroupBy: "menuCategory"));
+			Assert.NotEqual("subCategory", single.EffectiveThenBy);
+		}
 	}
 }

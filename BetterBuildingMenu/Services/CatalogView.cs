@@ -66,12 +66,26 @@ namespace BetterBuildingMenu.Services
 			_query.ThenBy,
 			EffectiveGroupBy,
 			GroupDimensions,
-			BuildingCatalogGrouping.DefaultThenBy(
-				EffectiveGroupBy,
-				string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
-					? BuildingCatalogQueryEngine.InScope(RoadsLoneBranches.Fold(MenuSet, _query.UiMenu), _query)
-					: ViewSet,
-				_milestoneNames));
+			MenuDefaultThenBy());
+
+		/// <summary>The menu's own second level. Roads reads by Type (roads, then bridges, quays, paths
+		/// and the rest it gathers) wherever that splits anything; every other menu by the kind most of
+		/// its buildings draw under.</summary>
+		private string MenuDefaultThenBy()
+		{
+			var scope = string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.MenuCategory, StringComparison.OrdinalIgnoreCase)
+				? BuildingCatalogQueryEngine.InScope(RoadsLoneBranches.Fold(MenuSet, _query.UiMenu), _query).ToArray()
+				: ViewSet;
+
+			if (VanillaMenus.IsRoads(_query.UiMenu)
+				&& !string.Equals(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, StringComparison.OrdinalIgnoreCase)
+				&& BuildingCatalogGrouping.Draws(EffectiveGroupBy, BuildingCatalogGrouping.SubCategory, scope, _milestoneNames))
+			{
+				return BuildingCatalogGrouping.SubCategory;
+			}
+
+			return BuildingCatalogGrouping.DefaultThenBy(EffectiveGroupBy, scope, _milestoneNames);
+		}
 
 		/// <summary>The grouping the page is ordered by: the player's choice, or the menu's default.</summary>
 		/// <remarks>

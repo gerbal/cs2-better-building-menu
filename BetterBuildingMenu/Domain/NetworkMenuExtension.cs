@@ -97,10 +97,22 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static string GroupId(string? subCategory)
 		{
-			var name = subCategory?.Trim() ?? string.Empty;
+			var name = TabOf(subCategory);
 
 			return name.StartsWith(SubCategoryPrefix, StringComparison.OrdinalIgnoreCase)
 				? name.Substring(SubCategoryPrefix.Length)
+				: name;
+		}
+
+		/// <summary>The subcategory whose tab a gathered network shares: its own, except a pier, a
+		/// walkway on stilts, which files with the paths. It keeps its own subcategory, so a Type
+		/// grouping still tells it apart there.</summary>
+		private static string TabOf(string? subCategory)
+		{
+			var name = subCategory?.Trim() ?? string.Empty;
+
+			return string.Equals(name, nameof(PrefabSubCategory.Networks_Piers), StringComparison.OrdinalIgnoreCase)
+				? nameof(PrefabSubCategory.Networks_Paths)
 				: name;
 		}
 
@@ -113,7 +125,7 @@ namespace BetterBuildingMenu.Domain
 		/// lines and pipes, which is roughly how often they are reached for.
 		/// </remarks>
 		public static int GroupPriority(string? subCategory) =>
-			Enum.TryParse<PrefabSubCategory>(subCategory?.Trim(), out var parsed)
+			Enum.TryParse<PrefabSubCategory>(TabOf(subCategory), out var parsed)
 				? ExtraGroupPriorityBase + (int)parsed
 				: ExtraGroupPriorityBase;
 

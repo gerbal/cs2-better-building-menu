@@ -69,7 +69,7 @@ namespace BetterBuildingMenu.Domain
 			new(
 				Category,
 				entry => Normalize(entry.Category),
-				entry => Normalize(entry.SubCategory),
+				SubCategoryRank,
 				(entry, _, _) => new GroupLabels(
 					new[]
 					{
@@ -79,7 +79,7 @@ namespace BetterBuildingMenu.Domain
 					null)),
 			new(
 				SubCategory,
-				entry => Normalize(entry.SubCategory),
+				SubCategoryRank,
 				NoKey,
 				(entry, _, _) => Heading(Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other)),
 			// In transit, the transit split: a way (tracks, lanes, seaways) has no role of its own,
@@ -264,6 +264,41 @@ namespace BetterBuildingMenu.Domain
 		public static BuildingCatalogGroupDimension Find(string? groupBy) =>
 			!IsGrouped(groupBy) ? Ungrouped
 			: DescriptorIds.Find(Table, groupBy.Trim()) ?? Unrecognised;
+
+		/// <summary>A subcategory's key: our declaration order (Roads before Bridges and Quays), not the
+		/// alphabet; a subcategory that is none of ours after them, by name.</summary>
+		private static string SubCategoryRank(BuildingCatalogEntry entry) =>
+			Enum.TryParse<PrefabSubCategory>(entry.SubCategory?.Trim(), out var subCategory)
+				? ((int)subCategory).ToString("D5", CultureInfo.InvariantCulture)
+				: "~" + Normalize(entry.SubCategory);
+
+		/// <summary>Whether this second level would draw a sub-heading over this set, as the grid draws
+		/// it: some parent with two sub-groups, one named other than the parent.</summary>
+		public static bool Draws(string? groupBy, string? thenBy, IEnumerable<BuildingCatalogEntry> entries, IReadOnlyList<string>? milestoneNames = null)
+		{
+			var dimension = Find(groupBy, thenBy);
+			var parents = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+
+			foreach (var entry in entries)
+			{
+				var path = dimension.Labels(entry, milestoneNames).Path;
+
+				if (path.Length < 2)
+				{
+					continue;
+				}
+
+				if (!parents.TryGetValue(path[0], out var children))
+				{
+					children = new HashSet<string>(StringComparer.Ordinal);
+					parents[path[0]] = children;
+				}
+
+				children.Add(path[1]);
+			}
+
+			return parents.Any(parent => parent.Value.Count > 1 && parent.Value.Any(child => !string.Equals(child, parent.Key, StringComparison.Ordinal)));
+		}
 
 		/// <summary>
 		/// The first choice with the second picked beside it: empty for Auto (the first as it is),
